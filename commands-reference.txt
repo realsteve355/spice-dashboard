@@ -1,0 +1,142 @@
+═══════════════════════════════════════════════════════
+SPICE [ZPC] - Developer Command Reference
+═══════════════════════════════════════════════════════
+
+── NPM COMMANDS ────────────────────────────────────────
+
+npm run dev
+  Start local development server on localhost:5173
+  Vite watches for file changes and auto-refreshes
+  Leave running while you work, Ctrl+C to stop
+
+npm run build
+  Compile and bundle for production (outputs to /dist)
+  Vercel runs this automatically - you rarely need it locally
+  Useful to test the production build before pushing
+
+npm install
+  Install all dependencies listed in package.json
+  Run this after cloning the repo on a new machine
+
+npm install <package-name>
+  Install a new library and add it to package.json
+  Example: npm install ethers
+
+npm uninstall <package-name>
+  Remove a library from the project
+
+npm update
+  Update all packages to their latest allowed versions
+
+npm --version
+  Check which version of npm is installed
+
+node --version
+  Check which version of Node.js is installed
+
+npm fund
+  Show packages that are looking for funding (safe to ignore)
+
+npm audit
+  Check for known security vulnerabilities in dependencies
+
+npm audit fix
+  Automatically fix security vulnerabilities where possible
+
+
+── GIT COMMANDS ────────────────────────────────────────
+
+git status
+  Show which files have changed since last commit
+  Run this before committing to see what's changed
+
+git add .
+  Stage all changed files ready for commit
+  The dot means "everything" - you can specify files instead
+
+git add src/App.jsx
+  Stage a specific file only
+
+git commit -m "your message here"
+  Save a snapshot of staged changes with a description
+  Write meaningful messages - e.g. "fix NAV calculation"
+  NOT just "update" - you'll thank yourself later
+
+git push
+  Send committed changes up to GitHub
+  Triggers Vercel to redeploy automatically
+
+git pull
+  Fetch and merge latest changes from GitHub
+  Important if editing from multiple machines
+
+git log
+  Show history of all commits with messages and dates
+  Press Q to exit
+
+git log --oneline
+  Compact version of log - one line per commit
+
+git diff
+  Show exactly what lines changed in unstaged files
+
+git diff --staged
+  Show what lines changed in staged files (after git add)
+
+git restore <filename>
+  Discard changes to a file and revert to last commit
+  WARNING: this permanently loses your unsaved changes
+
+git restore .
+  Discard ALL changes and revert everything to last commit
+  WARNING: nuclear option - use with care
+
+git stash
+  Temporarily shelve changes without committing
+  Useful if you need to switch tasks mid-work
+
+git stash pop
+  Restore shelved changes
+
+git clone <url>
+  Download a repository from GitHub to your machine
+  Example: git clone https://github.com/realsteve355/spice-dashboard
+
+
+── TYPICAL DAILY WORKFLOW ──────────────────────────────
+
+1. Open VS Code
+2. Open terminal (Ctrl + `)
+3. npm run dev          (start local server)
+4. Open browser to localhost:5173
+5. Edit code in VS Code, browser auto-refreshes
+6. When happy with changes:
+   git add .
+   git commit -m "describe what you changed"
+   git push
+7. Vercel auto-deploys to zpc.finance within ~1 minute
+
+
+── PROJECT LOCATIONS ───────────────────────────────────
+
+Local source code:
+  C:\Users\user\OneDrive\Documents\Crypto\spice-dashboard
+
+GitHub repository:
+  https://github.com/realsteve355/spice-dashboard
+
+Live website:
+  https://zpc.finance
+
+Vercel dashboard:
+  https://vercel.com/dashboard
+
+Base Sepolia contracts:
+  WBTC:  0x9639915dB85ee83f3C1ed88AaC3BCb2E2104B70b
+  IRON:  0x5C06fB67f24e06A7234a777F9220e083d2684976
+  VAULT: 0x0fCf6F860927c6cd94e974E7B9BfAb440E2b1FeE
+
+Basescan (view contracts):
+  https://sepolia.basescan.org
+
+═══════════════════════════════════════════════════════

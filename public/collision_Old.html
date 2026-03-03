@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE COLLISION — Economic Model v2</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f8f9fa;
+    --border: #dde1e7;
+    --border-strong: #bcc0c8;
+    --gold: #b8860b;
+    --gold-dim: #d4a017;
+    --gold-bg: #fdf8ec;
+    --red: #c0392b;
+    --red-dim: #e74c3c;
+    --red-bg: #fdf2f0;
+    --green: #1e7e4e;
+    --green-bg: #f0faf4;
+    --blue: #2471a3;
+    --blue-bg: #eaf4fd;
+    --orange: #d35400;
+    --purple: #7d3c98;
+    --text: #1a1d23;
+    --text-dim: #4a5568;
+    --text-muted: #8a94a6;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:14px; line-height:1.6; min-height:100vh;
+  }
+  .everything { position:relative; z-index:1; }
+
+  /* HEADER */
+  header {
+    border-bottom:2px solid var(--border); padding:16px 32px 14px;
+    display:flex; align-items:flex-end; justify-content:space-between;
+    background:var(--surface); position:sticky; top:0; z-index:200;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  }
+  .logo-eyebrow { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.22em; color:var(--gold); text-transform:uppercase; margin-bottom:2px; font-weight:500; }
+  .logo-title { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:0.06em; color:var(--text); line-height:1; }
+  .logo-title span { color:var(--gold); }
+  .header-right { display:flex; align-items:flex-end; gap:24px; }
+  .header-crisis { text-align:right; }
+  .status-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:3px; }
+  #crisis-meter { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:0.05em; transition:color 0.5s; }
+
+  /* TABS */
+  .tabs { display:flex; border-bottom:2px solid var(--border); background:var(--surface2); }
+  .tab {
+    padding:11px 22px; font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--text-muted); cursor:pointer; border-bottom:3px solid transparent;
+    transition:all 0.2s; user-select:none; margin-bottom:-2px;
+  }
+  .tab:hover { color:var(--text-dim); background:rgba(0,0,0,0.03); }
+  .tab.active { color:var(--gold); border-bottom-color:var(--gold); background:var(--surface); }
+
+  /* MAIN LAYOUT */
+  .main { min-height:calc(100vh - 110px); }
+
+  /* CONTROL PANEL (top) */
+  .control-panel { background:var(--surface); border-bottom:2px solid var(--border); padding:16px 24px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+  .cp-top { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:12px; }
+  .cp-crypto { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-bottom:0; padding-top:10px; border-top:1px solid var(--border); }
+  .cp-section { }
+  .section-title { font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.20em; color:var(--gold); text-transform:uppercase; margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid var(--border); font-weight:500; }
+  .slider-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .slider-group { margin-bottom:10px; }
+  .slider-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px; }
+  .slider-label { font-size:11px; color:var(--text-dim); font-weight:500; }
+  .slider-value { font-family:'DM Mono',monospace; font-size:11px; color:var(--gold); font-weight:600; }
+  .slider-desc { font-size:9px; color:var(--text-muted); margin-bottom:4px; line-height:1.3; }
+  input[type="range"] { width:100%; -webkit-appearance:none; height:4px; background:var(--border); border-radius:2px; outline:none; cursor:pointer; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; background:var(--gold); border-radius:50%; cursor:pointer; transition:transform 0.15s; border:2px solid white; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  input[type="range"]::-webkit-slider-thumb:hover { transform:scale(1.25); }
+  input[type="range"].danger::-webkit-slider-thumb { background:var(--red); }
+  input[type="range"].safe::-webkit-slider-thumb { background:var(--green); }
+  input[type="range"].blue::-webkit-slider-thumb { background:var(--blue); }
+  input[type="range"].purple::-webkit-slider-thumb { background:var(--purple); }
+
+  .preset-row { display:grid; grid-template-columns:1fr 1fr; gap:5px; margin-bottom:8px; }
+  .preset-btn {
+    padding:7px 4px; border:1px solid var(--border); background:var(--surface2);
+    color:var(--text-dim); font-family:'DM Mono',monospace; font-size:9px;
+    letter-spacing:0.06em; cursor:pointer; border-radius:3px; transition:all 0.2s; text-align:center;
+  }
+  .preset-btn:hover { border-color:var(--gold); color:var(--gold); background:var(--gold-bg); }
+  .preset-btn.active { border-color:var(--gold); color:var(--gold); background:var(--gold-bg); font-weight:600; }
+
+  .save-btn {
+    padding:8px 14px; background:var(--gold-bg); border:1px solid var(--gold-dim);
+    color:var(--gold); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.10em;
+    text-transform:uppercase; cursor:pointer; border-radius:3px; transition:all 0.2s;
+  }
+  .save-btn:hover { background:var(--gold-bg); border-color:var(--gold); box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+  .save-btn.saved { background:var(--green-bg); border-color:var(--green); color:var(--green); }
+  .load-btn {
+    padding:8px 14px; background:var(--surface2); border:1px solid var(--border);
+    color:var(--text-muted); font-family:'DM Mono',monospace; font-size:9px; letter-spacing:0.10em;
+    text-transform:uppercase; cursor:pointer; border-radius:3px; transition:all 0.2s;
+    display:none;
+  }
+  .load-btn:hover { border-color:var(--gold); color:var(--gold); }
+  .load-btn.visible { display:inline-block; }
+  .saved-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); display:none; }
+  .saved-label.visible { display:inline; }
+
+  /* CONTENT */
+  .content { padding:20px 24px 32px; overflow-y:auto; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* YEAR NAV */
+  .year-nav { display:flex; align-items:center; gap:12px; margin-bottom:16px; background:var(--gold-bg); border:1px solid var(--gold-dim); padding:12px 16px; border-radius:4px; }
+  .year-label { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); letter-spacing:0.15em; text-transform:uppercase; white-space:nowrap; }
+  .year-track { flex:1; }
+  .year-display { font-family:'Bebas Neue',sans-serif; font-size:26px; color:var(--gold); letter-spacing:0.05em; min-width:60px; text-align:right; }
+
+  /* KPIs */
+  .kpi-strip { display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:14px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); padding:10px 12px; position:relative; overflow:hidden; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
+  .kpi::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; background:var(--gold-dim); transition:background 0.5s; }
+  .kpi.danger::after { background:var(--red); }
+  .kpi.warning::after { background:var(--orange); }
+  .kpi.good::after { background:var(--green); }
+  .kpi-label { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-muted); letter-spacing:0.10em; text-transform:uppercase; margin-bottom:5px; }
+  .kpi-value { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:0.04em; line-height:1; transition:color 0.5s; color:var(--text); }
+  .kpi-delta { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-muted); margin-top:3px; }
+  .kpi-delta.bad { color:var(--red); }
+  .kpi-delta.good { color:var(--green); }
+
+  /* DUAL ECONOMY */
+  .dual-economy { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .economy-block { background:var(--surface); border:1px solid var(--border); padding:18px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  .economy-block.capital { border-top:4px solid var(--gold); }
+  .economy-block.labour { border-top:4px solid var(--red); }
+  .economy-label { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:0.08em; margin-bottom:3px; }
+  .economy-label.capital { color:var(--gold); }
+  .economy-label.labour { color:var(--red); }
+  .economy-desc { font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.35; }
+  .economy-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .econ-stat { border-top:1px solid var(--border); padding-top:8px; }
+  .econ-stat-label { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-muted); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:4px; }
+  .econ-stat-value { font-family:'DM Mono',monospace; font-size:16px; font-weight:600; transition:color 0.4s; }
+
+  /* CHARTS */
+  .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .chart-card { background:var(--surface); border:1px solid var(--border); padding:16px 18px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.06); }
+  .chart-card.wide { grid-column:span 2; }
+  .chart-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--text-dim); letter-spacing:0.16em; text-transform:uppercase; margin-bottom:3px; font-weight:500; }
+  .chart-subtitle { font-size:10px; color:var(--text-muted); margin-bottom:12px; line-height:1.4; }
+  canvas { max-height:200px; }
+  .wide canvas { max-height:260px; }
+
+  /* CRISIS EVENT TIMELINE */
+  .crisis-timeline { background:var(--surface); border:1px solid var(--border); padding:16px 18px; margin-bottom:12px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+  .timeline-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; margin-bottom:12px; font-weight:600; }
+  .timeline-events { display:flex; flex-direction:column; gap:0; }
+  .event-row {
+    display:grid; grid-template-columns:80px 16px 1fr; gap:10px; align-items:flex-start;
+    padding:6px 0; border-bottom:1px solid var(--border); position:relative;
+  }
+  .event-row:last-child { border-bottom:none; }
+  .event-year { font-family:'Bebas Neue',sans-serif; font-size:16px; color:var(--text-muted); letter-spacing:0.05em; }
+  .event-year.triggered { color:var(--gold); }
+  .event-dot { width:10px; height:10px; border-radius:50%; border:1px solid var(--border); margin-top:4px; flex-shrink:0; transition:all 0.4s; }
+  .event-dot.active { background:var(--gold); border-color:var(--gold); box-shadow:0 0 8px rgba(201,168,76,0.4); }
+  .event-dot.danger { background:var(--red); border-color:var(--red); box-shadow:0 0 8px rgba(224,85,85,0.4); }
+  .event-dot.past { background:var(--border); border-color:var(--border); }
+  .event-content {}
+  .event-name { font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:2px; }
+  .event-name.active { color:var(--text); }
+  .event-name.danger { color:var(--red); }
+  .event-detail { font-size:10px; color:var(--text-muted); line-height:1.4; }
+  .event-detail.visible { color:var(--text-dim); }
+
+  /* CRISIS ALERT */
+  .crisis-alert { display:none; border:1px solid var(--red-dim); border-left:4px solid var(--red); padding:14px 18px; margin-bottom:12px; background:var(--red-bg); border-radius:0 4px 4px 0; animation:pb 2.5s infinite; }
+  @keyframes pb { 0%,100%{border-left-color:var(--red)} 50%{border-left-color:rgba(192,57,43,0.3)} }
+  .crisis-alert.visible { display:block; }
+  .crisis-title { font-family:'Bebas Neue',sans-serif; font-size:15px; color:var(--red); letter-spacing:0.08em; margin-bottom:5px; }
+  .crisis-body { font-size:11px; color:var(--text); line-height:1.5; }
+
+  /* NARRATIVE */
+  .narrative { background:var(--gold-bg); border:1px solid var(--gold-dim); border-left:4px solid var(--gold); padding:16px 20px; margin-bottom:12px; border-radius:0 4px 4px 0; }
+  .narrative-title { font-family:'DM Mono',monospace; font-size:9px; color:var(--gold); letter-spacing:0.18em; text-transform:uppercase; margin-bottom:10px; font-weight:600; }
+  .narrative-text { font-size:12px; color:var(--text-dim); line-height:1.75; }
+  .narrative-text strong { color:var(--text); font-weight:600; }
+  .narrative-text .hl { color:var(--gold); font-weight:600; }
+  .narrative-text .danger { color:var(--red); font-weight:600; }
+  .narrative-text .good { color:var(--green); font-weight:600; }
+
+  /* SPICE BAR */
+  .spice-bar { background:var(--gold-bg); border:1px solid var(--gold-dim); padding:14px 20px; display:flex; align-items:center; gap:20px; margin-bottom:12px; border-radius:4px; }
+  .spice-logo-sm { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--gold); letter-spacing:0.1em; min-width:70px; line-height:1.1; }
+  .spice-div { width:1px; height:40px; background:var(--border); }
+  .spice-metrics { display:flex; gap:24px; }
+  .spice-metric-label { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:3px; }
+  .spice-metric-value { font-family:'Bebas Neue',sans-serif; font-size:20px; color:var(--gold); letter-spacing:0.04em; transition:all 0.4s; }
+  .spice-commentary { flex:1; font-size:11px; color:var(--text-dim); line-height:1.4; border-left:1px solid var(--border); padding-left:16px; }
+
+  /* INDICATORS TAB */
+  .indicator-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .indicator-card { background:var(--surface); border:1px solid var(--border); padding:16px; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .ind-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .ind-name { font-size:12px; font-weight:600; color:var(--text); }
+  .ind-level { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.08em; padding:2px 8px; border-radius:2px; }
+  .ind-level.green { background:rgba(76,175,122,0.15); color:var(--green); }
+  .ind-level.blue { background:rgba(85,153,221,0.15); color:var(--blue); }
+  .ind-level.yellow { background:rgba(224,192,48,0.15); color:#e0c030; }
+  .ind-level.orange { background:rgba(224,153,51,0.15); color:var(--orange); }
+  .ind-level.red { background:rgba(224,85,85,0.15); color:var(--red); }
+  .ind-source { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-muted); letter-spacing:0.1em; margin-bottom:6px; }
+  .ind-current { font-family:'DM Mono',monospace; font-size:13px; color:var(--gold); margin-bottom:4px; }
+  .ind-desc { font-size:10px; color:var(--text-muted); line-height:1.4; margin-bottom:8px; }
+  .ind-relationship { font-size:10px; color:var(--text-dim); line-height:1.4; border-top:1px solid var(--border); padding-top:6px; }
+  .ind-thresholds { display:grid; grid-template-columns:repeat(5,1fr); gap:2px; margin-top:6px; }
+  .ind-thresh { font-family:'DM Mono',monospace; font-size:8px; text-align:center; padding:3px 2px; border-radius:1px; }
+  .ind-thresh.g { background:rgba(76,175,122,0.15); color:var(--green); }
+  .ind-thresh.b { background:rgba(85,153,221,0.15); color:var(--blue); }
+  .ind-thresh.y { background:rgba(224,192,48,0.15); color:#e0c030; }
+  .ind-thresh.o { background:rgba(224,153,51,0.15); color:var(--orange); }
+  .ind-thresh.r { background:rgba(224,85,85,0.15); color:var(--red); }
+
+  /* POLICY TAB */
+  .policy-section { margin-bottom:16px; }
+  .policy-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+  .policy-card { background:var(--surface); border:1px solid var(--border); padding:16px; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.04); }
+  .policy-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; }
+  .policy-desc { font-size:10px; color:var(--text-muted); line-height:1.4; margin-bottom:10px; }
+  .policy-effect { font-size:10px; color:var(--text-dim); }
+  .policy-effect span { font-family:'DM Mono',monospace; font-size:11px; }
+  .policy-effect.positive span { color:var(--green); }
+  .policy-effect.negative span { color:var(--red); }
+
+  /* FOOTNOTE */
+  .footnote { font-family:'DM Mono',monospace; font-size:8px; color:var(--text-muted); letter-spacing:0.05em; padding:12px 0 6px; border-top:1px solid var(--border); margin-top:16px; line-height:1.6; }
+
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  @media (max-width:1100px) {
+    .main { grid-template-columns:260px 1fr; }
+    .kpi-strip { grid-template-columns:repeat(3,1fr); }
+    .charts-grid { grid-template-columns:1fr; }
+    .chart-card.wide { grid-column:span 1; }
+    .indicator-grid { grid-template-columns:1fr; }
+    .policy-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="everything">
+
+<header>
+  <div>
+    <div class="logo-eyebrow">SPICE [ZPC] — Macro Simulation Engine v2.0</div>
+    <div class="logo-title">THE <span>COLLISION</span> MODEL</div>
+  </div>
+  <div class="header-right">
+    <div class="header-crisis">
+      <div class="status-label">Crisis Level — <span id="header-year">2025</span></div>
+      <div id="crisis-meter" style="color:var(--green)">MONITORING</div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('model')">Model & Simulation</div>
+  <div class="tab" onclick="switchTab('dual')">Dual Economy</div>
+  <div class="tab" onclick="switchTab('indicators')">Apocalypse Indicators</div>
+  <div class="tab" onclick="switchTab('policy')">Policy Responses</div>
+</div>
+
+
+<div class="control-panel">
+  <!-- TOP ROW: Automation (left) + Economic (right) -->
+  <div class="cp-top">
+
+    <!-- LEFT: AI & Automation -->
+    <div class="cp-section">
+      <div class="section-title">AI &amp; Automation</div>
+      <div class="slider-row">
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Automation Rate</span><span class="slider-value" id="v-auto">15%</span></div>
+          <div class="slider-desc">% of human tasks absorbed by AI/robotics annually</div>
+          <input type="range" class="danger" id="sl-auto" min="1" max="20" value="15" step="0.5" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Reinstatement Rate</span><span class="slider-value" id="v-reinstate">20%</span></div>
+          <div class="slider-desc">% of displaced tasks replaced by new human roles</div>
+          <input type="range" class="safe" id="sl-reinstate" min="0" max="100" value="20" step="5" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">AI Productivity</span><span class="slider-value" id="v-prod">4.0×</span></div>
+          <div class="slider-desc">Output per automated task vs. human equivalent</div>
+          <input type="range" id="sl-prod" min="1.1" max="8" value="4.0" step="0.1" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Recursion</span><span class="slider-value" id="v-rec">1.20×</span></div>
+          <div class="slider-desc">Annual AI-on-AI acceleration (singularity lever)</div>
+          <input type="range" class="danger" id="sl-rec" min="1.00" max="1.30" value="1.20" step="0.01" oninput="update()">
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Economic & Policy -->
+    <div class="cp-section">
+      <div class="section-title">Economic &amp; Policy</div>
+      <div class="slider-row">
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Initial Debt/GDP</span><span class="slider-value" id="v-debt">98%</span></div>
+          <div class="slider-desc">Starting sovereign debt as % of GDP</div>
+          <input type="range" id="sl-debt" min="40" max="280" value="98" step="2" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Primary Deficit</span><span class="slider-value" id="v-def">4%</span></div>
+          <div class="slider-desc">Government deficit before interest payments</div>
+          <input type="range" class="danger" id="sl-def" min="0" max="15" value="4" step="0.5" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Avg. Interest Rate</span><span class="slider-value" id="v-rate">4.5%</span></div>
+          <div class="slider-desc">Initial base rate on sovereign debt</div>
+          <input type="range" id="sl-rate" min="1" max="12" value="4.5" step="0.25" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Capital Tax Rate</span><span class="slider-value" id="v-captax">8%</span></div>
+          <div class="slider-desc">Effective tax on AI profits (domestic portion only)</div>
+          <input type="range" class="safe" id="sl-captax" min="0" max="60" value="8" step="2" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Domestic AI Capture</span><span class="slider-value" id="v-domcap">50%</span></div>
+          <div class="slider-desc">% of AI gains taxable domestically (low = profits offshore)</div>
+          <input type="range" class="safe" id="sl-domcap" min="0" max="100" value="50" step="5" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">QE / Money Printing</span><span class="slider-value" id="v-qe">Low</span></div>
+          <div class="slider-desc">Annual monetary expansion as % of GDP</div>
+          <input type="range" class="purple" id="sl-qe" min="0" max="30" value="2" step="1" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">UBI Level</span><span class="slider-value" id="v-ubi">None</span></div>
+          <div class="slider-desc">Targeted support for displaced workers (% of avg wage)</div>
+          <input type="range" class="blue" id="sl-ubi" min="0" max="80" value="0" step="5" oninput="update()">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header"><span class="slider-label">Wealth Concentration</span><span class="slider-value" id="v-gini">Medium</span></div>
+          <div class="slider-desc">Rate at which AI gains accrue to capital owners</div>
+          <input type="range" class="danger" id="sl-gini" min="1" max="5" value="3" step="1" oninput="update()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CRYPTO ROW -->
+  <div class="cp-crypto">
+    <div class="cp-section">
+      <div class="section-title">Crypto Exit Valve</div>
+      <div class="slider-group">
+        <div class="slider-header"><span class="slider-label">Crypto Adoption Rate</span><span class="slider-value" id="v-crypto">Low</span></div>
+        <div class="slider-desc">Higher adoption lowers the debt threshold at which bond markets panic — capital exits faster</div>
+        <input type="range" class="danger" id="sl-crypto" min="0" max="10" value="1" step="1" oninput="update()">
+      </div>
+    </div>
+    <div class="cp-section">
+      <div class="section-title">Central Bank Regime</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <button class="preset-btn active" id="ycc-off-btn" onclick="setYCC(false,this)">🏦 Free Market<br><span style="font-size:8px;color:var(--text-muted)">Yields rise freely</span></button>
+        <button class="preset-btn" id="ycc-on-btn" onclick="setYCC(true,this)">🖨️ YCC / Peg<br><span style="font-size:8px;color:var(--text-muted)">Yields capped</span></button>
+      </div>
+      <div id="ycc-cap-group" style="display:none;">
+        <div class="slider-group" style="margin-bottom:0;">
+          <div class="slider-header"><span class="slider-label">YCC Yield Cap</span><span class="slider-value" id="v-ycccap">2.0%</span></div>
+          <input type="range" class="purple" id="sl-ycccap" min="0.5" max="8" value="2.0" step="0.25" oninput="update()">
+        </div>
+      </div>
+      <div id="ycc-status" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--text-muted);line-height:1.4;margin-top:4px;">Free market: bond market sets yields</div>
+    </div>
+    <div class="cp-section">
+      <div class="section-title">Presets &amp; Save</div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="applyPreset('acemoglu',this)">Acemoglu<br>Conservative</button>
+        <button class="preset-btn" onclick="applyPreset('spice',this)">SPICE<br>Base Case</button>
+      </div>
+      <div class="preset-row">
+        <button class="preset-btn" onclick="applyPreset('singularity',this)">Singularity<br>Scenario</button>
+        <button class="preset-btn" onclick="applyPreset('policy',this)">Strong<br>Policy</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap;">
+        <button class="save-btn" id="save-btn" onclick="saveBaseCase()">⊕ Save Base Case</button>
+        <button class="load-btn" id="load-btn" onclick="loadBaseCase()">↩ Load Saved</button>
+        <span class="saved-label" id="saved-label">Saved ✓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- MODEL TAB -->
+  <div class="tab-panel active" id="panel-model">
+
+    <div class="year-nav">
+      <span class="year-label">Simulation Year</span>
+      <div class="year-track"><input type="range" id="year-slider" min="0" max="10" value="0" step="1" oninput="updateYear()"></div>
+      <div class="year-display" id="year-display">2025</div>
+    </div>
+
+    <div class="kpi-strip" style="grid-template-columns:repeat(6,1fr)">
+      <div class="kpi" id="kpi-ls"><div class="kpi-label">Labour Share / GDP</div><div class="kpi-value" id="kv-ls">62%</div><div class="kpi-delta" id="kd-ls">baseline</div></div>
+      <div class="kpi" id="kpi-wg"><div class="kpi-label">Real Wage Index</div><div class="kpi-value" id="kv-wg">100</div><div class="kpi-delta" id="kd-wg">baseline</div></div>
+      <div class="kpi" id="kpi-gp"><div class="kpi-label">GDP Index</div><div class="kpi-value" id="kv-gp">100</div><div class="kpi-delta" id="kd-gp">baseline</div></div>
+      <div class="kpi" id="kpi-dt"><div class="kpi-label">Debt / GDP</div><div class="kpi-value" id="kv-dt">98%</div><div class="kpi-delta" id="kd-dt">baseline</div></div>
+      <div class="kpi" id="kpi-yield"><div class="kpi-label">Market Bond Yield</div><div class="kpi-value" id="kv-yield">4.5%</div><div class="kpi-delta" id="kd-yield">base rate</div></div>
+      <div class="kpi" id="kpi-un"><div class="kpi-label">Struct. Unemployment</div><div class="kpi-value" id="kv-un">4%</div><div class="kpi-delta" id="kd-un">baseline</div></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">Sovereign Debt / GDP</div>
+        <div class="chart-subtitle">Tax base erosion accelerates debt non-linearly. Bond market crisis threshold marked. 10-year projection.</div>
+        <canvas id="chart-debt"></canvas>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-title">Structural Unemployment</div>
+        <div class="chart-subtitle">Net displacement after reinstatement. Welfare/UBI cost shown separately. 10-year projection.</div>
+        <canvas id="chart-unemploy"></canvas>
+      </div>
+    </div>
+
+        <!-- CRISIS EVENT TIMELINE -->
+    <div class="crisis-timeline">
+      <div class="timeline-title">Crisis Event Timeline — What Actually Happens</div>
+      <div class="timeline-events" id="crisis-timeline-events">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="crisis-alert" id="crisis-alert">
+      <div class="crisis-title">⚠ CRISIS THRESHOLD BREACHED — MULTIPLE INDICATORS IN DANGER TERRITORY</div>
+      <div class="crisis-body" id="crisis-body"></div>
+    </div>
+
+    <div class="spice-bar">
+      <div class="spice-logo-sm">SPICE<br>[ZPC]</div>
+      <div class="spice-div"></div>
+      <div class="spice-metrics">
+        <div><div class="spice-metric-label">Portfolio Return</div><div class="spice-metric-value" id="sp-ret">+8%</div></div>
+        <div><div class="spice-metric-label">vs 60/40</div><div class="spice-metric-value" id="sp-bench">+1%</div></div>
+        <div><div class="spice-metric-label">Alert Level</div><div class="spice-metric-value" id="sp-alert">🟢 GREEN</div></div>
+        <div><div class="spice-metric-label">Key Position</div><div class="spice-metric-value" id="sp-pos">70% PAXG</div></div>
+      </div>
+      <div class="spice-commentary" id="sp-comment">Monitoring phase. Hard asset base accumulating.</div>
+    </div>
+
+    <div class="narrative" id="narrative">
+      <div class="narrative-title">Interpretation — Year <span id="narr-year">2025</span></div>
+      <div class="narrative-text" id="narr-text">Adjust parameters and drag the year slider to simulate. The model tracks two parallel economies diverging over time.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div style="border:1px solid rgba(85,153,221,0.3);border-left:3px solid var(--blue);background:var(--blue-bg);padding:14px 16px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--blue);margin-bottom:6px;">🏛 RESERVE CURRENCY BUFFER — US EXCEPTIONALISM</div>
+        <div style="font-size:10px;color:var(--text-dim);line-height:1.6;">The US dollar's reserve status gives the US a genuine but <em>finite</em> buffer. Global demand for Treasuries as collateral is structural — banks, central banks, and repo markets require them. The US can sustain higher debt/GDP ratios than Greece or Italy before triggering equivalent market panic, probably 150–170% vs. 120–130% for non-reserve economies. This is a difference of <strong>timing, not outcome.</strong></div>
+      </div>
+      <div style="border:1px solid rgba(224,85,85,0.3);border-left:3px solid var(--red);background:var(--red-bg);padding:14px 16px;">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--red);margin-bottom:6px;">⚡ WHEN THE US BREAKS — NOBODY IS SPARED</div>
+        <div style="font-size:10px;color:var(--text-dim);line-height:1.6;">A US Treasury bond crisis is categorically different from any other sovereign crisis because Treasuries <em>are</em> the global financial system's collateral layer. Every repo agreement, every bank's capital buffer, every central bank's reserve holds Treasuries. A US yield shock triggers global margin calls, liquidity seizure, and simultaneous repricing of every other sovereign — within hours. The buffer delays the crisis. It does not contain it when it arrives.</div>
+      </div>
+    </div>
+
+    <div class="footnote">
+      Model based on: Acemoglu-Restrepo task framework (2018–2024) · Korinek-Suh AGI transition model (2024) · Oxford Economics robotics study (2024) · Blanchard r-g sovereign debt framework · SPICE macro thesis v2 ·
+      Simplified scenario planning tool — not a financial forecast. All parameters approximate empirical ranges. Crisis events represent historical precedents mapped to model thresholds.
+    </div>
+
+  </div>
+
+
+  <!-- DUAL ECONOMY TAB -->
+  <div class="tab-panel" id="panel-dual">
+    <div class="year-nav" style="margin-bottom:16px;">
+      <span class="year-label">Simulation Year</span>
+      <div class="year-track"><input type="range" id="year-slider-dual" min="0" max="10" value="0" step="1" oninput="document.getElementById('year-slider').value=this.value;updateYear()"></div>
+      <div class="year-display" id="year-display-dual">2026</div>
+    </div>
+        <div class="dual-economy">
+      <div class="economy-block capital">
+        <div class="economy-label capital">Capital Economy</div>
+        <div class="economy-desc">AI-owned productive capacity · Corporate profits · Asset prices · Billionaire wealth</div>
+        <div class="economy-stats">
+          <div class="econ-stat"><div class="econ-stat-label">GDP Index</div><div class="econ-stat-value" id="ce-gdp" style="color:var(--gold)">100</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">Capital Share</div><div class="econ-stat-value" id="ce-cap" style="color:var(--gold)">38%</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">Asset Price Idx</div><div class="econ-stat-value" id="ce-asset" style="color:var(--gold)">100</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">AI Task Coverage</div><div class="econ-stat-value" id="ce-ai" style="color:var(--gold)">15%</div></div>
+        </div>
+      </div>
+      <div class="economy-block labour">
+        <div class="economy-label labour">Labour Economy</div>
+        <div class="economy-desc">Wages · Consumer spending · Tax revenues · Government services · Daily lived reality</div>
+        <div class="economy-stats">
+          <div class="econ-stat"><div class="econ-stat-label">Wage Bill Idx</div><div class="econ-stat-value" id="le-wage" style="color:var(--red)">100</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">Consumer Demand</div><div class="econ-stat-value" id="le-dem" style="color:var(--red)">100</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">Tax Revenue Idx</div><div class="econ-stat-value" id="le-tax" style="color:var(--red)">100</div></div>
+          <div class="econ-stat"><div class="econ-stat-label">Consumer Inflation</div><div class="econ-stat-value" id="le-inf" style="color:var(--red)">+2.8%</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card wide">
+        <div class="chart-title">The Scissor — Diverging Economies</div>
+        <div class="chart-subtitle">GDP (capital economy) vs. wage bill (labour economy) — the widening gap is the crisis. Consumer demand follows wages, not GDP.</div>
+        <canvas id="chart-scissor"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Labour Share Collapse</div>
+        <div class="chart-subtitle">Wages as % of GDP — the fiscal tax base proxy</div>
+        <canvas id="chart-labshare"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Price Level Split</div>
+        <div class="chart-subtitle">Asset inflation vs. consumer deflation — two parallel price realities</div>
+        <canvas id="chart-prices"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Bond Market Yield — Dynamic & Reflexive</div>
+        <div class="chart-subtitle">Market-derived rate. Rises as debt trajectory worsens. Panic spike when multiple thresholds breach simultaneously.</div>
+        <canvas id="chart-yield"></canvas>
+      </div>
+
+      <!-- FLIGHT FROM FIAT — full width -->
+      <div class="chart-card wide">
+        <div class="chart-title">✈ Flight From Fiat — Currency Confidence</div>
+        <div class="chart-subtitle">Gold index (base 100) · Crypto exit flow (% of savings) · Fiat purchasing power. When gold and crypto diverge upward while fiat erodes — the Collision is arriving.</div>
+        <canvas id="chart-fiat"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- INDICATORS TAB -->
+  <div class="tab-panel" id="panel-indicators">
+    <div style="margin-bottom:16px;">
+      <div class="narrative">
+        <div class="narrative-title">Sliders vs. Indicators — The Key Distinction</div>
+        <div class="narrative-text">
+          <strong>The model sliders</strong> are structural parameters — your beliefs about underlying forces (automation rate, recursion). You cannot observe them directly; you infer them from outcomes. They are your macro thesis assumptions.<br><br>
+          <strong>The Apocalypse Indicators</strong> are real-time observable outputs that appear in market data as those structural forces manifest. They are the symptoms. The model generates the disease mechanism; the indicators tell you the patient is deteriorating in real time.<br><br>
+          <strong>The relationship:</strong> Sliders → model predicts trajectory → indicators measure actual arrival → SPICE portfolio rebalances. The model calibrates <em>when</em> indicators should breach thresholds under your assumptions. The indicators confirm it is <em>actually happening</em>.
+        </div>
+      </div>
+    </div>
+    <div class="indicator-grid" id="indicator-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- POLICY TAB -->
+  <div class="tab-panel" id="panel-policy">
+    <div class="narrative" style="margin-bottom:16px;">
+      <div class="narrative-title">What Governments Actually Do at Crisis Point</div>
+      <div class="narrative-text" id="policy-narrative">
+        Historical sovereign debt crises follow a consistent playbook. Governments cycle through these responses in roughly this order, with increasing desperation. Use the policy sliders on the left to model the effect of each. None of them resolve the fundamental problem — they buy time at cost.
+      </div>
+    </div>
+    <div class="policy-grid" id="policy-grid">
+      <!-- populated by JS -->
+    </div>
+    <div class="chart-card" style="margin-top:12px;">
+      <div class="chart-title">Policy Response Comparison — Debt/GDP Trajectories</div>
+      <div class="chart-subtitle">Same automation parameters, different policy responses. None prevents crisis without transformative capital taxation.</div>
+      <canvas id="chart-policy" style="max-height:220px;"></canvas>
+    </div>
+    <div class="footnote">
+      Policy analysis draws on: post-WWII financial repression (UK/US 1945–1980) · 2010–2012 Eurozone crisis response · Japanese YCC 2016–2023 · IMF sovereign debt restructuring case studies · Reinhart & Rogoff "This Time is Different" (2009)
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURATION
+// ============================================================
+const YEARS = 15, BASE = 2026;
+let simData = null, charts = {}, currentYear = 0, savedParams = null;
+
+// ============================================================
+// PARAMS
+// ============================================================
+function P() {
+  const gL = ['','Very Low','Low','Medium','High','Extreme'];
+  const g = parseInt(document.getElementById('sl-gini').value);
+  const q = parseInt(document.getElementById('sl-qe').value);
+  const cr = parseInt(document.getElementById('sl-crypto').value);
+  const cryptoLabels = ['None','Very Low','Low','Moderate','Significant','High','Very High','Aggressive','Rapid','Extreme','Maximum'];
+  const ycc = window._yccOn || false;
+  return {
+    auto:     parseFloat(document.getElementById('sl-auto').value)/100,
+    reinstate:parseFloat(document.getElementById('sl-reinstate').value)/100,
+    prod:     parseFloat(document.getElementById('sl-prod').value),
+    rec:      parseFloat(document.getElementById('sl-rec').value),
+    debt:     parseFloat(document.getElementById('sl-debt').value)/100,
+    def:      parseFloat(document.getElementById('sl-def').value)/100,
+    rate:     parseFloat(document.getElementById('sl-rate').value)/100,
+    ubi:      parseFloat(document.getElementById('sl-ubi').value)/100,
+    captax:   parseFloat(document.getElementById('sl-captax').value)/100,
+    qe:       q/100,
+    gini:     g,
+    domcap:   parseFloat(document.getElementById('sl-domcap').value)/100,
+    crypto:   cr/10,  // 0–1 scale
+    ycc:      ycc,
+    ycccap:   parseFloat(document.getElementById('sl-ycccap').value)/100,
+    giniL:    gL[g],
+    qeL:      q === 0 ? 'None' : q <= 3 ? 'Low' : q <= 8 ? 'Moderate' : q <= 15 ? 'High' : 'Extreme',
+    cryptoL:  cryptoLabels[cr],
+    ubiL:     parseFloat(document.getElementById('sl-ubi').value) === 0 ? 'None' :
+               parseFloat(document.getElementById('sl-ubi').value) <= 20 ? 'Minimal' :
+               parseFloat(document.getElementById('sl-ubi').value) <= 40 ? 'Partial' :
+               parseFloat(document.getElementById('sl-ubi').value) <= 60 ? 'Substantial' : 'Full',
+  };
+}
+
+function simulate(overrides) {
+  const p = overrides || P();
+  const INIT_LS = 0.62, INIT_AI = 0.15, INIT_U = 0.04;
+  let ls=INIT_LS, ai=INIT_AI, u=INIT_U, wage=100, gdp=100;
+  let asset=100, cons=100, debt=p.debt, ar=p.auto;
+  let crisisTriggered = false, crisisYear = null;
+  let marketRate = p.rate;  // tracks across years — bond market has memory
+  let currentPrimaryDef = p.def;
+
+  const s = {
+    years:[], gdp:[], wage:[], ls:[], u:[], debt:[], asset:[], cons:[],
+    capShare:[], tax:[], demand:[], ai:[], score:[], spice:[], welfare:[],
+    assetInflation:[], consInflation:[], printing:[], marketYield:[], primaryDeficit:[],
+    goldIndex:[], cryptoExit:[], fiatPower:[]
+  };
+  let goldPrice=100, fiatPower=100, cryptoExit=0;
+
+  for(let y=0; y<=YEARS; y++){
+
+    // ── RECORD STATE ──────────────────────────────────────────────────────
+    s.years.push(BASE+y);
+    s.gdp.push(r(gdp));
+    s.wage.push(r(wage));
+    s.ls.push(r(ls*100));
+    s.u.push(r(u*100));
+    s.debt.push(r(debt*100));
+    s.asset.push(r(asset));
+    s.cons.push(r(cons));
+    s.capShare.push(r((1-ls)*100));
+    s.tax.push(r(ls*0.22*100 + (1-ls)*p.captax*100));
+    s.welfare.push(r(u * 100 * 0.4));
+    s.marketYield.push(r(marketRate * 100));        // ← single push per year
+    s.primaryDeficit.push(r(currentPrimaryDef * 100)); // ← single push per year
+
+    const mpc = Math.max(0.3, 0.95 - (p.gini-1)*0.08);
+    const ubiBoost = p.ubi * wage * 0.6;
+    s.demand.push(r(wage * mpc + ubiBoost));
+    s.ai.push(r(ai*100));
+
+    const assetInflYoY = y>0 ? ((asset-s.asset[y-1])/s.asset[y-1]*100) : 5;
+    const consInflYoY  = y>0 ? ((cons -s.cons[y-1]) /s.cons[y-1] *100) : 2.8;
+    s.assetInflation.push(r(assetInflYoY));
+    s.consInflation.push(r(consInflYoY));
+    s.printing.push(r(p.qe*100));
+
+    // ── FLIGHT FROM FIAT (record state at start of year) ─────────────────
+    s.goldIndex.push(r(goldPrice));
+    s.cryptoExit.push(r(cryptoExit));
+    s.fiatPower.push(r(fiatPower));
+
+    // Crisis score
+    // Crisis scoring — calibrated to historical precedents:
+    // Italy 2011 panic: ~120% debt. Greece shutdown: ~130%. UK gilt crisis: trajectory fear.
+    // Score is not academic — 150% debt with rising yields IS a crisis, full stop.
+    let cs=0;
+
+    // DEBT — the primary fiscal stress signal
+    if(debt>0.90) cs+=5;   // approaching danger zone (Japan ~100% normal; US/UK now)
+    if(debt>1.10) cs+=10;  // Italy 2011 panic territory — bond spreads blow out here
+    if(debt>1.30) cs+=15;  // Greece 2010 — markets question solvency
+    if(debt>1.60) cs+=15;  // No major advanced economy has stabilised above this without YCC/default
+    if(debt>2.00) cs+=10;  // Restructuring mathematically inevitable
+
+    // YIELDS — bond market has spoken
+    if(marketRate>0.055) cs+=5;  // 5.5%+: elevated, markets pricing risk
+    if(marketRate>0.075) cs+=10; // 7.5%+: Italy 2011 peak; genuine funding crisis
+    if(marketRate>0.10)  cs+=10; // 10%+: emergency territory, IMF time
+    if(marketRate>0.15)  cs+=5;  // 15%+: systemic failure
+
+    // LABOUR SHARE — fiscal base collapse
+    if(ls<0.58) cs+=5;   // below post-war average — warning sign
+    if(ls<0.50) cs+=10;  // structural tax base erosion underway
+    if(ls<0.40) cs+=10;  // severe — welfare costs exploding, revenues cratering
+    if(ls<0.28) cs+=5;   // extreme hollowing
+
+    // UNEMPLOYMENT — social + fiscal crisis combined
+    if(u>0.08)  cs+=5;   // above normal — fiscal drag beginning
+    if(u>0.12)  cs+=8;   // social crisis threshold — political instability
+    if(u>0.20)  cs+=8;   // depression-level — historical precedent for regime change
+    if(u>0.35)  cs+=4;   // structural collapse
+
+    cs=Math.min(cs,100);
+    s.score.push(r(cs));
+    if(cs>=35 && !crisisTriggered){ crisisTriggered=true; crisisYear=BASE+y; }
+
+    const spiceReturn = 8 + cs*1.1 + (asset/100-1)*15;
+    s.spice.push(r(spiceReturn));
+
+    if(y===YEARS) break;  // ← record final state, then stop
+
+    // ── STEP FORWARD ──────────────────────────────────────────────────────
+    ar = Math.min(ar * p.rec, 0.45);
+    const gross = Math.min(ai+ar, 0.95) - ai;
+    const net = gross * (1 - p.reinstate);
+    ai = Math.min(ai+gross, 0.95);
+
+    const ubiReinstate = p.ubi * 0.3;
+    const effectiveNet = net * (1 - ubiReinstate);
+    const captaxDampener = p.captax * 0.5;
+    const lsDecline = effectiveNet * 1.2 * (1 - captaxDampener);
+    ls = Math.max(ls - lsDecline, 0.06);
+
+    u = Math.min(u + effectiveNet*0.55, 0.65);
+    u *= 0.94;
+
+    const prodGain = gross*(p.prod-1);
+    const demandDrag = effectiveNet*(2-p.reinstate)*0.25;
+    gdp *= (1 + prodGain - demandDrag*0.4);
+    wage = gdp * (ls/INIT_LS) * 100;
+
+    const capGain = prodGain*1.9 + p.qe*0.8 + (p.captax < 0.15 ? 0.03 : 0);
+    asset *= (1 + Math.max(capGain-0.02, -0.08));
+
+    const demandDeflation = -effectiveNet*0.7*(1-p.ubi*0.6);
+    const monetaryInflation = p.qe*0.25 + (debt>1.5 ? 0.02 : 0);
+    const ubiInflation = p.ubi*0.015;
+    cons *= (1 + demandDeflation + monetaryInflation + ubiInflation + 0.025);
+
+    // ── FISCAL ────────────────────────────────────────────────────────────
+    // DOMESTIC CAPITAL CAPTURE: domcap = fraction of AI profits taxable domestically.
+    // UK/Europe: 20-40% (profits go to US firms). US itself: 70-90%.
+    // This is why non-US sovereigns face a double bind — lose labour tax base AND
+    // cannot tax the capital that replaced it because it's in Silicon Valley.
+    const labTaxFrac = ls * 0.22;
+    const capTaxFrac = (1 - ls) * p.captax * p.domcap;  // only domestically-captured profits taxable
+    const vatFrac    = Math.max(ls * 0.85, 0.10) * 0.12;
+    const totalRevFrac = labTaxFrac + capTaxFrac + vatFrac;
+    const baselineRevFrac = INIT_LS*0.22 + (1-INIT_LS)*0.08*0.5 + 0.85*INIT_LS*0.12;
+    const welfareFrac = 0.02 + u * 0.25;
+    const ubiFrac     = p.ubi * Math.max(1 - ls/INIT_LS, 0) * 0.8;
+    currentPrimaryDef = p.def
+      + (welfareFrac - 0.02)
+      + ubiFrac
+      - Math.max(totalRevFrac - baselineRevFrac, -0.15);
+
+    // ── DYNAMIC BOND MARKET ───────────────────────────────────────────────
+    const impliedDebtGrowth = currentPrimaryDef + debt * Math.max(marketRate - 0.03, 0);
+    const debt2YrFwd = debt + impliedDebtGrowth * 2;
+
+    let riskPremium = 0;
+    if(debt2YrFwd > 1.1) riskPremium += (debt2YrFwd - 1.1) * 0.04;
+    if(debt2YrFwd > 1.5) riskPremium += (debt2YrFwd - 1.5) * 0.06;
+    if(debt2YrFwd > 2.0) riskPremium += (debt2YrFwd - 2.0) * 0.10;
+    if(ls < 0.50) riskPremium += (0.50 - ls) * 0.15;
+    if(ls < 0.35) riskPremium += (0.35 - ls) * 0.20;
+    if(currentPrimaryDef > 0.06) riskPremium += (currentPrimaryDef - 0.06) * 0.30;
+    if(currentPrimaryDef > 0.12) riskPremium += (currentPrimaryDef - 0.12) * 0.50;
+
+    // CRYPTO EXIT VALVE: Higher adoption = bond market reprices at lower debt thresholds.
+    // Crypto doesn't cause the crisis — it makes the system more sensitive to credibility
+    // loss. The same fiscal deterioration triggers a larger market reaction when capital
+    // has a frictionless exit. At max adoption, crisis arrives ~40% sooner.
+    const cryptoAmplifier = 1 + p.crypto * 0.8;
+    riskPremium *= cryptoAmplifier;
+
+    // Panic spike: non-linear break — compressed further when crypto exit is available
+    const panicCondition = debt2YrFwd > 1.8 && ls < 0.45 && currentPrimaryDef > 0.08;
+    if(panicCondition) {
+      riskPremium += Math.pow((debt2YrFwd - 1.8), 1.5) * 0.25 * cryptoAmplifier;
+    }
+
+    // QE suppression — diminishing returns
+    const qeSuppression = Math.min(p.qe * 0.4, riskPremium * 0.55);
+    const netPremium = Math.max(riskPremium - qeSuppression, 0);
+
+    // ── YCC REGIME SWITCH ─────────────────────────────────────────────────
+    // FREE MARKET: yields rise freely → debt service explodes → debt/GDP spiral
+    // YCC: yields capped → gap monetised → currency weakens → different crisis path
+    let effectiveMarketRate, yccMonetisation = 0;
+    if(p.ycc) {
+      effectiveMarketRate = Math.min(p.rate + netPremium, p.ycccap);
+      const suppressedPremium = Math.max((p.rate + netPremium) - p.ycccap, 0);
+      yccMonetisation = suppressedPremium * debt * 0.5;
+      cons *= (1 + yccMonetisation * 0.4);   // monetisation reaches consumers → inflation
+      asset *= (1 + yccMonetisation * 0.3);  // currency weakness → asset inflation
+    } else {
+      effectiveMarketRate = Math.min(p.rate + netPremium, 0.22);
+    }
+
+    // Yields sticky upward — once bond market reprices, hard to bring back
+    marketRate = Math.max(marketRate * 0.85 + effectiveMarketRate * 0.15, effectiveMarketRate);
+
+    // ── BLANCHARD r - g ───────────────────────────────────────────────────
+    // Only TAXABLE DOMESTIC growth helps debt/GDP denominator.
+    // domcap reduces the capital economy's contribution to taxable growth.
+    const labGrowth    = (ls / INIT_LS) * (prodGain - demandDrag * 0.3);
+    const capTaxGrowth = p.captax * p.domcap * (1 - ls) * prodGain;
+    const priceGrowth  = demandDeflation + monetaryInflation + 0.02;
+    const taxableGrowth = labGrowth + capTaxGrowth + priceGrowth;
+
+    const rMinusG = marketRate - taxableGrowth;
+    debt = Math.max(debt + currentPrimaryDef + debt * rMinusG - yccMonetisation * 0.1, 0.10);
+    debt = Math.min(debt, 4.0);
+
+    // ── FLIGHT FROM FIAT ──────────────────────────────────────────────────
+    // Gold: responds to fiscal stress, QE, and confidence loss
+    // — rises when real rates negative, debt unsustainable, or YCC active
+    // — also amplified by crypto adoption (more alternatives = less gold alone, but model adds)
+    const realRate = marketRate - Math.max(monetaryInflation + demandDeflation + 0.025, -0.02);
+    const fiscalStress = Math.max(debt - 0.9, 0);           // stress starts above 90% debt
+    const qeSignal    = p.qe * 3.0;                          // QE directly erodes fiat credibility
+    const yccSignal   = p.ycc ? yccMonetisation * 8 : 0;    // YCC monetisation is bullish gold
+    const negRateSignal = Math.max(-realRate * 6, 0);        // negative real rates = gold goes up
+    const goldReturn  = 0.01 + fiscalStress * 0.06 + qeSignal * 0.04 + yccSignal + negRateSignal;
+    goldPrice *= (1 + Math.min(goldReturn, 0.40));           // cap annual gold gain at 40%
+
+    // Crypto exit: % of savings seeking non-sovereign store of value
+    // Driven by crypto adoption parameter × fiscal stress × labour share collapse
+    const cryptoDriver = p.crypto * (0.3 + fiscalStress * 1.2 + Math.max(0.58 - ls, 0) * 2.0);
+    cryptoExit = Math.min(cryptoExit + cryptoDriver * 0.8, 35); // caps at 35% of savings
+
+    // Fiat purchasing power: erodes via QE, YCC monetisation, confidence
+    const fiatErosion = p.qe * 0.18 + yccMonetisation * 0.25 + fiscalStress * 0.02;
+    fiatPower *= (1 - fiatErosion);
+    fiatPower = Math.max(fiatPower, 5);  // floor — hyperinflation scenario
+  }
+
+  s.crisisYear = crisisYear;
+  return s;
+}
+
+function r(v){ return Math.round(v*10)/10; }
+
+// ============================================================
+// CRISIS EVENTS DEFINITION
+// ============================================================
+function getCrisisEvents(s) {
+  const events = [
+    {
+      name: 'Labour Share Falls Below 55%',
+      category: 'labour',
+      detail: 'Wages fall as share of GDP. Corporate profits surge. Tax revenues begin softening. First signs of widening inequality visible in data.',
+      spiceResponse: 'Indicators: Gold/SP500 ratio rising, MOVE index elevated. SPICE: Reduce AI infra, begin JGB short entry.',
+      triggerFn: (y) => s.ls[y] < 55,
+    },
+    {
+      name: 'Structural Unemployment Exceeds 10%',
+      category: 'labour',
+      detail: 'Displacement exceeds new job creation at scale. Political pressure for government response mounts. Welfare spending begins rising rapidly.',
+      spiceResponse: 'Indicators: Consumer confidence crash, KRE bank stress. SPICE: Increase commodity basket, sovereign bond vol positions.',
+      triggerFn: (y) => s.u[y] > 10,
+    },
+    {
+      name: 'Consumer Deflation Begins',
+      category: 'price',
+      detail: 'Demand destruction exceeds supply efficiency gains. Prices fall not from abundance but from absence of buyers. Corporate revenues contract despite output growth.',
+      spiceResponse: 'Indicators: CPI below 0%, 5Y5Y breakeven collapsing. SPICE: Silver position initiated. Short Gilt/BTP at full size.',
+      triggerFn: (y) => y > 0 && s.cons[y] < s.cons[y-1],
+    },
+    {
+      name: 'Asset/Consumer Price Divergence Extreme',
+      category: 'price',
+      detail: 'Asset prices 50%+ above baseline while consumer prices flat or falling. The two-economy split is now unmistakable. Political instability rising.',
+      spiceResponse: 'Indicators: Gold/SP500 at 20-yr high, BTP-Bund spread >350bp. SPICE: Orange alert. Maximum defensive positioning.',
+      triggerFn: (y) => s.asset[y] > 150 && s.cons[y] < 110,
+    },
+    {
+      name: 'Debt/GDP Exceeds 130%',
+      category: 'fiscal',
+      detail: 'Debt service costs crowding out government spending. Primary surplus mathematically impossible without severe austerity. Bond markets begin pricing risk premium.',
+      spiceResponse: 'Indicators: US CDS >50bp, MOVE >160. SPICE: US 30yr short initiated. Rates volatility maximum.',
+      triggerFn: (y) => s.debt[y] > 130,
+    },
+    {
+      name: 'Bond Market Stress Event',
+      category: 'fiscal',
+      detail: 'Sovereign bond yields spike as markets lose confidence in debt sustainability. Central bank forced into emergency bond-buying. Currency under pressure.',
+      spiceResponse: 'CRITICAL — Indicators: CDS >100bp, BTP-Bund >400bp, MOVE >200. SPICE: Red alert. IRON-to-SPICE trigger evaluation begins.',
+      triggerFn: (y) => s.debt[y] > 160,
+      isCritical: true,
+    },
+    {
+      name: 'Debt/GDP Exceeds 200% — Restructuring Inevitable',
+      category: 'fiscal',
+      detail: 'Arithmetic is terminal. Government cannot grow, inflate, or tax its way out. Restructuring, maturity extension, or forced domestic bank purchases of bonds becomes the only path. Historical precedent: Greece 2012, Argentina 2001.',
+      spiceResponse: 'ENDGAME — Gold and silver at multiples of baseline. SPICE fully crystallised. IRON-to-SPICE complete. All shorts at maximum profit.',
+      triggerFn: (y) => s.debt[y] > 200,
+      isCritical: true,
+    },
+    {
+      name: 'AI Task Coverage Exceeds 50%',
+      category: 'automation',
+      detail: 'More than half of all economic tasks are now performed by machines. The labour economy is structurally diminished. No historical precedent — this is the category break.',
+      spiceResponse: 'Crypto adoption accelerates as fiat credibility questioned. BTC/M2 ratio rising. SPICE crypto-native structure increasingly valuable.',
+      triggerFn: (y) => s.ai[y] > 50,
+    },
+  ];
+
+  // Find trigger year for each event
+  return events.map(ev => {
+    let triggerYear = null;
+    for(let y=0; y<=YEARS; y++){
+      if(ev.triggerFn(y)){ triggerYear = BASE+y; break; }
+    }
+    return {...ev, triggerYear};
+  });
+}
+
+// ============================================================
+// CHART INITIALISATION
+// ============================================================
+function initCharts() {
+  const fc='#6b7280', gc='rgba(209,213,219,0.8)';
+
+  // Factory — returns a fresh options object every time (no shared references)
+  const opts = (extra={}) => ({
+    responsive:true, maintainAspectRatio:true, animation:{duration:350},
+    plugins:{
+      legend:{labels:{color:fc,font:{family:'DM Mono',size:9},boxWidth:10,padding:8}},
+      tooltip:{backgroundColor:'#1a1d23',borderColor:'#dde1e7',borderWidth:1,titleColor:'#b8860b',bodyColor:'#1a1d23',titleFont:{family:'DM Mono',size:9},bodyFont:{family:'DM Sans',size:11}}
+    },
+    scales:{
+      x:{ticks:{color:fc,font:{family:'DM Mono',size:8}},grid:{color:gc},border:{color:gc}},
+      y:{ticks:{color:fc,font:{family:'DM Mono',size:8}},grid:{color:gc},border:{color:gc}, ...((extra.y)||{})}
+    },
+    ...extra.root||{}
+  });
+
+  charts.scissor = new Chart(document.getElementById('chart-scissor'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'GDP Index (Capital)',data:[],borderColor:'#b8860b',tension:0.3,borderWidth:2,fill:false,pointRadius:0},
+      {label:'Wage Bill (Labour)',data:[],borderColor:'#c0392b',tension:0.3,borderWidth:2,fill:false,pointRadius:0},
+      {label:'Consumer Demand',data:[],borderColor:'#2471a3',tension:0.3,borderWidth:1.5,borderDash:[4,3],fill:false,pointRadius:0},
+    ]},
+    options: opts({y:{beginAtZero:false}})
+  });
+
+  charts.debt = new Chart(document.getElementById('chart-debt'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Debt/GDP %',data:[],borderColor:'#c0392b',backgroundColor:'rgba(192,57,43,0.07)',tension:0.3,borderWidth:2.5,fill:true,pointRadius:0},
+      {label:'Restructuring Risk (200%)',data:[],borderColor:'rgba(192,57,43,0.35)',borderWidth:1.5,borderDash:[6,4],fill:false,pointRadius:0},
+    ]},
+    options: opts({y:{suggestedMin:80, suggestedMax:300}})
+  });
+
+  charts.labshare = new Chart(document.getElementById('chart-labshare'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Labour Share %',data:[],borderColor:'#c0392b',backgroundColor:'rgba(224,85,85,0.05)',tension:0.3,borderWidth:2,fill:true,pointRadius:0},
+      {label:'Capital Share %',data:[],borderColor:'#b8860b',tension:0.3,borderWidth:1.5,borderDash:[4,3],fill:false,pointRadius:0},
+    ]},
+    options: opts()
+  });
+
+  charts.prices = new Chart(document.getElementById('chart-prices'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Asset Price Idx',data:[],borderColor:'#b8860b',tension:0.3,borderWidth:2,fill:false,pointRadius:0},
+      {label:'Consumer Price Idx',data:[],borderColor:'#2471a3',tension:0.3,borderWidth:2,fill:false,pointRadius:0},
+    ]},
+    options: opts({y:{beginAtZero:false}})
+  });
+
+  charts.yield = new Chart(document.getElementById('chart-yield'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Market Yield %',data:[],borderColor:'#d35400',tension:0.3,borderWidth:2.5,fill:false,pointRadius:0},
+      {label:'Primary Deficit % GDP',data:[],borderColor:'#7d3c98',tension:0.3,borderWidth:1.5,borderDash:[4,3],fill:false,pointRadius:0},
+      {label:'Base Rate (policy)',data:[],borderColor:'rgba(100,100,130,0.4)',borderWidth:1,borderDash:[2,4],fill:false,pointRadius:0},
+      {label:'🚨 Panic Threshold (7.5%)',data:[],borderColor:'rgba(192,57,43,0.7)',borderWidth:1.5,borderDash:[8,4],fill:false,pointRadius:0},
+      {label:'⚠ Stress Level (5.5%)',data:[],borderColor:'rgba(211,84,0,0.5)',borderWidth:1,borderDash:[4,4],fill:false,pointRadius:0},
+    ]},
+    options: opts({y:{suggestedMin:0, suggestedMax:15}})
+  });
+
+  // Flight From Fiat chart
+  charts.fiat = new Chart(document.getElementById('chart-fiat'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Gold Price Index (base 100)',data:[],borderColor:'#b8860b',backgroundColor:'rgba(184,134,11,0.08)',tension:0.3,borderWidth:2.5,fill:true,pointRadius:0},
+      {label:'Crypto Exit Flow (% of savings)',data:[],borderColor:'#7d3c98',backgroundColor:'rgba(125,60,152,0.06)',tension:0.3,borderWidth:2,fill:true,pointRadius:0},
+      {label:'Fiat Purchasing Power',data:[],borderColor:'#c0392b',tension:0.3,borderWidth:1.5,borderDash:[5,3],fill:false,pointRadius:0},
+    ]},
+    options: opts({y:{beginAtZero:false}})
+  });
+
+  charts.unemploy = new Chart(document.getElementById('chart-unemploy'),{
+    type:'line', data:{labels:[],datasets:[
+      {label:'Unemployment %',data:[],borderColor:'#d35400',backgroundColor:'rgba(211,84,0,0.07)',tension:0.3,borderWidth:2.5,fill:true,pointRadius:0},
+      {label:'On Welfare/UBI %',data:[],borderColor:'#7d3c98',tension:0.3,borderWidth:1.5,borderDash:[4,3],fill:false,pointRadius:0},
+    ]},
+    options: opts()
+  });
+
+  charts.policy = new Chart(document.getElementById('chart-policy'),{
+    type:'line', data:{labels:[],datasets:[]},
+    options: opts()
+  });
+}
+
+// ============================================================
+// UPDATE CHARTS
+// ============================================================
+function updateCharts() {
+  const d = simData;
+  const SHOW = 10; // 10-year x-axis for primary charts
+  const L10 = d.years.slice(0,SHOW+1).map(y=>"'"+String(y).slice(2));
+  const L = d.years.map(y=>"'"+String(y).slice(2));
+  const thr200 = Array(SHOW+1).fill(200);
+
+  // Primary model charts — 10-year view
+  charts.debt.data.labels=L10;
+  charts.debt.data.datasets[0].data=d.debt.slice(0,SHOW+1);
+  charts.debt.data.datasets[1].data=thr200;
+  charts.debt.update();
+
+  charts.unemploy.data.labels=L10;
+  charts.unemploy.data.datasets[0].data=d.u.slice(0,SHOW+1);
+  charts.unemploy.data.datasets[1].data=d.welfare.slice(0,SHOW+1);
+  charts.unemploy.update();
+
+  // Dual economy charts — full 15-year view
+  if(charts.scissor) {
+    charts.scissor.data.labels=L;
+    charts.scissor.data.datasets[0].data=d.gdp;
+    charts.scissor.data.datasets[1].data=d.wage;
+    charts.scissor.data.datasets[2].data=d.demand;
+    charts.scissor.update();
+  }
+
+  if(charts.labshare) {
+    charts.labshare.data.labels=L;
+    charts.labshare.data.datasets[0].data=d.ls;
+    charts.labshare.data.datasets[1].data=d.capShare;
+    charts.labshare.update();
+  }
+
+  if(charts.prices) {
+    charts.prices.data.labels=L;
+    charts.prices.data.datasets[0].data=d.asset;
+    charts.prices.data.datasets[1].data=d.cons;
+    charts.prices.update();
+  }
+
+  if(charts.yield) {
+    charts.yield.data.labels=L;
+    charts.yield.data.datasets[0].data=d.marketYield;
+    charts.yield.data.datasets[1].data=d.primaryDeficit;
+    charts.yield.data.datasets[2].data=Array(YEARS+1).fill(parseFloat(document.getElementById('sl-rate').value));
+    // Threshold lines — fixed regardless of YCC
+    charts.yield.data.datasets[3].data = Array(YEARS+1).fill(7.5);  // Italy 2011 panic level
+    charts.yield.data.datasets[4].data = Array(YEARS+1).fill(5.5);  // Elevated stress begins
+
+    const yccActive = window._yccOn;
+    const ycccapVal = parseFloat(document.getElementById('sl-ycccap').value);
+    // YCC cap as dataset 5
+    if(!charts.yield.data.datasets[5]) {
+      charts.yield.data.datasets.push({label:'YCC Cap',data:[],borderColor:'rgba(125,60,152,0.85)',borderWidth:2,borderDash:[3,3],fill:false,pointRadius:0});
+    }
+    charts.yield.data.datasets[5].data = yccActive ? Array(YEARS+1).fill(ycccapVal) : Array(YEARS+1).fill(null);
+
+    const yieldCard = document.getElementById('chart-yield').closest('.chart-card');
+    if(yieldCard) {
+      const sub = yieldCard.querySelector('.chart-subtitle');
+      if(sub) sub.textContent = yccActive
+        ? `YCC REGIME ACTIVE: Yield capped at ${ycccapVal}%. Gap monetised. Currency cost hidden. Dashed lines show where free-market stress and panic thresholds sit.`
+        : 'Dashed lines: ⚠ 5.5% stress (markets pricing risk) · 🚨 7.5% panic (Italy 2011 — bond market access lost at this level).';
+    }
+    charts.yield.update();
+  }
+
+  // Flight From Fiat chart
+  if(charts.fiat) {
+    charts.fiat.data.labels=L;
+    charts.fiat.data.datasets[0].data=d.goldIndex;
+    charts.fiat.data.datasets[1].data=d.cryptoExit;
+    charts.fiat.data.datasets[2].data=d.fiatPower;
+    charts.fiat.update();
+  }
+}
+
+function updatePolicyChart() {
+  const baseP = P();
+  const L = simData.years.map(y=>"'"+String(y).slice(2));
+
+  // Run 4 scenarios
+  const scenarios = [
+    {name:'No Response', color:'#c0392b', p:{...baseP, ubi:0, captax:0.08, qe:0.01}},
+    {name:'QE Only', color:'#7d3c98', p:{...baseP, ubi:0, captax:0.08, qe:0.15}},
+    {name:'UBI (40% wage)', color:'#2471a3', p:{...baseP, ubi:0.40, captax:0.08, qe:0.10}},
+    {name:'Capital Tax 40% + UBI', color:'#1e7e4e', p:{...baseP, ubi:0.40, captax:0.40, qe:0.05}},
+  ];
+
+  charts.policy.data.labels = L;
+  charts.policy.data.datasets = scenarios.map(sc => {
+    const s = simulate(sc.p);
+    return {label:sc.name, data:s.debt, borderColor:sc.color, tension:0.3, borderWidth:2, fill:false, pointRadius:0};
+  });
+  charts.policy.update();
+}
+
+// ============================================================
+// UPDATE DISPLAY
+// ============================================================
+function update() {
+  const p = P();
+  // Update slider labels
+  document.getElementById('v-auto').textContent=(p.auto*100).toFixed(1)+'%';
+  document.getElementById('v-reinstate').textContent=(p.reinstate*100).toFixed(0)+'%';
+  document.getElementById('v-prod').textContent=p.prod.toFixed(1)+'×';
+  document.getElementById('v-rec').textContent=p.rec.toFixed(2)+'×';
+  document.getElementById('v-debt').textContent=(p.debt*100).toFixed(0)+'%';
+  document.getElementById('v-def').textContent=(p.def*100).toFixed(1)+'%';
+  document.getElementById('v-rate').textContent=(p.rate*100).toFixed(2)+'%';
+  document.getElementById('v-ubi').textContent=p.ubiL;
+  document.getElementById('v-captax').textContent=(p.captax*100).toFixed(0)+'%';
+  document.getElementById('v-qe').textContent=p.qeL;
+  document.getElementById('v-gini').textContent=p.giniL;
+  document.getElementById('v-domcap').textContent=(p.domcap*100).toFixed(0)+'%';
+  document.getElementById('v-crypto').textContent=p.cryptoL;
+  document.getElementById('v-ycccap').textContent=(p.ycccap*100).toFixed(2)+'%';
+
+  simData = simulate();
+  updateCharts();
+  updateCrisisTimeline();
+  updateIndicators();
+  updatePolicyChart();
+  updateYear();
+}
+
+// YCC toggle
+window._yccOn = false;
+function setYCC(on, btn) {
+  window._yccOn = on;
+  document.getElementById('ycc-on-btn').classList.toggle('active', on);
+  document.getElementById('ycc-off-btn').classList.toggle('active', !on);
+  document.getElementById('ycc-cap-group').style.display = on ? 'block' : 'none';
+  const statusEl = document.getElementById('ycc-status');
+  if(on) {
+    statusEl.innerHTML = '<span style="color:var(--purple)">YCC ACTIVE</span>: Central bank caps yields at the level below. Gap between market rate and cap is monetised — printed money funds the deficit. Debt/GDP stabilises temporarily, but currency weakens and imported inflation rises. This is Japan\'s playbook. The crisis path changes from <em>yield spiral</em> to <em>currency crisis</em>.';
+  } else {
+    statusEl.innerHTML = 'FREE MARKET: Bond market sets yields based on debt trajectory. Higher debt → higher yields → accelerating debt spiral. The honest price of fiscal recklessness.';
+  }
+  update();
+}
+
+function updateYear() {
+  const yr = parseInt(document.getElementById('year-slider').value);
+  currentYear = yr;
+  const year = BASE + yr;
+  document.getElementById('year-display').textContent = year;
+  document.getElementById('header-year').textContent = year;
+  // Sync dual tab year slider/display
+  const ds = document.getElementById('year-slider-dual');
+  if(ds && ds.value != yr) ds.value = yr;
+  const dd = document.getElementById('year-display-dual');
+  if(dd) dd.textContent = year;
+  document.getElementById('narr-year').textContent = year;
+
+  if(!simData) return;
+  const d = simData;
+  const ls=d.ls[yr], wg=d.wage[yr], gp=d.gdp[yr], dt=d.debt[yr];
+  const un=d.u[yr], cs=d.score[yr], ai=d.ai[yr];
+  const asset=d.asset[yr], cons=d.cons[yr], dem=d.demand[yr];
+  const tax=d.tax[yr], welfare=d.welfare[yr], spice=d.spice[yr];
+
+  // KPIs
+  kpi('kpi-ls','kv-ls','kd-ls', ls.toFixed(1)+'%', ls<45?'danger':ls<55?'warning':'good', yr>0?(ls-d.ls[yr-1]).toFixed(1)+'pp':null);
+  kpi('kpi-wg','kv-wg','kd-wg', wg.toFixed(0), wg<70?'danger':wg<85?'warning':'good', yr>0?(wg-d.wage[yr-1]).toFixed(1):null);
+  kpi('kpi-gp','kv-gp','kd-gp', gp.toFixed(0), 'good', yr>0?'+'+(gp-d.gdp[yr-1]).toFixed(1):null);
+  kpi('kpi-dt','kv-dt','kd-dt', dt.toFixed(1)+'%', dt>160?'danger':dt>120?'warning':'good', yr>0?'+'+(dt-d.debt[yr-1]).toFixed(1)+'pp':null);
+  kpi('kpi-un','kv-un','kd-un', un.toFixed(1)+'%', un>20?'danger':un>10?'warning':'good', yr>0?'+'+(un-d.u[yr-1]).toFixed(1)+'pp':null);
+
+  // Market yield KPI — shows regime (free market vs YCC)
+  const mktYield = d.marketYield[yr];
+  const baseRate = parseFloat(document.getElementById('sl-rate').value);
+  const yieldPremium = (mktYield - baseRate).toFixed(2);
+  const yieldEl = document.getElementById('kv-yield');
+  const p = P();
+  if(yieldEl) {
+    yieldEl.textContent = mktYield.toFixed(2)+'%';
+    yieldEl.style.color = mktYield > 8 ? 'var(--red)' : mktYield > 5 ? 'var(--orange)' : 'var(--text)';
+    document.getElementById('kpi-yield').className = 'kpi ' + (mktYield>8?'danger':mktYield>5?'warning':'good');
+    const kpiLabel = document.querySelector('#kpi-yield .kpi-label');
+    if(kpiLabel) kpiLabel.textContent = p.ycc ? '🖨️ Bond Yield (YCC)' : '🏦 Bond Yield (Mkt)';
+    document.getElementById('kd-yield').textContent = p.ycc
+      ? `capped @${(p.ycccap*100).toFixed(2)}% (monetising +${yieldPremium}pp)`
+      : `+${yieldPremium}pp over base`;
+  }
+
+  // Dual economy
+  document.getElementById('ce-gdp').textContent=gp.toFixed(0);
+  document.getElementById('ce-cap').textContent=d.capShare[yr].toFixed(1)+'%';
+  document.getElementById('ce-asset').textContent=asset.toFixed(0);
+  document.getElementById('ce-ai').textContent=ai.toFixed(1)+'%';
+  document.getElementById('le-wage').textContent=wg.toFixed(0);
+  document.getElementById('le-dem').textContent=dem.toFixed(0);
+  document.getElementById('le-tax').textContent=tax.toFixed(0);
+  const consChange=((cons-d.cons[0])/d.cons[0]*100).toFixed(1);
+  document.getElementById('le-inf').style.color=parseFloat(consChange)<0?'var(--red)':'var(--green)';
+  document.getElementById('le-inf').textContent=(parseFloat(consChange)>0?'+':'')+consChange+'%';
+
+  // Crisis meter — matches historical calibration in reference panel
+  let lvl,col;
+  if(cs<12){lvl='PRE-CRISIS';col='var(--green)';}
+  else if(cs<28){lvl='EMERGING STRESS';col='var(--blue)';}
+  else if(cs<45){lvl='FISCAL CRISIS';col='#e0c030';}
+  else if(cs<62){lvl='ACUTE CRISIS';col='var(--orange)';}
+  else if(cs<80){lvl='SYSTEMIC BREAKDOWN';col='var(--red)';}
+  else{lvl='TERMINAL';col='var(--red)';}
+  document.getElementById('crisis-meter').textContent=lvl;
+  document.getElementById('crisis-meter').style.color=col;
+
+  // Alert
+  const alertEl=document.getElementById('crisis-alert');
+  if(cs>=40){
+    alertEl.classList.add('visible');
+    const msgs=[];
+    if(ls<50) msgs.push(`Labour share ${ls.toFixed(1)}% — tax base severely impaired`);
+    if(dt>140) msgs.push(`Debt/GDP ${dt.toFixed(1)}% — bond market risk premium emerging`);
+    if(un>15) msgs.push(`Unemployment ${un.toFixed(1)}% — social contract under pressure`);
+    if(asset>180) msgs.push(`Assets ${((asset/100-1)*100).toFixed(0)}% above baseline — extreme wealth concentration`);
+    if(parseFloat(consChange)<-5) msgs.push(`Consumer prices ${consChange}% — deflationary spiral risk`);
+    document.getElementById('crisis-body').textContent=msgs.join(' · ');
+  } else alertEl.classList.remove('visible');
+
+  // SPICE bar
+  const alertL=cs<15?'🟢 GREEN':cs<30?'🔵 BLUE':cs<50?'🟡 YELLOW':cs<70?'🟠 ORANGE':'🔴 RED';
+  const pos=cs<15?'70% PAXG':cs<30?'60% PAXG / 10% Shorts':cs<50?'50% PAXG / 20% Shorts':cs<70?'40% PAXG / 30% Shorts':'45% PAXG / 30% Shorts';
+  document.getElementById('sp-ret').textContent='+'+spice.toFixed(0)+'%';
+  document.getElementById('sp-bench').textContent='+'+(Math.max(spice-7,0)).toFixed(0)+'%';
+  document.getElementById('sp-alert').textContent=alertL;
+  document.getElementById('sp-pos').textContent=pos.split('/')[0].trim();
+  const cmnt=cs<15?'Monitoring. Hard asset base accumulating. Thesis developing.':cs<30?'Early signals. Short positions initiated cheaply. AI infra earning.':cs<50?'Scissor visible. Short book generating alpha. Sovereign vol rising.':cs<70?'Crisis active. Maximum short exposure. IRON-to-SPICE conditions building.':'SYSTEM STRESS. Trigger conditions met. Gold and silver surging.';
+  document.getElementById('sp-comment').textContent=cmnt;
+
+  // Narrative
+  updateNarrative(yr,year,ls,wg,gp,dt,un,asset,cons,ai,cs,welfare,dem);
+
+  // Update timeline active state
+  updateTimelineHighlight(year);
+}
+
+function kpi(cId,vId,dId,val,sev,delta){
+  const c=document.getElementById(cId),v=document.getElementById(vId),d=document.getElementById(dId);
+  c.className='kpi '+(sev||'');
+  v.textContent=val;
+  v.style.color=sev==='danger'?'var(--red)':sev==='warning'?'var(--orange)':'var(--text)';
+  if(d){
+    d.textContent=delta?delta+'  YoY':'baseline';
+    d.className='kpi-delta'+(delta&&delta.startsWith('-')?' bad':delta&&!delta.startsWith('+0')&&delta.startsWith('+')?' good':'');
+  }
+}
+
+// ============================================================
+// CRISIS TIMELINE
+// ============================================================
+let crisisEvents = [];
+
+function updateCrisisTimeline() {
+  crisisEvents = getCrisisEvents(simData);
+  const container = document.getElementById('crisis-timeline-events');
+  container.innerHTML = crisisEvents.map((ev,i) => `
+    <div class="event-row" id="ev-${i}">
+      <div class="event-year ${ev.triggerYear?'triggered':''}" id="evy-${i}">${ev.triggerYear||'Beyond 2040'}</div>
+      <div class="event-dot" id="evd-${i}"></div>
+      <div class="event-content">
+        <div class="event-name" id="evn-${i}">${ev.name}</div>
+        <div class="event-detail" id="evdet-${i}">${ev.detail}</div>
+        <div class="event-detail" id="evspice-${i}" style="color:var(--gold-dim);margin-top:3px;font-size:9px;">${ev.spiceResponse}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateTimelineHighlight(currentYr) {
+  crisisEvents.forEach((ev,i) => {
+    const dot=document.getElementById('evd-'+i);
+    const name=document.getElementById('evn-'+i);
+    const det=document.getElementById('evdet-'+i);
+    const spiceEl=document.getElementById('evspice-'+i);
+    if(!dot) return;
+    if(!ev.triggerYear || ev.triggerYear > currentYr){
+      dot.className='event-dot'; name.className='event-name'; det.className='event-detail';
+      if(spiceEl) spiceEl.style.display='none';
+    } else {
+      dot.className='event-dot '+(ev.isCritical?'danger':'active');
+      name.className='event-name '+(ev.isCritical?'danger':'active');
+      det.className='event-detail visible';
+      if(spiceEl) spiceEl.style.display='block';
+    }
+  });
+}
+
+// ============================================================
+// INDICATORS TAB
+// ============================================================
+const INDICATORS = [
+  {
+    name:'US 10-Year Real Yield (TIPS)',
+    source:'FRED: DFII10 — Daily, free',
+    current:'~2.1%',
+    desc:'Real cost of US sovereign borrowing. Negative = financial repression. High positive = debt sustainability crisis.',
+    relationship:'Model link: As debt/GDP rises and labour share falls, the model implies real yields must either spike (debt crisis) or go deeply negative (repression). Watch for the squeeze.',
+    thresholds:[{l:'Green',v:'-0.5→+2%',c:'g'},{l:'Blue',v:'+2.5% or <-0.75%',c:'b'},{l:'Yellow',v:'+3% or <-1.5%',c:'y'},{l:'Orange',v:'+3.5% or <-2.5%',c:'o'},{l:'Red',v:'+4%+ or <-3.5%',c:'r'}],
+    currentLevel:'blue'
+  },
+  {
+    name:'BTP-Bund Spread (Italy vs Germany 10yr)',
+    source:'ECB SDW / Investing.com — Daily, free',
+    current:'~120bp',
+    desc:'Eurozone\'s most sensitive sovereign stress indicator. Italy has 145% debt/GDP and limited monetary sovereignty.',
+    relationship:'Model link: When the model\'s debt/GDP trajectory hits crisis levels, European spreads widen first — Italy is the canary. BTP-Bund >350bp historically triggers ECB emergency intervention.',
+    thresholds:[{l:'Green',v:'<150bp',c:'g'},{l:'Blue',v:'150-250bp',c:'b'},{l:'Yellow',v:'250-350bp',c:'y'},{l:'Orange',v:'350-500bp',c:'o'},{l:'Red',v:'500bp+',c:'r'}],
+    currentLevel:'green'
+  },
+  {
+    name:'MOVE Index (Bond Volatility)',
+    source:'ICE BofA / FRED: BAMLMOVE — Daily',
+    current:'~95',
+    desc:'Treasury market implied volatility. The VIX of bond markets. Spikes when sovereign debt itself is questioned.',
+    relationship:'Model link: This is the SPICE-specific volatility index. It rises when the model\'s debt/GDP hits critical levels and bond markets start repricing risk. The model\'s crisis events correlate with MOVE >160.',
+    thresholds:[{l:'Green',v:'<100',c:'g'},{l:'Blue',v:'100-130',c:'b'},{l:'Yellow',v:'130-160',c:'y'},{l:'Orange',v:'160-200',c:'o'},{l:'Red',v:'200+',c:'r'}],
+    currentLevel:'green'
+  },
+  {
+    name:'US Sovereign CDS (5-Year)',
+    source:'Markit via TradingEconomics / Bloomberg',
+    current:'~38bp',
+    desc:'The price of insuring against US government default. The most direct measure of sovereign credibility.',
+    relationship:'Model link: The model\'s debt/GDP trajectory implies CDS should widen as the fiscal gap becomes visible. US CDS >80bp would be historically unprecedented and validates Red alert.',
+    thresholds:[{l:'Green',v:'<30bp',c:'g'},{l:'Blue',v:'30-50bp',c:'b'},{l:'Yellow',v:'50-80bp',c:'y'},{l:'Orange',v:'80-150bp',c:'o'},{l:'Red',v:'150bp+',c:'r'}],
+    currentLevel:'blue'
+  },
+  {
+    name:'Gold / S&P 500 Ratio',
+    source:'LBMA + any market feed — Daily, free',
+    current:'~0.52 (gold oz / SP500 level)',
+    desc:'Capital rotating from productive assets into preservation assets. Sustained rising trend = structural, not cyclical stress.',
+    relationship:'Model link: As the model\'s scissor opens (capital economy booming, labour collapsing), gold outperforms equities. Rising ratio is the cross-asset confirmation of the dual-economy split.',
+    thresholds:[{l:'Green',v:'Flat/falling',c:'g'},{l:'Blue',v:'Rising 3mo+',c:'b'},{l:'Yellow',v:'5-yr high',c:'y'},{l:'Orange',v:'20-yr high',c:'o'},{l:'Red',v:'Approaching 1:1',c:'r'}],
+    currentLevel:'blue'
+  },
+  {
+    name:'5Y5Y Forward Inflation Breakeven',
+    source:'FRED: T5YIFR — Daily, free',
+    current:'~2.4%',
+    desc:'Where bond professionals expect inflation to be in 5-10 years. More sophisticated than spot CPI — captures structural expectations.',
+    relationship:'Model link: In the deflationary scenario, this should collapse toward zero or negative. In the stagflation scenario (QE + UBI + debt), it should spike above 4%. The model\'s consumer price path implies which direction.',
+    thresholds:[{l:'Green',v:'<2.2%',c:'g'},{l:'Blue',v:'2.2-2.5%',c:'b'},{l:'Yellow',v:'2.5-3%',c:'y'},{l:'Orange',v:'3-4%',c:'o'},{l:'Red',v:'>4% sustained',c:'r'}],
+    currentLevel:'blue'
+  },
+  {
+    name:'G7 Central Bank Balance Sheets (YoY)',
+    source:'Fed FRED: WALCL + ECB + BOJ — Monthly',
+    current:'~flat',
+    desc:'Rate of monetary base expansion across major economies. High growth = active money printing. The debasement indicator.',
+    relationship:'Model link: The QE slider directly maps to this indicator. As the model\'s fiscal gap widens and UBI is funded by printing, watch for G7 balance sheet expansion to accelerate to 20%+ YoY.',
+    thresholds:[{l:'Green',v:'Flat to +5%',c:'g'},{l:'Blue',v:'+5-10%',c:'b'},{l:'Yellow',v:'+10-20%',c:'y'},{l:'Orange',v:'+20-35%',c:'o'},{l:'Red',v:'+35%+',c:'r'}],
+    currentLevel:'green'
+  },
+  {
+    name:'M2 Growth vs. Real GDP Gap',
+    source:'FRED: M2SL + GDPC1 — Monthly/Quarterly',
+    current:'~2% gap',
+    desc:'Money creation vs. real economic output. Persistent gap = inflation-in-waiting. The debasement arithmetic made visible.',
+    relationship:'Model link: The model\'s QE slider + falling labour GDP creates exactly this gap. Money supply rises with printing; the labour economy\'s real GDP contribution falls. Gap widening = debasement thesis validating.',
+    thresholds:[{l:'Green',v:'<2% gap',c:'g'},{l:'Blue',v:'2-4%',c:'b'},{l:'Yellow',v:'4-6%',c:'y'},{l:'Orange',v:'6-10%',c:'o'},{l:'Red',v:'10%+',c:'r'}],
+    currentLevel:'green'
+  },
+  {
+    name:'BOJ 10Y Yield / YCC Breach',
+    source:'Bank of Japan boj.or.jp — Daily, free',
+    current:'~1.5%',
+    desc:'Japan is the most leveraged sovereign debt position in the world (260% debt/GDP). YCC collapse = global bond market shock.',
+    relationship:'Model link: Japan represents the extreme end of the model\'s debt/GDP trajectory — they\'re already at 2040 levels by the model\'s reckoning. BOJ losing control is a leading indicator for the crisis affecting all sovereigns.',
+    thresholds:[{l:'Green',v:'<1.0%',c:'g'},{l:'Blue',v:'1.0-1.5%',c:'b'},{l:'Yellow',v:'1.5-2.0%',c:'y'},{l:'Orange',v:'2.0-2.5%',c:'o'},{l:'Red',v:'2.5%+ or YCC abandon',c:'r'}],
+    currentLevel:'blue'
+  },
+  {
+    name:'BTC Dominance + Stablecoin Market Cap %',
+    source:'CoinGecko API — Real-time, free',
+    current:'BTC dom ~55%, stables ~15%',
+    desc:'Capital flowing into crypto as system alternative to fiat. BTC + stablecoins rising together = crisis adoption, not speculation.',
+    relationship:'Model link: This is the indicator unique to the SPICE thesis. As the model\'s labour economy collapses and government credibility deteriorates, watch for the public exercising the crypto opt-out. Rising BTC dominance + stablecoin share = validation of the fiat exit wildcard.',
+    thresholds:[{l:'Green',v:'BTC <55%, stable <15%',c:'g'},{l:'Blue',v:'BTC >55%, stable >15%',c:'b'},{l:'Yellow',v:'BTC >60%, stable >20%',c:'y'},{l:'Orange',v:'BTC >65%, stable >25%',c:'o'},{l:'Red',v:'BTC >70%, stable >30%',c:'r'}],
+    currentLevel:'blue'
+  },
+];
+
+function updateIndicators() {
+  const container = document.getElementById('indicator-grid');
+  container.innerHTML = INDICATORS.map((ind,i) => `
+    <div class="indicator-card">
+      <div class="ind-header">
+        <div class="ind-name">${i+1}. ${ind.name}</div>
+        <div class="ind-level ${ind.currentLevel}">${ind.currentLevel.toUpperCase()}</div>
+      </div>
+      <div class="ind-source">SOURCE: ${ind.source}</div>
+      <div class="ind-current">Current: ${ind.current}</div>
+      <div class="ind-desc">${ind.desc}</div>
+      <div class="ind-relationship"><strong style="color:var(--gold);font-size:9px;">MODEL LINK →</strong> ${ind.relationship}</div>
+      <div class="ind-thresholds" style="margin-top:8px;">
+        ${ind.thresholds.map(t=>`<div class="ind-thresh ${t.c}" title="${t.l}">${t.v}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// POLICY RESPONSES
+// ============================================================
+const POLICIES = [
+  {
+    name:'1. Austerity',
+    desc:'Governments cut spending to reduce primary deficit. The first instinct, always politically painful. Historically counterproductive — reduces GDP faster than it reduces debt.',
+    effects:[
+      {text:'Primary deficit reduction:', val:'-2 to -4% GDP', positive:true},
+      {text:'GDP impact:', val:'-3 to -8% (multiplier effect)', positive:false},
+      {text:'Labour share impact:', val:'Neutral to negative', positive:false},
+      {text:'Debt/GDP net effect:', val:'Usually rises (GDP falls faster)', positive:false},
+    ],
+    historical:'UK 2010-15: deficit fell but debt/GDP still rose. Greece 2010-13: catastrophic GDP collapse.'
+  },
+  {
+    name:'2. QE / Money Printing',
+    desc:'Central bank creates money to buy government bonds, suppressing yields. Buys time but inflates assets, widens inequality, and creates future inflation risk.',
+    effects:[
+      {text:'Bond yield suppression:', val:'Effective short-term', positive:true},
+      {text:'Asset price inflation:', val:'+30-100% (flows to capital owners)', positive:false},
+      {text:'Consumer inflation:', val:'Limited while demand depressed', positive:true},
+      {text:'Debt/GDP:', val:'Reduces temporarily, rebounds', positive:false},
+    ],
+    historical:'Fed 2020: balance sheet +$3T in months. Asset prices +80% in 18 months. Workers\' real wages fell.'
+  },
+  {
+    name:'3. Financial Repression',
+    desc:'Keep interest rates below inflation so debt erodes in real terms. Requires yield curve control or regulatory forcing of domestic institutions to hold government bonds.',
+    effects:[
+      {text:'Real debt reduction:', val:'Gradual — 2-3% GDP/year at best', positive:true},
+      {text:'Saver wealth destruction:', val:'Equivalent to a wealth tax', positive:false},
+      {text:'Capital flight risk:', val:'High if visible — crypto accelerates this', positive:false},
+      {text:'Requires:', val:'Inflation > interest rates — hard in deflation', positive:false},
+    ],
+    historical:'UK/US post-WWII: 30 years of negative real rates eroded debt from 250% to 50% GDP. Required closed capital accounts.'
+  },
+  {
+    name:'4. UBI / Helicopter Money',
+    desc:'Direct transfers to citizens. Restores consumer demand, reduces deflationary spiral. Funded by money printing unless paired with capital tax. Changes the inflation dynamic.',
+    effects:[
+      {text:'Consumer demand restoration:', val:'Significant — high MPC recipients', positive:true},
+      {text:'Consumer inflation:', val:'Creates genuine demand-pull inflation', positive:true},
+      {text:'Cost:', val:'Enormous — 15-25% of GDP at full coverage', positive:false},
+      {text:'Net debt effect:', val:'Worsens unless capital-tax-funded', positive:false},
+    ],
+    historical:'No historical precedent at scale. COVID payments gave glimpse — 2021 US CPI spike followed direct transfers.'
+  },
+  {
+    name:'5. Capital / Wealth Tax',
+    desc:'Tax the capital economy that has captured the AI productivity gains. The only policy that can simultaneously fund government and reduce inequality without printing money.',
+    effects:[
+      {text:'Revenue potential:', val:'Enormous — capital share now 38%+ of GDP', positive:true},
+      {text:'Inequality reduction:', val:'Direct — reverses concentration', positive:true},
+      {text:'Capital flight risk:', val:'Severe without international coordination', positive:false},
+      {text:'Political feasibility:', val:'Extremely low — capital owns democracy', positive:false},
+    ],
+    historical:'French wealth tax 2012: €35B fled before implementation. Post-WWII capital levies worked when capital controls existed.'
+  },
+  {
+    name:'6. Debt Restructuring / Default',
+    desc:'When all else fails. Governments extend maturities, reduce coupons, or impose losses on bondholders. The endgame the model\'s terminal debt/GDP trajectory implies.',
+    effects:[
+      {text:'Immediate debt relief:', val:'Can eliminate 30-60% of debt stock', positive:true},
+      {text:'Future borrowing costs:', val:'+300-500bp for years afterward', positive:false},
+      {text:'Banking system:', val:'Severe stress — banks hold sovereign bonds', positive:false},
+      {text:'Currency:', val:'Usually collapses — capital flight', positive:false},
+    ],
+    historical:'Greece 2012: 53% haircut. Argentina 2001, 2020. Always more painful than prevented.'
+  },
+];
+
+function renderPolicies() {
+  document.getElementById('policy-grid').innerHTML = POLICIES.map(pol => `
+    <div class="policy-card">
+      <div class="policy-name">${pol.name}</div>
+      <div class="policy-desc">${pol.desc}</div>
+      ${pol.effects.map(ef=>`
+        <div class="policy-effect ${ef.positive?'positive':'negative'}" style="margin-bottom:3px;">
+          <span style="font-size:9px;font-family:'DM Mono',monospace;color:var(--text-muted);">${ef.text}</span><br>
+          <span>${ef.val}</span>
+        </div>
+      `).join('')}
+      <div style="font-size:10px;color:var(--text-muted);margin-top:8px;border-top:1px solid var(--border);padding-top:6px;font-style:italic;">${pol.historical}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// NARRATIVE
+// ============================================================
+function updateNarrative(yr,year,ls,wg,gp,dt,un,asset,cons,ai,cs,welfare,dem) {
+  const wageChg=yr>0?((wg/simData.wage[0]-1)*100).toFixed(0):0;
+  const gdpChg=yr>0?((gp/simData.gdp[0]-1)*100).toFixed(0):0;
+  const assetChg=yr>0?((asset/simData.asset[0]-1)*100).toFixed(0):0;
+  const consChg=((cons/simData.cons[0]-1)*100).toFixed(1);
+  const p = P();
+  let txt='';
+
+  // Crisis level labels — calibrated to historical precedents, not academic abstractions.
+  // Italy 2011 = 120% debt, bond panic. Greece 2010 = 130%, market shutdown.
+  // 150% in 2 years from 100% = bond market is already repricing. That is a crisis.
+  const crisisLabel = cs < 12 ? 'PRE-CRISIS' : cs < 28 ? 'EMERGING STRESS' : cs < 45 ? 'FISCAL CRISIS' : cs < 62 ? 'ACUTE CRISIS' : cs < 80 ? 'SYSTEMIC BREAKDOWN' : 'TERMINAL';
+
+  if(yr===0) {
+    txt=`<strong>Baseline ${year}.</strong> Labour share <strong>${ls}%</strong> of GDP. Debt/GDP <strong>${dt}%</strong>. AI covers <strong>${ai}%</strong> of tasks. Automation at <strong>${(p.auto*100).toFixed(1)}%/year</strong>, recursion <strong>${p.rec.toFixed(2)}×</strong>. The structural forces are already in motion — the data just hasn't caught up yet.`;
+
+  } else if(cs<12) {
+    // Structurally deteriorating but not yet visible in headline numbers
+    txt=`<strong>${year} — Pre-crisis drift.</strong> The divergence is underway but headline data still looks manageable. GDP +<strong>${gdpChg}%</strong> but that's the capital economy. Wages <strong>${wageChg>0?'+':''}${wageChg}%</strong>, labour share <strong>${ls.toFixed(1)}%</strong>. Debt/GDP <strong>${dt.toFixed(1)}%</strong> — rising, but slowly enough that bond markets aren't alarmed yet. Consumer prices <strong>${consChg>0?'+':''}${consChg}%</strong> vs. assets <strong>+${assetChg}%</strong>. <em>This is where conventional analysis misses it.</em> <span class="hl">SPICE: accumulating hard assets while the thesis is still cheap to express.</span>`;
+
+  } else if(cs<28) {
+    // Structural damage visible, fiscal slippage beginning
+    txt=`<strong>${year} — Emerging fiscal stress.</strong> The scissor is opening and the numbers are starting to show it. GDP +<strong>${gdpChg}%</strong> (capital economy) but wages <strong>${wageChg}%</strong>. Labour share <strong>${ls.toFixed(1)}%</strong> — the government's tax base is structurally eroding. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare bill rising. Debt/GDP <strong>${dt.toFixed(1)}%</strong>. Comparable to where Italy was in 2009–2010: <em>the numbers look manageable until they don't.</em> Bond markets are watching. <span class="hl">SPICE: short positions initiated. Indicators turning amber.</span>`;
+
+  } else if(cs<45) {
+    // This IS a crisis — Italy 2011 / UK gilt territory
+    txt=`<span class="danger">⚠ FISCAL CRISIS — ${year}.</span> Debt/GDP at <strong>${dt.toFixed(1)}%</strong> with this trajectory is not "stress" — it is a crisis. Italy triggered bond market panic at 120%; Greece at 130%. We are in that zone. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Labour share <strong>${ls.toFixed(1)}%</strong> — the tax base the government needs to service this debt is shrinking. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare costs compounding deficits. Capital economy still booming: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong>. Consumer prices <strong>${consChg}%</strong> — deflation suppressing the inflation escape route. <em>Governments at this point face the central bank choice: defend currency or defend bond market. Not both.</em> <span class="hl">SPICE: significant short book alpha. Bond volatility structures live.</span>`;
+
+  } else if(cs<62) {
+    // Acute — sovereign solvency in question
+    txt=`<span class="danger">🔴 ACUTE SOVEREIGN CRISIS — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong> — beyond any level a major economy has stabilised without restructuring, YCC, or capital controls. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. The bond market is not pricing risk. It is pricing exit. Labour economy hollowed: wages <strong>${wageChg}%</strong> from baseline, unemployment <strong>${un.toFixed(1)}%</strong>, labour share <strong>${ls.toFixed(1)}%</strong>. Capital economy: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong> — the divergence is now extreme. Political legitimacy crisis. Governments under pressure to print, which further erodes fiat credibility and accelerates crypto adoption. <em>This is not a model artefact. Argentina looked like this in 2001. Greece in 2011.</em> <span class="hl">SPICE: maximum short exposure. IRON-to-SPICE trigger conditions met.</span>`;
+
+  } else if(cs<80) {
+    // Systemic — contagion risk, IMF territory
+    txt=`<span class="danger">🚨 SYSTEMIC BREAKDOWN — ${year}.</span> <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--purple);">[ IF US: global collateral system repricing in real-time ]</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. This is not a fiscal problem anymore — it is a political economy problem. No democratic government has managed debt at this level without either defaulting or debasing. Labour share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. The wage economy has effectively ceased to function as a tax base. GDP index <strong>${gp.toFixed(0)}</strong> — measuring capital output, invisible to workers. Asset prices +<strong>${assetChg}%</strong> while consumer prices <strong>${consChg}%</strong>: the inflation the government needs to erode debt is going to the wrong place. IMF, capital controls, and restructuring are the only remaining options. <span class="hl">SPICE: all positions crystallised. Protocol in hard asset phase. Gold and BTC at multiples of baseline.</span>`;
+
+  } else {
+    // Terminal — debt restructuring/default is the only mathematical outcome
+    txt=`<span class="danger">💀 TERMINAL — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Restructuring is not a policy option — it is a mathematical certainty. At these levels the interest bill alone exceeds plausible primary surplus capacity. This is the end state the Blanchard r&gt;g equation always produces when left unaddressed. Labour share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. GDP index <strong>${gp.toFixed(0)}</strong> — a number that belongs to capital, not to people. <em>History's record at this level: Argentina 2001 (52% haircut, currency collapse), Greece 2012 (53% haircut), Weimar-era Germany (hyperinflation instead of restructuring).</em> The question is no longer whether restructuring occurs. It is who bears the losses. <span class="hl">SPICE: this is exactly the scenario SPICE was designed for. Hard assets, synthetic shorts, and crypto holdings at maximum value.</span>`;
+  }
+
+  document.getElementById('narr-text').innerHTML=txt;
+}
+
+// ============================================================
+// PRESETS
+// ============================================================
+function applyPreset(name, btn) {
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const P = {
+    acemoglu:   {auto:2,  reinstate:75, prod:1.3, rec:1.01, debt:98, def:4,   rate:4.5, ubi:0,  captax:8,  qe:1,  gini:2, domcap:60, crypto:1},
+    spice:      {auto:15, reinstate:20, prod:4.0, rec:1.20, debt:98, def:4,   rate:4.5, ubi:0,  captax:8,  qe:2,  gini:3, domcap:50, crypto:2},
+    singularity:{auto:10, reinstate:20, prod:4.0, rec:1.20, debt:98, def:4,   rate:5.0, ubi:0,  captax:8,  qe:5,  gini:5, domcap:30, crypto:5},
+    policy:     {auto:8,  reinstate:25, prod:3.0, rec:1.12, debt:98, def:4,   rate:4.5, ubi:40, captax:35, qe:8,  gini:2, domcap:55, crypto:2},
+  }[name];
+  if(!P) return;
+  document.getElementById('sl-auto').value=P.auto;
+  document.getElementById('sl-reinstate').value=P.reinstate;
+  document.getElementById('sl-prod').value=P.prod;
+  document.getElementById('sl-rec').value=P.rec;
+  document.getElementById('sl-debt').value=P.debt;
+  document.getElementById('sl-def').value=P.def;
+  document.getElementById('sl-rate').value=P.rate;
+  document.getElementById('sl-ubi').value=P.ubi;
+  document.getElementById('sl-captax').value=P.captax;
+  document.getElementById('sl-qe').value=P.qe;
+  document.getElementById('sl-gini').value=P.gini;
+  document.getElementById('sl-domcap').value=P.domcap;
+  document.getElementById('sl-crypto').value=P.crypto;
+  update();
+}
+
+// ============================================================
+// SAVE / LOAD BASE CASE
+// ============================================================
+function saveBaseCase() {
+  savedParams = {
+    auto: document.getElementById('sl-auto').value,
+    reinstate: document.getElementById('sl-reinstate').value,
+    prod: document.getElementById('sl-prod').value,
+    rec: document.getElementById('sl-rec').value,
+    debt: document.getElementById('sl-debt').value,
+    def: document.getElementById('sl-def').value,
+    rate: document.getElementById('sl-rate').value,
+    ubi: document.getElementById('sl-ubi').value,
+    captax: document.getElementById('sl-captax').value,
+    qe: document.getElementById('sl-qe').value,
+    gini: document.getElementById('sl-gini').value,
+    domcap: document.getElementById('sl-domcap').value,
+    crypto: document.getElementById('sl-crypto').value,
+    ycccap: document.getElementById('sl-ycccap').value,
+    ycc: window._yccOn,
+  };
+  try { localStorage.setItem('spice_base_case', JSON.stringify(savedParams)); } catch(e){}
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '✓ SPICE Base Case Saved';
+  btn.classList.add('saved');
+  document.getElementById('load-btn').classList.add('visible');
+  document.getElementById('saved-label').classList.add('visible');
+  document.getElementById('saved-label').textContent =
+    `Saved: auto=${savedParams.auto}%, reinstate=${savedParams.reinstate}%, prod=${savedParams.prod}×, domcap=${savedParams.domcap}%`;
+  setTimeout(()=>{ btn.textContent='⊕ Save as SPICE Base Case'; btn.classList.remove('saved'); }, 2500);
+}
+
+function loadBaseCase() {
+  let sp = savedParams;
+  if(!sp) { try { sp = JSON.parse(localStorage.getItem('spice_base_case')); } catch(e){} }
+  if(!sp) { alert('No saved base case found.'); return; }
+  ['auto','reinstate','prod','rec','debt','def','rate','ubi','captax','qe','gini','domcap','crypto','ycccap'].forEach(k => {
+    const el = document.getElementById('sl-'+k);
+    if(el && sp[k] !== undefined) el.value = sp[k];
+  });
+  if(sp.ycc !== undefined) setYCC(sp.ycc, null);
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  update();
+}
+
+// Try to load from localStorage on startup
+(function(){
+  try {
+    const sp = JSON.parse(localStorage.getItem('spice_base_case'));
+    if(sp){ savedParams = sp; document.getElementById('load-btn').classList.add('visible'); document.getElementById('saved-label').classList.add('visible'); document.getElementById('saved-label').textContent='Previously saved base case available'; }
+  } catch(e){}
+})();
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${name}')"]`).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded',()=>{
+  initCharts();
+  renderPolicies();
+  update();
+  // Gentle intro animation
+  let yr=0;
+  const intro = setInterval(()=>{
+    yr++;
+    document.getElementById('year-slider').value=yr;
+    updateYear();
+    if(yr>=2) clearInterval(intro);
+  },400);
+});
+</script>
+</body>
+</html>
