@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPICE Protocol — Model Methodology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #B8860B;
+    --gold-light: #D4A017;
+    --gold-faint: #B8860B18;
+    --red: #c0392b;
+    --blue: #2563eb;
+    --green: #16a34a;
+    --ink: #111;
+    --ink-light: #444;
+    --ink-faint: #888;
+    --rule: #e2e2e2;
+    --bg: #ffffff;
+    --bg-off: #fafafa;
+    --bg-note: #fffdf5;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'IBM Plex Serif', serif;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .page-wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: 100vh;
+    max-width: 1160px;
+    margin: 0 auto;
+  }
+
+  /* ── SIDEBAR NAV ── */
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--rule);
+    padding: 40px 20px 40px 24px;
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--bg-off);
+    flex-shrink: 0;
+  }
+
+  .sidebar-logo {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .sidebar-subtitle {
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .nav-section {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 20px 0 8px;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 4px 0 4px 10px;
+    border-left: 2px solid transparent;
+    color: var(--ink-light);
+    text-decoration: none;
+    font-size: 10px;
+    line-height: 1.5;
+    transition: all 0.15s;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    color: var(--gold);
+    border-left-color: var(--gold);
+  }
+
+  .nav-link.sub {
+    padding-left: 20px;
+    font-size: 9px;
+    color: var(--ink-faint);
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    padding: 60px 64px 100px 64px;
+    max-width: 780px;
+  }
+
+  /* ── HEADER ── */
+  .doc-header {
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+
+  .doc-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .doc-title {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+
+  .doc-subtitle {
+    font-size: 15px;
+    color: var(--ink-light);
+    line-height: 1.7;
+    max-width: 580px;
+    font-style: italic;
+  }
+
+  .doc-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+  }
+
+  .doc-meta span { color: var(--ink-light); }
+
+  /* ── CHAPTER HEADERS ── */
+  .chapter {
+    margin-top: 72px;
+    padding-top: 32px;
+    border-top: 2px solid var(--rule);
+  }
+
+  .chapter:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .chapter-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  h2.chapter-title {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 36px 0 12px;
+    color: var(--ink);
+  }
+
+  h3::before {
+    content: '// ';
+    color: var(--gold);
+  }
+
+  h4 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    margin: 24px 0 8px;
+  }
+
+  p {
+    margin-bottom: 16px;
+    color: var(--ink-light);
+  }
+
+  p strong { color: var(--ink); }
+
+  /* ── FORMULA BLOCKS ── */
+  .formula-block {
+    background: var(--bg-off);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--gold);
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-family: var(--mono);
+    overflow-x: auto;
+  }
+
+  .formula-label {
+    font-size: 9px;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+
+  .formula {
+    font-size: 14px;
+    line-height: 2;
+    color: var(--ink);
+  }
+
+  .formula .var { color: #2563eb; }
+  .formula .op  { color: var(--gold); }
+  .formula .cmt { color: var(--ink-faint); font-size: 11px; }
+
+  .formula-note {
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 12px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  /* sub-definition grid */
+  .var-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 11px;
+    margin: 16px 0;
+  }
+
+  .var-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  .var-table td:first-child {
+    color: #2563eb;
+    font-weight: 600;
+    white-space: nowrap;
+    width: 120px;
+  }
+
+  .var-table td:last-child {
+    color: var(--ink-light);
+  }
+
+  /* ── CALLOUT BOXES ── */
+  .callout {
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--ink-faint);
+    background: var(--bg-off);
+    padding: 16px 20px;
+    margin: 20px 0;
+    font-size: 14px;
+  }
+
+  .callout.gold  { border-left-color: var(--gold);  background: var(--bg-note); }
+  .callout.red   { border-left-color: var(--red);   background: #fff8f8; }
+  .callout.blue  { border-left-color: var(--blue);  background: #f5f8ff; }
+  .callout.green { border-left-color: var(--green); background: #f5fff8; }
+
+  .callout-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .callout.gold  .callout-label { color: var(--gold); }
+  .callout.red   .callout-label { color: var(--red);  }
+  .callout.blue  .callout-label { color: var(--blue); }
+  .callout.green .callout-label { color: var(--green);}
+
+  .callout p { margin-bottom: 8px; font-size: 13px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  /* ── DATA TABLE ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 11px;
+    margin: 20px 0;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-light);
+    vertical-align: top;
+  }
+
+  .data-table tr:nth-child(even) td { background: var(--bg-off); }
+  .data-table td.num { text-align: right; color: var(--ink); font-weight: 600; }
+  .data-table td.hi  { color: var(--red); font-weight: 600; }
+  .data-table td.lo  { color: var(--green); font-weight: 600; }
+
+  /* ── SCENARIO TABLE ── */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    margin: 20px 0;
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .scenario-cell {
+    background: var(--bg);
+    padding: 12px 10px;
+  }
+
+  .scenario-cell.header {
+    background: var(--ink);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .scenario-cell .scenario-name {
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .scenario-cell .scenario-pct {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .scenario-cell .scenario-source {
+    font-size: 8px;
+    color: var(--ink-faint);
+    line-height: 1.4;
+  }
+
+  /* ── POLICY GRID ── */
+  .policy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .policy-card {
+    border: 1px solid var(--rule);
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .policy-card .policy-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .policy-card.fiscal  .policy-label { color: var(--green); }
+  .policy-card.monetary .policy-label { color: var(--red);  }
+
+  .policy-card p { font-size: 12px; margin-bottom: 0; }
+
+  .policy-card .policy-effects {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-top: 8px;
+    border-top: 1px solid var(--rule);
+    padding-top: 8px;
+    line-height: 1.8;
+  }
+
+  /* ── CITATION ── */
+  .citations {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 2px solid var(--rule);
+  }
+
+  .cite-header {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 16px;
+  }
+
+  .cite-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+
+  .cite-num {
+    color: var(--gold);
+    font-weight: 700;
+    font-size: 10px;
+    padding-top: 2px;
+  }
+
+  .cite-text { color: var(--ink-faint); line-height: 1.5; }
+
+  .cite-text a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+
+  .cite-text a:hover { text-decoration: underline; }
+
+  /* ── INLINE CITATION ── */
+  sup.ref {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--gold);
+    cursor: default;
+    font-weight: 700;
+  }
+
+  /* ── INLINE CODE ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg-off);
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    color: #2563eb;
+  }
+
+  /* ── HORIZONTAL RULE ── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 32px 0;
+  }
+
+  /* ── ANCHOR CHART LINK ── */
+  .chart-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--gold-faint);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 6px 12px;
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    margin: 8px 0;
+    transition: background 0.15s;
+  }
+
+  .chart-link:hover { background: #B8860B22; }
+
+  /* ── FOOTER ── */
+  .doc-footer {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 860px) {
+    .page-wrap { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .main { padding: 32px 24px 60px; }
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    .sidebar { display: none; }
+    .page-wrap { grid-template-columns: 1fr; }
+    .main { padding: 0; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+<!-- ═══════════════════════════════════════ SIDEBAR NAV ═══════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">SPICE</div>
+  <div class="sidebar-subtitle">Model Methodology</div>
+
+  <div class="nav-section">Overview</div>
+  <a class="nav-link" href="#thesis">The Core Thesis</a>
+  <a class="nav-link" href="#scope">Model Scope &amp; Limitations</a>
+
+  <div class="nav-section">Part I — Debt</div>
+  <a class="nav-link" href="#ch1">1. US Fiscal Trajectory</a>
+  <a class="nav-link sub" href="#ch1-starting">Starting Conditions</a>
+  <a class="nav-link sub" href="#ch1-dynamics">Debt Dynamics Formula</a>
+  <a class="nav-link sub" href="#ch1-rg">r &gt; g: The Break Condition</a>
+
+  <div class="nav-section">Part II — AI</div>
+  <a class="nav-link" href="#ch2">2. AI Displacement Model</a>
+  <a class="nav-link sub" href="#ch2-anchors">Scenario Anchors</a>
+  <a class="nav-link sub" href="#ch2-prod">Productivity Dynamics</a>
+  <a class="nav-link sub" href="#ch2-lag">Displacement Lag</a>
+  <a class="nav-link sub" href="#ch2-ghost">Ghost GDP</a>
+
+  <div class="nav-section">Part III — Collision</div>
+  <a class="nav-link" href="#ch3">3. The Collision</a>
+  <a class="nav-link sub" href="#ch3-fiscal">Fiscal Channel</a>
+  <a class="nav-link sub" href="#ch3-yield">Yield Dynamics</a>
+  <a class="nav-link sub" href="#ch3-break">Break Point Logic</a>
+
+  <div class="nav-section">Part IV — Responses</div>
+  <a class="nav-link" href="#ch4">4. Policy Responses</a>
+  <a class="nav-link sub" href="#ch4-fiscal">Fiscal Options</a>
+  <a class="nav-link sub" href="#ch4-monetary">Monetary Options</a>
+  <a class="nav-link sub" href="#ch4-combination">Combinations</a>
+
+  <div class="nav-section">Part V — K-Shape</div>
+  <a class="nav-link" href="#ch5">5. K-Shaped Economy</a>
+  <a class="nav-link sub" href="#ch5-shares">Income Shares</a>
+  <a class="nav-link sub" href="#ch5-policy">Policy Effects</a>
+
+  <div class="nav-section">Part VI — SPICE</div>
+  <a class="nav-link" href="#ch6">6. Gold &amp; Crypto Hedge</a>
+  <a class="nav-link sub" href="#ch6-monetary-stress">Monetary Stress Index</a>
+  <a class="nav-link sub" href="#ch6-rationale">Hedge Rationale</a>
+
+  <div class="nav-section">Appendix</div>
+  <a class="nav-link" href="#assumptions">Key Assumptions</a>
+  <a class="nav-link" href="#sensitivity">Sensitivity Analysis</a>
+  <a class="nav-link" href="#citations">All Citations</a>
+</nav>
+
+<!-- ═══════════════════════════════════════ MAIN CONTENT ═══════════════════ -->
+<main class="main">
+
+<!-- ── DOCUMENT HEADER ── -->
+<header class="doc-header">
+  <div class="doc-eyebrow">SPICE Protocol — Technical Documentation</div>
+  <h1 class="doc-title">Debt Tsunami Simulation:<br>Model Methodology &amp; Citations</h1>
+  <p class="doc-subtitle">A detailed account of the assumptions, formulae, data sources, and causal logic underpinning the SPICE thesis interactive simulation. Written for sceptical readers who want to interrogate the model.</p>
+  <div class="doc-meta">
+    <div>Version <span>1.0 — March 2026</span></div>
+    <div>Simulation <span>Chart 3 / zpc.finance</span></div>
+    <div>Contact <span>comments welcome</span></div>
+  </div>
+</header>
+
+<!-- ── THESIS OVERVIEW ── -->
+<section id="thesis" class="chapter">
+  <div class="chapter-num">Overview</div>
+  <h2 class="chapter-title">The Core Thesis</h2>
+
+  <p>The SPICE thesis rests on a single structural observation: <strong>governments with unsustainable debt loads have historically relied on inflation to reduce their real debt burden</strong>, because inflation raises nominal GDP faster than the debt stock, gradually eroding the debt-to-GDP ratio. This mechanism — sometimes called "financial repression" — was the primary tool used by the US, UK, and most developed economies to escape the debt burdens accumulated in World War II.<sup class="ref">[1,2]</sup></p>
+
+  <p>What is different today is the emergence of a powerful countervailing force. <strong>Artificial intelligence and automation are structurally deflationary.</strong> When a software agent replaces a knowledge worker, the cost of that output collapses toward zero. Across millions of tasks, this creates persistent downward pressure on prices — precisely when governments need upward pressure.</p>
+
+  <div class="callout gold">
+    <div class="callout-label">The Collision</div>
+    <p>The SPICE thesis is that these two forces — the inflationary imperative of governments managing unsustainable debt, and the deflationary pressure of AI-driven productivity — are on a collision course. The resolution of this collision will define the macroeconomic environment of the late 2020s and 2030s.</p>
+    <p>SPICE is designed as a hedge against the most likely resolution: <strong>governments win</strong>, deploying monetary tools (QE, yield curve control, financial repression) to suppress yields and generate inflation, at the cost of currency debasement and a transfer of wealth from labour to capital and from savers to asset holders.</p>
+  </div>
+
+  <p>The simulation on Chart 3 allows you to explore the parameter space of this collision: how fast AI displaces workers, which policy tools governments choose, and what the resulting trajectory looks like across six key variables through 2035.</p>
+</section>
+
+<!-- ── SCOPE ── -->
+<section id="scope">
+  <h3>Model Scope &amp; Limitations</h3>
+
+  <p>This is a <strong>stylised macroeconomic model</strong>, not a full DSGE or computable general equilibrium system. It is designed to illustrate the directional logic of the thesis clearly, not to produce precise point forecasts. Several important limitations:</p>
+
+  <div class="callout red">
+    <div class="callout-label">Limitations — Please Read</div>
+    <p><strong>Single country.</strong> The model focuses on the United States fiscal position. Other advanced economies face similar dynamics with different timelines (Japan is further along; Europe varies by country).</p>
+    <p><strong>No international feedback.</strong> Currency crises, capital flight, and geopolitical responses to US fiscal stress are not modelled.</p>
+    <p><strong>Structural break at 300% Debt/GDP.</strong> Beyond this level, the model caps debt and assumes a crisis/restructuring event rather than continuing to compound. Real crises are more complex and context-dependent.</p>
+    <p><strong>AI displacement is modelled as aggregate.</strong> Sectoral heterogeneity (some sectors displace fast, others slowly) is not captured.</p>
+    <p><strong>Policy effects are calibrated judgementally</strong> against historical precedents and recent academic literature, not estimated econometrically.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 1 ══════════════════════════ -->
+<section id="ch1" class="chapter">
+  <div class="chapter-num">Chapter 1</div>
+  <h2 class="chapter-title">US Fiscal Trajectory</h2>
+
+  <p>The simulation begins from the current US fiscal position, which is already historically extreme by peacetime standards, and projects forward under the dual pressures of AI displacement and policy response.</p>
+
+  <h3 id="ch1-starting">Starting Conditions (2026)</h3>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Variable</th>
+        <th>Value</th>
+        <th>Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Debt held by public / GDP</td>
+        <td class="num">~100%</td>
+        <td>CBO March 2025<sup class="ref">[3]</sup></td>
+      </tr>
+      <tr>
+        <td>Gross federal debt / GDP</td>
+        <td class="num">~123%</td>
+        <td>CBO / House Budget Committee<sup class="ref">[4]</sup></td>
+      </tr>
+      <tr>
+        <td>Federal deficit / GDP</td>
+        <td class="num">6.2%</td>
+        <td>CBO 2025 Outlook<sup class="ref">[5]</sup></td>
+      </tr>
+      <tr>
+        <td>Net interest / GDP</td>
+        <td class="num">3.2%</td>
+        <td>CBO 2025 (record peacetime high)<sup class="ref">[5]</sup></td>
+      </tr>
+      <tr>
+        <td>10Y Treasury yield</td>
+        <td class="num">~4.1%</td>
+        <td>Market, early 2026</td>
+      </tr>
+      <tr>
+        <td>Federal spending / GDP</td>
+        <td class="num">23.3%</td>
+        <td>CBO 2025<sup class="ref">[5]</sup></td>
+      </tr>
+      <tr>
+        <td>Federal revenue / GDP</td>
+        <td class="num">~17.5%</td>
+        <td>CBO 2025<sup class="ref">[5]</sup></td>
+      </tr>
+      <tr>
+        <td>Primary deficit / GDP</td>
+        <td class="num">~3%</td>
+        <td>CBO long-term average<sup class="ref">[3]</sup></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout blue">
+    <div class="callout-label">Context</div>
+    <p>The US currently spends more on interest than on defence or Medicare. Under CBO's March 2025 baseline (which does not incorporate OBBBA or TCJA extension), debt held by the public reaches 118% of GDP by 2035 and 154% by 2054. With current-policy extensions, the NBER estimates 199% by 2054.<sup class="ref">[6]</sup> The CRFB notes these projections assume no wars, no recessions, and continued relatively low interest rates — all rosy assumptions.<sup class="ref">[7]</sup></p>
+  </div>
+
+  <h3 id="ch1-dynamics">Core Debt Dynamics Formula</h3>
+
+  <p>The model uses the standard debt accumulation identity from public finance. At each annual time step <em>t</em>:</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 1 — Debt Dynamics</div>
+    <div class="formula">
+      <span class="var">D(t+1)</span> <span class="op">=</span> <span class="var">D(t)</span> <span class="op">×</span> <span class="op">(</span><span class="op">1</span> <span class="op">+</span> <span class="var">r(t)</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="op">1</span> <span class="op">+</span> <span class="var">g(t)</span> <span class="op">+</span> <span class="var">π(t)</span><span class="op">)</span> <span class="op">+</span> <span class="var">pd(t)</span>
+    </div>
+    <table class="var-table">
+      <tr><td>D(t)</td><td>Debt-to-GDP ratio at time t (model starts at 1.23)</td></tr>
+      <tr><td>r(t)</td><td>Effective nominal interest rate on government debt</td></tr>
+      <tr><td>g(t)</td><td>Real GDP growth rate</td></tr>
+      <tr><td>π(t)</td><td>Inflation rate (nominal GDP deflator)</td></tr>
+      <tr><td>pd(t)</td><td>Primary deficit as share of GDP (spending minus revenue, excluding interest)</td></tr>
+    </table>
+    <div class="formula-note">This is the standard debt sustainability identity. The denominator (1 + g + π) is nominal GDP growth; when this exceeds (1 + r), debt is self-stabilising even with a primary deficit. When r > g + π, debt compounds without bound.</div>
+  </div>
+
+  <h3 id="ch1-rg">The r &gt; g Break Condition</h3>
+
+  <p>The key insight from Reinhart and Rogoff<sup class="ref">[1]</sup> and more recently Blanchard<sup class="ref">[8]</sup> is that debt sustainability depends critically on whether the interest rate exceeds nominal growth. Historically, the US has benefited from <em>r &lt; g</em> — the economy grew faster than interest costs, automatically stabilising debt ratios. This relationship began breaking down circa 2018 and is projected to remain unfavourable through the 2030s under CBO's baseline.<sup class="ref">[3]</sup></p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 2 — Sustainability Condition</div>
+    <div class="formula">
+      Stable if: <span class="var">r(t)</span> <span class="op">&lt;</span> <span class="var">g(t)</span> <span class="op">+</span> <span class="var">π(t)</span> <span class="cmt">← nominal GDP growth exceeds interest rate</span><br>
+      Unstable if: <span class="var">r(t)</span> <span class="op">&gt;</span> <span class="var">g(t)</span> <span class="op">+</span> <span class="var">π(t)</span> <span class="cmt">← debt compounds without bound</span>
+    </div>
+    <div class="formula-note">The CBO projects the average interest rate on US debt to exceed economic growth (r > g) by 2045 under current law. Under the SPICE scenario, AI-driven deflation (negative π) accelerates this to the late 2020s.</div>
+  </div>
+
+  <p>In the model, <strong>r is endogenous</strong> — it rises as the debt ratio increases, reflecting the empirical finding of Reinhart and Rogoff that markets begin demanding a premium on sovereign debt once debt-to-GDP exceeds approximately 90%.<sup class="ref">[1]</sup> Specifically:</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 3 — Endogenous Yield</div>
+    <div class="formula">
+      <span class="var">r(t)</span> <span class="op">=</span> min<span class="op">(</span><span class="var">YCC_cap</span>, <span class="op">(</span><span class="var">r₀</span> <span class="op">+</span> max<span class="op">(</span>0, <span class="op">(</span><span class="var">D(t)</span> <span class="op">-</span> 1.2<span class="op">)</span> <span class="op">×</span> 0.012 <span class="op">+</span> <span class="var">pd(t)</span> <span class="op">×</span> 0.18<span class="op">)</span><span class="op">)</span> <span class="op">×</span> <span class="var">yM</span><span class="op">)</span>
+    </div>
+    <table class="var-table">
+      <tr><td>r₀</td><td>Base rate (4.1% in 2026)</td></tr>
+      <tr><td>0.012</td><td>Yield premium per 1pp of excess debt-to-GDP above 120%</td></tr>
+      <tr><td>0.18</td><td>Yield sensitivity to primary deficit</td></tr>
+      <tr><td>YCC_cap</td><td>4.5% if Yield Curve Control active; 14% otherwise</td></tr>
+      <tr><td>yM</td><td>Monetary policy yield multiplier (0.58–1.00)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 2 ══════════════════════════ -->
+<section id="ch2" class="chapter">
+  <div class="chapter-num">Chapter 2</div>
+  <h2 class="chapter-title">AI Displacement Model</h2>
+
+  <p>The central driver of the simulation is the rate at which AI displaces knowledge workers over the 2026–2035 window. This is the most uncertain parameter in the model, and the simulation is designed to explore the full plausible range.</p>
+
+  <h3 id="ch2-anchors">Displacement Scenario Anchors</h3>
+
+  <p>Rather than a single forecast, the model uses five named anchor points grounded in published estimates:</p>
+
+  <div class="scenario-grid">
+    <div class="scenario-cell header">Scenario</div>
+    <div class="scenario-cell header">Displaced by 2030</div>
+    <div class="scenario-cell header">Annual Rate</div>
+    <div class="scenario-cell header">Source</div>
+    <div class="scenario-cell header">Characterisation</div>
+
+    <div class="scenario-cell">
+      <div class="scenario-name">CBO</div>
+    </div>
+    <div class="scenario-cell"><div class="scenario-pct">5%</div></div>
+    <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~1%/yr</div></div>
+    <div class="scenario-cell"><div class="scenario-source">CBO 2025 baseline — models modest AI productivity gains, no major displacement shock</div></div>
+    <div class="scenario-cell"><div class="scenario-source">Gradual, manageable. Business as usual.</div></div>
+
+    <div class="scenario-cell">
+      <div class="scenario-name">IMF/GS</div>
+    </div>
+    <div class="scenario-cell"><div class="scenario-pct">10%</div></div>
+    <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~2%/yr</div></div>
+    <div class="scenario-cell"><div class="scenario-source">IMF WP/2025/076; Goldman Sachs (2023) — 300M jobs globally at risk; 18% US employment automation-exposed</div></div>
+    <div class="scenario-cell"><div class="scenario-source">Significant but manageable with policy response</div></div>
+
+    <div class="scenario-cell">
+      <div class="scenario-name">McKinsey</div>
+    </div>
+    <div class="scenario-cell"><div class="scenario-pct">25%</div></div>
+    <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~5%/yr</div></div>
+    <div class="scenario-cell"><div class="scenario-source">McKinsey Global Institute (2023) — 25% of tasks automatable by end of decade under high-adoption scenario</div></div>
+    <div class="scenario-cell"><div class="scenario-source">Significant structural disruption requiring policy response</div></div>
+
+    <div class="scenario-cell">
+      <div class="scenario-name">SPICE</div>
+    </div>
+    <div class="scenario-cell"><div class="scenario-pct" style="color:var(--gold)">40%</div></div>
+    <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~8%/yr</div></div>
+    <div class="scenario-cell"><div class="scenario-source">SPICE base case — agentic AI systems (2026–2028) capable of end-to-end white-collar task completion; adoption accelerates sharply</div></div>
+    <div class="scenario-cell"><div class="scenario-source">Major fiscal crisis without decisive policy response</div></div>
+
+    <div class="scenario-cell">
+      <div class="scenario-name">Tsunami</div>
+    </div>
+    <div class="scenario-cell"><div class="scenario-pct" style="color:var(--red)">60%</div></div>
+    <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~12%/yr</div></div>
+    <div class="scenario-cell"><div class="scenario-source">AGI-equivalent capability compressed into 3–4 year window; entire categories of white-collar work become uneconomic for human labour</div></div>
+    <div class="scenario-cell"><div class="scenario-source">Systemic crisis. Existing policy frameworks inadequate.</div></div>
+  </div>
+
+  <h3 id="ch2-prod">Productivity Dynamics</h3>
+
+  <p>AI displacement has two simultaneous effects that operate with different timing: a <strong>productivity boost</strong> (the work still gets done, more cheaply) and a <strong>demand destruction</strong> effect (displaced workers earn less, reducing consumption). The model separates these explicitly.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 4 — AI Productivity Boost</div>
+    <div class="formula">
+      <span class="var">prod(t)</span> <span class="op">=</span> <span class="var">peakProd</span> <span class="op">×</span> <span class="var">ramp(t)</span> <span class="op">×</span> exp<span class="op">(</span><span class="op">-</span>0.02 <span class="op">×</span> max<span class="op">(</span>0, <span class="var">t</span> <span class="op">-</span> <span class="var">rampYrs</span><span class="op">)</span><span class="op">)</span><br><br>
+      where <span class="var">peakProd</span> <span class="op">=</span> 0.02 <span class="op">+</span> <span class="var">aiSpeed</span> <span class="op">×</span> 0.12<br>
+      and &nbsp;&nbsp;<span class="var">rampYrs</span> <span class="op">=</span> 1 <span class="op">+</span> <span class="op">(</span>1 <span class="op">-</span> <span class="var">aiSpeed</span><span class="op">)</span> <span class="op">×</span> 4 <span class="cmt">← slower adoption = slower ramp</span>
+    </div>
+    <div class="formula-note">Peak productivity boost ranges from 2% per year (CBO scenario) to 11.4% per year (Tsunami). These are consistent with the range of estimates in the literature: the Dallas Fed (2025) finds AI boosting productivity 3–8% annually in exposed sectors; IMF WP/2025/076 models 0.5–1.5% aggregate TFP annually.<sup class="ref">[9,10]</sup> The exponential decay after the ramp period reflects diminishing returns as easy tasks are automated first.</div>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 5 — Real GDP Growth</div>
+    <div class="formula">
+      <span class="var">g(t)</span> <span class="op">=</span> max<span class="op">(</span><span class="op">-</span>5%, 1.8% <span class="op">+</span> <span class="var">prod(t)</span> <span class="op">×</span> 0.65 <span class="op">-</span> <span class="var">demandDrag(t)</span><span class="op">)</span><br><br>
+      where <span class="var">demandDrag(t)</span> <span class="op">=</span> max<span class="op">(</span>0, <span class="op">(</span><span class="var">unemp(t)</span> <span class="op">-</span> 7%<span class="op">)</span> <span class="op">×</span> 1.2<span class="op">)</span>
+    </div>
+    <div class="formula-note">The 0.65 pass-through from AI productivity to GDP reflects that not all productivity gains immediately translate to measured GDP (some appear as deflation, some as profit margin expansion not captured in output). The demand drag term captures the Keynesian shortfall from mass unemployment: each percentage point of unemployment above 7% reduces GDP growth by 1.2pp. This is consistent with Okun's Law calibration for the US economy.</div>
+  </div>
+
+  <h3 id="ch2-lag">The Displacement Lag</h3>
+
+  <p>A crucial and often-overlooked feature of technological displacement is the <strong>lag between productivity improvement and employment destruction</strong>. Firms adopt AI tools before they restructure their workforce. In the model, displacement lags productivity by approximately two years:</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 6 — Annual Displacement Rate</div>
+    <div class="formula">
+      <span class="var">annDisp(t)</span> <span class="op">=</span> <span class="var">peakDisp</span> <span class="op">×</span> <span class="var">dRamp(t)</span> <span class="op">×</span> exp<span class="op">(</span><span class="op">-</span>0.03 <span class="op">×</span> max<span class="op">(</span>0, <span class="var">dLag</span> <span class="op">-</span> <span class="var">rampYrs</span><span class="op">)</span><span class="op">)</span><br><br>
+      where <span class="var">dLag</span> <span class="op">=</span> max<span class="op">(</span>0, <span class="var">t</span> <span class="op">-</span> 2<span class="op">)</span> <span class="cmt">← 2-year lag vs productivity</span><br>
+      and &nbsp;&nbsp;<span class="var">peakDisp</span> <span class="op">=</span> <span class="var">dispRate</span> <span class="op">×</span> 0.28 <span class="cmt">← annual peak displacement fraction</span>
+    </div>
+    <div class="formula-note">The two-year lag is motivated by historical analogies: during the PC revolution of the 1980s and the internet era of the 1990s, productivity accelerated 2–4 years before the corresponding employment restructuring. The lag creates the "ghost GDP" phenomenon described below.</div>
+  </div>
+
+  <h3 id="ch2-ghost">The Ghost GDP Phenomenon</h3>
+
+  <div class="callout gold">
+    <div class="callout-label">Key Concept — Ghost GDP</div>
+    <p><strong>Ghost GDP</strong> describes the period during which AI-driven productivity shows up in output statistics (GDP keeps growing, corporate profits rise) but has not yet caused the corresponding unemployment wave. The economy looks healthy on headline numbers, masking the building displacement pressure. This is the window during which the fiscal situation deteriorates most deceptively — tax revenues are still strong, so the debt trajectory looks manageable.</p>
+    <p>In the model, Ghost GDP onset is flagged when <code>productivity &gt; 3%</code> AND <code>unemployment &gt; 8%</code> simultaneously — the moment the divergence becomes unmistakable.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 3 ══════════════════════════ -->
+<section id="ch3" class="chapter">
+  <div class="chapter-num">Chapter 3</div>
+  <h2 class="chapter-title">The Collision</h2>
+
+  <p>The "collision" is the meeting of the debt trajectory (which requires inflation to stabilise) and AI-driven deflation (which makes that inflation harder to generate). The model captures this through three interacting channels.</p>
+
+  <h3 id="ch3-fiscal">The Fiscal Channel</h3>
+
+  <p>AI displacement directly damages the fiscal position through two mechanisms: <strong>tax revenue collapse</strong> (fewer employed workers paying income and payroll taxes) and <strong>welfare spending surge</strong> (more unemployed workers claiming benefits).</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 7 — Tax Revenue</div>
+    <div class="formula">
+      <span class="var">tax(t)</span> <span class="op">=</span> <span class="var">tax₀</span> <span class="op">×</span> <span class="op">(</span><span class="var">employed(t)</span> <span class="op">/</span> <span class="var">fullEmployment</span><span class="op">)</span><sup>1.2</sup> <span class="op">+</span> <span class="var">robotTaxBonus</span>
+    </div>
+    <div class="formula-note">Base tax rate 18% of GDP. The 1.2 exponent reflects that unemployment disproportionately hits lower-income workers who have higher marginal propensity to consume taxable goods. Robot Tax (if active) adds 0.8% of GDP in revenue from automation levies.</div>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 8 — Government Spending</div>
+    <div class="formula">
+      <span class="var">spending(t)</span> <span class="op">=</span> <span class="var">base</span> <span class="op">+</span> max<span class="op">(</span>0, <span class="op">(</span><span class="var">unemp(t)</span> <span class="op">-</span> 5%<span class="op">)</span> <span class="op">×</span> 2.2<span class="op">)</span> <span class="op">+</span> <span class="var">UBI_cost</span>
+    </div>
+    <table class="var-table">
+      <tr><td>base</td><td>24.5% of GDP (baseline federal spending)</td></tr>
+      <tr><td>2.2</td><td>Automatic stabiliser multiplier: each 1pp of unemployment above 5% adds 2.2pp to spending/GDP</td></tr>
+      <tr><td>UBI_cost</td><td>2.2% of GDP if Universal Basic Income active (Robot Tax + UBI policy)</td></tr>
+    </table>
+  </div>
+
+  <h3 id="ch3-yield">Inflation Dynamics</h3>
+
+  <p>Inflation in the model is driven by the net of three forces: a baseline (which decays over time as the current inflationary episode fades), a deflationary drag from AI productivity, and a monetary policy additive from stimulus.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 9 — Inflation Rate</div>
+    <div class="formula">
+      <span class="var">π(t)</span> <span class="op">=</span> max<span class="op">(</span><span class="op">-</span>10%, min<span class="op">(</span>20%, base_infl<span class="op">(</span>t<span class="op">)</span> <span class="op">-</span> <span class="var">prod(t)</span> <span class="op">×</span> 0.5 <span class="op">+</span> <span class="var">iA</span><span class="op">)</span><span class="op">)</span><br><br>
+      where <span class="var">base_infl(t)</span> <span class="op">=</span> max<span class="op">(</span>0, 2.5% <span class="op">-</span> <span class="var">t</span> <span class="op">×</span> 0.07%<span class="op">)</span>
+    </div>
+    <div class="formula-note">The 0.5 pass-through from productivity to deflation is conservative — some AI productivity gains appear as quality improvements (hedonic deflation) captured partially in price indices, and some appear as profit margin expansion rather than price reductions. The iA term is the inflation additive from monetary policy (e.g. +3.5% for QE, +4.5% for YCC).</div>
+  </div>
+
+  <h3 id="ch3-break">Break Point Logic</h3>
+
+  <p>The simulation flags a <strong>fiscal break point</strong> — the year in which the system crosses a threshold suggesting a major disruptive event (sovereign debt crisis, hyperinflationary episode, or political rupture). This is triggered by any of:</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Trigger</th><th>Threshold</th><th>Economic rationale</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Debt/GDP</td>
+        <td class="num hi">&gt; 175%</td>
+        <td>Reinhart-Rogoff "danger zone"; above this, historical default/restructuring rates increase sharply<sup class="ref">[1]</sup></td>
+      </tr>
+      <tr>
+        <td>Unemployment</td>
+        <td class="num hi">&gt; 20%</td>
+        <td>Depression-level unemployment; historical precedent for political rupture and fiscal emergency</td>
+      </tr>
+      <tr>
+        <td>Deflation</td>
+        <td class="num hi">&lt; −7%</td>
+        <td>Fisher debt-deflation spiral: falling prices increase real debt burden, creating self-reinforcing crisis<sup class="ref">[11]</sup></td>
+      </tr>
+      <tr>
+        <td>Yield + Debt</td>
+        <td class="num hi">yield &gt; 6.5% AND debt &gt; 150%</td>
+        <td>Interest service becomes unmanageable; Italy/Greece 2010–12 analogue — markets withdraw funding</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout blue">
+    <div class="callout-label">Note on Break Point Modelling</div>
+    <p>The break point is a <em>signal</em>, not a forecast of a specific event. Real sovereign crises are complex, path-dependent, and often delayed by political will and international support. The model does not attempt to forecast <em>which</em> type of crisis occurs, only to flag that the system has entered a regime where historical precedent suggests major disruption becomes likely.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 4 ══════════════════════════ -->
+<section id="ch4" class="chapter">
+  <div class="chapter-num">Chapter 4</div>
+  <h2 class="chapter-title">Policy Responses</h2>
+
+  <p>The simulation models fiscal and monetary policy responses as <strong>independent, combinable choices</strong>. A government can simultaneously run an austerity programme and deploy yield curve control — indeed, several historical examples (Japan 2013–2023, UK 1940s–1950s) show exactly this combination. The effects are combined: multipliers multiply, additive terms sum.</p>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 10 — Combined Policy Effects</div>
+    <div class="formula">
+      <span class="var">e_combined</span> <span class="op">=</span> <span class="op">{</span><br>
+      &nbsp;&nbsp;<span class="var">dM</span> <span class="op">=</span> <span class="var">fiscal.dM</span> <span class="cmt">← deficit multiplier (fiscal only)</span><br>
+      &nbsp;&nbsp;<span class="var">yM</span> <span class="op">=</span> <span class="var">monetary.yM</span> <span class="cmt">← yield multiplier (monetary only)</span><br>
+      &nbsp;&nbsp;<span class="var">iA</span> <span class="op">=</span> <span class="var">fiscal.iA</span> <span class="op">+</span> <span class="var">monetary.iA</span> <span class="cmt">← inflation additives sum</span><br>
+      &nbsp;&nbsp;<span class="var">gM</span> <span class="op">=</span> <span class="var">monetary.gM</span> <span class="cmt">← gold/crypto multiplier (monetary only)</span><br>
+      &nbsp;&nbsp;<span class="var">lD</span> <span class="op">=</span> <span class="var">fiscal.lD</span> <span class="op">+</span> <span class="var">monetary.lD</span> <span class="cmt">← labour share delta sums</span><br>
+      <span class="op">}</span>
+    </div>
+  </div>
+
+  <h3 id="ch4-fiscal">Fiscal Policy Options</h3>
+
+  <div class="policy-grid">
+    <div class="policy-card fiscal">
+      <div class="policy-label">None (baseline)</div>
+      <p>No fiscal adjustment. Government continues on current trajectory. Automatic stabilisers operate (welfare rises with unemployment) but no deliberate policy change.</p>
+      <div class="policy-effects">
+        Deficit mult: 1.00 (unchanged)<br>
+        Inflation add: 0.0%<br>
+        Labour share effect: neutral
+      </div>
+    </div>
+    <div class="policy-card fiscal">
+      <div class="policy-label">Robot Tax + UBI</div>
+      <p>A levy on automated production units funds universal basic income transfers. The only credible fiscal response pairing — UBI without a funding mechanism is not modelled as it is fiscally incoherent.</p>
+      <div class="policy-effects">
+        Deficit mult: 0.72 (revenue from robot tax offsets UBI cost partially)<br>
+        Inflation add: +0.2% (UBI increases demand slightly)<br>
+        Labour share effect: +8pp (redistribution compresses K-gap)<br>
+        Capital share effect: −6pp (robot tax reduces post-tax profit share)
+      </div>
+    </div>
+    <div class="policy-card fiscal">
+      <div class="policy-label">Austerity</div>
+      <p>Discretionary spending cuts capped at 92% of baseline spending. Historically: reduces deficit in the short run, but suppresses demand and worsens unemployment, partially offsetting fiscal gains.</p>
+      <div class="policy-effects">
+        Deficit mult: 0.60 (spending cut)<br>
+        Inflation add: −1.0% (demand suppression is deflationary)<br>
+        Unemployment mult: 1.15 (austerity worsens displacement)<br>
+        Note: deflationary effect worsens real debt burden
+      </div>
+    </div>
+  </div>
+
+  <h3 id="ch4-monetary">Monetary Policy Options</h3>
+
+  <div class="policy-grid">
+    <div class="policy-card monetary">
+      <div class="policy-label">QE / Money Printing</div>
+      <p>Central bank purchases government bonds, suppressing yields and monetising deficit. Historical precedents: US/UK 2009–2021, Japan ongoing. Primary mechanism for SPICE hedge thesis.</p>
+      <div class="policy-effects">
+        Yield mult: 0.70 (suppresses yields 30%)<br>
+        Inflation add: +3.5% (monetary expansion is inflationary)<br>
+        Gold/crypto mult: 1.55 (monetary debasement drives hard asset demand)<br>
+        Labour share: −5pp (asset price inflation favours capital holders)
+      </div>
+    </div>
+    <div class="policy-card monetary">
+      <div class="policy-label">Yield Curve Control</div>
+      <p>Central bank explicitly caps long-end yield at 4.5% (Japan BOJ 2016–2023 playbook). Requires unlimited bond purchases to defend the cap; inherently inflationary over time.</p>
+      <div class="policy-effects">
+        Yield hard cap: 4.5%<br>
+        Inflation add: +4.5% (most inflationary option — forces negative real rates)<br>
+        Gold/crypto mult: 1.70 (most bullish for hard assets)<br>
+        Historical precedent: Japan (yen −40%), UK 1940s–50s, US 1942–1951
+      </div>
+    </div>
+    <div class="policy-card monetary">
+      <div class="policy-label">Financial Repression</div>
+      <p>Regulatory requirements force banks, pension funds, and insurance companies to hold government bonds at below-market rates. A "silent tax" on savers and institutional investors. Historically the dominant mechanism for post-WWII debt reduction.<sup class="ref">[2]</sup></p>
+      <div class="policy-effects">
+        Yield mult: 0.72 (regulatory suppression of market-clearing yields)<br>
+        Inflation add: +2.0% (moderate inflationary effect)<br>
+        Gold/crypto mult: 1.35 (moderate debasement signal)<br>
+        Historical precedent: US/UK 1945–1980 (real rates −3% to −5% average)
+      </div>
+    </div>
+  </div>
+
+  <h3 id="ch4-combination">Policy Combination Examples</h3>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Combination</th><th>Historical Analogue</th><th>Net Effect</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Austerity + YCC</td>
+        <td>UK 2022 (Truss budget reversal) / Japan ongoing</td>
+        <td>Deflationary fiscal + inflationary monetary = conflicting signals; fiscal austerity partially offset by monetary accommodation</td>
+      </tr>
+      <tr>
+        <td>Robot Tax + QE</td>
+        <td>No direct historical precedent</td>
+        <td>Redistributive fiscal + monetary stimulus; strongest labour share protection while managing debt trajectory</td>
+      </tr>
+      <tr>
+        <td>None + YCC</td>
+        <td>Japan 2016–2023</td>
+        <td>Fiscal drift + hard yield cap; debt compounds while monetary policy absorbs the stress. Classic "kicking the can"</td>
+      </tr>
+      <tr>
+        <td>Austerity + Financial Repression</td>
+        <td>UK 1945–1955</td>
+        <td>Post-WWII playbook: spending cuts + forced savings into gilts below inflation; real debt burden reduced ~40% over decade</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 5 ══════════════════════════ -->
+<section id="ch5" class="chapter">
+  <div class="chapter-num">Chapter 5</div>
+  <h2 class="chapter-title">K-Shaped Economy</h2>
+
+  <p>The K-shape panel in the simulation tracks the <strong>distribution</strong> of national income between labour and capital — arguably the most consequential long-run variable, and the one least visible in headline macroeconomic statistics.</p>
+
+  <h3 id="ch5-shares">Income Share Accounting</h3>
+
+  <div class="callout blue">
+    <div class="callout-label">Why Labour + Capital ≠ 100%</div>
+    <p>In National Income and Product Accounts (NIPA) methodology, GDP is divided between: <strong>Labour compensation</strong> (~60% historically), <strong>Capital income</strong> (corporate profits + proprietors' income, ~25%), and a <strong>residual</strong> (~15%) comprising depreciation allowances, net taxes on production, and net interest. The K-shape chart shows the transfer <em>within</em> the ~85% labour+capital share. The residual is assumed stable. This decomposition follows BEA methodology.<sup class="ref">[12]</sup></p>
+  </div>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 11 — K-Shape Dynamics</div>
+    <div class="formula">
+      <span class="var">labShare(t+1)</span> <span class="op">=</span> max<span class="op">(</span>30%, <span class="var">labShare(t)</span> <span class="op">-</span> <span class="var">kShift(t)</span> <span class="op">+</span> <span class="var">lD</span> <span class="op">×</span> 0.025<span class="op">)</span><br>
+      <span class="var">capShare(t+1)</span> <span class="op">=</span> min<span class="op">(</span>52%, <span class="var">capShare(t)</span> <span class="op">+</span> <span class="var">kShift(t)</span> <span class="op">×</span> 0.55 <span class="op">+</span> <span class="var">cD</span> <span class="op">×</span> 0.025<span class="op">)</span><br><br>
+      where <span class="var">kShift(t)</span> <span class="op">=</span> <span class="var">annDisp(t)</span> <span class="op">×</span> 0.45
+    </div>
+    <table class="var-table">
+      <tr><td>kShift</td><td>Annual transfer from labour to capital share, driven by displacement rate</td></tr>
+      <tr><td>0.55</td><td>Capital captures 55% of the transfer (45% "disappears" into the residual / depreciation of human capital)</td></tr>
+      <tr><td>lD, cD</td><td>Policy-driven adjustments to labour and capital shares respectively</td></tr>
+      <tr><td>30% floor</td><td>Labour share floor — even in extreme scenarios, some human labour remains economically necessary</td></tr>
+    </table>
+    <div class="formula-note">Starting values: labour share 60%, capital share 25% — consistent with US BEA data for 2023–2025.<sup class="ref">[12]</sup> The long-run decline in US labour share from ~65% in 1960 to ~57% in 2020 (pre-pandemic) is well-documented and consistent with the direction of this model's dynamics even before AI acceleration.<sup class="ref">[13]</sup></div>
+  </div>
+
+  <h3 id="ch5-policy">Policy Effects on Income Distribution</h3>
+
+  <p>The K-shape is where policy choice makes the most direct distributional difference:</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Policy</th><th>Labour Share Effect</th><th>Capital Share Effect</th><th>Mechanism</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Robot Tax + UBI</td>
+        <td class="lo">+8pp (compresses gap)</td>
+        <td class="hi">−6pp</td>
+        <td>Redistribution from automation profits to workers via UBI; robot tax reduces post-tax capital returns</td>
+      </tr>
+      <tr>
+        <td>QE</td>
+        <td class="hi">−5pp (widens gap)</td>
+        <td class="lo">+7pp</td>
+        <td>Asset price inflation primarily benefits capital owners; wage inflation lags financial asset returns</td>
+      </tr>
+      <tr>
+        <td>YCC</td>
+        <td class="hi">−6pp</td>
+        <td class="lo">+8pp</td>
+        <td>Most extreme: forces savers into negative real rates while asset owners benefit from suppressed borrowing costs</td>
+      </tr>
+      <tr>
+        <td>Austerity</td>
+        <td class="hi">−2pp</td>
+        <td>+1pp</td>
+        <td>Spending cuts disproportionately reduce public sector wages and transfers to lower-income households</td>
+      </tr>
+      <tr>
+        <td>Financial Repression</td>
+        <td class="hi">−3pp</td>
+        <td>+4pp</td>
+        <td>Suppressed deposit rates and forced institutional buying reduce returns on household savings, transfer to government/corporates</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout red">
+    <div class="callout-label">Key Insight</div>
+    <p>The policy responses most likely to be deployed (QE, YCC, financial repression) are precisely those that <strong>widen</strong> the K-shape the most. This is not a coincidence — these policies are attractive to governments partly because they distribute pain silently (via inflation and financial repression) rather than visibly (via tax increases or austerity). The political economy strongly favours monetary over fiscal adjustment.</p>
+    <p>This is why SPICE invests in assets that benefit from the monetary responses: gold and crypto are direct beneficiaries of exactly the policies that governments are most likely to choose.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CHAPTER 6 ══════════════════════════ -->
+<section id="ch6" class="chapter">
+  <div class="chapter-num">Chapter 6</div>
+  <h2 class="chapter-title">Gold &amp; Crypto as Hedge</h2>
+
+  <p>The Gold/Crypto index in the simulation represents the combined performance of hard monetary assets — gold and Bitcoin/crypto — as a function of monetary stress. This is the channel through which SPICE captures returns.</p>
+
+  <h3 id="ch6-monetary-stress">Monetary Stress Index</h3>
+
+  <div class="formula-block">
+    <div class="formula-label">Equation 12 — Monetary Stress Index</div>
+    <div class="formula">
+      <span class="var">mStress(t)</span> <span class="op">=</span>
+        max<span class="op">(</span>0, <span class="var">r(t)</span> <span class="op">-</span> 4%<span class="op">)</span> <span class="op">×</span> 4 <span class="cmt">← yield above neutral (fiscal stress)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="op">+</span> max<span class="op">(</span>0, <span class="op">-</span><span class="var">π(t)</span><span class="op">)</span> <span class="op">×</span> 3 <span class="cmt">← deflation (debt spiral risk)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="op">+</span> max<span class="op">(</span>0, <span class="var">π(t)</span> <span class="op">-</span> 4%<span class="op">)</span> <span class="op">×</span> 4 <span class="cmt">← excess inflation (debasement signal)</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="op">+</span> max<span class="op">(</span>0, <span class="var">D(t)</span> <span class="op">-</span> 140%<span class="op">)</span> <span class="op">×</span> 0.8 <span class="cmt">← high debt overhang</span>
+    </div>
+    <div class="formula-note">The index grows at: Gold(t+1) = Gold(t) × (1 + min(mStress × 0.12 × gM, 60%) + 3%). The 3% base growth reflects gold's long-run real return and Bitcoin's network growth premium. The 60% annual cap prevents unrealistic single-year returns.</div>
+  </div>
+
+  <h3 id="ch6-rationale">The Hedge Rationale</h3>
+
+  <p>The four components of monetary stress represent the four distinct paths through which the debt-AI collision resolves badly for fiat money:</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Component</th><th>What it measures</th><th>Gold/BTC historical response</th><th>Key source</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Yield above 4%</td>
+        <td>Fiscal credibility stress; markets demanding risk premium</td>
+        <td>Gold +15–25% in high-yield stress episodes (2008, 2022)<sup class="ref">[14]</sup></td>
+        <td>World Gold Council<sup class="ref">[14]</sup></td>
+      </tr>
+      <tr>
+        <td>Deflation</td>
+        <td>Debt-deflation spiral risk; real debt burden rising</td>
+        <td>Gold +15% in deflationary episodes; BTC untested at scale</td>
+        <td>Reinhart-Rogoff<sup class="ref">[1]</sup></td>
+      </tr>
+      <tr>
+        <td>Inflation &gt; 4%</td>
+        <td>Currency debasement; monetary expansion beyond target</td>
+        <td>Gold +8–40% in high-inflation regimes; BTC design as inflation hedge<sup class="ref">[15,16]</sup></td>
+        <td>WisdomTree; Grayscale<sup class="ref">[15,16]</sup></td>
+      </tr>
+      <tr>
+        <td>Debt &gt; 140% GDP</td>
+        <td>Structural insolvency risk; sovereign credibility eroding</td>
+        <td>Gold +30–50% in sovereign stress (Greece 2010–12, Argentina multiple)<sup class="ref">[14]</sup></td>
+        <td>World Gold Council; NYDIG<sup class="ref">[17]</sup></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout gold">
+    <div class="callout-label">Why Both Gold and Crypto?</div>
+    <p>Gold and Bitcoin are complementary hedges with different risk profiles. Gold has 5,000 years of monetary history, is held by central banks, and performs well in <em>deflation</em> as well as inflation — because its value is not a claim on any cash flow, it cannot be impaired by deflation the way equities or bonds can. Bitcoin is a newer, more volatile asset with a hard supply cap and network effects; it is more sensitive to institutional adoption and regulatory risk, but offers higher upside in a monetary reset scenario. The SPICE index weights both, capturing the institutional-grade safety of gold with the optionality of crypto in a genuine paradigm-shift scenario.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ APPENDIX ═══════════════════════════ -->
+<section id="assumptions" class="chapter">
+  <div class="chapter-num">Appendix A</div>
+  <h2 class="chapter-title">Key Assumptions Summary</h2>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Parameter</th><th>Value</th><th>Basis</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Starting Debt/GDP</td><td class="num">123%</td><td>CBO / House Budget Committee 2025<sup class="ref">[4]</sup></td></tr>
+      <tr><td>Base interest rate (r₀)</td><td class="num">4.1%</td><td>10Y Treasury yield, early 2026</td></tr>
+      <tr><td>Base real growth rate</td><td class="num">1.8%</td><td>CBO 10-year average projection<sup class="ref">[5]</sup></td></tr>
+      <tr><td>Base primary deficit</td><td class="num">3.0% GDP</td><td>CBO long-run average<sup class="ref">[3]</sup></td></tr>
+      <tr><td>Base inflation</td><td class="num">2.5% → 0% (decays)</td><td>Consistent with Fed target convergence</td></tr>
+      <tr><td>Labour force</td><td class="num">167M</td><td>BLS 2025</td></tr>
+      <tr><td>Initial employment</td><td class="num">160M</td><td>BLS 2025 (4.4% unemployment)</td></tr>
+      <tr><td>Labour share of GDP (start)</td><td class="num">60%</td><td>BEA NIPA 2024<sup class="ref">[12]</sup></td></tr>
+      <tr><td>Capital share of GDP (start)</td><td class="num">25%</td><td>BEA NIPA 2024<sup class="ref">[12]</sup></td></tr>
+      <tr><td>Yield premium above 120% debt</td><td class="num">1.2bp per 1pp</td><td>Reinhart-Rogoff calibration<sup class="ref">[1]</sup></td></tr>
+      <tr><td>Displacement lag vs productivity</td><td class="num">2 years</td><td>Historical technology adoption analogy; PC era, internet era</td></tr>
+      <tr><td>Welfare multiplier (unemployment)</td><td class="num">2.2pp per 1pp unemp</td><td>CBO automatic stabiliser estimates<sup class="ref">[3]</sup></td></tr>
+      <tr><td>YCC cap (if active)</td><td class="num">4.5%</td><td>Japan BOJ YCC ceiling 2016–2023</td></tr>
+      <tr><td>Debt crisis cap</td><td class="num">300% GDP</td><td>Model limit — above this, restructuring assumed</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="sensitivity" class="chapter">
+  <div class="chapter-num">Appendix B</div>
+  <h2 class="chapter-title">Sensitivity Analysis</h2>
+
+  <p>The model's outputs are most sensitive to three parameters. The following table shows how the 2035 Debt/GDP changes under variations in each, holding all others at SPICE base case (40% displacement, no policy response):</p>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Parameter varied</th><th>Low</th><th>Base</th><th>High</th><th>Impact on Debt/GDP 2035</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AI displacement rate</td>
+        <td>5% (CBO)</td>
+        <td>40% (SPICE)</td>
+        <td>60% (Tsunami)</td>
+        <td>~135% → ~220% → &gt;280%</td>
+      </tr>
+      <tr>
+        <td>Interest rate sensitivity to debt</td>
+        <td>0.6bp per 1pp</td>
+        <td>1.2bp per 1pp</td>
+        <td>2.0bp per 1pp</td>
+        <td>~200% → ~220% → ~260%</td>
+      </tr>
+      <tr>
+        <td>Productivity–inflation pass-through</td>
+        <td>0.3</td>
+        <td>0.5</td>
+        <td>0.8</td>
+        <td>~215% → ~220% → ~240%</td>
+      </tr>
+      <tr>
+        <td>Displacement lag (years)</td>
+        <td>0 (immediate)</td>
+        <td>2 years</td>
+        <td>4 years</td>
+        <td>~250% → ~220% → ~195%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout green">
+    <div class="callout-label">Conclusion</div>
+    <p>The model is most sensitive to the displacement rate (which you can explore directly with the slider) and moderately sensitive to interest rate feedback. It is relatively robust to the productivity–inflation pass-through assumption. The displacement lag is important for <em>timing</em> of the crisis but less so for its ultimate severity.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════ CITATIONS ═══════════════════════════ -->
+<section id="citations" class="citations">
+  <div class="cite-header">All Citations</div>
+
+  <div class="cite-item">
+    <div class="cite-num">[1]</div>
+    <div class="cite-text">Reinhart, C.M. &amp; Rogoff, K.S. (2010). <em>Growth in a Time of Debt.</em> NBER Working Paper 15639. <a href="https://www.nber.org/papers/w15639" target="_blank">nber.org/papers/w15639</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[2]</div>
+    <div class="cite-text">Reinhart, C.M. &amp; Sbrancia, M.B. (2015). <em>The Liquidation of Government Debt.</em> Economic Policy, 30(82), 291–333. IMF Working Paper WP/11/10. Foundational paper on financial repression as debt reduction mechanism.</div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[3]</div>
+    <div class="cite-text">Congressional Budget Office. (March 2025). <em>The Long-Term Budget Outlook: 2025 to 2055.</em> <a href="https://www.cbo.gov/publication/61270" target="_blank">cbo.gov/publication/61270</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[4]</div>
+    <div class="cite-text">House Budget Committee. (2025). <em>Chairman Arrington Statement on CBO Long-Term Budget Outlook.</em> Gross debt projected $150T by 2055. <a href="https://budget.house.gov/press-release/chairman-arrington-statement-on-cbo-long-term-budget-outlook" target="_blank">budget.house.gov</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[5]</div>
+    <div class="cite-text">Congressional Budget Office. (January 2025). <em>The Budget and Economic Outlook: 2025 to 2035.</em> <a href="https://www.cbo.gov/publication/62105" target="_blank">cbo.gov/publication/62105</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[6]</div>
+    <div class="cite-text">Auerbach, A.J., Gale, W.G. et al. (2026). <em>Projecting Federal Deficits and Debt.</em> NBER Digest. Debt reaches 199% of GDP by 2054 under current-policy scenario. <a href="https://www.nber.org/digest/202601/projecting-federal-deficits-and-debt" target="_blank">nber.org</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[7]</div>
+    <div class="cite-text">Committee for a Responsible Federal Budget. (2025). <em>Analysis of CBO's March 2025 Long-Term Budget Outlook.</em> <a href="https://www.crfb.org" target="_blank">crfb.org</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[8]</div>
+    <div class="cite-text">Blanchard, O. (2019). <em>Public Debt and Low Interest Rates.</em> American Economic Review 109(4): 1197–1229. AEA Presidential Address on r &lt; g and debt sustainability.</div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[9]</div>
+    <div class="cite-text">International Monetary Fund. (April 2025). <em>Global Impact of AI on Productivity and Labor Markets.</em> IMF Working Paper WP/2025/076. <a href="https://www.imf.org/-/media/files/publications/wp/2025/english/wpiea2025076-print-pdf.pdf" target="_blank">imf.org</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[10]</div>
+    <div class="cite-text">Federal Reserve Bank of Dallas. (August 2025). <em>AI Productivity Effects: Sectoral Evidence 2023–2025.</em> <a href="https://www.dallasfed.org/research/economics/2025/0812" target="_blank">dallasfed.org</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[11]</div>
+    <div class="cite-text">Fisher, I. (1933). <em>The Debt-Deflation Theory of Great Depressions.</em> Econometrica 1(4): 337–357. Foundational theory on deflationary spiral mechanism.</div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[12]</div>
+    <div class="cite-text">Bureau of Economic Analysis. (2025). <em>National Income and Product Accounts: GDP by Income Component.</em> <a href="https://www.bea.gov/data/income-saving/national-income" target="_blank">bea.gov</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[13]</div>
+    <div class="cite-text">Autor, D., Dorn, D., Katz, L.F., Patterson, C., Van Reenen, J. (2020). <em>The Fall of the Labor Share and the Rise of Superstar Firms.</em> Quarterly Journal of Economics 135(2): 645–709.</div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[14]</div>
+    <div class="cite-text">World Gold Council. (June 2025). <em>Are Fiscal Concerns Driving Gold?</em> <a href="https://www.gold.org/goldhub/gold-focus/2025/06/you-asked-we-answered-are-fiscal-concerns-driving-gold" target="_blank">gold.org</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[15]</div>
+    <div class="cite-text">WisdomTree. (2025). <em>Bitcoin and Gold Model Forecasts.</em> <a href="https://www.wisdomtree.com/investments/-/media/us-media-files/documents/resource-library/market-insights/market-commentary/bitcoin-and-gold-model-forecasts.pdf" target="_blank">wisdomtree.com</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[16]</div>
+    <div class="cite-text">Grayscale Research. (2025). <em>Tariffs, Stagflation, and Bitcoin.</em> <a href="https://research.grayscale.com/market-commentary/market-byte-tariffs-stagflation-and-bitcoin" target="_blank">research.grayscale.com</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[17]</div>
+    <div class="cite-text">NYDIG Research. (2025). <em>Comparing Bitcoin and Gold as Macro Hedges.</em> <a href="https://www.nydig.com/research/comparing-bitcoin-and-gold" target="_blank">nydig.com</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[18]</div>
+    <div class="cite-text">McKinsey Global Institute. (2023). <em>The Economic Potential of Generative AI: The Next Productivity Frontier.</em> High-adoption scenario: 25% of tasks automatable by 2030. <a href="https://www.mckinsey.com/capabilities/tech-and-ai/our-insights/the-economic-potential-of-generative-ai-the-next-productivity-frontier" target="_blank">mckinsey.com</a></div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[19]</div>
+    <div class="cite-text">Goldman Sachs Global Economics Research. (2023). <em>The Potentially Large Effects of Artificial Intelligence on Economic Growth.</em> 300 million full-time jobs exposed globally; 18% of US employment at risk of automation.</div>
+  </div>
+  <div class="cite-item">
+    <div class="cite-num">[20]</div>
+    <div class="cite-text">Krause, M. (2025). <em>Bitcoin as a Hedge Against Stagflation.</em> SSRN Working Paper 5216383. <a href="https://papers.ssrn.com/sol3/Delivery.cfm/5216383.pdf?abstractid=5216383&mirid=1" target="_blank">ssrn.com</a></div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="doc-footer">
+  <div>SPICE Protocol — zpc.finance — Model v1.0 — March 2026</div>
+  <div>Comments &amp; peer review welcome</div>
+</footer>
+
+</main>
+</div>
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('section[id], header[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
