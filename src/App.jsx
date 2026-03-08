@@ -31,6 +31,9 @@ function Nav() {
         <NavLink to="/simulation" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Simulation
         </NavLink>
+        <a href="/spice-methodology.html" style={S.navLink}>
+          Methodology
+        </a>
       </nav>
     </header>
   );

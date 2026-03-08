@@ -569,7 +569,7 @@ function PolicyTab({ sliderParams }) {
 
 export default function Collision() {
   const [sliderParams, setSliderParams] = useState(DEFAULT_PARAMS);
-  const [activeTab,    setActiveTab]    = useState('model');
+  const [activeTab,    setActiveTab]    = useState('dual');
   const [selectedYear, setSelectedYear] = useState(0);
   const [activePreset, setActivePreset] = useState(null);
   const [activeRegime, setActiveRegime] = useState(null);
@@ -643,7 +643,6 @@ export default function Collision() {
       {/* Tab bar */}
       <div style={S.tabBar}>
         {[
-          ['model',      'Model & Simulation'],
           ['dual',       'Dual Economy'],
           ['indicators', 'Model Variables'],
           ['apoc',       'Apocalypse Indicators'],
@@ -745,10 +744,6 @@ export default function Collision() {
             ))}
           </div>
 
-          {activeTab === 'model' && (
-            <ModelTab simData={simData} data10={data10} allData={allData}
-              selLabel={selLabel} yr={yr} year={year} crisis={crisis} />
-          )}
           {activeTab === 'dual'       && <DualTab       simData={simData} allData={allData} yr={yr} />}
           {activeTab === 'indicators' && <IndicatorsTab simData={simData} yr={yr} />}
           {activeTab === 'apoc'       && <ApocIndicatorsTab />}
