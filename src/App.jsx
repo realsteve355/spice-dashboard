@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink, useLocation } from "react-router
 import Home from "./pages/Home";
 import Collision from "./pages/Collision";
 import Dashboard from "./pages/Dashboard";
+import Simulation from "./pages/chart3-simulation";
 
 function Nav() {
   const loc = useLocation();
@@ -27,6 +28,9 @@ function Nav() {
         <NavLink to="/dashboard" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Dashboard
         </NavLink>
+        <NavLink to="/simulation" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Simulation
+        </NavLink>
       </nav>
     </header>
   );
@@ -41,6 +45,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/collision" element={<Collision />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/simulation" element={<Simulation />} />
         </Routes>
       </div>
     </BrowserRouter>
