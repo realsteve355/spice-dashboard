@@ -40,7 +40,7 @@ const MONETARY_POLICIES = [
 
 // ─── SIMULATION ────────────────────────────────────────────────────────────
 
-function runSim(displaced, fiscalId, monetaryId) {
+function runSim(displaced, fiscalId, monetaryId, cryptoAdoption) {
   const fp = FISCAL_POLICIES.find(p => p.id === fiscalId)   || FISCAL_POLICIES[0];
   const mp = MONETARY_POLICIES.find(p => p.id === monetaryId) || MONETARY_POLICIES[0];
   // Combine effects: multipliers multiply, additive terms add
@@ -74,7 +74,9 @@ function runSim(displaced, fiscalId, monetaryId) {
   let labShare = 0.60;
   let capShare = 0.25;
 
-  let gold            = 100;
+  let bitcoin         = 100;   // bitcoin index, starting 100
+  let cryptoFlight    = 0.01;  // % of capital in crypto (starts ~1%)
+  const cAdopt        = cryptoAdoption ?? 0.5; // 0=none, 1=Venezuela-speed
   let yld             = r0;
   let breakYear       = null;
   let ghostYear       = null;
@@ -85,62 +87,101 @@ function runSim(displaced, fiscalId, monetaryId) {
     const yr = 2026 + i;
     const t  = i + 1;
 
-    // Productivity
-    const ramp   = Math.min(1, t / rampYrs);
-    const prod   = peakProd * ramp * Math.exp(-0.02 * Math.max(0, t - rampYrs));
+    // ── Productivity
+    const ramp    = Math.min(1, t / rampYrs);
+    const prod    = peakProd * ramp * Math.exp(-0.02 * Math.max(0, t - rampYrs));
 
-    // Displacement — lags productivity by ~2 years
-    const dLag   = Math.max(0, t - 2);
-    const dRamp  = Math.min(1, dLag / (rampYrs + 1));
+    // ── Displacement — lags productivity by ~2 years
+    const dLag    = Math.max(0, t - 2);
+    const dRamp   = Math.min(1, dLag / (rampYrs + 1));
     const annDisp = peakDisp * dRamp * Math.exp(-0.03 * Math.max(0, dLag - rampYrs)) * e.uM;
 
-    employed = Math.max(employed * (1 - annDisp), lf * 0.55); // floor: 55% employment
+    employed = Math.max(employed * (1 - annDisp), lf * 0.55);
     const unemp = Math.max(0, 1 - employed / lf);
 
     if (!ghostYear && prod > 0.03 && unemp > 0.08) ghostYear = yr;
 
-    // Inflation: deflation from AI productivity vs stimulus
-    const infl = Math.max(-0.10, Math.min(0.20,
-      0.025 - t * 0.0007 - prod * 0.5 + e.iA));
+    // ── LOOP 3 (escape valve): high crypto flight reduces inflationary pressure
+    // People saving in stablecoins rather than spending fiat → fiat velocity falls
+    // Effect is small at low flight, meaningful above ~15% capital shift
+    // Calibration: max -1.5pp dampening at full Venezuela adoption
+    const escapeValve = Math.min(cryptoFlight * cAdopt * 0.06, 0.015);
+
+    // ── Inflation: AI deflation vs stimulus, moderated by escape valve at high adoption
+    const inflRaw = 0.025 - t * 0.0007 - prod * 0.5 + e.iA;
+    const infl    = Math.max(-0.10, Math.min(0.20, inflRaw + escapeValve));
     priceLevel *= (1 + infl);
 
-    // GDP growth
-    const drag   = unemp > 0.07 ? (unemp - 0.07) * 1.2 : 0;
-    const gGDP   = Math.max(-0.05, 0.018 + prod * 0.65 - drag);
+    // ── GDP growth
+    const drag  = unemp > 0.07 ? (unemp - 0.07) * 1.2 : 0;
+    // LOOP 4 (ghost GDP): activity migrating to informal crypto economy
+    // disappears from measured GDP — worsens the debt/GDP denominator
+    // Calibration: up to -0.8pp off measured growth at Venezuela-speed
+    const ghostDrag = cryptoFlight * cAdopt * 0.025;
+    const gGDP  = Math.max(-0.05, 0.018 + prod * 0.65 - drag - ghostDrag);
 
-    // Fiscal
+    // ── Fiscal
     const empR   = employed / (lf * 0.956);
     const robTax = fiscalId === "robot_ubi" ? 0.008 : 0;
-    const tax    = tax0 * Math.pow(empR, 1.2) + robTax;
+    // LOOP 1 (tax erosion): crypto economy is informal → tax base shrinks with flight
+    // Calibration: up to -2pp tax revenue at full adoption (Grok: +0.5-1% GDP deficit impact)
+    const taxErosion = cryptoFlight * cAdopt * 0.08;
+    const tax    = Math.max(0.10, tax0 * Math.pow(empR, 1.2) + robTax - taxErosion);
     const welf   = Math.max(0, unemp - 0.05) * 2.2;
     const ubi    = fiscalId === "robot_ubi" ? 0.022 : 0;
     const rawSpd = spend0 + welf + ubi;
     const spd    = fiscalId === "austerity" ? Math.min(rawSpd, spend0 * 0.92) : rawSpd;
-    const pDef   = (spd - tax) * e.dM;
+    // LOOP 1 (seigniorage loss): government loses inflation tax as currency shrinks
+    // Calibration: up to +0.5pp on deficit at high flight (Reinhart-Sbrancia: seigniorage ~2% GDP)
+    const seigniorageLoss = cryptoFlight * cAdopt * 0.018;
+    const pDef   = (spd - tax) * e.dM + seigniorageLoss;
 
-    // Yields — rise with debt stress, capped by YCC
+    // ── Yields — rise with debt stress + ghost GDP making ratio look worse, capped by YCC
     const yldRaw = r0 + Math.max(0, (debtGDP - 1.2) * 0.012 + pDef * 0.18);
     yld = Math.min(yccCap, yldRaw * e.yM);
 
-    // Debt/GDP — capped at 3x GDP (300%) — beyond this a crisis/restructuring occurs
+    // ── Debt/GDP
+    // LOOP 4: ghost GDP shrinks measured denominator → ratio worsens beyond true level
+    // This spooks bond markets → yield spike feedback already captured via yldRaw above
     const rawDebt = debtGDP * (1 + yld) / (1 + gGDP + infl) + pDef;
     debtGDP = Math.min(rawDebt, 3.0);
 
-    // Break point
+    // ── Break point
     if (!breakYear && (debtGDP > 1.75 || unemp > 0.20 || infl < -0.07 || (yld > 0.065 && debtGDP > 1.5)))
       breakYear = yr;
 
-    // Gold / crypto — monetary stress driven
+    // ── Monetary stress index
     const mStress = Math.max(0, yld - 0.04) * 4
       + Math.max(0, -infl) * 3
       + Math.max(0, infl - 0.04) * 4
       + Math.max(0, debtGDP - 1.4) * 0.8;
-    gold = Math.min(gold * (1 + Math.min(mStress * 0.12 * e.gM, 0.6) + 0.03), 8000);
 
-    // K-shape — labour/capital share of GDP
-    const kShift  = annDisp * 0.45;
-    labShare  = Math.max(0.35, labShare  - kShift + e.lD  * 0.025);
-    capShare  = Math.min(0.52, capShare  + kShift * 0.55 + e.cD * 0.025);
+    // ── Crypto flight: capital fleeing to crypto (dollarization analogue)
+    // mStress drives flight; governments crack down near break point (Venezuela/Argentina pattern)
+    // LOOP 1 feeds back: higher pDef from taxErosion → higher debtGDP → higher mStress → more flight
+    const crackdown   = breakYear && yr >= breakYear ? 0.55 : 1.0;
+    const flightPush  = mStress * 0.022 * cAdopt * crackdown;
+    const flightDrift = 0.003 * cAdopt;
+    cryptoFlight = Math.min(cryptoFlight + flightPush + flightDrift, 0.35);
+
+    // ── LOOP 2 (K-shape acceleration): flight is wealth-stratified
+    // Only those with savings/tech access can flee → those left in fiat bear full devaluation
+    // Labour share falls faster at high adoption; capital share rises faster
+    // Calibration: up to +30% faster K-shape divergence at Venezuela-speed
+    const kShift       = annDisp * 0.45;
+    const flightKBoost = cryptoFlight * cAdopt * 0.12; // extra K-shape push from stratified flight
+    labShare = Math.max(0.35, labShare - kShift - flightKBoost + e.lD * 0.025);
+    capShare = Math.min(0.52, capShare + kShift * 0.55 + flightKBoost * 0.6 + e.cD * 0.025);
+
+    // ── Bitcoin: volatile, crisis-amplified, adoption-driven
+    const btcBase     = mStress * 0.22 * e.gM * cAdopt;
+    const btcFlight   = cryptoFlight * 0.55;
+    const btcVol      = breakYear && yr === breakYear ? -0.25 : 0;
+    const btcRecovery = breakYear && yr > breakYear ? 0.15 * cAdopt : 0;
+    bitcoin = Math.min(
+      bitcoin * (1 + Math.min(btcBase + btcFlight, 0.80) + btcVol + btcRecovery + 0.02),
+      25000
+    );
 
     rows.push({
       year:        yr,
@@ -148,7 +189,8 @@ function runSim(displaced, fiscalId, monetaryId) {
       unemp:       +(unemp * 100).toFixed(1),
       infl:        +(infl * 100).toFixed(1),
       yld:         +(yld * 100).toFixed(2),
-      gold:        +gold.toFixed(0),
+      bitcoin:     +bitcoin.toFixed(0),
+      cryptoFlight:+(cryptoFlight * 100).toFixed(1),
       labShare:    +(labShare * 100).toFixed(1),
       capShare:    +(capShare * 100).toFixed(1),
       isBreak:     yr === breakYear,
@@ -298,23 +340,54 @@ function YieldChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function GoldChart({ rows, breakYear, ghostYear }) {
+function BitcoinChart({ rows, breakYear, ghostYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
-      <PanelHead label="Gold / Crypto Index" color="#B8860B" />
+      <div style={{ fontSize:8, fontFamily:"'IBM Plex Mono',monospace",
+        textTransform:"uppercase", letterSpacing:"0.1em",
+        color:"#555", fontWeight:700, marginBottom:3 }}>
+        Crypto Flight
+        <span style={{ marginLeft:8, fontSize:7, fontWeight:400 }}>
+          <span style={{ color:"#f59e0b" }}>&#x2501; Bitcoin index  </span>
+          <span style={{ color:"#93c5fd" }}>&#x254C; Capital in crypto %</span>
+        </span>
+      </div>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
-          <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} /><XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
-            <YAxis domain={[0,8000]} ticks={[1000,2500,5000,7500]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}`} />
-            <Tooltip content={p => <SimpleTip {...p} color="#B8860B" unit="" rows={rows} />} />
-            <ReferenceLine y={300}  stroke="#B8860B50" strokeDasharray="3 4"
-              label={{ value:"+200%", fill:"#B8860B70", fontSize:7, position:"insideTopRight" }} />
-            <ReferenceLine y={1000} stroke="#B8860B80" strokeDasharray="3 4"
-              label={{ value:"10×", fill:"#B8860B90", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
-            <Line type="monotone" dataKey="gold" stroke="#B8860B" strokeWidth={2.5}
-              dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#B8860B", strokeWidth:0 }} />
+          <LineChart data={rows} margin={{ top:4, right:36, left:0, bottom:0 }}>
+            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <YAxis yAxisId="idx" domain={[0,25000]} ticks={[2500,7500,15000,22500]}
+              tick={axTick} tickLine={false} axisLine={false} width={46}
+              tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k` : `${v}`} />
+            <YAxis yAxisId="pct" orientation="right" domain={[0,40]} ticks={[5,15,25,35]}
+              tick={axTick} tickLine={false} axisLine={false} width={28}
+              tickFormatter={v => `${v}%`} />
+            <Tooltip content={p => {
+              if (!p.active || !p.payload?.length) return null;
+              const d = p.payload[0]?.payload;
+              if (!d) return null;
+              return (
+                <div style={{ background:"#fff", border:"1px solid #e8e8e8",
+                  padding:"5px 8px", fontSize:8, fontFamily:"'IBM Plex Mono',monospace" }}>
+                  <div style={{ fontWeight:700, marginBottom:3 }}>{d.year}</div>
+                  <div style={{ color:"#f59e0b" }}>Bitcoin index: {d.bitcoin}</div>
+                  <div style={{ color:"#93c5fd" }}>Crypto flight: {d.cryptoFlight}%</div>
+                  {d.isBreak && <div style={{ color:"#ef4444", marginTop:3 }}>↯ Break point</div>}
+                </div>
+              );
+            }} />
+            <>{breakYear && <ReferenceLine yAxisId="idx" x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}
+              {ghostYear && ghostYear !== breakYear && <ReferenceLine yAxisId="idx" x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            <ReferenceLine yAxisId="idx" y={500} stroke="#f59e0b30" strokeDasharray="3 4"
+              label={{ value:"5x", fill:"#f59e0b55", fontSize:6, position:"insideTopRight" }} />
+            <ReferenceLine yAxisId="idx" y={2500} stroke="#f59e0b40" strokeDasharray="3 4"
+              label={{ value:"25x", fill:"#f59e0b70", fontSize:6, position:"insideTopRight" }} />
+            <Line yAxisId="idx" type="monotone" dataKey="bitcoin" stroke="#f59e0b" strokeWidth={2.5}
+              dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#f59e0b", strokeWidth:0 }} />
+            <Line yAxisId="pct" type="monotone" dataKey="cryptoFlight" stroke="#93c5fd" strokeWidth={1.5}
+              strokeDasharray="5 2" dot={false} isAnimationActive={false}
+              activeDot={{ r:2, fill:"#93c5fd", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -400,10 +473,11 @@ export default function Chart3Simulation() {
   const [fiscalId,   setFiscalId]   = useState("none");
   const [monetaryId, setMonetaryId] = useState("none");
   const [kpiYear,    setKpiYear]    = useState(2035);
+  const [cryptoAdopt, setCryptoAdopt] = useState(0.5);
 
   const { rows, breakYear, ghostYear } = useMemo(
-    () => runSim(displaced, fiscalId, monetaryId),
-    [displaced, fiscalId, monetaryId]
+    () => runSim(displaced, fiscalId, monetaryId, cryptoAdopt),
+    [displaced, fiscalId, monetaryId, cryptoAdopt]
   );
 
   const last       = rows.find(r => r.year === kpiYear) || rows[rows.length - 1];
@@ -496,6 +570,50 @@ export default function Chart3Simulation() {
 
           <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
           <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+            letterSpacing:"0.1em", marginBottom:6 }}>Crypto Flight Speed</div>
+          <div style={{ fontSize:10, color:"#555", lineHeight:1.5, marginBottom:7 }}>
+            How fast does capital{" "}
+            <strong style={{ color:"#111" }}>flee to crypto</strong> when stress rises?
+          </div>
+
+          <input type="range" min={0} max={1} step={0.05} value={cryptoAdopt}
+            onChange={ev => setCryptoAdopt(+ev.target.value)}
+            style={{ width:"100%", accentColor:"#93c5fd", cursor:"pointer", marginBottom:4 }} />
+
+          <div style={{ position:"relative", height:22, marginBottom:6 }}>
+            {[{v:0,l:"None"},{v:0.25,l:"Slow"},{v:0.5,l:"Moderate"},{v:0.75,l:"Fast"},{v:1,l:"Venezuela"}].map(a => {
+              const lp = a.v * 100;
+              const on = Math.abs(a.v - cryptoAdopt) < 0.13;
+              return (
+                <div key={a.l} onClick={() => setCryptoAdopt(a.v)}
+                  style={{ position:"absolute", left:`${lp}%`,
+                    transform:"translateX(-50%)", textAlign:"center", cursor:"pointer" }}>
+                  <div style={{ width:1, height:4, margin:"0 auto 2px",
+                    background:on?"#93c5fd":"#ddd" }} />
+                  <div style={{ fontSize:7, whiteSpace:"nowrap",
+                    fontWeight:on?700:400, color:on?"#60a5fa":"#ccc" }}>{a.l}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ background:"#fff", border:"1px solid #ebebeb", padding:"5px 8px",
+            fontSize:8, color:"#888", lineHeight:1.6, marginBottom:3 }}>
+            <span style={{ color:"#60a5fa", fontWeight:700 }}>
+              {cryptoAdopt === 0 ? "No flight" :
+               cryptoAdopt < 0.3 ? "Slow drift" :
+               cryptoAdopt < 0.6 ? "Argentina-speed" :
+               cryptoAdopt < 0.85 ? "Turkey-speed" : "Venezuela-speed"}
+            </span><br />
+            {cryptoAdopt === 0 ? "Capital stays in fiat. No crypto adoption." :
+             cryptoAdopt < 0.3 ? "Gradual portfolio shift. Institutional only." :
+             cryptoAdopt < 0.6 ? "Informal adoption mirrors Argentina 2000s. K-shape accelerator." :
+             cryptoAdopt < 0.85 ? "Rapid flight as in Turkey 2021-22. Significant parallel economy." :
+             "Full informal dollarization via crypto. P2P stablecoin economy."}
+          </div>
+
+          <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
+          <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
             letterSpacing:"0.1em", marginBottom:7 }}>Government Response</div>
 
           <div style={{ fontSize:8, color:"#22c55e", fontWeight:700, textTransform:"uppercase",
@@ -571,11 +689,11 @@ export default function Chart3Simulation() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)",
             gap:5, marginBottom:8, flexShrink:0 }}>
             <KPI label={`Debt/GDP ${kpiYear}`}  value={`${last.debtGDP}%`}    color="#ef4444" warn={last.debtGDP>175} />
-            <KPI label={`Unemp ${kpiYear}`}   value={`${last.unemp}%`}      color="#8b5cf6" warn={last.unemp>15} />
-            <KPI label={`Inflation ${kpiYear}`}      value={`${last.infl}%`}       color={last.infl<0?"#3b82f6":"#22c55e"} warn={Math.abs(last.infl)>7} />
-            <KPI label={`10Y Yield ${kpiYear}`}      value={`${last.yld}%`}        color="#eab308" warn={last.yld>5.5} />
-            <KPI label={`Gold/Crypto ${kpiYear}`}    value={`${last.gold}`}        color="#B8860B" warn={false} />
-            <KPI label={`Labour ${kpiYear}`}   value={`${last.labShare}%`}   color="#22c55e" warn={last.labShare<40} />
+            <KPI label={`Unemp ${kpiYear}`}      value={`${last.unemp}%`}      color="#8b5cf6" warn={last.unemp>15} />
+            <KPI label={`Inflation ${kpiYear}`}  value={`${last.infl}%`}       color={last.infl<0?"#3b82f6":"#22c55e"} warn={Math.abs(last.infl)>7} />
+            <KPI label={`10Y Yield ${kpiYear}`}  value={`${last.yld}%`}        color="#eab308" warn={last.yld>5.5} />
+            <KPI label={`Bitcoin ${kpiYear}`}    value={`${last.bitcoin}`}     color="#f59e0b" warn={false} />
+            <KPI label={`Labour ${kpiYear}`}     value={`${last.labShare}%`}   color="#22c55e" warn={last.labShare<40} />
           </div>
 
           {/* 3×2 grid — each cell explicitly sized in px */}
@@ -585,7 +703,7 @@ export default function Chart3Simulation() {
             <UnempChart  rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
             <InflChart   rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
             <YieldChart  rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <GoldChart   rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
+            <BitcoinChart rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
             <KShapeChart rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
           </div>
 
