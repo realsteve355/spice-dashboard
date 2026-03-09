@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!spice-methodology.html).*)", "destination": "/index.html" }
   ]
 }
