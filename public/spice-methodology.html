@@ -603,9 +603,9 @@
   <a class="nav-link" href="#ch7">7. Crypto Flight Dynamics</a>
   <a class="nav-link sub" href="#ch7-mechanism">Flight Mechanism</a>
   <a class="nav-link sub" href="#ch7-loops">Four Feedback Loops</a>
-  <a class="nav-link sub" href="#ch7-policy">Government Policy Regimes</a>
+  <a class="nav-link sub" href="#ch7-policy">Policy Regimes</a>
   <a class="nav-link sub" href="#ch7-threshold">Non-Monotonic Threshold</a>
-  <a class="nav-link sub" href="#ch7-btc">Bitcoin Price Dynamics</a>
+  <a class="nav-link sub" href="#ch7-btc">Bitcoin Price Model</a>
 
   <div class="nav-section">Appendix</div>
   <a class="nav-link" href="#assumptions">Key Assumptions</a>
@@ -1233,126 +1233,144 @@
 
   <p>When fiscal credibility erodes and fiat currency is debased, a portion of private capital exits the traditional financial system entirely — moving into non-sovereign monetary assets beyond the reach of capital controls, financial repression, or inflation. In earlier historical episodes this flight went primarily into gold, foreign currencies, or offshore accounts. The simulation models a structurally new version of this dynamic: capital flight into Bitcoin and crypto assets, enabled by bearer digital instruments that are borderless, self-custodied, and censorship-resistant.</p>
 
-  <p>This is not a fringe scenario. Chainalysis ranked Venezuela, Ukraine, Russia, and Argentina among the highest per-capita crypto adoption nations — all countries experiencing acute fiat stress.<sup class="ref">[21]</sup> The simulation models the macro-level consequences of this dynamic if it manifests at scale in advanced economies.</p>
+  <p>This is not a fringe scenario. Chainalysis ranked Venezuela, Ukraine, Russia, and Argentina among the highest per-capita crypto adoption nations globally — every one of them experiencing acute fiat stress at the time of their adoption surge.<sup class="ref">[21]</sup> The simulation models the macro-level consequences of this dynamic if it manifests at scale in an advanced economy under the SPICE collision scenario.</p>
 
   <h3 id="ch7-mechanism">The Flight Mechanism</h3>
 
-  <p>The crypto flight variable — controlled by the <em>Crypto Adoption</em> slider in the simulation — represents the share of private savings and capital that migrates out of fiat-denominated assets into Bitcoin/crypto when the debt break-point is triggered. This is modelled as a proportional shock at the break year, with ongoing accumulation thereafter governed by a logistic growth function (adoption accelerates then saturates).</p>
+  <p>The crypto flight variable — controlled by the <em>Crypto Flight Speed</em> slider in the simulation — represents the pace at which private savings and capital migrate out of fiat-denominated assets into Bitcoin and stablecoins once the debt break-point is triggered. Flight is modelled as a stock that accumulates each year post-break, driven by the monetary stress index and scaled by the adoption speed parameter:</p>
 
   <div class="formula-block">
-    <div class="formula-label">Equation 13 — Crypto Adoption Path</div>
+    <div class="formula-label">Equation 13 — Crypto Flight Accumulation</div>
     <div class="formula">
-      <span class="var">cAdopt(t)</span> <span class="op">=</span> <span class="var">cryptoFlight</span> <span class="op">×</span> logistic<span class="op">(</span><span class="var">t</span> <span class="op">-</span> <span class="var">breakYear</span><span class="op">,</span> k<span class="op">=</span>0.35<span class="op">)</span> <span class="op">×</span> <span class="var">crackdown</span><br>
-      <span class="cmt">← where crackdown ∈ {0.55, 0.78, 1.0} depending on government policy regime</span>
+      <span class="var">cryptoFlight(t)</span> <span class="op">=</span> <span class="var">cryptoFlight(t−1)</span>
+        <span class="op">+</span> <span class="var">mStress</span> <span class="op">×</span> 0.022 <span class="op">×</span> <span class="var">cAdopt</span> <span class="op">×</span> <span class="var">crackdown</span>
+        <span class="op">+</span> 0.003 <span class="op">×</span> <span class="var">cAdopt</span><br>
+      <span class="cmt">← mStress-driven push + baseline drift, both scaled by adoption speed and policy regime</span><br>
+      <span class="cmt">← cryptoFlight capped at 35% of capital stock (model ceiling)</span>
     </div>
-    <div class="formula-note">The logistic function models adoption acceleration followed by saturation, consistent with technology diffusion literature (Bass 1969). The crackdown multiplier suppresses the realised adoption rate based on the policy regime chosen.</div>
+    <div class="formula-note">The crackdown multiplier ∈ {0.55, 0.78, 1.0} reflects the government policy regime (ban, tax, or ignore respectively). The 0.003 × cAdopt drift term models baseline adoption even absent acute stress — the secular growth of crypto as a savings technology.</div>
   </div>
+
+  <p>The adoption speed parameter (cAdopt) anchors to real-world precedents: 0.25 = slow institutional drift; 0.5 = Argentina-speed informal adoption; 0.75 = Turkey 2021–22 rapid flight; 1.0 = Venezuela-speed full informal dollarisation via crypto.</p>
 
   <h3 id="ch7-loops">Four Feedback Loops</h3>
 
-  <p>Crypto flight is not a passive variable. Once capital begins migrating, it activates four distinct feedback loops that interact with the core fiscal and monetary simulation. These loops are the reason the model exhibits non-linear, self-reinforcing dynamics at high adoption levels.</p>
+  <p>Crypto flight is not a passive variable. Once capital begins migrating, it activates four distinct feedback loops that interact with the core fiscal and monetary simulation. These are the reason the model exhibits non-linear, self-reinforcing dynamics at high adoption levels.</p>
 
   <table class="data-table">
     <thead>
-      <tr><th>Loop</th><th>Mechanism</th><th>Simulation effect</th><th>Empirical basis</th></tr>
+      <tr><th style="width:14%">Loop</th><th>Mechanism</th><th>Simulation formula</th><th>Empirical basis</th></tr>
     </thead>
     <tbody>
       <tr>
-        <td><strong>Loop 1</strong><br>Fiscal Spiral</td>
-        <td>Capital flight erodes the tax base (capital gains, wealth, transaction taxes on assets that have left the system) and removes assets subject to financial repression (negative real rates cannot extract value from self-custodied BTC). Government loses seigniorage on a smaller monetary base.</td>
-        <td><code>taxErosion = max(0, cryptoFlight × cAdopt × 0.08)</code> added to primary deficit each year post-break. Feeds directly into Debt/GDP accumulation.</td>
-        <td>IMF WP/2025/076 on capital flight and fiscal erosion;<sup class="ref">[9]</sup> Chainalysis 2025 on dollarisation/cryptoisation in high-inflation economies.<sup class="ref">[22]</sup></td>
+        <td><strong>Loop 1</strong><br><em>Fiscal Spiral</em></td>
+        <td>Capital flight erodes the tax base — capital gains, wealth taxes, and transaction taxes disappear with assets that have left the fiat system. Self-custodied Bitcoin cannot be subject to financial repression (negative real rates cannot extract value from an asset you hold directly). Government also loses seigniorage revenue as monetary base shrinks relative to activity.</td>
+        <td>
+          <code>taxErosion = max(0, cryptoFlight × cAdopt × 0.08 − taxOffset)</code><br>
+          <code>seigniorageLoss = cryptoFlight × cAdopt × 0.018</code><br>
+          Both added to primary deficit each year post-break.
+        </td>
+        <td>Calibrated to Reinhart-Sbrancia estimates of seigniorage revenue (~2% GDP in repression episodes).<sup class="ref">[2]</sup> Consistent with IMF WP/2025/076 on capital flight and fiscal erosion in emerging markets.<sup class="ref">[9]</sup></td>
       </tr>
       <tr>
-        <td><strong>Loop 2</strong><br>K-Shape Acceleration</td>
-        <td>Crypto adoption is disproportionately concentrated among capital owners (high-wealth individuals, institutions). As they exit fiat and capture asymmetric upside, the labour-capital income divergence widens further. The K-shape is not just about AI displacement — monetary flight accelerates it.</td>
-        <td><code>flightKBoost = cryptoFlight × cAdopt × 0.06</code> added to the K-shape divergence metric each year post-break.</td>
-        <td>Consistent with empirical crypto ownership distributions (Chainalysis 2025: top decile holds ~85% of on-chain value).<sup class="ref">[22]</sup></td>
+        <td><strong>Loop 2</strong><br><em>K-Shape Acceleration</em></td>
+        <td>Crypto adoption is disproportionately concentrated among capital owners — high-wealth individuals, tech-adjacent workers, and institutions who can access exchanges and self-custody. As they exit fiat and capture asymmetric upside from BTC appreciation, the labour-capital income divergence widens further. The K-shape is not just an AI displacement story; monetary flight accelerates it independently.</td>
+        <td>
+          <code>flightKBoost = cryptoFlight × cAdopt × 0.12</code><br>
+          Added to labour share decline and capital share increase each year.
+        </td>
+        <td>Consistent with empirical crypto ownership distributions: Chainalysis 2025 data shows the top wealth decile holds approximately 85% of on-chain value in high-adoption emerging markets.<sup class="ref">[22]</sup></td>
       </tr>
       <tr>
-        <td><strong>Loop 3</strong><br>Escape Valve</td>
-        <td>At low-to-moderate adoption levels, crypto flight acts as a partial pressure valve: capital that has exited the fiat system is no longer competing for goods and services in fiat terms, which modestly reduces measured inflation. This is the one <em>stabilising</em> loop — but it is dominated by the other three at high adoption.</td>
-        <td><code>escapeValve = min(cryptoFlight × cAdopt × 0.03, 0.015)</code> subtracted from inflation each year. Maximum dampening: −1.5pp.</td>
-        <td>Analogous to the dollarisation stabilisation effect observed in high-inflation emerging markets (e.g., Ecuador post-dollarisation 2000).</td>
+        <td><strong>Loop 3</strong><br><em>Escape Valve</em></td>
+        <td>At low-to-moderate adoption levels, crypto flight acts as a partial pressure valve. Capital that has exited the fiat system is no longer competing for goods and services priced in fiat — it effectively leaves the monetary circuit, reducing velocity and modestly dampening measured inflation. This is the one <em>stabilising</em> loop in the model — but it is dominated by the other three at high adoption levels.</td>
+        <td>
+          <code>escapeValve = min(cryptoFlight × cAdopt × 0.06, 0.015)</code><br>
+          Subtracted from inflation each year. Maximum dampening: −1.5pp.
+        </td>
+        <td>Analogous to the dollarisation stabilisation effect observed in high-inflation emerging markets. Ecuador's post-dollarisation disinflation (2000–2002) provides the closest structural analogy; the mechanism is velocity reduction rather than monetary tightening.</td>
       </tr>
       <tr>
-        <td><strong>Loop 4</strong><br>Ghost GDP</td>
-        <td>Economic activity conducted in crypto — value created, exchanged, and settled outside the fiat system — does not appear in measured GDP. As adoption grows, a shadow economy emerges that is real in terms of productive activity but invisible to national accounts. This depresses the denominator in the Debt/GDP ratio, making the fiscal position look worse than the underlying economy justifies.</td>
-        <td><code>ghostDrag = min(cryptoFlight × cAdopt × 0.02, 0.008)</code> subtracted from measured real GDP growth. Maximum drag: −0.8pp per year.</td>
-        <td>Analogous to informal economy measurement gaps in emerging markets. Consistent with Chainalysis estimates of unmeasured on-chain economic activity.<sup class="ref">[22]</sup></td>
+        <td><strong>Loop 4</strong><br><em>Ghost GDP</em></td>
+        <td>Economic activity conducted in crypto — value created, exchanged, and settled outside the fiat system — does not appear in measured GDP. National accounts cannot capture P2P stablecoin payments, on-chain commerce, or remittances that bypass the banking system. As adoption grows, a shadow economy emerges that is real in productive terms but invisible to statistics. This depresses the denominator in the Debt/GDP ratio, making fiscal solvency appear worse than the underlying economy justifies — and spooks bond markets independently of the true debt burden.</td>
+        <td>
+          <code>ghostDrag = cryptoFlight × cAdopt × 0.025</code><br>
+          Subtracted from measured real GDP growth each year. Maximum drag: ~−0.8pp at full adoption.
+        </td>
+        <td>Analogous to informal economy measurement gaps in high-dollarisation emerging markets. Chainalysis estimates substantial unmeasured on-chain economic activity in Venezuela, Nigeria, and Argentina.<sup class="ref">[22]</sup> The Ghost GDP onset year is flagged separately in the simulation (orange marker).</td>
       </tr>
     </tbody>
   </table>
 
   <div class="callout gold">
     <div class="callout-label">Loop Interaction</div>
-    <p>Loops 1 and 4 both worsen Debt/GDP — Loop 1 by raising the numerator (more deficit), Loop 4 by shrinking the denominator (less measured GDP). Loop 2 amplifies the K-shape, which feeds back into political instability and policy dysfunction (less capacity to reform). Loop 3 offers partial offsetting relief on inflation — but only at low adoption. At high adoption, Loop 3's stabilising effect is overwhelmed by the fiscal and distributional damage from Loops 1, 2, and 4.</p>
+    <p>Loops 1 and 4 both worsen Debt/GDP — Loop 1 by raising the numerator (higher deficit from tax erosion and seigniorage loss), Loop 4 by shrinking the denominator (less measured GDP). Loop 2 amplifies the K-shape, which feeds back into political instability and policy dysfunction — reducing the capacity for fiscal reform precisely when it is most needed. Loop 3 provides partial offsetting relief on inflation, but only at low adoption. Above the ~10–15% threshold (see §7.4), Loop 3's stabilising effect is overwhelmed by the fiscal and distributional damage from Loops 1, 2, and 4 combined.</p>
   </div>
 
   <h3 id="ch7-policy">Government Policy Regimes</h3>
 
-  <p>When crypto flight becomes visible in the macro data, governments face a forced choice. The simulation models three empirically-grounded policy regimes, each with distinct consequences for adoption rates, Bitcoin price dynamics, and fiscal outcomes.</p>
+  <p>When crypto flight becomes visible in the macro data, governments face a forced choice. Three empirically-grounded policy regimes are modelled, each selectable via the simulation's <em>Crypto Policy</em> toggle. The regimes differ in their suppression of flight, their fiscal recapture, and their impact on Bitcoin price dynamics.</p>
 
   <table class="data-table">
     <thead>
-      <tr><th>Regime</th><th>Description</th><th>Adoption effect</th><th>Bitcoin price impact</th><th>Empirical anchor</th></tr>
+      <tr><th style="width:16%">Regime</th><th>Description</th><th>Adoption effect</th><th>Bitcoin price</th><th>Empirical anchor</th></tr>
     </thead>
     <tbody>
       <tr>
         <td><strong>Ban &amp; Restrict</strong></td>
-        <td>Government criminalises self-custody, mandates exchange KYC/AML with capital controls, blocks on-ramps. Exchange licences revoked. Narrative: capital flight is unpatriotic/destabilising.</td>
-        <td>Flight suppressed to 55% of unimpeded rate post-break (crackdown = 0.55). Tax erosion partially arrested. But substantial underground adoption persists.</td>
-        <td>−25% shock at break year (compliance uncertainty, exchange closures). Then +18% × cAdopt per year backfire recovery as ban proves unenforceable and scarcity narrative strengthens.</td>
-        <td>China (2017, 2021 bans — price dipped then recovered to new highs within 18 months). Venezuela (SUNACRIP crackdowns failed to prevent top-5 global adoption ranking).<sup class="ref">[21]</sup></td>
+        <td>Government criminalises self-custody, mandates exchange KYC with capital controls, blocks fiat on-ramps. Exchange licences revoked. Narrative: capital flight is unpatriotic and destabilising.</td>
+        <td>Flight suppressed to 55% of unimpeded rate post-break (<code>crackdown = 0.55</code>). No tax recapture — the suppressed flight is informal and untaxable. Seigniorage erosion partially arrested.</td>
+        <td>−25% shock at break year (exchange closures, compliance uncertainty). Then <code>+18% × cAdopt</code> per year backfire recovery as ban proves unenforceable and scarcity narrative strengthens among surviving users.</td>
+        <td>China (2017, 2021 bans — price dipped sharply then recovered to new highs within 12–18 months each time). Venezuela (SUNACRIP crackdowns failed to prevent top-5 global per-capita adoption ranking).<sup class="ref">[21]</sup></td>
       </tr>
       <tr>
         <td><strong>Tax &amp; Regulate</strong></td>
-        <td>Government accepts crypto as an asset class, imposes capital gains tax, requires exchange registration, pursues DeFi reporting. Treats flight as a revenue opportunity rather than a threat to suppress.</td>
-        <td>Flight at 78% of unimpeded rate (crackdown = 0.78). Tax erosion partially offset: government recaptures ~4pp of erosion via crypto tax revenue (<code>taxOffset = cryptoFlight × cAdopt × 0.04</code>).</td>
-        <td>−8% shock at break year (regulatory compliance uncertainty). Then +6% × cAdopt per year recovery as institutional clarity improves on-ramp liquidity.</td>
-        <td>US/EU trajectory (IRS crypto reporting, MiCA framework, SEC ETF approvals). Consistent with WisdomTree and Grayscale institutional adoption forecasts.<sup class="ref">[15,16]</sup></td>
+        <td>Government accepts crypto as an asset class. Imposes capital gains tax, requires exchange registration, pursues DeFi reporting standards. Treats flight as a revenue opportunity rather than an existential threat to suppress.</td>
+        <td>Flight at 78% of unimpeded rate post-break (<code>crackdown = 0.78</code>). Tax erosion partially offset: government recaptures approximately 4pp of the tax erosion via crypto capital gains and transaction reporting. (<code>taxOffset = cryptoFlight × cAdopt × 0.04</code>).</td>
+        <td>−8% shock at break year (regulatory compliance uncertainty, exchange adaptation costs). Then <code>+6% × cAdopt</code> per year recovery as institutional clarity improves liquidity and on-ramp accessibility.</td>
+        <td>US/EU trajectory — IRS crypto reporting rules, MiCA framework, SEC ETF approvals. WisdomTree and Grayscale institutional adoption forecasts assume this regime as baseline.<sup class="ref">[15,16]</sup></td>
       </tr>
       <tr>
         <td><strong>Ignore / Accommodate</strong></td>
-        <td>Government lacks capacity or will to regulate. Crypto operates without restriction. May even emerge as a parallel monetary system with de facto legal recognition.</td>
-        <td>Full unimpeded adoption (crackdown = 1.0). Maximum fiscal erosion. All four feedback loops operate at full strength.</td>
-        <td>No shock. Uninterrupted appreciation driven purely by monetary stress and adoption growth.</td>
-        <td>El Salvador (Bitcoin Legal Tender Act 2021 — first sovereign adoption). Weak-state scenario: Argentina under parallel FX markets, Nigeria's naira crisis.<sup class="ref">[21,23]</sup></td>
+        <td>Government lacks the institutional capacity or political will to regulate. Crypto operates without restriction. May emerge as a de facto parallel monetary system, with stablecoins substituting for collapsing local currency.</td>
+        <td>Full unimpeded adoption (<code>crackdown = 1.0</code>). Maximum fiscal erosion. All four feedback loops operate at full strength with no attenuation.</td>
+        <td>No regulatory shock. Appreciation driven purely by monetary stress accumulation and adoption growth compounding. Highest long-run Bitcoin price of the three regimes.</td>
+        <td>El Salvador (Bitcoin Legal Tender Act 2021 — first sovereign adoption).<sup class="ref">[23]</sup> Weak-state scenario: Argentina under parallel FX markets, Nigeria's naira crisis and CBN restrictions that paradoxically accelerated crypto adoption.</td>
       </tr>
     </tbody>
   </table>
 
   <div class="callout red">
     <div class="callout-label">The Ban Paradox</div>
-    <p>Historical evidence from China, Russia, and Venezuela consistently shows that crypto bans reduce adoption in the short term but accelerate it over 2–3 year horizons. The ban narrative — that the government considers the asset a threat — functions as an endorsement of its role as a hedge. Meanwhile, the underground market that persists after a ban is harder to tax, harder to monitor, and more disruptive to the formal financial system than regulated open adoption would have been. The simulation captures this via the backfire recovery term: banned crypto returns more aggressively than taxed crypto, and with less fiscal recapture.</p>
+    <p>Historical evidence from China, Russia, and Venezuela consistently shows that crypto bans reduce adoption in the short term but accelerate it over 2–3 year horizons. The ban narrative — that the government considers the asset a systemic threat — functions as an endorsement of its role as a monetary hedge. The underground market that persists after a ban is harder to tax, harder to monitor, and more fiscally damaging than regulated open adoption would have been. The simulation captures this through the backfire recovery term: banned crypto returns more aggressively than taxed crypto, with no fiscal recapture and higher-velocity informal circulation. A ban attempted below the non-monotonic threshold (§7.4) may succeed; a ban attempted above it almost certainly accelerates the dynamic it was designed to prevent.</p>
   </div>
 
   <h3 id="ch7-threshold">The Non-Monotonic Threshold</h3>
 
-  <p>The most important insight from the crypto flight model is that its macro impact is <em>non-monotonic</em>: below a certain adoption threshold, the dynamics are manageable and even partially self-stabilising. Above it, they become self-reinforcing and potentially uncontrollable.</p>
+  <p>The most structurally important insight from the crypto flight model is that its macro impact is <em>non-monotonic</em>: below a certain adoption threshold, the dynamics are manageable and partially self-stabilising. Above it, they become self-reinforcing and potentially uncontrollable regardless of the policy regime deployed.</p>
 
   <div class="formula-block">
-    <div class="formula-label">Threshold Analysis — Crypto Flight as % of Capital Stock</div>
+    <div class="formula-label">Threshold Analysis — Crossover Point</div>
     <div class="formula">
-      <span class="cmt">Below ~10–15% capital migration:</span><br>
-      &nbsp;&nbsp;Loop 3 (escape valve) partially offsets Loop 1 (tax erosion)<br>
-      &nbsp;&nbsp;Ghost GDP drag is small relative to measured growth<br>
-      &nbsp;&nbsp;K-shape acceleration is incremental<br>
-      &nbsp;&nbsp;<strong>→ Net impact: manageable fiscal headwind</strong><br><br>
-      <span class="cmt">Above ~10–15% capital migration:</span><br>
-      &nbsp;&nbsp;Loop 1 fiscal erosion dominates Loop 3 stabilisation<br>
-      &nbsp;&nbsp;Loop 4 ghost GDP becomes material (−0.5pp+ on measured GDP)<br>
-      &nbsp;&nbsp;Loop 2 K-shape acceleration feeds political dysfunction<br>
-      &nbsp;&nbsp;<strong>→ Net impact: self-reinforcing spiral</strong>
+      <span class="cmt">Below ~10–15% capital migration (cryptoFlight × cAdopt ≲ 0.15):</span><br>
+      &nbsp;&nbsp;Loop 3 (escape valve, max −1.5pp) partially offsets Loop 1 (tax erosion, ~0.08 × flight)<br>
+      &nbsp;&nbsp;Loop 4 ghost GDP drag is small relative to baseline measured growth<br>
+      &nbsp;&nbsp;Loop 2 K-shape acceleration is incremental, not dominant<br>
+      &nbsp;&nbsp;<strong>→ Net impact: manageable fiscal headwind, no self-reinforcing spiral</strong><br><br>
+      <span class="cmt">Above ~10–15% capital migration (cryptoFlight × cAdopt ≳ 0.15):</span><br>
+      &nbsp;&nbsp;Loop 1 fiscal erosion (uncapped) dominates Loop 3 stabilisation (capped at −1.5pp)<br>
+      &nbsp;&nbsp;Loop 4 ghost GDP drag becomes material (−0.5pp+ on measured annual growth)<br>
+      &nbsp;&nbsp;Loop 2 K-shape acceleration exceeds AI displacement effect, feeding political dysfunction<br>
+      &nbsp;&nbsp;<strong>→ Net impact: self-reinforcing spiral; policy options narrow rapidly</strong>
     </div>
-    <div class="formula-note">The ~10–15% threshold is a model-derived inflection point, not a precisely calibrated empirical number. It reflects the crossover where Loop 1 tax erosion (scaled at 0.08 × cAdopt) exceeds Loop 3 stabilisation (capped at 0.015). This occurs when cryptoFlight × cAdopt ≳ 0.19, consistent with capital flight of roughly 10–15% of the private savings base.</div>
+    <div class="formula-note">The ~10–15% figure is a model-derived inflection point, not a precisely calibrated empirical number. It reflects the crossover where Loop 1 tax erosion (0.08 × cAdopt × cryptoFlight) exceeds the Loop 3 cap (0.015). This occurs when cryptoFlight × cAdopt ≳ 0.19, consistent with capital flight of roughly 10–20% of the private savings base — a level reached by Venezuela within ~3 years of its stress onset, and by Argentina within ~4 years.</div>
   </div>
 
-  <p>This threshold dynamic explains why the interaction between policy regime and adoption level is so consequential. A government that implements a ban when adoption is at 5% may prevent ever reaching the threshold. A government that attempts a ban at 20% adoption may trigger the backfire dynamic — pushing adoption above the threshold and into self-reinforcing territory — while simultaneously forfeiting the tax recapture option that a regulatory regime would have preserved.</p>
+  <p>This threshold dynamic makes the interaction between policy timing and adoption level decisive. A government implementing a ban at 5% adoption may prevent ever reaching the threshold. The same ban at 25% adoption may trigger the backfire dynamic — pushing adoption above the threshold into self-reinforcing territory — while simultaneously forfeiting the tax recapture option that a regulatory regime would have preserved. The window for effective intervention is narrow and closes quickly once mStress rises above ~0.8.</p>
 
   <h3 id="ch7-btc">Bitcoin Price Model</h3>
 
-  <p>The simulation models Bitcoin as a separate asset from the Gold/Crypto index, reflecting its distinct characteristics: higher volatility, hard supply cap (21 million coins), network effects, and policy-sensitivity. Bitcoin's price dynamics in the model are driven by three components:</p>
+  <p>Bitcoin is modelled as a distinct asset from the Gold/Crypto stress index, reflecting its specific characteristics: hard supply cap (21 million coins, of which ~19.8 million already mined), high volatility, network effects, and acute policy-sensitivity. Its price in the simulation is driven by three additive components:</p>
 
   <table class="data-table">
     <thead>
@@ -1361,28 +1379,28 @@
     <tbody>
       <tr>
         <td>Monetary stress return</td>
-        <td><code>mStress × 0.18 × btcMult</code></td>
-        <td>Bitcoin's higher volatility vs gold (historically ~3–5× beta to monetary stress events) justifies a higher stress coefficient. Calibrated to observed BTC/gold ratio during 2020–2022 monetary expansion.<sup class="ref">[15,16,17]</sup></td>
+        <td><code>mStress × 0.22 × gM × cAdopt</code></td>
+        <td>Bitcoin exhibits historically ~3–5× the beta of gold to monetary stress events (2020–21 QE cycle, 2022 inflation surge). The 0.22 coefficient vs gold's 0.12 reflects this higher sensitivity. The gM multiplier from the monetary policy regime applies — QE/YCC are most bullish for BTC. The cAdopt scaling ensures the return is moderated at low adoption.</td>
       </tr>
       <tr>
-        <td>Adoption growth premium</td>
-        <td><code>cAdopt × 0.25</code> post-break</td>
-        <td>Captures network effect / Metcalfe's Law dynamic: adoption begets adoption. At high cAdopt, this term dominates the return profile. Consistent with S-curve technology adoption models.</td>
+        <td>Flight premium</td>
+        <td><code>cryptoFlight × 0.55</code></td>
+        <td>As capital flight accumulates, the demand signal for Bitcoin strengthens independently of monetary stress. This term captures the Metcalfe's Law / network effect dynamic: adoption begets adoption, and each percentage point of capital stock migrating to crypto represents incremental buy-side pressure on a fixed supply.</td>
       </tr>
       <tr>
-        <td>Policy shock</td>
-        <td>−25% (ban) / −8% (tax) / 0% (ignore) at break year</td>
-        <td>Regulatory uncertainty is the primary short-term risk to BTC price (see policy regime table above). The shock is a one-year event; recovery begins the following year.</td>
+        <td>Policy shock + recovery</td>
+        <td>See regime table (§7.3)</td>
+        <td>Regulatory shock is modelled as a one-year event at break year. Recovery begins the following year and compounds at the regime-specific rate. The ban backfire recovery (+18% × cAdopt per year) substantially exceeds the tax-regime recovery (+6% × cAdopt per year) because the informal market that survives a ban operates with higher urgency and no fiat off-ramp competition.</td>
       </tr>
     </tbody>
   </table>
 
   <div class="callout gold">
-    <div class="callout-label">A Note on Bitcoin Divisibility</div>
-    <p>A common misconception is that Bitcoin price appreciation impairs accessibility — that a high BTC price means ordinary people cannot participate. This is incorrect. Bitcoin is divisible to 8 decimal places; the smallest unit (a "satoshi") is 0.00000001 BTC. At a price of $1 million per coin, one satoshi is worth $0.01 — one cent. Price appreciation does not impair access; it increases the value of any holding, however small. The simulation models Bitcoin price as a macro signal and return vehicle, not as a barrier to participation. This is why Bitcoin's role as an inflation hedge is not limited to high-net-worth holders.</p>
+    <div class="callout-label">A Note on Bitcoin Divisibility and Accessibility</div>
+    <p>A common misconception is that Bitcoin price appreciation impairs accessibility — that a high BTC price means ordinary people cannot participate. This is incorrect. Bitcoin is divisible to 8 decimal places; the smallest unit (one "satoshi") equals 0.00000001 BTC. At a price of $1,000,000 per coin, one satoshi is worth $0.01 — one US cent. A holder of $100 of Bitcoin at current prices holds approximately 117,600 satoshis; that holding appreciates proportionally regardless of how large the nominal per-coin price becomes. Price appreciation does not impair access; it increases the value of any position, however small. This is structurally different from, say, owning a fractional share of a single asset — each satoshi is a fully fungible, independently transferable unit. The SPICE model's Bitcoin price path therefore represents a macro stress signal and return vehicle equally available to large and small holders.</p>
   </div>
 
-  <p>Bitcoin starting price in the simulation is $85,000 (early 2026 market level), with a model ceiling of $5,000,000. The Y-axis auto-scales to the simulated path. Price reference lines at $170k (2× from start), $425k (5×), and $850k (10×) provide orientation.</p>
+  <p>Bitcoin starting price in the simulation is $85,000 (early March 2026 market level). The model ceiling is $5,000,000. The Y-axis auto-scales to the simulated path, with dollar reference lines at $170k (2×), $425k (5×), and $850k (10×) from the starting level for orientation.</p>
 
 </section>
 
@@ -1548,21 +1566,21 @@
   </div>
   <div class="cite-item">
     <div class="cite-num">[21]</div>
-    <div class="cite-text">Chainalysis. (2020; updated 2025). <em>The 2020 Global Crypto Adoption Index; 2025 Crypto Adoption Report.</em> Ranks Venezuela, Ukraine, Russia, Argentina, and Nigeria among highest per-capita crypto adoption nations, all experiencing acute fiat stress. <a href="https://www.chainalysis.com/blog/2020-global-cryptocurrency-adoption-index-2020/" target="_blank">chainalysis.com</a></div>
+    <div class="cite-text">Chainalysis. (2020; updated 2025). <em>Global Crypto Adoption Index.</em> Annual ranking of per-capita crypto adoption by country. Venezuela, Ukraine, Russia, Argentina, and Nigeria consistently rank in the top decile — all experiencing acute fiat stress during their adoption surges. <a href="https://www.chainalysis.com/blog/2020-global-cryptocurrency-adoption-index-2020/" target="_blank">chainalysis.com</a></div>
   </div>
   <div class="cite-item">
     <div class="cite-num">[22]</div>
-    <div class="cite-text">Chainalysis. (2025). <em>Crypto and Capital Flight: Cryptoisation in High-Inflation Economies.</em> Documents on-chain value concentration, informal dollarisation dynamics, and the role of stablecoins and Bitcoin as fiat alternatives in emerging markets. chainalysis.com</div>
+    <div class="cite-text">Chainalysis. (2025). <em>The Chainalysis 2025 Crypto Crime Report / Geography of Cryptocurrency Report.</em> Documents capital flight patterns, on-chain value concentration by wealth decile, cryptoisation dynamics in high-inflation economies, and informal stablecoin adoption as fiat substitute. <a href="https://www.chainalysis.com/blog/geography-of-cryptocurrency-2024/" target="_blank">chainalysis.com</a></div>
   </div>
   <div class="cite-item">
     <div class="cite-num">[23]</div>
-    <div class="cite-text">Central Reserve Bank of El Salvador / IMF Article IV Consultation. (2021–2025). <em>El Salvador Bitcoin Legal Tender Experiment.</em> First sovereign adoption of Bitcoin as legal tender (September 2021). IMF consultations document fiscal risk assessment and macro implications. <a href="https://www.imf.org/en/Publications/CR/Issues/2023/02/10/El-Salvador-2022-Article-IV-Consultation-529016" target="_blank">imf.org</a></div>
+    <div class="cite-text">International Monetary Fund. (February 2023). <em>El Salvador: 2022 Article IV Consultation — Press Release and Staff Report.</em> IMF assessment of El Salvador's Bitcoin Legal Tender experiment (enacted September 2021), including fiscal risk analysis, macro implications, and recommendations. <a href="https://www.imf.org/en/Publications/CR/Issues/2023/02/10/El-Salvador-2022-Article-IV-Consultation-529016" target="_blank">imf.org</a></div>
   </div>
 </section>
 
 <!-- ── FOOTER ── -->
 <footer class="doc-footer">
-  <div>SPICE Protocol — zpc.finance — Model v1.0 — March 2026</div>
+  <div>SPICE Protocol — zpc.finance — Model v1.1 — March 2026</div>
   <div>Comments &amp; peer review welcome</div>
 </footer>
 
