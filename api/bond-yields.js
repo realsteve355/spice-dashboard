@@ -13,14 +13,13 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=600");
 
-  const [italy, germany, japan, move] = await Promise.all([
+  const [italy, germany, japan] = await Promise.all([
     fetchYield("GBTPIT10Y=X", "IRLTLT01ITM156N"),
     fetchYield("GDBR10YR=X",  "IRLTLT01DEM156N"),
     fetchYield("GJGB10YR=X",  "IRLTLT01JPM156N"),
-    fetchMove(),
   ]);
 
-  res.status(200).json({ italy, germany, japan, move });
+  res.status(200).json({ italy, germany, japan });
 }
 
 // ─── Yahoo Finance crumb auth ─────────────────────────────────────────────────

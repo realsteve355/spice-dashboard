@@ -125,32 +125,29 @@ const INDICATORS = [
   },
   {
     id: "move",
-    name: "MOVE Index",
-    abbr: "Treasury market volatility",
+    name: "HY Credit Spread",
+    abbr: "ICE BofA US High Yield OAS",
     description:
-      "Implied volatility in US Treasury options — the bond market equivalent of the VIX. Critically, MOVE spikes when sovereign debt itself is questioned. The crisis being hedged here is a bond crisis, not an equity crisis.",
-    source: "Yahoo Finance · ^MOVE  (ICE BofA)",
+      "The extra yield investors demand to hold US high yield bonds over Treasuries. Spikes sharply during financial stress and sovereign credibility concerns — highly correlated with the MOVE index but reliably available via FRED.",
+    source: "FRED · BAMLH0A0HYM2  (ICE BofA)",
     freq: "daily",
     thresholds: [
-      { label: "Green",  range: "below 100  (calm)" },
-      { label: "Blue",   range: "100 to 130  (elevated)" },
-      { label: "Yellow", range: "130 to 160  (2022 rate shock peak: ~180)" },
-      { label: "Orange", range: "160 to 200" },
-      { label: "Red",    range: "above 200  (severe dysfunction)" },
+      { label: "Green",  range: "below 400 bps  (normal)" },
+      { label: "Blue",   range: "400 to 500 bps  (mildly elevated)" },
+      { label: "Yellow", range: "500 to 700 bps  (stress)" },
+      { label: "Orange", range: "700 to 1000 bps  (acute stress)" },
+      { label: "Red",    range: "above 1000 bps  (2020 COVID: ~1100 · 2008: ~1800)" },
     ],
     score: v => {
-      if (v > 200) return 4;
-      if (v > 160) return 3;
-      if (v > 130) return 2;
-      if (v > 100) return 1;
+      if (v > 1000) return 4;
+      if (v > 700)  return 3;
+      if (v > 500)  return 2;
+      if (v > 400)  return 1;
       return 0;
     },
     fetchData: async () => {
-      const r = await fetch("/api/bond-yields");
-      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
-      const j = await r.json();
-      if (j.move?.error) throw new Error(j.move.error);
-      return { value: j.move.value, display: j.move.value.toFixed(1), date: j.move.date };
+      const { v, date } = await fredGet("BAMLH0A0HYM2");
+      return { value: v, display: v.toFixed(0) + " bps", date };
     },
   },
   {
