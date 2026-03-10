@@ -129,7 +129,7 @@ const INDICATORS = [
     abbr: "Treasury market volatility",
     description:
       "Implied volatility in US Treasury options — the bond market equivalent of the VIX. Critically, MOVE spikes when sovereign debt itself is questioned. The crisis being hedged here is a bond crisis, not an equity crisis.",
-    source: "FRED · BAMLMOVE  (ICE BofA)",
+    source: "Yahoo Finance · ^MOVE  (ICE BofA)",
     freq: "daily",
     thresholds: [
       { label: "Green",  range: "below 100  (calm)" },
@@ -146,8 +146,11 @@ const INDICATORS = [
       return 0;
     },
     fetchData: async () => {
-      const { v, date } = await fredGet("BAMLMOVE");
-      return { value: v, display: v.toFixed(1), date };
+      const r = await fetch("/api/bond-yields");
+      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
+      const j = await r.json();
+      if (j.move?.error) throw new Error(j.move.error);
+      return { value: j.move.value, display: j.move.value.toFixed(1), date: j.move.date };
     },
   },
   {
@@ -469,7 +472,7 @@ export default function ApocalypseIndicator() {
       {/* Page header */}
       <div style={S.pageHeader}>
         <div style={S.eyebrow}>SPICE PROTOCOL · MACRO INTELLIGENCE</div>
-        <h1 style={S.title}>Apocalypse Indicator</h1>
+        <h1 style={S.title}>Indicators</h1>
         <p style={S.subtitle}>
           Ten publicly-observable signals across sovereign debt stress, monetary debasement, hard asset
           behaviour, and crypto adoption. Each indicator scores 0–4; composite score determines system

@@ -1,8 +1,13 @@
 // Vercel serverless function — fetches daily market data server-side.
 // Returns: { italy, germany, japan, move }
-// Primary: Yahoo Finance (daily). Fallback: FRED OECD series (monthly).
+// Bond yields: Yahoo Finance (daily) with FRED OECD fallback (monthly).
+// MOVE index: Yahoo Finance with crumb token auth.
 
 const FRED_KEY = process.env.VITE_FRED_API_KEY;
+
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,18 +23,51 @@ export default async function handler(req, res) {
   res.status(200).json({ italy, germany, japan, move });
 }
 
-// ─── Yahoo Finance chart API (primary — daily) ────────────────────────────────
-async function fetchYahoo(ticker) {
+// ─── Yahoo Finance crumb auth ─────────────────────────────────────────────────
+// Yahoo Finance requires a session cookie + crumb token since 2023.
+// We fetch both server-side before making the data request.
+
+async function getYahooCrumb() {
+  const cookieRes = await fetch("https://fc.yahoo.com", {
+    headers: { "User-Agent": UA },
+    redirect: "follow",
+  });
+
+  // Collect all Set-Cookie headers (Node 18+ supports getSetCookie)
+  const setCookies =
+    typeof cookieRes.headers.getSetCookie === "function"
+      ? cookieRes.headers.getSetCookie()
+      : [cookieRes.headers.get("set-cookie") || ""];
+
+  const cookieStr = setCookies
+    .map(c => c.split(";")[0])
+    .filter(Boolean)
+    .join("; ");
+
+  const crumbRes = await fetch(
+    "https://query1.finance.yahoo.com/v1/test/getcrumb",
+    { headers: { "User-Agent": UA, "Cookie": cookieStr } }
+  );
+
+  const crumb = await crumbRes.text();
+  if (!crumb || crumb.includes("<") || crumb.length > 30) {
+    throw new Error(`bad crumb: ${crumb.slice(0, 40)}`);
+  }
+
+  return { crumb, cookieStr };
+}
+
+// ─── Yahoo Finance chart fetch (with crumb) ───────────────────────────────────
+async function fetchYahoo(ticker, crumb, cookieStr) {
   const encoded = encodeURIComponent(ticker);
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}` +
-    `?range=5d&interval=1d&includePrePost=false`;
+    `?range=5d&interval=1d&includePrePost=false&crumb=${encodeURIComponent(crumb)}`;
 
   const r = await fetch(url, {
     headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      "User-Agent": UA,
+      "Cookie": cookieStr,
       "Accept": "application/json",
     },
   });
@@ -66,10 +104,19 @@ async function fetchFredYield(series) {
   return { value: parseFloat(obs[0].value), date: obs[0].date, src: "fred" };
 }
 
-// ─── Combined: Yahoo first, FRED fallback ─────────────────────────────────────
+// ─── Bond yields: Yahoo first, FRED fallback ──────────────────────────────────
+// Crumb is fetched once and shared across all Yahoo calls.
+let _crumbCache = null;
+
+async function getCrumb() {
+  if (!_crumbCache) _crumbCache = getYahooCrumb();
+  return _crumbCache;
+}
+
 async function fetchYield(yahooTicker, fredSeries) {
   try {
-    return await fetchYahoo(yahooTicker);
+    const { crumb, cookieStr } = await getCrumb();
+    return await fetchYahoo(yahooTicker, crumb, cookieStr);
   } catch (yahooErr) {
     try {
       return await fetchFredYield(fredSeries);
@@ -79,10 +126,11 @@ async function fetchYield(yahooTicker, fredSeries) {
   }
 }
 
-// ─── MOVE index (Yahoo Finance ^MOVE) ─────────────────────────────────────────
+// ─── MOVE index (^MOVE via Yahoo Finance with crumb) ─────────────────────────
 async function fetchMove() {
   try {
-    return await fetchYahoo("%5EMOVE");
+    const { crumb, cookieStr } = await getCrumb();
+    return await fetchYahoo("%5EMOVE", crumb, cookieStr);
   } catch (e) {
     return { error: e.message };
   }
