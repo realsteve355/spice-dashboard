@@ -244,8 +244,8 @@ const INDICATORS = [
     abbr: "10Y eurozone sovereign stress",
     description:
       "The premium Italy pays over Germany on 10-year debt. Europe's primary canary: Italy carries ~145% debt/GDP with limited monetary sovereignty. This spread was the defining signal during the 2011–12 eurozone crisis (peak: ~550 bps).",
-    source: "FRED · IRLTLT01ITM156N − IRLTLT01DEM156N",
-    freq: "monthly",
+    source: "Yahoo Finance · daily  (FRED OECD fallback)",
+    freq: "daily",
     thresholds: [
       { label: "Green",  range: "below 150 bps" },
       { label: "Blue",   range: "150 to 250 bps" },
@@ -261,12 +261,13 @@ const INDICATORS = [
       return 0;
     },
     fetchData: async () => {
-      const [it, de] = await Promise.all([
-        fredGet("IRLTLT01ITM156N"),
-        fredGet("IRLTLT01DEM156N"),
-      ]);
-      const spread = (it.v - de.v) * 100; // % → bps
-      return { value: spread, display: Math.round(spread) + " bps", date: it.date };
+      const r = await fetch("/api/bond-yields");
+      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
+      const j = await r.json();
+      if (j.italy?.error)   throw new Error(j.italy.error);
+      if (j.germany?.error) throw new Error(j.germany.error);
+      const spread = (j.italy.value - j.germany.value) * 100;
+      return { value: spread, display: Math.round(spread) + " bps", date: j.italy.date };
     },
   },
   {
@@ -275,8 +276,8 @@ const INDICATORS = [
     abbr: "BOJ yield curve control gauge",
     description:
       "Japan carries ~260% debt/GDP and has historically suppressed yields via YCC. Rising yields signal the BOJ is losing control — forcing a choice between hyperinflation and default. A YCC collapse triggers large repatriation of Japan's ~$1T US Treasury holdings.",
-    source: "FRED · IRLTLT01JPM156N",
-    freq: "monthly",
+    source: "Yahoo Finance · daily  (FRED OECD fallback)",
+    freq: "daily",
     thresholds: [
       { label: "Green",  range: "below 1.0%  (YCC territory)" },
       { label: "Blue",   range: "1.0 to 1.5%" },
@@ -292,8 +293,11 @@ const INDICATORS = [
       return 0;
     },
     fetchData: async () => {
-      const { v, date } = await fredGet("IRLTLT01JPM156N");
-      return { value: v, display: v.toFixed(2) + "%", date };
+      const r = await fetch("/api/bond-yields");
+      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
+      const j = await r.json();
+      if (j.japan?.error) throw new Error(j.japan.error);
+      return { value: j.japan.value, display: j.japan.value.toFixed(2) + "%", date: j.japan.date };
     },
   },
   {
