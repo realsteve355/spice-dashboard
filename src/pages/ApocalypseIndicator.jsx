@@ -146,8 +146,11 @@ const INDICATORS = [
       return 0;
     },
     fetchData: async () => {
-      const { v, date } = await fredGet("BAMLMOVE");
-      return { value: v, display: v.toFixed(1), date };
+      const r = await fetch("/api/bond-yields");
+      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
+      const j = await r.json();
+      if (j.move?.error) throw new Error(j.move.error);
+      return { value: j.move.value, display: j.move.value.toFixed(1), date: j.move.date };
     },
   },
   {
