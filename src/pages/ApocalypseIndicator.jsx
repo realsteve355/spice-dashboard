@@ -27,13 +27,11 @@ function compositeLevel(total) {
 }
 
 // ─── FRED fetch helper ─────────────────────────────────────────────────────────
-const FRED_KEY = import.meta.env.VITE_FRED_API_KEY;
+// Calls /api/fred (Vercel serverless proxy) to avoid CORS restrictions.
+// The FRED API key lives server-side only.
 
 async function fredGet(series, limit = 3) {
-  const url =
-    `https://api.stlouisfed.org/fred/series/observations` +
-    `?series_id=${series}&api_key=${FRED_KEY}&limit=${limit}&sort_order=desc&file_type=json`;
-  const r = await fetch(url);
+  const r = await fetch(`/api/fred?series=${series}&limit=${limit}`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const j = await r.json();
   if (j.error_message) throw new Error(j.error_message);
@@ -435,7 +433,6 @@ export default function ApocalypseIndicator() {
   );
 
   useEffect(() => {
-    if (!FRED_KEY) return;
     INDICATORS.forEach(ind => {
       ind
         .fetchData()
@@ -466,25 +463,6 @@ export default function ApocalypseIndicator() {
   const totalScore = loaded.reduce((sum, s) => sum + s.score, 0);
   const cl = compositeLevel(totalScore);
   const lm = LEVEL_META[cl];
-
-  if (!FRED_KEY) {
-    return (
-      <div style={S.page}>
-        <div style={S.noKey}>
-          <div style={S.noKeyTitle}>FRED API KEY REQUIRED</div>
-          <p style={{ fontSize: 12, color: "#555", lineHeight: 1.7, margin: "0 0 16px" }}>
-            This page fetches live data from the Federal Reserve Economic Database. A free API key is required.
-          </p>
-          <ol style={{ fontSize: 12, color: "#555", lineHeight: 2.2, paddingLeft: 20, margin: 0 }}>
-            <li>Go to <strong>fredaccount.stlouisfed.org/apikeys</strong></li>
-            <li>Create a free account and request a key</li>
-            <li>Add to <code>.env.local</code>: <code>VITE_FRED_API_KEY=your_key_here</code></li>
-            <li>Restart the dev server</li>
-          </ol>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div style={S.page}>
