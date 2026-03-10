@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -533,6 +533,7 @@ export default function Chart3Simulation() {
   const [kpiYear,      setKpiYear]      = useState(2035);
   const [cryptoAdopt,  setCryptoAdopt]  = useState(0.5);
   const [cryptoPolicy, setCryptoPolicy] = useState("ban");
+  const [, startTransition] = useTransition();
 
   const { rows, breakYear, ghostYear } = useMemo(
     () => runSim(displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy),
@@ -622,7 +623,7 @@ export default function Chart3Simulation() {
           </div>
 
           <input type="range" min={0} max={0.65} step={0.01} value={displaced}
-            onChange={ev => setDisplaced(+ev.target.value)}
+            onChange={ev => { const v = +ev.target.value; startTransition(() => setDisplaced(v)); }}
             style={{ width:"100%", accentColor:"#B8860B", cursor:"pointer", marginBottom:4 }} />
 
           <div style={{ position:"relative", height:26, marginBottom:6 }}>
@@ -658,7 +659,7 @@ export default function Chart3Simulation() {
           </div>
 
           <input type="range" min={0} max={1} step={0.05} value={cryptoAdopt}
-            onChange={ev => setCryptoAdopt(+ev.target.value)}
+            onChange={ev => { const v = +ev.target.value; startTransition(() => setCryptoAdopt(v)); }}
             style={{ width:"100%", accentColor:"#93c5fd", cursor:"pointer", marginBottom:4 }} />
 
           <div style={{ position:"relative", height:22, marginBottom:6 }}>
