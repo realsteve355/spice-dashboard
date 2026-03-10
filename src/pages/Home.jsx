@@ -37,7 +37,7 @@ export default function Home() {
           <li style={S.contentsItem}>
             <a href="/simulation" style={S.contentsLink}>Simulation</a>
             <span style={S.contentsDesc}>
-              Interactive debt tsunami model — adjust AI displacement rate and
+              Interactive debt collision model — adjust AI displacement rate and
               government policy response; observe debt/GDP, unemployment, yields,
               and inflation trajectories to 2035.
             </span>
