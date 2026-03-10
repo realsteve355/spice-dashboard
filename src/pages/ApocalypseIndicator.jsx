@@ -129,7 +129,7 @@ const INDICATORS = [
     abbr: "Treasury market volatility",
     description:
       "Implied volatility in US Treasury options — the bond market equivalent of the VIX. Critically, MOVE spikes when sovereign debt itself is questioned. The crisis being hedged here is a bond crisis, not an equity crisis.",
-    source: "FRED · BAMLMOVE",
+    source: "FRED · BAMLMOVE  (ICE BofA)",
     freq: "daily",
     thresholds: [
       { label: "Green",  range: "below 100  (calm)" },
@@ -146,11 +146,8 @@ const INDICATORS = [
       return 0;
     },
     fetchData: async () => {
-      const r = await fetch("/api/bond-yields");
-      if (!r.ok) throw new Error(`API HTTP ${r.status}`);
-      const j = await r.json();
-      if (j.move?.error) throw new Error(j.move.error);
-      return { value: j.move.value, display: j.move.value.toFixed(1), date: j.move.date };
+      const { v, date } = await fredGet("BAMLMOVE");
+      return { value: v, display: v.toFixed(1), date };
     },
   },
   {
