@@ -124,7 +124,7 @@ export default function Dashboard() {
 
   const doRedeem = async () => {
     if (!signer || !redeemAmt) return;
-    setTxState("pending"); setTxMsg("Redeeming IRON…");
+    setTxState("pending"); setTxMsg("Redeeming ZPC…");
     try {
       await (await new ethers.Contract(CONTRACTS.VAULT, VAULT_ABI, signer).redeem(ethers.parseUnits(redeemAmt, 18))).wait();
       setTxState("success"); setTxMsg("Redemption successful!"); setRedeemAmt("");
@@ -185,9 +185,9 @@ export default function Dashboard() {
       <div style={S.inner}>
         {/* KPI Strip */}
         <div style={S.kpiStrip}>
-          <KPI label="NAV per IRON" value={snapshot ? `$${fmt8(navPerIron, 4)}` : "Loading…"} accent />
-          <KPI label="Total AUM"    value={snapshot ? fmtUSD(totalAUM) : "Loading…"} />
-          <KPI label="IRON Supply"  value={snapshot ? fmt18(ironSupply, 2) : "Loading…"} />
+          <KPI label="NAV per ZPC"  value={snapshot ? `$${fmt8(navPerIron, 4)}` : "Loading…"} accent />
+          <KPI label="Total AUM"   value={snapshot ? fmtUSD(totalAUM) : "Loading…"} />
+          <KPI label="ZPC Supply"  value={snapshot ? fmt18(ironSupply, 2) : "Loading…"} />
           <KPI label="BTC Price"    value={snapshot ? `$${fmt8(btcPrice, 0)}` : "Loading…"} />
           <KPI label="Last Update"  value={lastUpdate ? lastUpdate.toLocaleTimeString() : "—"} />
         </div>
@@ -220,7 +220,7 @@ export default function Dashboard() {
               <h3 style={S.cardTitle}>Your Position</h3>
               {account ? (
                 <>
-                  <StatRow label="IRON Balance" value={fmt18(userIron, 4)} />
+                  <StatRow label="ZPC Balance" value={fmt18(userIron, 4)} />
                   <StatRow label="Position Value" value={userIronValue ? fmtUSD(userIronValue) : "—"} accent />
                   <StatRow label="Fund Share" value={fundShare + "%"} />
                   <StatRow label="WBTC Balance" value={fmt8(userWbtc, 6) + " BTC"} />
@@ -256,10 +256,10 @@ export default function Dashboard() {
         {activeTab === "redeem" && (
           <div style={S.narrowCard}>
             <div style={S.phase2Warning}>⚠ Phase 2: Redemption via this interface will be disabled. Secondary market only.</div>
-            <h3 style={S.cardTitle}>Redeem IRON Tokens</h3>
+            <h3 style={S.cardTitle}>Redeem ZPC Tokens</h3>
             {!account ? <div style={S.connectPrompt}><button style={S.connectBtn} onClick={connectWallet}>Connect Wallet to Redeem</button></div> : (
               <>
-                <InputGroup label="IRON Amount" value={redeemAmt} onChange={setRedeemAmt} unit="IRON" hint={`Balance: ${fmt18(userIron, 4)} IRON`} />
+                <InputGroup label="ZPC Amount" value={redeemAmt} onChange={setRedeemAmt} unit="ZPC" hint={`Balance: ${fmt18(userIron, 4)} ZPC`} />
                 <button style={{ ...S.actionBtn, opacity: txState === "pending" ? 0.6 : 1 }} onClick={doRedeem} disabled={txState === "pending" || !redeemAmt}>
                   {txState === "pending" ? "Processing…" : "Redeem IRON"}
                 </button>
@@ -278,7 +278,7 @@ export default function Dashboard() {
             {lookupResult && !lookupResult.error && (
               <div style={{ ...S.card, marginTop: 16 }}>
                 <StatRow label="Address" value={shortAddr(lookupResult.addr)} />
-                <StatRow label="IRON Balance" value={fmt18(lookupResult.ironBal, 4)} />
+                <StatRow label="ZPC Balance" value={fmt18(lookupResult.ironBal, 4)} />
                 <StatRow label="WBTC Balance" value={fmt8(lookupResult.wbtcBal, 6) + " BTC"} />
               </div>
             )}
