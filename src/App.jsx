@@ -22,14 +22,11 @@ function Nav() {
         <NavLink to="/" end style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Home
         </NavLink>
-        <NavLink to="/collision" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+        <NavLink to="/simulation" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           The Collision
         </NavLink>
         <NavLink to="/dashboard" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Dashboard
-        </NavLink>
-        <NavLink to="/simulation" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Simulation
         </NavLink>
         <a href="/spice-methodology.html" style={S.navLink}>
           Methodology
