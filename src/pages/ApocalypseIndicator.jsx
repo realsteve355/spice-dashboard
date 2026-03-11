@@ -6,7 +6,7 @@ const LEVEL_META = [
   { id: 1, label: "BLUE",   color: "#3b82f6", bg: "#eff6ff", range: "10–19" },
   { id: 2, label: "YELLOW", color: "#ca8a04", bg: "#fefce8", range: "20–29" },
   { id: 3, label: "ORANGE", color: "#ea580c", bg: "#fff7ed", range: "30–38" },
-  { id: 4, label: "RED",    color: "#dc2626", bg: "#fef2f2", range: "39–48" },
+  { id: 4, label: "RED",    color: "#dc2626", bg: "#fef2f2", range: "39–56" },
 ];
 
 const COMPOSITE_DESC = [
@@ -350,6 +350,43 @@ const INDICATORS = [
       };
     },
   },
+  {
+    id: "crypto_mcap",
+    category: "crypto",
+    name: "Total Crypto Market Cap",
+    abbr: "Non-sovereign asset adoption scale",
+    description:
+      "Total market capitalisation of all crypto assets in USD. Growth at scale signals capital rotation away from fiat-denominated instruments. Viewed alongside BTC dominance, it distinguishes between speculative altcoin cycles and genuine fiat exit behaviour.",
+    source: "CoinGecko · /api/v3/global",
+    freq: "real-time",
+    thresholds: [
+      { label: "Green",  range: "below $1T  (nascent asset class)" },
+      { label: "Blue",   range: "$1T to $2T  (growing adoption)" },
+      { label: "Yellow", range: "$2T to $4T  (mainstream asset class)" },
+      { label: "Orange", range: "$4T to $7T  (systemic fiat competition)" },
+      { label: "Red",    range: "above $7T  (structural fiat displacement)" },
+    ],
+    score: v => {
+      const t = v / 1e12;
+      if (t > 7) return 4;
+      if (t > 4) return 3;
+      if (t > 2) return 2;
+      if (t > 1) return 1;
+      return 0;
+    },
+    fetchData: async () => {
+      const r = await fetch("https://api.coingecko.com/api/v3/global");
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      const mcap = j.data.total_market_cap.usd;
+      const t = mcap / 1e12;
+      return {
+        value: mcap,
+        display: "$" + t.toFixed(2) + "T",
+        date: new Date().toISOString().split("T")[0],
+      };
+    },
+  },
 
   // ── UNEMPLOYMENT ──────────────────────────────────────────────────────────
   {
@@ -378,6 +415,34 @@ const INDICATORS = [
     fetchData: async () => {
       const { v, date } = await fredGet("UNRATE");
       return { value: v, display: v.toFixed(1) + "%", date };
+    },
+  },
+  {
+    id: "jolts",
+    category: "unemployment",
+    name: "Job Openings (JOLTS)",
+    abbr: "Forward-looking labour demand",
+    description:
+      "Total nonfarm job vacancies reported by US employers. A leading indicator of future unemployment: when openings fall sharply, hiring freezes precede layoffs by 3–6 months. Structural AI displacement would first appear as a sustained collapse in vacancy levels before showing up in the unemployment rate.",
+    source: "FRED · JTSJOL",
+    freq: "monthly",
+    thresholds: [
+      { label: "Green",  range: "above 8M  (tight labour market)" },
+      { label: "Blue",   range: "6M to 8M  (softening demand)" },
+      { label: "Yellow", range: "4M to 6M  (hiring slowdown)" },
+      { label: "Orange", range: "2M to 4M  (structural demand collapse)" },
+      { label: "Red",    range: "below 2M  (labour market fracture)" },
+    ],
+    score: v => {
+      if (v < 2000) return 4;
+      if (v < 4000) return 3;
+      if (v < 6000) return 2;
+      if (v < 8000) return 1;
+      return 0;
+    },
+    fetchData: async () => {
+      const { v, date } = await fredGet("JTSJOL");
+      return { value: v, display: (v / 1000).toFixed(1) + "M", date };
     },
   },
 
@@ -596,7 +661,7 @@ export default function ApocalypseIndicator() {
         <div style={S.eyebrow}>SPICE PROTOCOL · MACRO INTELLIGENCE</div>
         <h1 style={S.title}>Indicators</h1>
         <p style={S.subtitle}>
-          Ten publicly-observable signals across sovereign debt stress, monetary debasement, hard asset
+          Twelve publicly-observable signals across sovereign debt stress, monetary debasement, hard asset
           behaviour, and crypto adoption. Each indicator scores 0–4; composite score determines system
           alert level. Thresholds are calibrated to the collision thesis — not to cyclical recession risk.
         </p>
@@ -677,14 +742,15 @@ export default function ApocalypseIndicator() {
       {/* Scoring methodology note */}
       <div style={S.methodNote}>
         <strong>Composite scoring:</strong> Each indicator contributes 0 (Green) to 4 (Red) points.
-        Total: 0–8 = Green · 9–16 = Blue · 17–24 = Yellow · 25–32 = Orange · 33–40 = Red.
+        {INDICATORS.length} indicators; max score {INDICATORS.length * 4}.
+        Bands: 0–9 = Green · 10–19 = Blue · 20–29 = Yellow · 30–38 = Orange · 39+ = Red.
         Scores are independent; the system can be Red on one indicator while Green overall.
         The composite captures the breadth of stress, not depth in any single domain.
       </div>
 
       {/* Footer */}
       <div style={S.footer}>
-        <div>Data: Federal Reserve Economic Database (FRED) · Yahoo Finance (MOVE) · CoinGecko</div>
+        <div>Data: Federal Reserve Economic Database (FRED) · Yahoo Finance · CoinGecko</div>
         <div>Updated on page load · FRED series update daily, monthly, or quarterly · CoinGecko real-time</div>
         <div>Scoring methodology based on consensus of Claude, ChatGPT, Gemini and Grok analysis, March 2026</div>
       </div>
