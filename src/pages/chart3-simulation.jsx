@@ -159,7 +159,7 @@ function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPolicy) {
       5000000
     );
 
-    rows.push({
+    const rowData = {
       year:        yr,
       debtGDP:     +(debtGDP * 100).toFixed(1),
       unemp:       +(unemp * 100).toFixed(1),
@@ -171,9 +171,44 @@ function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPolicy) {
       capShare:    +(capShare * 100).toFixed(1),
       isBreak:     yr === breakYear,
       isGhost:     yr === ghostYear,
-    });
+    };
+    rowData.spiceLevel = simSpiceLevel(rowData);
+    rows.push(rowData);
   }
   return { rows, breakYear, ghostYear };
+}
+
+// ─── SPICE CRISIS LEVEL ────────────────────────────────────────────────────
+
+const SIM_LEVELS = [
+  { label:"GREEN",  color:"#16a34a", bg:"#f0fdf4" },
+  { label:"BLUE",   color:"#3b82f6", bg:"#eff6ff" },
+  { label:"YELLOW", color:"#ca8a04", bg:"#fefce8" },
+  { label:"ORANGE", color:"#ea580c", bg:"#fff7ed" },
+  { label:"RED",    color:"#dc2626", bg:"#fef2f2" },
+];
+
+// Score each simulated year on 4 variables (0–4 each, max 16)
+// Mirrors the Indicators page thresholds where applicable
+function simSpiceLevel(row) {
+  let s = 0;
+  const d = row.debtGDP;
+  if (d > 140) s += 4; else if (d > 120) s += 3; else if (d > 100) s += 2; else if (d > 80) s += 1;
+  const u = row.unemp;
+  if (u > 12) s += 4; else if (u > 8) s += 3; else if (u > 6) s += 2; else if (u > 4.5) s += 1;
+  const inf = row.infl;
+  if (inf > 9 || inf < -2) s += 4;
+  else if (inf > 7 || inf < 0) s += 3;
+  else if (inf > 5 || inf < 1) s += 2;
+  else if (inf > 3.5 || inf < 1.5) s += 1;
+  const y = row.yld;
+  if (y > 7) s += 4; else if (y > 6) s += 3; else if (y > 5) s += 2; else if (y > 4) s += 1;
+  // bands: 0–2 GREEN · 3–5 BLUE · 6–9 YELLOW · 10–12 ORANGE · 13–16 RED
+  if (s >= 13) return 4;
+  if (s >= 10) return 3;
+  if (s >=  6) return 2;
+  if (s >=  3) return 1;
+  return 0;
 }
 
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
@@ -759,8 +794,17 @@ export default function Chart3Simulation() {
 
           <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
           <div style={{ fontSize:7, color:"#ccc", lineHeight:1.9 }}>
-            <div><span style={{ color:"#ef444460" }}>━ </span>Red = break point year</div>
-            <div><span style={{ color:"#f9731660" }}>╌ </span>Orange = ghost GDP onset</div>
+            <div><span style={{ color:"#ef444460" }}>━ </span>Red line = break point year</div>
+            <div><span style={{ color:"#f9731660" }}>╌ </span>Orange line = ghost GDP onset</div>
+            <div style={{ marginTop:4, marginBottom:4 }}>
+              {SIM_LEVELS.map(l => (
+                <div key={l.label}>
+                  <span style={{ color:l.color }}>■ </span>
+                  <span style={{ color:"#bbb" }}>{l.label}</span>
+                  <span style={{ color:"#ccc" }}> crisis level</span>
+                </div>
+              ))}
+            </div>
             <div style={{ marginTop:3, lineHeight:1.5 }}>
               Debt/GDP(t+1) = Debt/GDP(t) × (1+r)/(1+g) + deficit<br/>
               CBO · IMF WP/2025/076 · Reinhart-Rogoff
@@ -772,27 +816,36 @@ export default function Chart3Simulation() {
         <div style={{ flex:1, overflow:"hidden", padding:"10px 12px",
           display:"flex", flexDirection:"column" }}>
 
-          {/* KPI year selector */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
+          {/* KPI year selector + SPICE crisis level strip */}
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexShrink:0 }}>
             <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
               textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
               Snapshot year
             </span>
             <input type="range" min={2026} max={2035} step={1} value={kpiYear}
               onChange={ev => setKpiYear(+ev.target.value)}
-              style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
-            <div style={{ position:"relative", width:180, flexShrink:0 }}>
-              <div style={{ display:"flex", justifyContent:"space-between",
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:7, color:"#ccc" }}>
-                {rows.map(r => (
-                  <span key={r.year} onClick={() => setKpiYear(r.year)}
-                    style={{ cursor:"pointer", fontWeight:r.year===kpiYear?700:400,
-                      color:r.year===kpiYear?"#111":"#ccc" }}>
-                    {r.year}
-                  </span>
-                ))}
-              </div>
-            </div>
+              style={{ width:80, accentColor:"#555", cursor:"pointer", flexShrink:0 }} />
+          </div>
+          <div style={{ display:"flex", gap:3, marginBottom:8, flexShrink:0 }}>
+            {rows.map(r => {
+              const lm = SIM_LEVELS[r.spiceLevel];
+              const active = r.year === kpiYear;
+              return (
+                <div key={r.year} onClick={() => setKpiYear(r.year)}
+                  style={{ flex:1, padding:"4px 2px", textAlign:"center", cursor:"pointer",
+                    background: lm.bg,
+                    border: `${active ? 2 : 1}px solid ${active ? lm.color : lm.color + "55"}`,
+                    fontFamily:"'IBM Plex Mono',monospace",
+                    outline: active ? `2px solid ${lm.color}30` : "none",
+                    outlineOffset: 1,
+                  }}>
+                  <div style={{ fontSize:6, color:lm.color, fontWeight:700,
+                    letterSpacing:"0.04em", lineHeight:1.3 }}>{lm.label}</div>
+                  <div style={{ fontSize:7, color:active?"#111":"#888",
+                    fontWeight:active?700:400 }}>{r.year}</div>
+                </div>
+              );
+            })}
           </div>
 
           {/* KPIs */}
