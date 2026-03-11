@@ -134,7 +134,6 @@ export default function Portfolio() {
                   {alloc.label}
                 </div>
               </div>
-              <div style={S.scoreRange}>{alloc.scoreRange} composite</div>
 
               {/* Stacked bar */}
               <div style={S.stackBar}>
@@ -220,16 +219,6 @@ export default function Portfolio() {
           })}
         </div>
       )}
-
-      {/* ── Context row ───────────────────────────────────────────────── */}
-      <div style={S.contextGrid}>
-        {ALLOCATIONS.map(alloc => (
-          <div key={alloc.level} style={S.contextCell}>
-            <div style={{ ...S.contextLabel, color: alloc.color }}>{alloc.label}</div>
-            <div style={S.contextText}>{alloc.context}</div>
-          </div>
-        ))}
-      </div>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
       <div style={S.footer}>

@@ -96,16 +96,31 @@ export default function Home() {
           <li style={S.contentsItem}>
             <a href="/collision" style={S.contentsLink}>The Collision</a>
             <span style={S.contentsDesc}>
-              The macro thesis in full — dual-economy divergence, fiscal indicators,
-              policy response comparisons, and real-world monitoring signals.
-            </span>
-          </li>
-          <li style={S.contentsItem}>
-            <a href="/simulation" style={S.contentsLink}>Simulation</a>
-            <span style={S.contentsDesc}>
               Interactive debt collision model — adjust AI displacement rate and
               government policy response; observe debt/GDP, unemployment, yields,
               and inflation trajectories to 2035.
+            </span>
+          </li>
+          <li style={S.contentsItem}>
+            <a href="/indicators" style={S.contentsLink}>Indicators</a>
+            <span style={S.contentsDesc}>
+              Twelve live macro signals across debt, unemployment, inflation, and
+              crypto — each scored 0–4. Composite score determines the current
+              SPICE system alert level.
+            </span>
+          </li>
+          <li style={S.contentsItem}>
+            <a href="/portfolio" style={S.contentsLink}>Portfolio</a>
+            <span style={S.contentsDesc}>
+              Investable universe across five crisis levels. Allocation shifts from
+              capital preservation at GREEN through to maximum crisis positioning at RED.
+            </span>
+          </li>
+          <li style={S.contentsItem}>
+            <a href="/coin" style={S.contentsLink}>Coin</a>
+            <span style={S.contentsDesc}>
+              Live testnet protocol on Base Sepolia — connect wallet, view on-chain
+              vault state and real-time portfolio allocation.
             </span>
           </li>
           <li style={S.contentsItem}>
@@ -113,13 +128,6 @@ export default function Home() {
             <span style={S.contentsDesc}>
               Model assumptions, simulation formulae, parameter sources, and
               academic citations.
-            </span>
-          </li>
-          <li style={S.contentsItem}>
-            <a href="/dashboard" style={S.contentsLink}>Dashboard</a>
-            <span style={S.contentsDesc}>
-              Live testnet protocol on Base Sepolia — deposit WBTC, mint IRON tokens,
-              view real-time portfolio allocation.
             </span>
           </li>
         </ol>
