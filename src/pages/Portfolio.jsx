@@ -14,7 +14,7 @@ function fmtBtc(n) { return n.toFixed(4); }
 
 export default function Portfolio() {
   const [params] = useSearchParams();
-  const currentLevel = params.get("level") !== null ? parseInt(params.get("level"), 10) : null;
+  const currentLevel = params.get("level") !== null ? parseInt(params.get("level"), 10) : 0;
   const [prices, setPrices] = useState(null);
 
   useEffect(() => {
@@ -49,14 +49,6 @@ export default function Portfolio() {
               → Live indicators
             </a>
           </div>
-        </div>
-      ) : (
-        <div style={S.noStatusBanner}>
-          <span style={S.noStatusText}>Current system level not set.</span>
-          {" "}
-          <a href="/indicators" style={{ color: "#B8860B", fontSize: 12 }}>
-            → Visit Indicators to get live composite score
-          </a>
         </div>
       )}
 
