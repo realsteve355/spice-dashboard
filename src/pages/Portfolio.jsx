@@ -2,6 +2,14 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ALLOCATIONS } from "../data/allocations";
 
+function readCachedLevel() {
+  try {
+    const s = JSON.parse(localStorage.getItem("spice_level_cache"));
+    if (s && Date.now() - s.timestamp < 24 * 60 * 60 * 1000) return s;
+  } catch {}
+  return null;
+}
+
 // CoinGecko IDs for assets we can price live
 const PRICE_IDS = {
   "Bitcoin":   "bitcoin",
@@ -14,7 +22,11 @@ function fmtBtc(n) { return n.toFixed(4); }
 
 export default function Portfolio() {
   const [params] = useSearchParams();
-  const currentLevel = params.get("level") !== null ? parseInt(params.get("level"), 10) : 0;
+  const currentLevel = (() => {
+    const p = params.get("level");
+    if (p !== null) return parseInt(p, 10);
+    return readCachedLevel()?.level ?? 0;
+  })();
   const [prices, setPrices] = useState(null);
 
   useEffect(() => {
@@ -101,16 +113,20 @@ export default function Portfolio() {
               key={alloc.level}
               style={{
                 ...S.column,
+                border: isActive ? `2px solid ${alloc.color}` : "1px solid #e2e2e2",
                 borderTop: `4px solid ${alloc.color}`,
-                boxShadow: isActive ? `0 0 0 2px ${alloc.color}` : "none",
                 background: isActive ? alloc.bg : "#fff",
               }}
             >
+              {isActive && (
+                <div style={{ ...S.activeHeader, background: alloc.color }}>
+                  ◈ CURRENT ALLOCATION
+                </div>
+              )}
               <div style={S.colHead}>
                 <div style={{ ...S.levelBadge, background: alloc.bg, color: alloc.color, border: `1px solid ${alloc.color}50` }}>
                   {alloc.label}
                 </div>
-                {isActive && <div style={{ ...S.activePill, color: alloc.color }}>◈ current</div>}
               </div>
               <div style={S.scoreRange}>{alloc.scoreRange} composite</div>
 
@@ -302,7 +318,10 @@ const S = {
   },
   colHead: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
   levelBadge: { fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", padding: "3px 8px", borderRadius: 2 },
-  activePill: { fontSize: 9, letterSpacing: "0.08em", fontWeight: 700 },
+  activeHeader: {
+    fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "0.12em",
+    textAlign: "center", padding: "4px 0", margin: "-18px -16px 14px",
+  },
   scoreRange: { fontSize: 9, color: "#aaa", letterSpacing: "0.06em", marginBottom: 14 },
   stackBar: { display: "flex", height: 8, borderRadius: 3, overflow: "hidden", marginBottom: 14 },
   assetList: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 },

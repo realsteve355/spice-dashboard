@@ -1,3 +1,67 @@
+import { useState, useEffect } from "react";
+
+const HOME_LEVELS = [
+  { label: "GREEN",  color: "#16a34a", bg: "#f0fdf4", desc: "System functioning within baseline parameters. No collision imminent." },
+  { label: "BLUE",   color: "#3b82f6", bg: "#eff6ff", desc: "Early warning signals active. Thesis beginning to develop." },
+  { label: "YELLOW", color: "#ca8a04", bg: "#fefce8", desc: "Active alert. Multiple indicators breached." },
+  { label: "ORANGE", color: "#ea580c", bg: "#fff7ed", desc: "Crisis mode. Systemic stress visible across multiple domains." },
+  { label: "RED",    color: "#dc2626", bg: "#fef2f2", desc: "Structural fracture. Maximum crisis positioning warranted." },
+];
+
+function CrisisLevelWidget() {
+  const [cached, setCached] = useState(null);
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("spice_level_cache"));
+      if (s && Date.now() - s.timestamp < 24 * 60 * 60 * 1000) setCached(s);
+    } catch {}
+  }, []);
+
+  if (!cached) {
+    return (
+      <div style={SW.widget}>
+        <div style={SW.eyebrow}>SPICE CRISIS LEVEL</div>
+        <div style={SW.unknown}>
+          Visit <a href="/indicators" style={{ color: "#B8860B" }}>Indicators</a> to load live data
+        </div>
+      </div>
+    );
+  }
+
+  const lm = HOME_LEVELS[cached.level];
+  return (
+    <div style={{ ...SW.widget, background: lm.bg, border: `1px solid ${lm.color}40` }}>
+      <div style={SW.eyebrow}>SPICE CRISIS LEVEL</div>
+      <div style={SW.row}>
+        <span style={{ ...SW.level, color: lm.color }}>{lm.label}</span>
+        <span style={SW.score}>{cached.score} / {cached.max ?? 48}</span>
+      </div>
+      <div style={SW.desc}>{lm.desc}</div>
+      <div style={SW.links}>
+        <a href="/indicators" style={{ ...SW.link, color: lm.color }}>→ Live indicators</a>
+        <a href={`/portfolio?level=${cached.level}`} style={{ ...SW.link, color: lm.color }}>→ Current portfolio</a>
+      </div>
+    </div>
+  );
+}
+
+const SW = {
+  widget: {
+    border: "1px solid #e2e2e2",
+    padding: "16px 20px",
+    marginBottom: 32,
+    fontFamily: "'IBM Plex Mono', monospace",
+  },
+  eyebrow: { fontSize: 9, color: "#aaa", letterSpacing: "0.15em", marginBottom: 10 },
+  unknown: { fontSize: 11, color: "#aaa" },
+  row: { display: "flex", alignItems: "baseline", gap: 14, marginBottom: 6 },
+  level: { fontSize: 26, fontWeight: 700, letterSpacing: "0.06em" },
+  score: { fontSize: 11, color: "#999" },
+  desc: { fontSize: 11, color: "#555", lineHeight: 1.6, marginBottom: 10 },
+  links: { display: "flex", gap: 24 },
+  link: { fontSize: 10, textDecoration: "none", letterSpacing: "0.06em" },
+};
+
 export default function Home() {
   return (
     <main style={S.main}>
@@ -9,6 +73,8 @@ export default function Home() {
           and hard monetary assets
         </p>
       </section>
+
+      <CrisisLevelWidget />
 
       <section style={S.section}>
         <h2 style={S.sectionLabel}>Abstract</h2>

@@ -579,6 +579,16 @@ export default function ApocalypseIndicator() {
   const cl = compositeLevel(totalScore);
   const lm = LEVEL_META[cl];
 
+  // Persist level to localStorage so Portfolio + Home page can read it
+  useEffect(() => {
+    if (loaded.length < INDICATORS.length) return;
+    try {
+      localStorage.setItem("spice_level_cache", JSON.stringify({
+        level: cl, score: totalScore, max: INDICATORS.length * 4, timestamp: Date.now(),
+      }));
+    } catch {}
+  }, [cl, totalScore, loaded.length]);
+
   return (
     <div style={S.page}>
       {/* Page header */}
