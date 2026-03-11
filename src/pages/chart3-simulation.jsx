@@ -301,6 +301,7 @@ function DebtChart({ rows, breakYear, ghostYear }) {
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Debt / GDP" color="#ef4444">
         <span style={{ fontSize:7, fontWeight:400, color:"#bbb", marginLeft:6 }}>capped at 300%</span>
+        <span style={{ fontSize:7, fontWeight:700, color:"#ef444470", marginLeft:8, letterSpacing:"0.08em" }}>DEBT</span>
       </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
@@ -323,7 +324,9 @@ function DebtChart({ rows, breakYear, ghostYear }) {
 function UnempChart({ rows, breakYear, ghostYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
-      <PanelHead label="Unemployment" color="#8b5cf6" />
+      <PanelHead label="Unemployment" color="#8b5cf6">
+        <span style={{ fontSize:7, fontWeight:700, color:"#8b5cf670", marginLeft:8, letterSpacing:"0.08em" }}>UNEMPLOYMENT</span>
+      </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
@@ -345,7 +348,9 @@ function UnempChart({ rows, breakYear, ghostYear }) {
 function InflChart({ rows, breakYear, ghostYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
-      <PanelHead label="Inflation / Deflation" color="#3b82f6" />
+      <PanelHead label="Inflation / Deflation" color="#3b82f6">
+        <span style={{ fontSize:7, fontWeight:700, color:"#3b82f670", marginLeft:8, letterSpacing:"0.08em" }}>INFLATION</span>
+      </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
@@ -367,7 +372,9 @@ function InflChart({ rows, breakYear, ghostYear }) {
 function YieldChart({ rows, breakYear, ghostYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
-      <PanelHead label="10Y Bond Yield" color="#eab308" />
+      <PanelHead label="10Y Bond Yield" color="#eab308">
+        <span style={{ fontSize:7, fontWeight:700, color:"#eab30870", marginLeft:8, letterSpacing:"0.08em" }}>DEBT</span>
+      </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
@@ -409,6 +416,7 @@ function BitcoinChart({ rows, breakYear, ghostYear }) {
           <span style={{ color:"#f59e0b" }}>&#x2501; Bitcoin (USD)  </span>
           <span style={{ color:"#93c5fd" }}>&#x254C; Capital in crypto %</span>
         </span>
+        <span style={{ fontSize:7, fontWeight:700, color:"#B8860B70", marginLeft:8, letterSpacing:"0.08em" }}>CRYPTO</span>
       </div>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
@@ -467,8 +475,8 @@ function KShapeChart({ rows, breakYear, ghostYear }) {
         <span style={{ marginLeft:8, fontSize:7, fontWeight:400 }}>
           <span style={{ color:"#22c55e" }}>━ Labour  </span>
           <span style={{ color:"#ef4444" }}>━ Capital</span>
-          <span style={{ color:"#aaa" }}>  % of GDP</span>
         </span>
+        <span style={{ fontSize:7, fontWeight:700, color:"#8b5cf670", marginLeft:8, letterSpacing:"0.08em" }}>UNEMPLOYMENT</span>
       </div>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>

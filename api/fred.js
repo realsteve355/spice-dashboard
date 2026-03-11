@@ -4,7 +4,7 @@
 
 // Series that update monthly or quarterly get longer cache times so the
 // page doesn't hammer FRED on every visit for data that won't have changed.
-const LONG_CACHE = ["M2SL", "GFDEGDQ188S", "IRLTLT01ITM156N", "IRLTLT01DEM156N", "IRLTLT01JPM156N"];
+const LONG_CACHE = ["M2SL", "GFDEGDQ188S", "IRLTLT01ITM156N", "IRLTLT01DEM156N", "IRLTLT01JPM156N", "UNRATE", "CPIAUCSL"];
 const QUARTERLY  = ["GFDEGDQ188S"];
 
 function cacheHeader(series) {

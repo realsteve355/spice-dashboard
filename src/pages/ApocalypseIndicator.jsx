@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 // ─── Level metadata ────────────────────────────────────────────────────────────
 const LEVEL_META = [
-  { id: 0, label: "GREEN",  color: "#16a34a", bg: "#f0fdf4", range: "0–8"   },
-  { id: 1, label: "BLUE",   color: "#3b82f6", bg: "#eff6ff", range: "9–16"  },
-  { id: 2, label: "YELLOW", color: "#ca8a04", bg: "#fefce8", range: "17–24" },
-  { id: 3, label: "ORANGE", color: "#ea580c", bg: "#fff7ed", range: "25–32" },
-  { id: 4, label: "RED",    color: "#dc2626", bg: "#fef2f2", range: "33–40" },
+  { id: 0, label: "GREEN",  color: "#16a34a", bg: "#f0fdf4", range: "0–9"   },
+  { id: 1, label: "BLUE",   color: "#3b82f6", bg: "#eff6ff", range: "10–19" },
+  { id: 2, label: "YELLOW", color: "#ca8a04", bg: "#fefce8", range: "20–29" },
+  { id: 3, label: "ORANGE", color: "#ea580c", bg: "#fff7ed", range: "30–38" },
+  { id: 4, label: "RED",    color: "#dc2626", bg: "#fef2f2", range: "39–48" },
 ];
 
 const COMPOSITE_DESC = [
@@ -19,10 +19,10 @@ const COMPOSITE_DESC = [
 
 // ─── Composite scoring ─────────────────────────────────────────────────────────
 function compositeLevel(total) {
-  if (total >= 33) return 4;
-  if (total >= 25) return 3;
-  if (total >= 17) return 2;
-  if (total >= 9)  return 1;
+  if (total >= 39) return 4;
+  if (total >= 30) return 3;
+  if (total >= 20) return 2;
+  if (total >= 10) return 1;
   return 0;
 }
 
@@ -40,10 +40,20 @@ async function fredGet(series, limit = 3) {
   return { v: parseFloat(obs[0].value), date: obs[0].date, all: obs };
 }
 
+// ─── Category definitions ──────────────────────────────────────────────────────
+const CATEGORIES = [
+  { id: "debt",         label: "DEBT",         color: "#ef4444", desc: "Sovereign stress · credit markets · yield dynamics" },
+  { id: "unemployment", label: "UNEMPLOYMENT",  color: "#8b5cf6", desc: "Labour market displacement · AI structural job loss" },
+  { id: "inflation",    label: "INFLATION",     color: "#3b82f6", desc: "Monetary debasement · purchasing power erosion" },
+  { id: "crypto",       label: "CRYPTO",        color: "#B8860B", desc: "Non-sovereign asset adoption · fiat exit signal" },
+];
+
 // ─── Indicator definitions ─────────────────────────────────────────────────────
 const INDICATORS = [
+  // ── DEBT ──────────────────────────────────────────────────────────────────
   {
     id: "real_yield",
+    category: "debt",
     name: "US 10Y Real Yield",
     abbr: "TIPS-derived inflation-adjusted rate",
     description:
@@ -71,6 +81,7 @@ const INDICATORS = [
   },
   {
     id: "yield_curve",
+    category: "debt",
     name: "Yield Curve (10Y − 2Y)",
     abbr: "US Treasury term spread",
     description:
@@ -98,6 +109,7 @@ const INDICATORS = [
   },
   {
     id: "breakeven",
+    category: "inflation",
     name: "5Y5Y Inflation Breakeven",
     abbr: "Long-run inflation expectations",
     description:
@@ -125,6 +137,7 @@ const INDICATORS = [
   },
   {
     id: "move",
+    category: "debt",
     name: "HY Credit Spread",
     abbr: "ICE BofA US High Yield OAS",
     description:
@@ -152,6 +165,7 @@ const INDICATORS = [
   },
   {
     id: "m2",
+    category: "inflation",
     name: "M2 Money Supply Growth",
     abbr: "Year-on-year change",
     description:
@@ -183,6 +197,7 @@ const INDICATORS = [
   },
   {
     id: "debt_gdp",
+    category: "debt",
     name: "US Federal Debt / GDP",
     abbr: "Sovereign debt sustainability",
     description:
@@ -210,6 +225,7 @@ const INDICATORS = [
   },
   {
     id: "dxy",
+    category: "inflation",
     name: "Broad US Dollar Index",
     abbr: "Trade-weighted dollar strength",
     description:
@@ -237,6 +253,7 @@ const INDICATORS = [
   },
   {
     id: "btp_bund",
+    category: "debt",
     name: "Italian BTP − Bund Spread",
     abbr: "10Y eurozone sovereign stress",
     description:
@@ -269,6 +286,7 @@ const INDICATORS = [
   },
   {
     id: "boj",
+    category: "debt",
     name: "Japan 10Y Government Yield",
     abbr: "BOJ yield curve control gauge",
     description:
@@ -299,6 +317,7 @@ const INDICATORS = [
   },
   {
     id: "btc_dom",
+    category: "crypto",
     name: "Bitcoin Dominance",
     abbr: "Crypto fiat-exit signal",
     description:
@@ -331,7 +350,103 @@ const INDICATORS = [
       };
     },
   },
+
+  // ── UNEMPLOYMENT ──────────────────────────────────────────────────────────
+  {
+    id: "unemployment",
+    category: "unemployment",
+    name: "US Unemployment Rate",
+    abbr: "Civilian unemployment",
+    description:
+      "The share of the labour force without work. In the SPICE thesis, rising unemployment signals AI displacement is materialising — compressing the tax base, expanding social spending, and compounding the fiscal deficit.",
+    source: "FRED · UNRATE",
+    freq: "monthly",
+    thresholds: [
+      { label: "Green",  range: "below 4.5%  (tight labour market)" },
+      { label: "Blue",   range: "4.5 to 6%  (softening)" },
+      { label: "Yellow", range: "6 to 8%  (labour market stress)" },
+      { label: "Orange", range: "8 to 12%  (significant displacement)" },
+      { label: "Red",    range: "above 12%  (structural unemployment crisis)" },
+    ],
+    score: v => {
+      if (v > 12)  return 4;
+      if (v > 8)   return 3;
+      if (v > 6)   return 2;
+      if (v > 4.5) return 1;
+      return 0;
+    },
+    fetchData: async () => {
+      const { v, date } = await fredGet("UNRATE");
+      return { value: v, display: v.toFixed(1) + "%", date };
+    },
+  },
+
+  // ── INFLATION (additional) ────────────────────────────────────────────────
+  {
+    id: "cpi",
+    category: "inflation",
+    name: "US CPI Inflation",
+    abbr: "Year-on-year consumer prices",
+    description:
+      "Annual change in US consumer prices. Scored two-tailed: both hyperinflation (government monetising debt) and deflation (AI structural price collapse → Fisher debt-deflation spiral) are crisis signals for the SPICE thesis.",
+    source: "FRED · CPIAUCSL",
+    freq: "monthly",
+    thresholds: [
+      { label: "Green",  range: "1.5 to 3.5%  (near-target, controlled)" },
+      { label: "Blue",   range: "3.5 to 5%  or  1 to 1.5%  (drifting)" },
+      { label: "Yellow", range: "5 to 7%  or  0 to 1%  (concerning)" },
+      { label: "Orange", range: "7 to 9%  or  negative  (acute in either direction)" },
+      { label: "Red",    range: "above 9%  or  below −2%  (hyperinflation or deflation spiral)" },
+    ],
+    score: v => {
+      if (v > 9   || v < -2)  return 4;
+      if (v > 7   || v < 0)   return 3;
+      if (v > 5   || v < 1)   return 2;
+      if (v > 3.5 || v < 1.5) return 1;
+      return 0;
+    },
+    fetchData: async () => {
+      const { all } = await fredGet("CPIAUCSL", 15);
+      if (all.length < 13) throw new Error("insufficient history");
+      const current = parseFloat(all[0].value);
+      const prior   = parseFloat(all[12].value);
+      const yoy = ((current - prior) / prior) * 100;
+      return { value: yoy, display: yoy.toFixed(1) + "%", date: all[0].date };
+    },
+  },
 ];
+
+// ─── Category header ───────────────────────────────────────────────────────────
+function CategoryHeader({ cat }) {
+  return (
+    <div style={{ gridColumn: "1 / -1", ...SC.catWrap }}>
+      <span style={{ ...SC.catLabel, color: cat.color }}>{cat.label}</span>
+      <span style={SC.catDesc}>{cat.desc}</span>
+    </div>
+  );
+}
+
+const SC = {
+  catWrap: {
+    display: "flex",
+    alignItems: "baseline",
+    gap: 16,
+    paddingBottom: 8,
+    borderBottom: "1px solid #e2e2e2",
+    marginBottom: 4,
+    marginTop: 24,
+  },
+  catLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: "0.15em",
+  },
+  catDesc: {
+    fontSize: 10,
+    color: "#aaa",
+    letterSpacing: "0.04em",
+  },
+};
 
 // ─── Indicator card ────────────────────────────────────────────────────────────
 function IndicatorCard({ ind, state }) {
@@ -487,7 +602,7 @@ export default function ApocalypseIndicator() {
         <div style={S.bannerRight}>
           <div style={{ marginBottom: 2 }}>
             <span style={{ ...S.scoreBig, color: lm.color }}>{totalScore}</span>
-            <span style={S.scoreMax}>&thinsp;/&thinsp;40</span>
+            <span style={S.scoreMax}>&thinsp;/&thinsp;{INDICATORS.length * 4}</span>
           </div>
           <div style={S.scoreSub}>
             composite score · {loaded.length}/{INDICATORS.length} indicators loaded
@@ -537,10 +652,15 @@ export default function ApocalypseIndicator() {
         </div>
       </div>
 
-      {/* Indicator grid */}
+      {/* Indicator grid — grouped by category */}
       <div style={S.grid}>
-        {INDICATORS.map(ind => (
-          <IndicatorCard key={ind.id} ind={ind} state={states[ind.id]} />
+        {CATEGORIES.map(cat => (
+          <React.Fragment key={cat.id}>
+            <CategoryHeader cat={cat} />
+            {INDICATORS.filter(i => i.category === cat.id).map(ind => (
+              <IndicatorCard key={ind.id} ind={ind} state={states[ind.id]} />
+            ))}
+          </React.Fragment>
         ))}
       </div>
 
