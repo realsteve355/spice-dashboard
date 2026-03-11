@@ -46,7 +46,7 @@ export default function Portfolio() {
     <div style={S.page}>
 
       {/* ── Status banner ─────────────────────────────────────────────── */}
-      {activeAlloc ? (
+      {activeAlloc && (
         <div style={{ ...S.statusBanner, background: activeAlloc.bg, borderColor: activeAlloc.color }}>
           <div style={S.statusLeft}>
             <div style={S.statusEyebrow}>CURRENT SPICE SYSTEM STATUS</div>
