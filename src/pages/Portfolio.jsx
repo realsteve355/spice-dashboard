@@ -28,6 +28,7 @@ export default function Portfolio() {
     return readCachedLevel()?.level ?? 0;
   })();
   const [prices, setPrices] = useState(null);
+  const [aum, setAum] = useState(10000);
 
   useEffect(() => {
     fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,pax-gold,silver&vs_currencies=usd")
@@ -64,33 +65,38 @@ export default function Portfolio() {
         </div>
       )}
 
-      {/* ── Live prices ───────────────────────────────────────────────── */}
-      <div style={S.priceBar}>
-        <div style={S.priceBarLeft}>
-          <div style={S.priceEyebrow}>LIVE ASSET PRICES</div>
+      {/* ── AUM input ─────────────────────────────────────────────────── */}
+      <div style={S.aumBox}>
+        <div style={S.aumBoxLeft}>
+          <div style={S.priceEyebrow}>INVESTMENT AMOUNT</div>
+          <div style={S.aumInputRow}>
+            <span style={S.aumCurrency}>$</span>
+            <input
+              type="number"
+              min="0"
+              value={aum}
+              onChange={e => setAum(Math.max(0, Number(e.target.value)))}
+              style={S.aumInput}
+            />
+          </div>
+          <div style={S.aumHint}>Adjust to see notional allocation below</div>
+        </div>
+        <div style={S.aumBoxRight}>
+          <div style={S.priceEyebrow}>SPOT PRICES</div>
           <div style={S.priceRow}>
             {[
-              { label: "Bitcoin (BTC)", val: prices?.btc,   prefix: "$" },
-              { label: "PAXG (gold oz)", val: prices?.paxg, prefix: "$" },
-              { label: "Silver (oz)",   val: prices?.silver, prefix: "$" },
+              { label: "BTC", val: prices?.btc },
+              { label: "PAXG", val: prices?.paxg },
+              { label: "Silver", val: prices?.silver },
             ].map(p => (
               <div key={p.label} style={S.priceItem}>
                 <div style={S.priceLabel}>{p.label}</div>
-                <div style={S.priceVal}>
-                  {p.val != null ? `${p.prefix}${fmt(p.val)}` : "—"}
-                </div>
+                <div style={S.priceValSm}>{p.val != null ? `$${fmt(p.val)}` : "—"}</div>
               </div>
             ))}
           </div>
+          {prices && <div style={S.priceSrc}>CoinGecko · refreshed on page load</div>}
         </div>
-        <div style={S.priceBarRight}>
-          <div style={S.priceEyebrow}>FUND AUM</div>
-          <div style={S.aumVal}>Pre-launch</div>
-          <div style={S.aumSub}>On-chain vault not yet deployed</div>
-        </div>
-        {prices && (
-          <div style={S.priceSrc}>CoinGecko · refreshed on page load</div>
-        )}
       </div>
 
       {/* ── Page header ───────────────────────────────────────────────── */}
@@ -160,7 +166,7 @@ export default function Portfolio() {
       </div>
 
       {/* ── Notional valuation (active level only) ────────────────────── */}
-      {activeAlloc && prices?.btc && (
+      {activeAlloc && (
         <div style={{ ...S.notionalWrap, borderColor: activeAlloc.color }}>
           <div style={S.notionalHeader}>
             <div>
@@ -168,40 +174,46 @@ export default function Portfolio() {
                 {activeAlloc.label} ALLOCATION — NOTIONAL VALUATION
               </div>
               <div style={S.notionalSub}>
-                Per 1 BTC invested at current prices (BTC = ${fmt(prices.btc)})
+                ${fmt(aum)} invested · asset quantities at current spot prices
               </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={S.notionalTotal}>1.0000 BTC</div>
-              <div style={S.notionalTotalUsd}>${fmt(prices.btc)}</div>
+              <div style={S.notionalTotal}>${fmt(aum)}</div>
+              <div style={S.notionalTotalUsd}>total investment</div>
             </div>
           </div>
           <div style={S.notionalTableHead}>
-            <span style={{ flex: "0 0 140px" }}>Asset</span>
+            <span style={{ flex: "0 0 160px" }}>Asset</span>
             <span style={{ flex: "0 0 50px", textAlign: "right" }}>Alloc</span>
-            <span style={{ flex: "0 0 90px", textAlign: "right" }}>BTC equiv</span>
             <span style={{ flex: 1, textAlign: "right" }}>USD value</span>
-            <span style={{ flex: "0 0 130px", textAlign: "right" }}>Spot ref</span>
+            <span style={{ flex: "0 0 160px", textAlign: "right" }}>Units (est.)</span>
+            <span style={{ flex: "0 0 120px", textAlign: "right" }}>Spot ref</span>
           </div>
           {activeAlloc.assets.map(a => {
-            const btcEq  = a.pct / 100;
-            const usdEq  = btcEq * prices.btc;
+            const usdVal = aum * (a.pct / 100);
             const spotId = PRICE_IDS[a.name];
-            const spot   = spotId === "bitcoin" ? prices.btc
-                         : spotId === "pax-gold" ? prices.paxg
-                         : spotId === "silver"   ? prices.silver
+            const spot   = spotId === "bitcoin" ? prices?.btc
+                         : spotId === "pax-gold" ? prices?.paxg
+                         : spotId === "silver"   ? prices?.silver
                          : null;
+            const units  = spot
+              ? spotId === "bitcoin"
+                ? fmtBtc(usdVal / spot) + " BTC"
+                : (usdVal / spot).toFixed(3) + " oz"
+              : "—";
             return (
               <div key={a.name} style={S.notionalRow}>
-                <div style={{ flex: "0 0 140px", display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ flex: "0 0 160px", display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ ...S.dot, background: a.color }} />
                   <span style={{ fontSize: 11, color: "#333" }}>{a.name}</span>
                 </div>
                 <span style={{ flex: "0 0 50px", textAlign: "right", fontSize: 12, fontWeight: 700, color: activeAlloc.color }}>{a.pct}%</span>
-                <span style={{ flex: "0 0 90px", textAlign: "right", fontSize: 11, color: "#555" }}>{fmtBtc(btcEq)} BTC</span>
-                <span style={{ flex: 1, textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>${fmt(usdEq)}</span>
-                <span style={{ flex: "0 0 130px", textAlign: "right", fontSize: 10, color: "#aaa" }}>
-                  {spot ? `$${fmt(spot)} / unit` : "synthetic / basket"}
+                <span style={{ flex: 1, textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>${fmt(usdVal)}</span>
+                <span style={{ flex: "0 0 160px", textAlign: "right", fontSize: 11, color: "#555" }}>
+                  {spot ? units : "synthetic / basket"}
+                </span>
+                <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 10, color: "#aaa" }}>
+                  {spot ? `$${fmt(spot)} / unit` : ""}
                 </span>
               </div>
             );
@@ -265,33 +277,42 @@ const S = {
   },
   noStatusText: { fontSize: 12, color: "#aaa" },
 
-  // Price bar
-  priceBar: {
+  // AUM box
+  aumBox: {
     display: "flex",
     alignItems: "flex-start",
-    gap: 32,
+    gap: 48,
     padding: "18px 24px",
     background: "#fafafa",
     border: "1px solid #e2e2e2",
     marginBottom: 32,
-    position: "relative",
   },
-  priceBarLeft: { flex: 1 },
-  priceBarRight: { textAlign: "right" },
+  aumBoxLeft: { flex: "0 0 auto" },
+  aumBoxRight: { flex: 1, position: "relative" },
+  aumInputRow: { display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 },
+  aumCurrency: { fontSize: 22, fontWeight: 700, color: "#111" },
+  aumInput: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#111",
+    fontFamily: "'IBM Plex Mono', monospace",
+    border: "none",
+    background: "transparent",
+    outline: "none",
+    width: 180,
+    padding: 0,
+  },
+  aumHint: { fontSize: 9, color: "#bbb", letterSpacing: "0.06em" },
   priceEyebrow: { fontSize: 9, color: "#aaa", letterSpacing: "0.12em", marginBottom: 10 },
-  priceRow: { display: "flex", gap: 32 },
+  priceRow: { display: "flex", gap: 28 },
   priceItem: {},
   priceLabel: { fontSize: 9, color: "#aaa", letterSpacing: "0.06em", marginBottom: 3 },
-  priceVal: { fontSize: 18, fontWeight: 700, color: "#111" },
-  aumVal: { fontSize: 18, fontWeight: 700, color: "#aaa" },
-  aumSub: { fontSize: 9, color: "#ccc", marginTop: 3 },
+  priceValSm: { fontSize: 14, fontWeight: 700, color: "#555" },
   priceSrc: {
-    position: "absolute",
-    bottom: 8,
-    right: 14,
     fontSize: 9,
     color: "#ccc",
     letterSpacing: "0.06em",
+    marginTop: 10,
   },
 
   // Header
