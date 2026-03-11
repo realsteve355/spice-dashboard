@@ -25,7 +25,7 @@ export default function Portfolio() {
         {currentLevel === null && (
           <div style={S.noLevelNote}>
             No current level set. Visit the{" "}
-            <a href="/apocalypse" style={{ color: "#B8860B" }}>Indicators page</a>
+            <a href="/indicators" style={{ color: "#B8860B" }}>Indicators page</a>
             {" "}to see live composite score, then return here with level highlighted.
           </div>
         )}
@@ -106,7 +106,7 @@ export default function Portfolio() {
         <div>
           Allocations editable via{" "}
           <a href="/config" style={{ color: "#B8860B" }}>configuration page</a>.
-          {" "}· Composite score and current level: <a href="/apocalypse" style={{ color: "#B8860B" }}>Indicators</a>.
+          {" "}· Composite score and current level: <a href="/indicators" style={{ color: "#B8860B" }}>Indicators</a>.
         </div>
       </div>
     </div>

@@ -87,7 +87,7 @@ export default function Config() {
 
       {/* Links */}
       <div style={S.links}>
-        <a href="/apocalypse" style={S.link}>→ Indicators (live composite score)</a>
+        <a href="/indicators" style={S.link}>→ Indicators (live composite score)</a>
         <a href="/portfolio" style={S.link}>→ Portfolio (public view)</a>
       </div>
     </div>

@@ -28,14 +28,14 @@ function Nav() {
         <NavLink to="/simulation" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           The Collision
         </NavLink>
-        <NavLink to="/dashboard" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/apocalypse" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+        <NavLink to="/indicators" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Indicators
         </NavLink>
         <NavLink to="/portfolio" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Portfolio
+        </NavLink>
+        <NavLink to="/dashboard" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Coin
         </NavLink>
         <a href="/spice-methodology.html" style={S.navLink}>
           Methodology
@@ -55,6 +55,7 @@ export default function App() {
           <Route path="/collision" element={<Collision />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/simulation" element={<Simulation />} />
+          <Route path="/indicators" element={<ApocalypseIndicator />} />
           <Route path="/apocalypse" element={<ApocalypseIndicator />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/config" element={<Config />} />
