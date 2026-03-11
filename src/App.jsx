@@ -4,6 +4,8 @@ import Collision from "./pages/Collision";
 import Dashboard from "./pages/Dashboard";
 import Simulation from "./pages/chart3-simulation";
 import ApocalypseIndicator from "./pages/ApocalypseIndicator";
+import Portfolio from "./pages/Portfolio";
+import Config from "./pages/Config";
 
 function Nav() {
   const loc = useLocation();
@@ -32,6 +34,9 @@ function Nav() {
         <NavLink to="/apocalypse" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Indicators
         </NavLink>
+        <NavLink to="/portfolio" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Portfolio
+        </NavLink>
         <a href="/spice-methodology.html" style={S.navLink}>
           Methodology
         </a>
@@ -51,6 +56,8 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/simulation" element={<Simulation />} />
           <Route path="/apocalypse" element={<ApocalypseIndicator />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/config" element={<Config />} />
         </Routes>
       </div>
     </BrowserRouter>

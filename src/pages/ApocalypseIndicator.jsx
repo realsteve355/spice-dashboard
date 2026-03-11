@@ -519,10 +519,21 @@ export default function ApocalypseIndicator() {
                   fontWeight: cl === l.id ? 700 : 400,
                 }}
               >
+
                 {l.label}
               </span>
             ))}
           </div>
+          {loaded.length > 0 && (
+            <div style={{ textAlign: "right", marginTop: 10 }}>
+              <a
+                href={`/portfolio?level=${cl}`}
+                style={{ fontSize: 10, color: lm.color, textDecoration: "none", letterSpacing: "0.06em" }}
+              >
+                → View {lm.label} portfolio
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
