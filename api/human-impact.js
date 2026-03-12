@@ -42,7 +42,25 @@ Economic state in ${d.year}:
 Group: ${group.name}
 Profile: ${group.profile}
 
-Write exactly 120–150 words of flowing prose (no bullet points, no headers). Cover: the primary economic pressure this group faces, the secondary cascading effects, whether conventional hedges (diversification, TIPS, gold ETFs, 60/40 portfolios) work in this environment, and any realistic options. Be clinical and honest — this is a structural crisis, not a cyclical recession. Ground every statement in the specific data above. Do not give generic financial advice. Do not mention any specific financial products, cryptocurrencies by name, or investment services.`;
+Respond with exactly 4 sections. Each section: one ALL-CAPS heading on its own line, then 2 bullet points starting with •. One blank line between sections. No other text.
+
+PRIMARY PRESSURE
+• [most acute pain point grounded in the data]
+• [second key pressure]
+
+SECONDARY EFFECTS
+• [cascading impact]
+• [further consequence]
+
+ASSETS & INCOME
+• [what happens to their savings/home/pension/portfolio at these levels]
+• [whether conventional hedges work — be honest if they fail]
+
+REALISTIC OPTIONS
+• [what they can actually do — be direct if options are limited]
+• [second option or honest assessment of constraints]
+
+Rules: clinical and honest, structural crisis not cyclical recession, ground every point in the specific numbers provided, no generic advice, no named financial products or investment services.`;
 }
 
 export default async function handler(req, res) {

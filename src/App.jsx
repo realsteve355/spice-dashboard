@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Collision from "./pages/Collision";
 import Dashboard from "./pages/Dashboard";
 import Simulation from "./pages/chart3-simulation";
+import Impact from "./pages/Impact";
 import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 import Config from "./pages/Config";
@@ -27,6 +28,9 @@ function Nav() {
         </NavLink>
         <NavLink to="/collision" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           The Collision
+        </NavLink>
+        <NavLink to="/impact" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Impact
         </NavLink>
         <NavLink to="/indicators" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Indicators
@@ -54,6 +58,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/collision" element={<Simulation />} />
           <Route path="/simulation" element={<Simulation />} />
+          <Route path="/impact" element={<Impact />} />
           <Route path="/collision-detail" element={<Collision />} />
           <Route path="/coin" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
