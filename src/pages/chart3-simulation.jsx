@@ -523,8 +523,6 @@ export default function Chart3Simulation() {
       <div style={{ borderBottom:"2px solid #f0f0f0", padding:"7px 18px",
         display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
         <div>
-          <span style={{ fontSize:9, color:"#aaa", letterSpacing:"0.18em",
-            textTransform:"uppercase", marginRight:10 }}>SPICE Thesis — Chart 3</span>
           <span style={{ fontSize:15, fontWeight:700 }}>
             Debt <span style={{ color:"#B8860B" }}>Collision</span> Simulation
           </span>
@@ -559,7 +557,7 @@ export default function Chart3Simulation() {
                   border:`1px solid ${yr ? lm.color : "#ddd"}`,
                   color: yr ? lm.color : "#ccc",
                   minWidth:38, textAlign:"center" }}>
-                {yr ? `'${String(yr).slice(2)}` : "—"}
+                {yr ? String(yr).slice(2) : "—"}
               </div>
             );
           })}
@@ -573,11 +571,9 @@ export default function Chart3Simulation() {
         <div style={{ width:220, flexShrink:0, borderRight:"1px solid #f0f0f0",
           padding:"12px 12px", overflowY:"auto", background:"#fafafa" }}>
 
-          <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
-            letterSpacing:"0.1em", marginBottom:6 }}>Displacement by 2030</div>
           <div style={{ fontSize:10, color:"#555", lineHeight:1.5, marginBottom:7 }}>
-            What fraction of knowledge workers will be{" "}
-            <strong style={{ color:"#111" }}>substantially displaced</strong> by AI?
+            What fraction of knowledge workers will be substantially displaced by AI{" "}
+            <strong style={{ color:"#111" }}>BY 2030?</strong>
           </div>
 
           <input type="range" min={0} max={0.65} step={0.01} value={displaced}
@@ -729,25 +725,25 @@ export default function Chart3Simulation() {
         <div style={{ flex:1, overflow:"hidden", padding:"10px 12px",
           display:"flex", flexDirection:"column" }}>
 
-          {/* Crisis level timeline strip — also serves as snapshot year selector */}
-          <div style={{ display:"flex", gap:3, marginBottom:8, flexShrink:0 }}>
-            {rows.map(r => {
-              const lm = SIM_LEVELS[r.spiceLevel];
-              const active = r.year === kpiYear;
-              return (
-                <div key={r.year} onClick={() => setKpiYear(r.year)}
-                  style={{ flex:1, padding:"4px 2px", textAlign:"center", cursor:"pointer",
-                    background: active ? lm.color : lm.bg,
-                    border:`1px solid ${active ? lm.color : lm.color + "66"}`,
-                    transition:"background 0.1s" }}>
-                  <div style={{ fontSize:7, color: active ? "#fff" : "#888",
-                    fontWeight: active ? 700 : 400,
-                    fontFamily:"'IBM Plex Mono',monospace" }}>
-                    {r.year}
-                  </div>
-                </div>
-              );
-            })}
+          {/* Snapshot year selector */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
+            <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
+              textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
+              Snapshot year
+            </span>
+            <input type="range" min={2026} max={2035} step={1} value={kpiYear}
+              onChange={ev => setKpiYear(+ev.target.value)}
+              style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
+            <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+              {rows.map(r => (
+                <span key={r.year} onClick={() => setKpiYear(r.year)}
+                  style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
+                    fontWeight: r.year===kpiYear ? 700 : 400,
+                    color: r.year===kpiYear ? "#111" : "#ccc" }}>
+                  {r.year}
+                </span>
+              ))}
+            </div>
           </div>
 
           {/* KPIs */}
