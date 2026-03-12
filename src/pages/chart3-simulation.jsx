@@ -159,7 +159,7 @@ function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPolicy) {
       5000000
     );
 
-    rows.push({
+    const rowData = {
       year:        yr,
       debtGDP:     +(debtGDP * 100).toFixed(1),
       unemp:       +(unemp * 100).toFixed(1),
@@ -169,11 +169,50 @@ function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPolicy) {
       cryptoFlight:+(cryptoFlight * 100).toFixed(1),
       labShare:    +(labShare * 100).toFixed(1),
       capShare:    +(capShare * 100).toFixed(1),
-      isBreak:     yr === breakYear,
-      isGhost:     yr === ghostYear,
-    });
+    };
+    rowData.spiceLevel = simSpiceLevel(rowData);
+    rows.push(rowData);
   }
-  return { rows, breakYear, ghostYear };
+
+  // first year each crisis level is reached
+  const firstYear = [0,1,2,3,4].map(lvl => {
+    const r = rows.find(r => r.spiceLevel >= lvl);
+    return r ? r.year : null;
+  });
+  const firstRedYear = firstYear[4];
+
+  return { rows, firstYear, firstRedYear };
+}
+
+// ─── SPICE CRISIS LEVEL ────────────────────────────────────────────────────
+
+const SIM_LEVELS = [
+  { label:"GREEN",  color:"#16a34a", bg:"#f0fdf4" },
+  { label:"BLUE",   color:"#3b82f6", bg:"#eff6ff" },
+  { label:"YELLOW", color:"#ca8a04", bg:"#fefce8" },
+  { label:"ORANGE", color:"#ea580c", bg:"#fff7ed" },
+  { label:"RED",    color:"#dc2626", bg:"#fef2f2" },
+];
+
+function simSpiceLevel(row) {
+  let s = 0;
+  const d = row.debtGDP;
+  if (d > 140) s += 4; else if (d > 120) s += 3; else if (d > 100) s += 2; else if (d > 80) s += 1;
+  const u = row.unemp;
+  if (u > 12) s += 4; else if (u > 8) s += 3; else if (u > 6) s += 2; else if (u > 4.5) s += 1;
+  const inf = row.infl;
+  if (inf > 9 || inf < -2) s += 4;
+  else if (inf > 7 || inf < 0) s += 3;
+  else if (inf > 5 || inf < 1) s += 2;
+  else if (inf > 3.5 || inf < 1.5) s += 1;
+  const y = row.yld;
+  if (y > 7) s += 4; else if (y > 6) s += 3; else if (y > 5) s += 2; else if (y > 4) s += 1;
+  // 0–2 GREEN · 3–5 BLUE · 6–9 YELLOW · 10–12 ORANGE · 13–16 RED
+  if (s >= 13) return 4;
+  if (s >= 10) return 3;
+  if (s >=  6) return 2;
+  if (s >=  3) return 1;
+  return 0;
 }
 
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
@@ -202,101 +241,22 @@ function SimpleTip({ active, payload, label, color, unit, rows }) {
       fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,.1)", pointerEvents:"none" }}>
       <div style={{ color:"#999", fontSize:9, marginBottom:2 }}>
         {label}
-        {d?.isBreak && <span style={{ color:"#ef4444", marginLeft:5 }}>⚠ break</span>}
-        {d?.isGhost && !d?.isBreak && <span style={{ color:"#f97316", marginLeft:5 }}>👻 ghost</span>}
+        {d?.spiceLevel !== undefined && (
+          <span style={{ marginLeft:5, color: SIM_LEVELS[d.spiceLevel].color, fontWeight:700 }}>
+            ■ {SIM_LEVELS[d.spiceLevel].label}
+          </span>
+        )}
       </div>
       <div style={{ color, fontWeight:700, fontSize:15 }}>{raw ? raw[payload[0].dataKey] : val}{unit}</div>
     </div>
   );
 }
 
-// ─── HOVER TOOLTIP COMPONENT ───────────────────────────────────────────────
-
-function InfoTooltip({ children, content }) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <span style={{ position:"relative", display:"inline-block" }}
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}>
-      {children}
-      {visible && (
-        <div style={{
-          position:"absolute", top:"calc(100% + 6px)", right:0,
-          width:300, background:"#111", color:"#eee",
-          border:"1px solid #333", padding:"10px 12px",
-          fontFamily:"'IBM Plex Mono',monospace", fontSize:10,
-          lineHeight:1.7, zIndex:9999,
-          boxShadow:"0 4px 16px rgba(0,0,0,0.4)",
-          pointerEvents:"none",
-        }}>
-          {content}
-        </div>
-      )}
-    </span>
-  );
-}
-
-const BREAK_TOOLTIP = (
-  <div>
-    <div style={{ color:"#ef4444", fontWeight:700, marginBottom:6, fontSize:11 }}>
-      ⚠ Break Point — trigger conditions
-    </div>
-    <div style={{ color:"#aaa", fontSize:9, marginBottom:8 }}>
-      Flagged when <em>any</em> of the following thresholds is crossed:
-    </div>
-    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
-      <tbody>
-        {[
-          ["Debt / GDP", "> 175%", "Reinhart-Rogoff danger zone — historical default rates rise sharply above this level"],
-          ["Unemployment", "> 20%", "Depression-level — historical precedent for political rupture and fiscal emergency"],
-          ["Deflation", "< −7%", "Fisher debt-deflation spiral — falling prices increase real debt burden, self-reinforcing"],
-          ["Yield + Debt", "yield > 6.5% AND debt > 150%", "Interest service becomes unmanageable — Italy / Greece 2010–12 analogue"],
-        ].map(([metric, threshold, note]) => (
-          <tr key={metric}>
-            <td style={{ color:"#f87171", paddingBottom:6, paddingRight:8, verticalAlign:"top", whiteSpace:"nowrap" }}>{metric}</td>
-            <td style={{ color:"#fbbf24", paddingBottom:6, paddingRight:8, verticalAlign:"top", whiteSpace:"nowrap" }}>{threshold}</td>
-            <td style={{ color:"#888", paddingBottom:6, verticalAlign:"top" }}>{note}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <div style={{ borderTop:"1px solid #333", marginTop:4, paddingTop:6, color:"#666", fontSize:8 }}>
-      A signal, not a forecast. Real crises are path-dependent and often delayed by political will. Source: Reinhart-Rogoff NBER w15639 · Fisher (1933)
-    </div>
-  </div>
-);
-
-const GHOST_TOOLTIP = (
-  <div>
-    <div style={{ color:"#f97316", fontWeight:700, marginBottom:6, fontSize:11 }}>
-      👻 Ghost GDP — trigger condition
-    </div>
-    <div style={{ color:"#aaa", fontSize:9, marginBottom:8 }}>
-      Flagged when <em>both</em> conditions hold simultaneously:
-    </div>
-    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
-      <tbody>
-        {[
-          ["Productivity", "> 3% / yr", "AI-driven gains are large and accelerating — GDP is being created"],
-          ["Unemployment", "> 8%", "But labour displacement is also rising — workers aren't capturing it"],
-        ].map(([metric, threshold, note]) => (
-          <tr key={metric}>
-            <td style={{ color:"#fb923c", paddingBottom:6, paddingRight:8, verticalAlign:"top", whiteSpace:"nowrap" }}>{metric}</td>
-            <td style={{ color:"#fbbf24", paddingBottom:6, paddingRight:8, verticalAlign:"top", whiteSpace:"nowrap" }}>{threshold}</td>
-            <td style={{ color:"#888", paddingBottom:6, verticalAlign:"top" }}>{note}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <div style={{ borderTop:"1px solid #333", marginTop:4, paddingTop:6, color:"#666", fontSize:8 }}>
-      Ghost GDP = productivity gains that appear in corporate earnings and capital returns but not in wages or tax receipts. The economy grows on paper while fiscal revenues stagnate. This is the mechanism that makes the debt collision self-reinforcing.
-    </div>
-  </div>
-);
+// ─── (InfoTooltip / BREAK_TOOLTIP / GHOST_TOOLTIP removed — replaced by SPICE level badges) ───
 
 // ─── CHART COMPONENTS ──────────────────────────────────────────────────────
 
-function DebtChart({ rows, breakYear, ghostYear }) {
+function DebtChart({ rows, firstRedYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Debt / GDP" color="#ef4444">
@@ -312,7 +272,7 @@ function DebtChart({ rows, breakYear, ghostYear }) {
             <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} />} />
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={175} stroke="#ef444480" strokeDasharray="3 4" label={{ value:"175%", fill:"#ef444480", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             <Line type="monotone" dataKey="debtGDP" stroke="#ef4444" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#ef4444", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -321,7 +281,7 @@ function DebtChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function UnempChart({ rows, breakYear, ghostYear }) {
+function UnempChart({ rows, firstRedYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Unemployment" color="#8b5cf6">
@@ -336,7 +296,7 @@ function UnempChart({ rows, breakYear, ghostYear }) {
             <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} />} />
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={20} stroke="#8b5cf670" strokeDasharray="3 4" label={{ value:"20% depression", fill:"#8b5cf670", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             <Line type="monotone" dataKey="unemp" stroke="#8b5cf6" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#8b5cf6", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -345,7 +305,7 @@ function UnempChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function InflChart({ rows, breakYear, ghostYear }) {
+function InflChart({ rows, firstRedYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Inflation / Deflation" color="#3b82f6">
@@ -360,7 +320,7 @@ function InflChart({ rows, breakYear, ghostYear }) {
             <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} />} />
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={-8} stroke="#3b82f6aa" strokeDasharray="3 4" label={{ value:"−8% Fisher", fill:"#3b82f6aa", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             <Line type="monotone" dataKey="infl" stroke="#3b82f6" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#3b82f6", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -369,7 +329,7 @@ function InflChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function YieldChart({ rows, breakYear, ghostYear }) {
+function YieldChart({ rows, firstRedYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="10Y Bond Yield" color="#eab308">
@@ -384,7 +344,7 @@ function YieldChart({ rows, breakYear, ghostYear }) {
             <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} />} />
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={6} stroke="#eab30880" strokeDasharray="3 4" label={{ value:"6% stress", fill:"#eab30880", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             <Line type="monotone" dataKey="yld" stroke="#eab308" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#eab308", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -393,7 +353,7 @@ function YieldChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function BitcoinChart({ rows, breakYear, ghostYear }) {
+function BitcoinChart({ rows, firstRedYear }) {
   const maxBtc  = Math.max(...rows.map(r => r.bitcoin));
   const roundTo = maxBtc < 200000 ? 25000 : maxBtc < 500000 ? 50000 : 100000;
   const axMax   = Math.ceil(maxBtc * 1.15 / roundTo) * roundTo;
@@ -443,12 +403,11 @@ function BitcoinChart({ rows, breakYear, ghostYear }) {
                   <div style={{ fontWeight:700, marginBottom:3 }}>{d.year}</div>
                   <div style={{ color:"#f59e0b" }}>Bitcoin: {fmtUsd(d.bitcoin)} ({mult}×)</div>
                   <div style={{ color:"#93c5fd" }}>Crypto flight: {d.cryptoFlight}%</div>
-                  {d.isBreak && <div style={{ color:"#ef4444", marginTop:3 }}>↯ Break point</div>}
+                  {d.spiceLevel !== undefined && <div style={{ color: SIM_LEVELS[d.spiceLevel].color, marginTop:3 }}>■ {SIM_LEVELS[d.spiceLevel].label}</div>}
                 </div>
               );
             }} />
-            <>{breakYear && <ReferenceLine yAxisId="idx" x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}
-              {ghostYear && ghostYear !== breakYear && <ReferenceLine yAxisId="idx" x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine yAxisId="idx" x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             {refLines.map(r => (
               <ReferenceLine key={r.label} yAxisId="idx" y={r.y} stroke="#f59e0b30" strokeDasharray="3 4"
                 label={{ value:r.label, fill:"#f59e0b70", fontSize:6, position:"insideTopRight" }} />
@@ -465,7 +424,7 @@ function BitcoinChart({ rows, breakYear, ghostYear }) {
   );
 }
 
-function KShapeChart({ rows, breakYear, ghostYear }) {
+function KShapeChart({ rows, firstRedYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <div style={{ fontSize:8, fontFamily:"'IBM Plex Mono',monospace",
@@ -503,7 +462,7 @@ function KShapeChart({ rows, breakYear, ghostYear }) {
             }} />
             <ReferenceLine y={60} stroke="#22c55e30" strokeDasharray="3 4" label={{ value:"Labour 2026", fill:"#22c55e50", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={25} stroke="#ef444430" strokeDasharray="3 4" label={{ value:"Capital 2026", fill:"#ef444450", fontSize:7, position:"insideTopRight" }} />
-            <>{breakYear && <ReferenceLine x={breakYear} stroke="#ef444455" strokeWidth={1.5} strokeDasharray="4 3" />}{ghostYear && ghostYear !== breakYear && <ReferenceLine x={ghostYear} stroke="#f9731655" strokeWidth={1} strokeDasharray="2 4" />}</>
+            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
             <Line type="monotone" dataKey="labShare" stroke="#22c55e" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#22c55e", strokeWidth:0 }} />
             <Line type="monotone" dataKey="capShare" stroke="#ef4444" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#ef4444", strokeWidth:0 }} />
           </LineChart>
@@ -543,7 +502,7 @@ export default function Chart3Simulation() {
   const [cryptoPolicy, setCryptoPolicy] = useState("ban");
   const [, startTransition] = useTransition();
 
-  const { rows, breakYear, ghostYear } = useMemo(
+  const { rows, firstYear, firstRedYear } = useMemo(
     () => runSim(displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy),
     [displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy]
   );
@@ -590,29 +549,20 @@ export default function Chart3Simulation() {
             </div>
           )}
 
-          {/* BREAK badge with hover tooltip */}
-          <InfoTooltip content={BREAK_TOOLTIP}>
-            {breakYear
-              ? <div style={{ padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"default",
-                  background:"#fff5f5", border:"1px solid #ef4444", color:"#ef4444" }}>
-                  ⚠ BREAK {breakYear}
-                </div>
-              : <div style={{ padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"default",
-                  background:"#f0fdf4", border:"1px solid #22c55e40", color:"#22c55e" }}>
-                  ✓ NO BREAK
-                </div>
-            }
-          </InfoTooltip>
-
-          {/* GHOST badge with hover tooltip */}
-          {ghostYear && (
-            <InfoTooltip content={GHOST_TOOLTIP}>
-              <div style={{ padding:"3px 8px", fontSize:9, fontWeight:700, cursor:"default",
-                background:"#fff8f0", border:"1px solid #f9731650", color:"#f97316" }}>
-                👻 GHOST {ghostYear}
+          {/* SPICE crisis level onset badges */}
+          {SIM_LEVELS.map((lm, i) => {
+            const yr = firstYear[i];
+            return (
+              <div key={lm.label}
+                style={{ padding:"3px 7px", fontSize:9, fontWeight:700, cursor:"default",
+                  background: yr ? lm.bg : "#f5f5f5",
+                  border:`1px solid ${yr ? lm.color : "#ddd"}`,
+                  color: yr ? lm.color : "#ccc",
+                  minWidth:38, textAlign:"center" }}>
+                {yr ? `'${String(yr).slice(2)}` : "—"}
               </div>
-            </InfoTooltip>
-          )}
+            );
+          })}
         </div>
       </div>
 
@@ -759,8 +709,15 @@ export default function Chart3Simulation() {
 
           <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
           <div style={{ fontSize:7, color:"#ccc", lineHeight:1.9 }}>
-            <div><span style={{ color:"#ef444460" }}>━ </span>Red = break point year</div>
-            <div><span style={{ color:"#f9731660" }}>╌ </span>Orange = ghost GDP onset</div>
+            {SIM_LEVELS.map(lm => (
+              <div key={lm.label}>
+                <span style={{ color: lm.color }}>■ </span>
+                <span style={{ color:"#bbb" }}>{lm.label}</span>
+              </div>
+            ))}
+            <div style={{ marginTop:3, lineHeight:1.5 }}>
+              <span style={{ color:"#dc262660" }}>━ </span>Red line = RED level onset
+            </div>
             <div style={{ marginTop:3, lineHeight:1.5 }}>
               Debt/GDP(t+1) = Debt/GDP(t) × (1+r)/(1+g) + deficit<br/>
               CBO · IMF WP/2025/076 · Reinhart-Rogoff
@@ -772,27 +729,25 @@ export default function Chart3Simulation() {
         <div style={{ flex:1, overflow:"hidden", padding:"10px 12px",
           display:"flex", flexDirection:"column" }}>
 
-          {/* KPI year selector */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
-            <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
-              textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
-              Snapshot year
-            </span>
-            <input type="range" min={2026} max={2035} step={1} value={kpiYear}
-              onChange={ev => setKpiYear(+ev.target.value)}
-              style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
-            <div style={{ position:"relative", width:180, flexShrink:0 }}>
-              <div style={{ display:"flex", justifyContent:"space-between",
-                fontFamily:"'IBM Plex Mono',monospace", fontSize:7, color:"#ccc" }}>
-                {rows.map(r => (
-                  <span key={r.year} onClick={() => setKpiYear(r.year)}
-                    style={{ cursor:"pointer", fontWeight:r.year===kpiYear?700:400,
-                      color:r.year===kpiYear?"#111":"#ccc" }}>
+          {/* Crisis level timeline strip — also serves as snapshot year selector */}
+          <div style={{ display:"flex", gap:3, marginBottom:8, flexShrink:0 }}>
+            {rows.map(r => {
+              const lm = SIM_LEVELS[r.spiceLevel];
+              const active = r.year === kpiYear;
+              return (
+                <div key={r.year} onClick={() => setKpiYear(r.year)}
+                  style={{ flex:1, padding:"4px 2px", textAlign:"center", cursor:"pointer",
+                    background: active ? lm.color : lm.bg,
+                    border:`1px solid ${active ? lm.color : lm.color + "66"}`,
+                    transition:"background 0.1s" }}>
+                  <div style={{ fontSize:7, color: active ? "#fff" : "#888",
+                    fontWeight: active ? 700 : 400,
+                    fontFamily:"'IBM Plex Mono',monospace" }}>
                     {r.year}
-                  </span>
-                ))}
-              </div>
-            </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* KPIs */}
@@ -809,12 +764,12 @@ export default function Chart3Simulation() {
           {/* 3×2 chart grid */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)",
             gridTemplateRows:`repeat(2,${CH+32}px)`, gap:8, flexShrink:0 }}>
-            <DebtChart    rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <UnempChart   rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <InflChart    rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <YieldChart   rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <BitcoinChart rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
-            <KShapeChart  rows={rows} breakYear={breakYear} ghostYear={ghostYear} />
+            <DebtChart    rows={rows} firstRedYear={firstRedYear} />
+            <UnempChart   rows={rows} firstRedYear={firstRedYear} />
+            <InflChart    rows={rows} firstRedYear={firstRedYear} />
+            <YieldChart   rows={rows} firstRedYear={firstRedYear} />
+            <BitcoinChart rows={rows} firstRedYear={firstRedYear} />
+            <KShapeChart  rows={rows} firstRedYear={firstRedYear} />
           </div>
 
           <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>
