@@ -1,9 +1,9 @@
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
-import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim } from "../lib/sim-engine";
+import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSimState, saveSimState } from "../lib/sim-engine";
 
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
 
@@ -284,13 +284,18 @@ function KPI({ label, value, color, warn }) {
 // ─── MAIN ──────────────────────────────────────────────────────────────────
 
 export default function Chart3Simulation() {
-  const [displaced,    setDisplaced]    = useState(0.40);
-  const [fiscalId,     setFiscalId]     = useState("none");
-  const [monetaryId,   setMonetaryId]   = useState("none");
-  const [kpiYear,      setKpiYear]      = useState(2035);
-  const [cryptoAdopt,  setCryptoAdopt]  = useState(0.5);
-  const [cryptoPolicy, setCryptoPolicy] = useState("ban");
+  const _s = loadSimState();
+  const [displaced,    setDisplaced]    = useState(_s?.displaced    ?? 0.40);
+  const [fiscalId,     setFiscalId]     = useState(_s?.fiscalId     ?? "none");
+  const [monetaryId,   setMonetaryId]   = useState(_s?.monetaryId   ?? "none");
+  const [kpiYear,      setKpiYear]      = useState(_s?.kpiYear      ?? 2035);
+  const [cryptoAdopt,  setCryptoAdopt]  = useState(_s?.cryptoAdopt  ?? 0.5);
+  const [cryptoPolicy, setCryptoPolicy] = useState(_s?.cryptoPolicy ?? "ban");
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    saveSimState({ displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy });
+  }, [displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy]);
 
   const { rows, firstYear, firstRedYear } = useMemo(
     () => runSim(displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy),

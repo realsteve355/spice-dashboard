@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import {
   ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim,
   IMPACT_GROUPS, impactCacheKey, getCached, setCache, parseAnalysis,
+  loadSimState, saveSimState,
 } from "../lib/sim-engine";
 
 // ─── CONTROLS (shared left-panel sub-components) ────────────────────────────
@@ -67,13 +68,18 @@ function ImpactCard({ group, text, isGenerating, genError }) {
 // ─── MAIN ───────────────────────────────────────────────────────────────────
 
 export default function Impact() {
-  const [displaced,    setDisplaced]    = useState(0.40);
-  const [fiscalId,     setFiscalId]     = useState("none");
-  const [monetaryId,   setMonetaryId]   = useState("none");
-  const [kpiYear,      setKpiYear]      = useState(2035);
-  const [cryptoAdopt,  setCryptoAdopt]  = useState(0.5);
-  const [cryptoPolicy, setCryptoPolicy] = useState("ban");
+  const _s = loadSimState();
+  const [displaced,    setDisplaced]    = useState(_s?.displaced    ?? 0.40);
+  const [fiscalId,     setFiscalId]     = useState(_s?.fiscalId     ?? "none");
+  const [monetaryId,   setMonetaryId]   = useState(_s?.monetaryId   ?? "none");
+  const [kpiYear,      setKpiYear]      = useState(_s?.kpiYear      ?? 2035);
+  const [cryptoAdopt,  setCryptoAdopt]  = useState(_s?.cryptoAdopt  ?? 0.5);
+  const [cryptoPolicy, setCryptoPolicy] = useState(_s?.cryptoPolicy ?? "ban");
   const [, startTransition]             = useTransition();
+
+  useEffect(() => {
+    saveSimState({ displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy });
+  }, [displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy]);
   const [analyses,     setAnalyses]     = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError,     setGenError]     = useState(false);

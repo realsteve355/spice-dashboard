@@ -167,6 +167,21 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
   return { rows, firstYear, firstRedYear };
 }
 
+// ─── SHARED SIM STATE (persists across page navigation) ────────────────────
+
+const SIM_STATE_KEY = "spice_sim_state";
+
+export function loadSimState() {
+  try {
+    const raw = localStorage.getItem(SIM_STATE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+export function saveSimState(state) {
+  try { localStorage.setItem(SIM_STATE_KEY, JSON.stringify(state)); } catch {}
+}
+
 // ─── HUMAN IMPACT SHARED HELPERS ───────────────────────────────────────────
 
 export const IMPACT_GROUPS = [
