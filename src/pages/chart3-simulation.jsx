@@ -1,4 +1,4 @@
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect, useRef } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -491,6 +491,44 @@ function KPI({ label, value, color, warn }) {
   );
 }
 
+// ─── HUMAN IMPACT ─────────────────────────────────────────────────────────
+
+const IMPACT_GROUPS = [
+  { key:"lowIncome",   label:"Low-Income Service Workers",  sub:"<$35k  ·  gig / retail / care  ·  renter" },
+  { key:"middleClass", label:"Middle-Class Salary Workers", sub:"$35k–$100k  ·  mortgaged  ·  401k" },
+  { key:"affluent",    label:"Affluent Professionals",      sub:"$100k–$500k  ·  equity portfolios  ·  real estate" },
+  { key:"retirees",    label:"Retirees & Fixed-Income",     sub:"65+  ·  bonds / pensions  ·  Social Security" },
+];
+
+const CACHE_PREFIX = "spice_impact_v1_";
+
+function impactCacheKey(r) {
+  const round1 = v => Math.round(v * 10) / 10;
+  return `${CACHE_PREFIX}${r.year}-${round1(r.debtGDP)}-${round1(r.unemp)}-${round1(r.infl)}-${Math.round(r.yld * 100) / 100}-${round1(r.cryptoFlight)}-${round1(r.labShare)}-${round1(r.capShare)}`;
+}
+
+function getCached(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > 90 * 24 * 60 * 60 * 1000) { localStorage.removeItem(key); return null; }
+    return data;
+  } catch { return null; }
+}
+
+function setCache(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+  } catch (e) {
+    if (e.name === "QuotaExceededError") {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith(CACHE_PREFIX))
+        .forEach(k => localStorage.removeItem(k));
+    }
+  }
+}
+
 // ─── MAIN ──────────────────────────────────────────────────────────────────
 
 export default function Chart3Simulation() {
@@ -501,6 +539,10 @@ export default function Chart3Simulation() {
   const [cryptoAdopt,  setCryptoAdopt]  = useState(0.5);
   const [cryptoPolicy, setCryptoPolicy] = useState("ban");
   const [, startTransition] = useTransition();
+  const [analyses,     setAnalyses]     = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genError,     setGenError]     = useState(false);
+  const debounceRef = useRef(null);
 
   const { rows, firstYear, firstRedYear } = useMemo(
     () => runSim(displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy),
@@ -513,11 +555,42 @@ export default function Chart3Simulation() {
   const anchor      = ANCHORS.reduce((a,b) =>
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
 
+  // Debounced human impact generation
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const key = impactCacheKey(last);
+      const cached = getCached(key);
+      if (cached) { setAnalyses(cached); setGenError(false); return; }
+      setIsGenerating(true);
+      setGenError(false);
+      try {
+        const res = await fetch("/api/human-impact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(last),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        setAnalyses(data);
+        setCache(key, data);
+      } catch {
+        setGenError(true);
+      } finally {
+        setIsGenerating(false);
+      }
+    }, 600);
+    return () => clearTimeout(debounceRef.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [last.year, last.debtGDP, last.unemp, last.infl, last.yld, last.cryptoFlight, last.labShare, last.capShare]);
+
   return (
     <div style={{ background:"#fff", color:"#111",
       fontFamily:"'IBM Plex Mono',monospace",
-      display:"flex", flexDirection:"column",
-      height:"100vh", overflow:"hidden", maxWidth:1200, margin:"0 auto" }}>
+      maxWidth:1200, margin:"0 auto" }}>
+    <div style={{ display:"flex", flexDirection:"column",
+      height:"100vh", overflow:"hidden" }}>
 
       {/* HEADER */}
       <div style={{ borderBottom:"2px solid #f0f0f0", padding:"7px 18px",
@@ -773,6 +846,65 @@ export default function Chart3Simulation() {
           </div>
         </div>
       </div>
+    </div>{/* end fixed-height viewport section */}
+
+      {/* ── HUMAN IMPACT ANALYSIS ─────────────────────────────────────────── */}
+      <div style={{ borderTop:"2px solid #f0f0f0", padding:"32px 18px 48px" }}>
+
+        {/* Section header */}
+        <div style={{ marginBottom:24 }}>
+          <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+            letterSpacing:"0.18em", marginBottom:6 }}>
+            Human Impact Analysis
+          </div>
+          <div style={{ fontSize:13, color:"#555", lineHeight:1.6 }}>
+            Real-world effects on households at{" "}
+            <span style={{ fontWeight:700, color:"#111" }}>{kpiYear}</span>
+            {isGenerating && (
+              <span style={{ marginLeft:10, fontSize:9, color:"#aaa" }}>analysing...</span>
+            )}
+          </div>
+        </div>
+
+        {/* 2×2 card grid */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:16 }}>
+          {IMPACT_GROUPS.map(g => {
+            const text = analyses?.[g.key];
+            return (
+              <div key={g.key} style={{ background:"#fff", border:"1px solid #e2e2e2",
+                padding:"18px 20px" }}>
+                {/* Card header */}
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#111",
+                    textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>
+                    {g.label}
+                  </div>
+                  <div style={{ fontSize:8, color:"#999" }}>{g.sub}</div>
+                </div>
+                {/* Card body */}
+                <div style={{ fontSize:11, color:"#333", lineHeight:1.8,
+                  borderTop:"1px solid #f0f0f0", paddingTop:12 }}>
+                  {genError ? (
+                    <span style={{ color:"#aaa" }}>Unable to generate analysis. Check API configuration.</span>
+                  ) : isGenerating && !text ? (
+                    <span style={{ color:"#ccc" }}>Analysing impact...</span>
+                  ) : text ? (
+                    text
+                  ) : (
+                    <span style={{ color:"#ccc" }}>Loading...</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ fontSize:7, color:"#ccc", marginTop:20, lineHeight:1.8 }}>
+          Analysis generated by AI using simulation outputs at snapshot year.
+          Reflects structural crisis dynamics — not investment advice.
+        </div>
+      </div>
+
     </div>
   );
 }
