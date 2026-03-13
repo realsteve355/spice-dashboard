@@ -313,20 +313,18 @@ export default function Impact() {
             {fiscalId !== "none" && (
               <div style={{ padding:"3px 8px", fontSize:8,
                 background:"#f0fdf4", border:"1px solid #22c55e50", color:"#22c55e" }}>
-                📋 {actFiscal?.label}
+                📋 {fiscalId==="robot_ubi" ? "Robot+UBI" : "Austerity"}
               </div>
             )}
             {monetaryId !== "none" && (
               <div style={{ padding:"3px 8px", fontSize:8,
                 background:"#fff5f5", border:"1px solid #ef444450", color:"#ef4444" }}>
-                🖨 {actMonetary?.label}
+                🖨 {monetaryId==="qe" ? "QE" : monetaryId==="ycc" ? "YCC" : "Repression"}
               </div>
             )}
             <div style={{ padding:"3px 8px", fontSize:8,
-              background: cryptoPolicy==="ban" ? "#fff7ed" : cryptoPolicy==="tax" ? "#eff6ff" : "#f9f9f9",
-              border:`1px solid ${cryptoPolicy==="ban" ? "#ea580c50" : cryptoPolicy==="tax" ? "#3b82f650" : "#e8e8e8"}`,
-              color: cryptoPolicy==="ban" ? "#ea580c" : cryptoPolicy==="tax" ? "#3b82f6" : "#aaa" }}>
-              ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax & regulate" : "Accommodate"}
+              background:"#eff6ff", border:"1px solid #3b82f650", color:"#3b82f6" }}>
+              ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax" : "Ignore"}
             </div>
           </div>
 
