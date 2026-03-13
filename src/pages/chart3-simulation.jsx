@@ -150,8 +150,10 @@ function BitcoinChart({ rows, firstRedYear }) {
   const step      = axMax / 4;
   const idxTicks  = [1,2,3,4].map(n => Math.round(n * step / roundTo) * roundTo);
   const maxFlight = Math.max(...rows.map(r => r.cryptoFlight));
-  const pctMax    = Math.max(40, Math.ceil(maxFlight * 1.15 / 10) * 10);
-  const pctTicks  = Array.from({ length: 4 }, (_, i) => Math.round((i + 1) * pctMax / 4 / 5) * 5);
+  const pctCeil   = Math.max(50, Math.ceil(maxFlight * 1.35 / 10) * 10);
+  const pctStep   = pctCeil <= 50 ? 10 : pctCeil <= 80 ? 20 : 25;
+  const pctTicks  = Array.from({ length: Math.floor((pctCeil - 1) / pctStep) },
+    (_, i) => (i + 1) * pctStep);
 
   const refLines = [
     { y: 170000, label: "2×" },
@@ -179,7 +181,7 @@ function BitcoinChart({ rows, firstRedYear }) {
             <YAxis yAxisId="idx" domain={[0, axMax]} ticks={idxTicks}
               tick={axTick} tickLine={false} axisLine={false} width={52}
               tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
-            <YAxis yAxisId="pct" orientation="right" domain={[0,pctMax]} ticks={pctTicks}
+            <YAxis yAxisId="pct" orientation="right" domain={[0,pctCeil]} ticks={pctTicks}
               tick={axTick} tickLine={false} axisLine={false} width={28}
               tickFormatter={v => `${v}%`} />
             <Tooltip content={p => {
