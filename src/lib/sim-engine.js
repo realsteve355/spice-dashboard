@@ -169,6 +169,19 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
   return { rows, firstYear, firstRedYear };
 }
 
+// ─── KPI CRITICALITY COLORS ────────────────────────────────────────────────
+
+export function kpiColor(type, v, debt) {
+  const G = "#16a34a", Y = "#ca8a04", O = "#ea580c", R = "#dc2626";
+  if (type === "debt")   return v >= 175 ? R : v >= 150 ? O : v >= 120 ? Y : G;
+  if (type === "unemp")  return v >= 20  ? R : v >= 12  ? O : v >= 8   ? Y : G;
+  if (type === "infl")   return (v >= 15 || v <= -7) ? R : (v >= 10 || v <= -4) ? O : (v >= 6 || v <= -2) ? Y : G;
+  if (type === "yld")    return (v >= 10 || (v >= 7 && (debt ?? 0) >= 150)) ? R : v >= 6 ? O : v >= 5 ? Y : G;
+  if (type === "crypto") return v >= 60  ? R : v >= 40  ? O : v >= 20  ? Y : G;
+  if (type === "labour") return v <= 40  ? R : v <= 47  ? O : v <= 53  ? Y : G;
+  return "#111";
+}
+
 // ─── SHARED SIM STATE (persists across page navigation) ────────────────────
 
 const SIM_STATE_KEY = "spice_sim_state";

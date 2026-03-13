@@ -2,8 +2,58 @@ import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import {
   ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim,
   IMPACT_GROUPS, impactCacheKey, getCached, setCache, parseAnalysis,
-  loadSimState, saveSimState,
+  loadSimState, saveSimState, kpiColor,
 } from "../lib/sim-engine";
+
+const THRESHOLD_DATA = [
+  { label:"Debt / GDP",    rows:[{level:"GREEN",color:"#16a34a",range:"< 120%"},{level:"YELLOW",color:"#ca8a04",range:"120 – 150%"},{level:"ORANGE",color:"#ea580c",range:"150 – 175%"},{level:"RED",color:"#dc2626",range:"> 175%"}]},
+  { label:"Unemployment",  rows:[{level:"GREEN",color:"#16a34a",range:"< 8%"},{level:"YELLOW",color:"#ca8a04",range:"8 – 12%"},{level:"ORANGE",color:"#ea580c",range:"12 – 20%"},{level:"RED",color:"#dc2626",range:"> 20%"}]},
+  { label:"Inflation",     rows:[{level:"GREEN",color:"#16a34a",range:"2 – 6%"},{level:"YELLOW",color:"#ca8a04",range:"6 – 10%  or  −2 to 0%"},{level:"ORANGE",color:"#ea580c",range:"10 – 15%  or  −4 to −2%"},{level:"RED",color:"#dc2626",range:"> 15%  or  < −7%"}]},
+  { label:"10Y Bond Yield", rows:[{level:"GREEN",color:"#16a34a",range:"< 5%"},{level:"YELLOW",color:"#ca8a04",range:"5 – 6%"},{level:"ORANGE",color:"#ea580c",range:"6 – 10%"},{level:"RED",color:"#dc2626",range:"> 10%  or  > 7% with Debt > 150%"}]},
+  { label:"Crypto Flight",  rows:[{level:"GREEN",color:"#16a34a",range:"< 20%"},{level:"YELLOW",color:"#ca8a04",range:"20 – 40%"},{level:"ORANGE",color:"#ea580c",range:"40 – 60%"},{level:"RED",color:"#dc2626",range:"> 60%"}]},
+  { label:"Labour Share",   rows:[{level:"GREEN",color:"#16a34a",range:"> 53% of GDP"},{level:"YELLOW",color:"#ca8a04",range:"47 – 53%"},{level:"ORANGE",color:"#ea580c",range:"40 – 47%"},{level:"RED",color:"#dc2626",range:"< 40%"}]},
+];
+
+function ThresholdsPanel({ onClose }) {
+  const F = "'IBM Plex Mono',monospace";
+  return (
+    <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
+      zIndex:9999, width:380, maxHeight:"80vh", overflowY:"auto",
+      background:"#fff", border:"1px solid #e2e2e2",
+      boxShadow:"0 8px 32px rgba(0,0,0,0.18)", fontFamily:F }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
+        padding:"10px 14px", borderBottom:"1px solid #f0f0f0", background:"#fafafa" }}>
+        <div style={{ fontSize:9, fontWeight:700, color:"#111", textTransform:"uppercase", letterSpacing:"0.12em" }}>
+          Crisis Thresholds
+        </div>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer",
+          fontSize:16, color:"#aaa", fontFamily:F, lineHeight:1 }}>✕</button>
+      </div>
+      <div style={{ padding:"12px 14px 8px" }}>
+        <div style={{ fontSize:9, color:"#888", lineHeight:1.6, marginBottom:10 }}>
+          Each year's colour is set by the <strong style={{ color:"#111" }}>worst indicator</strong> for that year.
+        </div>
+        {THRESHOLD_DATA.map(ind => (
+          <div key={ind.label} style={{ marginBottom:12 }}>
+            <div style={{ fontSize:8, fontWeight:700, color:"#555", textTransform:"uppercase",
+              letterSpacing:"0.1em", marginBottom:5 }}>{ind.label}</div>
+            {ind.rows.map(r => (
+              <div key={r.level} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
+                <span style={{ width:6, height:6, borderRadius:"50%", background:r.color,
+                  flexShrink:0, display:"inline-block" }} />
+                <span style={{ fontSize:8, color:r.color, fontWeight:700, minWidth:46 }}>{r.level}</span>
+                <span style={{ fontSize:8, color:"#555" }}>{r.range}</span>
+              </div>
+            ))}
+          </div>
+        ))}
+        <div style={{ fontSize:7, color:"#ccc", borderTop:"1px solid #f0f0f0", paddingTop:8 }}>
+          Sources: Reinhart-Rogoff NBER w15639 · CBO 2025 · Fisher (1933)
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── CONTROLS (shared left-panel sub-components) ────────────────────────────
 
@@ -76,6 +126,7 @@ export default function Impact() {
   const [cryptoAdopt,  setCryptoAdopt]  = useState(_s?.cryptoAdopt  ?? 0.5);
   const [cryptoPolicy, setCryptoPolicy] = useState(_s?.cryptoPolicy ?? "ban");
   const [, startTransition]             = useTransition();
+  const [showThresholds, setShowThresholds] = useState(false);
 
   useEffect(() => {
     saveSimState({ displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy });
@@ -274,46 +325,58 @@ export default function Impact() {
         </div>
 
         {/* Snapshot year selector */}
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexShrink:0 }}>
-          <span style={{ fontSize:8, color:"#aaa", textTransform:"uppercase",
-            letterSpacing:"0.1em", whiteSpace:"nowrap" }}>Snapshot year</span>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
+          <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
+            textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
+            Snapshot year
+          </span>
           <input type="range" min={2026} max={2035} step={1} value={kpiYear}
             onChange={ev => setKpiYear(+ev.target.value)}
-            style={{ flex:1, accentColor:`${lvl.color}`, cursor:"pointer" }} />
+            style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
           <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-            {rows.map(r => {
-              const lm = SIM_LEVELS[r.spiceLevel];
-              return (
-                <span key={r.year} onClick={() => setKpiYear(r.year)}
-                  style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
-                    fontWeight: r.year===kpiYear ? 700 : 400,
-                    color: r.year===kpiYear ? lm.color : "#ccc" }}>
-                  {r.year}
-                </span>
-              );
-            })}
+            {rows.map(r => (
+              <span key={r.year} onClick={() => setKpiYear(r.year)}
+                style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
+                  fontWeight: r.year===kpiYear ? 700 : 400,
+                  color: r.year===kpiYear ? "#111" : "#ccc" }}>
+                {r.year}
+              </span>
+            ))}
           </div>
         </div>
 
-        {/* Key metrics for snapshot year */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)",
-          gap:5, marginBottom:14, flexShrink:0 }}>
-          {[
-            { label:"Debt/GDP",   value:`${last.debtGDP}%`, color:"#ef4444" },
-            { label:"Unemp",      value:`${last.unemp}%`,   color:"#8b5cf6" },
-            { label:"Inflation",  value:`${last.infl}%`,    color:"#3b82f6" },
-            { label:"10Y Yield",  value:`${last.yld}%`,     color:"#eab308" },
-            { label:"Labour",     value:`${last.labShare}%`,color:"#22c55e" },
-            { label:"Level",      value:lvl.label,          color:lvl.color },
-          ].map(k => (
-            <div key={k.label} style={{ background:"#f9f9f9", border:"1px solid #ebebeb",
-              padding:"5px 8px" }}>
-              <div style={{ fontSize:7, color:"#bbb", textTransform:"uppercase",
-                letterSpacing:"0.1em", marginBottom:2 }}>{k.label}</div>
-              <div style={{ fontSize:13, fontWeight:700, color:k.color }}>{k.value}</div>
-            </div>
-          ))}
+        {/* KPI chips + thresholds button */}
+        <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:14, flexShrink:0 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:5, flex:1 }}>
+            {[
+              { label:`Debt/GDP ${kpiYear}`, value:`${last.debtGDP}%`, color:kpiColor("debt",  last.debtGDP),            warn:last.debtGDP>=150 },
+              { label:`Unemp ${kpiYear}`,    value:`${last.unemp}%`,   color:kpiColor("unemp", last.unemp),               warn:last.unemp>=12 },
+              { label:`Inflation ${kpiYear}`,value:`${last.infl}%`,    color:kpiColor("infl",  last.infl),                warn:Math.abs(last.infl)>=10 },
+              { label:`10Y Yield ${kpiYear}`,value:`${last.yld}%`,     color:kpiColor("yld",   last.yld, last.debtGDP),   warn:last.yld>=6 },
+              { label:`Bitcoin ${kpiYear}`,  value:last.bitcoin >= 1000000 ? `$${(last.bitcoin/1000000).toFixed(2)}M` : `$${(last.bitcoin/1000).toFixed(0)}k`, color:"#f59e0b", warn:false },
+              { label:`Labour ${kpiYear}`,   value:`${last.labShare}%`,color:kpiColor("labour",last.labShare),            warn:last.labShare<=47 },
+            ].map(k => (
+              <div key={k.label} style={{ background:k.warn?"#fff5f5":"#f9f9f9",
+                border:`1px solid ${k.warn?"#ef444440":"#ebebeb"}`, padding:"5px 8px" }}>
+                <div style={{ fontSize:7, color:"#bbb", fontFamily:"'IBM Plex Mono',monospace",
+                  textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:2 }}>{k.label}</div>
+                <div style={{ fontSize:14, fontWeight:700, color:k.color,
+                  fontFamily:"'IBM Plex Mono',monospace" }}>{k.value}</div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setShowThresholds(s => !s)}
+            style={{ flexShrink:0, padding:"4px 7px", fontSize:8, cursor:"pointer",
+              background:"#f9f9f9", border:"1px solid #e2e2e2", color:"#888",
+              fontFamily:"'IBM Plex Mono',monospace" }}>
+            ℹ
+          </button>
         </div>
+        {showThresholds && <>
+          <div onClick={() => setShowThresholds(false)}
+            style={{ position:"fixed", inset:0, zIndex:9998 }} />
+          <ThresholdsPanel onClose={() => setShowThresholds(false)} />
+        </>}
 
         {/* 2×2 impact cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:14, flex:1 }}>
