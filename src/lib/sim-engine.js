@@ -179,6 +179,7 @@ export function kpiColor(type, v, debt) {
   if (type === "yld")    return (v >= 10 || (v >= 7 && (debt ?? 0) >= 150)) ? R : v >= 6 ? O : v >= 5 ? Y : G;
   if (type === "crypto") return v >= 60  ? R : v >= 40  ? O : v >= 20  ? Y : G;
   if (type === "labour") return v <= 40  ? R : v <= 47  ? O : v <= 53  ? Y : G;
+  if (type === "gini")   return v >= 0.60 ? R : v >= 0.55 ? O : v >= 0.50 ? Y : G;
   return "#111";
 }
 

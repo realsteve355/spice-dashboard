@@ -319,11 +319,11 @@ const THRESHOLD_DATA = [
     { level:"ORANGE", color:"#ea580c", range:"40 – 60%" },
     { level:"RED",    color:"#dc2626", range:"> 60% (mass capital exit)" },
   ]},
-  { label: "Labour Share", rows: [
-    { level:"GREEN",  color:"#16a34a", range:"> 53% of GDP" },
-    { level:"YELLOW", color:"#ca8a04", range:"47 – 53%" },
-    { level:"ORANGE", color:"#ea580c", range:"40 – 47%" },
-    { level:"RED",    color:"#dc2626", range:"< 40% (K-shape crisis)" },
+  { label: "Gini Coefficient", rows: [
+    { level:"GREEN",  color:"#16a34a", range:"< 0.50  (US baseline ~0.48)" },
+    { level:"YELLOW", color:"#ca8a04", range:"0.50 – 0.55  (elevated inequality)" },
+    { level:"ORANGE", color:"#ea580c", range:"0.55 – 0.60  (extreme — Venezuela ~0.55)" },
+    { level:"RED",    color:"#dc2626", range:"> 0.60  (revolutionary levels)" },
   ]},
 ];
 
@@ -656,11 +656,11 @@ export default function Chart3Simulation() {
                 color={kpiColor("infl",   last.infl)}     warn={Math.abs(last.infl)>=10} />
               <KPI label={`10Y Yield ${kpiYear}`}value={`${last.yld}%`}
                 color={kpiColor("yld",    last.yld, last.debtGDP)} warn={last.yld>=6} />
-              <KPI label={`Bitcoin ${kpiYear}`}
-                value={last.bitcoin >= 1000000 ? `$${(last.bitcoin/1000000).toFixed(2)}M` : `$${(last.bitcoin/1000).toFixed(0)}k`}
-                color="#f59e0b" warn={false} />
-              <KPI label={`Labour ${kpiYear}`}   value={`${last.labShare}%`}
-                color={kpiColor("labour", last.labShare)} warn={last.labShare<=47} />
+              <KPI label={`Crypto ${kpiYear}`}    value={`${last.cryptoFlight}%`}
+                color={kpiColor("crypto", last.cryptoFlight)} warn={last.cryptoFlight>=40} />
+              <KPI label={`Gini ${kpiYear}`}     value={(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2)}
+                color={kpiColor("gini", 0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008)}
+                warn={(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008) >= 0.55} />
             </div>
             <button onClick={() => setShowThresholds(s => !s)}
               style={{ flexShrink:0, padding:"4px 7px", fontSize:8, cursor:"pointer",

@@ -11,7 +11,7 @@ const THRESHOLD_DATA = [
   { label:"Inflation",     rows:[{level:"GREEN",color:"#16a34a",range:"2 – 6%"},{level:"YELLOW",color:"#ca8a04",range:"6 – 10%  or  −2 to 0%"},{level:"ORANGE",color:"#ea580c",range:"10 – 15%  or  −4 to −2%"},{level:"RED",color:"#dc2626",range:"> 15%  or  < −7%"}]},
   { label:"10Y Bond Yield", rows:[{level:"GREEN",color:"#16a34a",range:"< 5%"},{level:"YELLOW",color:"#ca8a04",range:"5 – 6%"},{level:"ORANGE",color:"#ea580c",range:"6 – 10%"},{level:"RED",color:"#dc2626",range:"> 10%  or  > 7% with Debt > 150%"}]},
   { label:"Crypto Flight",  rows:[{level:"GREEN",color:"#16a34a",range:"< 20%"},{level:"YELLOW",color:"#ca8a04",range:"20 – 40%"},{level:"ORANGE",color:"#ea580c",range:"40 – 60%"},{level:"RED",color:"#dc2626",range:"> 60%"}]},
-  { label:"Labour Share",   rows:[{level:"GREEN",color:"#16a34a",range:"> 53% of GDP"},{level:"YELLOW",color:"#ca8a04",range:"47 – 53%"},{level:"ORANGE",color:"#ea580c",range:"40 – 47%"},{level:"RED",color:"#dc2626",range:"< 40%"}]},
+  { label:"Gini Coefficient", rows:[{level:"GREEN",color:"#16a34a",range:"< 0.50  (US baseline ~0.48)"},{level:"YELLOW",color:"#ca8a04",range:"0.50 – 0.55"},{level:"ORANGE",color:"#ea580c",range:"0.55 – 0.60  (Venezuela ~0.55)"},{level:"RED",color:"#dc2626",range:"> 0.60  (revolutionary)"}]},
 ];
 
 function ThresholdsPanel({ onClose }) {
@@ -375,8 +375,10 @@ export default function Impact() {
               { label:`Unemp ${kpiYear}`,    value:`${last.unemp}%`,   color:kpiColor("unemp", last.unemp),               warn:last.unemp>=12 },
               { label:`Inflation ${kpiYear}`,value:`${last.infl}%`,    color:kpiColor("infl",  last.infl),                warn:Math.abs(last.infl)>=10 },
               { label:`10Y Yield ${kpiYear}`,value:`${last.yld}%`,     color:kpiColor("yld",   last.yld, last.debtGDP),   warn:last.yld>=6 },
-              { label:`Bitcoin ${kpiYear}`,  value:last.bitcoin >= 1000000 ? `$${(last.bitcoin/1000000).toFixed(2)}M` : `$${(last.bitcoin/1000).toFixed(0)}k`, color:"#f59e0b", warn:false },
-              { label:`Labour ${kpiYear}`,   value:`${last.labShare}%`,color:kpiColor("labour",last.labShare),            warn:last.labShare<=47 },
+              { label:`Crypto ${kpiYear}`,   value:`${last.cryptoFlight}%`, color:kpiColor("crypto", last.cryptoFlight), warn:last.cryptoFlight>=40 },
+              { label:`Gini ${kpiYear}`,     value:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2),
+                color:kpiColor("gini", 0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008),
+                warn:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008) >= 0.55 },
             ].map(k => (
               <div key={k.label} style={{ background:k.warn?"#fff5f5":"#f9f9f9",
                 border:`1px solid ${k.warn?"#ef444440":"#ebebeb"}`, padding:"5px 8px" }}>
