@@ -144,7 +144,9 @@ export default function Impact() {
   const last    = rows.find(r => r.year === kpiYear) || rows[rows.length - 1];
   const anchor  = ANCHORS.reduce((a, b) =>
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
-  const lvl     = SIM_LEVELS[last.spiceLevel];
+  const lvl        = SIM_LEVELS[last.spiceLevel];
+  const actFiscal  = FISCAL_POLICIES.find(p => p.id === fiscalId);
+  const actMonetary = MONETARY_POLICIES.find(p => p.id === monetaryId);
 
   // Debounced analysis generation
   useEffect(() => {
@@ -306,6 +308,28 @@ export default function Impact() {
               {isGenerating && <span style={{ marginLeft:10, fontSize:9, color:"#aaa" }}>analysing...</span>}
             </div>
           </div>
+          {/* Policy badges */}
+          <div style={{ display:"flex", gap:5, alignItems:"center", flexWrap:"wrap", justifyContent:"flex-end" }}>
+            {fiscalId !== "none" && (
+              <div style={{ padding:"3px 8px", fontSize:8,
+                background:"#f0fdf4", border:"1px solid #22c55e50", color:"#22c55e" }}>
+                📋 {actFiscal?.label}
+              </div>
+            )}
+            {monetaryId !== "none" && (
+              <div style={{ padding:"3px 8px", fontSize:8,
+                background:"#fff5f5", border:"1px solid #ef444450", color:"#ef4444" }}>
+                🖨 {actMonetary?.label}
+              </div>
+            )}
+            <div style={{ padding:"3px 8px", fontSize:8,
+              background: cryptoPolicy==="ban" ? "#fff7ed" : cryptoPolicy==="tax" ? "#eff6ff" : "#f9f9f9",
+              border:`1px solid ${cryptoPolicy==="ban" ? "#ea580c50" : cryptoPolicy==="tax" ? "#3b82f650" : "#e8e8e8"}`,
+              color: cryptoPolicy==="ban" ? "#ea580c" : cryptoPolicy==="tax" ? "#3b82f6" : "#aaa" }}>
+              ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax & regulate" : "Accommodate"}
+            </div>
+          </div>
+
           {/* Crisis level badges */}
           <div style={{ display:"flex", gap:5, alignItems:"center" }}>
             {SIM_LEVELS.map((lm, i) => {

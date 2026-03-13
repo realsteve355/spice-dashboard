@@ -432,12 +432,12 @@ export default function Chart3Simulation() {
               🖨 {actMonetary?.label}
             </div>
           )}
-          {fiscalId === "none" && monetaryId === "none" && (
-            <div style={{ padding:"3px 8px", fontSize:8,
-              background:"#f9f9f9", border:"1px solid #e8e8e8", color:"#aaa" }}>
-              No policy response
-            </div>
-          )}
+          <div style={{ padding:"3px 8px", fontSize:8,
+            background: cryptoPolicy==="ban" ? "#fff7ed" : cryptoPolicy==="tax" ? "#eff6ff" : "#f9f9f9",
+            border: `1px solid ${cryptoPolicy==="ban" ? "#ea580c50" : cryptoPolicy==="tax" ? "#3b82f650" : "#e8e8e8"}`,
+            color: cryptoPolicy==="ban" ? "#ea580c" : cryptoPolicy==="tax" ? "#3b82f6" : "#aaa" }}>
+            ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax & regulate" : "Accommodate"}
+          </div>
 
           {/* SPICE crisis level onset badges */}
           {SIM_LEVELS.map((lm, i) => {
