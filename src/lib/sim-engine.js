@@ -132,7 +132,9 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
 
     const crackdown  = (cryptoPolicy === "ban" && postBreak) ? 0.55
                      : (cryptoPolicy === "tax" && postBreak) ? 0.78 : 1.0;
-    cryptoFlight = Math.min(cryptoFlight + mStress * 0.022 * cAdopt * crackdown + 0.003 * cAdopt, 0.35);
+    // Regime-specific flight ceiling: ban=30%, tax=50%, none/ignore=75%
+    const flightCap = cryptoPolicy === "ban" ? 0.30 : cryptoPolicy === "tax" ? 0.50 : 0.75;
+    cryptoFlight = Math.min(cryptoFlight + mStress * 0.022 * cAdopt * crackdown + 0.003 * cAdopt, flightCap);
 
     const kShift       = annDisp * 0.45;
     const flightKBoost = cryptoFlight * cAdopt * 0.12;

@@ -144,11 +144,14 @@ function YieldChart({ rows, firstRedYear }) {
 }
 
 function BitcoinChart({ rows, firstRedYear }) {
-  const maxBtc  = Math.max(...rows.map(r => r.bitcoin));
-  const roundTo = maxBtc < 200000 ? 25000 : maxBtc < 500000 ? 50000 : 100000;
-  const axMax   = Math.ceil(maxBtc * 1.15 / roundTo) * roundTo;
-  const step    = axMax / 4;
-  const idxTicks = [1,2,3,4].map(n => Math.round(n * step / roundTo) * roundTo);
+  const maxBtc    = Math.max(...rows.map(r => r.bitcoin));
+  const roundTo   = maxBtc < 200000 ? 25000 : maxBtc < 500000 ? 50000 : 100000;
+  const axMax     = Math.ceil(maxBtc * 1.15 / roundTo) * roundTo;
+  const step      = axMax / 4;
+  const idxTicks  = [1,2,3,4].map(n => Math.round(n * step / roundTo) * roundTo);
+  const maxFlight = Math.max(...rows.map(r => r.cryptoFlight));
+  const pctMax    = Math.max(40, Math.ceil(maxFlight * 1.15 / 10) * 10);
+  const pctTicks  = Array.from({ length: 4 }, (_, i) => Math.round((i + 1) * pctMax / 4 / 5) * 5);
 
   const refLines = [
     { y: 170000, label: "2×" },
@@ -176,7 +179,7 @@ function BitcoinChart({ rows, firstRedYear }) {
             <YAxis yAxisId="idx" domain={[0, axMax]} ticks={idxTicks}
               tick={axTick} tickLine={false} axisLine={false} width={52}
               tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
-            <YAxis yAxisId="pct" orientation="right" domain={[0,40]} ticks={[5,15,25,35]}
+            <YAxis yAxisId="pct" orientation="right" domain={[0,pctMax]} ticks={pctTicks}
               tick={axTick} tickLine={false} axisLine={false} width={28}
               tickFormatter={v => `${v}%`} />
             <Tooltip content={p => {
@@ -508,6 +511,13 @@ export default function Chart3Simulation() {
             ))}
             <div style={{ marginTop:3, lineHeight:1.5 }}>
               <span style={{ color:"#dc262660" }}>━ </span>Red line = RED level onset
+            </div>
+            <div>
+              <span style={{ color:"#93c5fd" }}>╌ </span>
+              Crypto ceiling:{" "}
+              <span style={{ color:"#60a5fa", fontWeight:700 }}>
+                {cryptoPolicy === "ban" ? "30%" : cryptoPolicy === "tax" ? "50%" : "75%"}
+              </span>
             </div>
             <div style={{ marginTop:3, lineHeight:1.5 }}>
               Debt/GDP(t+1) = Debt/GDP(t) × (1+r)/(1+g) + deficit<br/>
