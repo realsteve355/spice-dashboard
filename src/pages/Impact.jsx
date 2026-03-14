@@ -161,7 +161,7 @@ export default function Impact() {
         const res = await fetch("/api/human-impact", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(last),
+          body: JSON.stringify({ ...last, displaced }),
         });
         if (!res.ok) throw new Error();
         const data = await res.json();

@@ -1,79 +1,91 @@
-function buildPrompt(d) {
-  const gini = (0.48 + ((d.capShare - 25) + (60 - d.labShare)) * 0.008).toFixed(2);
-  const isPostCrisis =
-    d.debtGDP > 175 ||
-    d.unemp   > 20  ||
-    d.infl    < -7  ||
-    (d.yld > 6.5 && d.debtGDP > 150);
+// ─── HELPERS ────────────────────────────────────────────────────────────────
 
-  const crisisContext = isPostCrisis
-    ? "The crisis break point has been triggered. The system is in acute distress."
-    : "The system is pre-crisis but structural imbalances are building.";
+function getSeverity(displaced) {
+  if (displaced < 0.15) return "benign";
+  if (displaced < 0.35) return "moderate";
+  if (displaced < 0.55) return "severe";
+  return "extreme";
+}
 
-  const fiscalName = {
-    none:      "No fiscal intervention (baseline drift)",
-    robot_ubi: "Robot Tax + Universal Basic Income",
-    austerity: "Austerity (spending cap at 92% of baseline)",
-  }[d.fiscalPolicy] || d.fiscalPolicy;
+function getToneGuidance(severity, crisisTriggered) {
+  if (severity === "benign" && !crisisTriggered) {
+    return `This is a MILD scenario. System is adjusting, not breaking.
+FORBIDDEN WORDS — do NOT use: "collapse", "catastrophic", "crisis", "disaster", "breakdown", "devastation"
+APPROPRIATE LANGUAGE: "gradual pressure", "modest headwinds", "manageable adjustment", "noticeable but manageable", "building stress"`;
+  }
+  if (severity === "moderate" && !crisisTriggered) {
+    return `This is a MODERATE scenario. Real challenges exist — avoid hyperbole.
+AVOID: "collapse", "catastrophic", "breakdown" (crisis not yet triggered)
+APPROPRIATE LANGUAGE: "significant challenges", "mounting pressure", "policy response needed", "material disruption", "correction required"`;
+  }
+  if (crisisTriggered) {
+    return `Crisis IS UNDERWAY. Serious, urgent language is appropriate and accurate.
+USE (grounded in numbers): "catastrophic", "systemic stress", "breakdown", "collapse"
+Example: "unemployment at 22% and inflation at 16% constitute depression-level simultaneous shocks"`;
+  }
+  // severe/extreme, not yet triggered
+  return `SEVERE scenario trending toward crisis. Signal danger — but crisis has not yet triggered.
+SIGNAL: "crisis approaching", "break point nearing", "without intervention this trajectory leads to..."
+DO NOT YET SAY: "crisis underway" — it hasn't triggered`;
+}
 
-  const monetaryName = {
-    none:       "No monetary intervention",
-    qe:         "Quantitative Easing (30% yield suppression)",
-    ycc:        "Yield Curve Control (hard 4.5% cap)",
-    repression: "Financial Repression (regulatory yield suppression)",
-  }[d.monetaryPolicy] || d.monetaryPolicy;
+// ─── PROMPT ─────────────────────────────────────────────────────────────────
 
-  const cryptoName = {
-    ban:  "Ban & Restrict (capital controls, exchange bans)",
-    tax:  "Tax & Regulate (on-chain reporting, capital gains tax)",
-    none: "Ignore / Accommodate (no intervention)",
-  }[d.cryptoPolicy] || d.cryptoPolicy;
+function buildPrompt(t) {
+  const crisisTriggered = t.crisisYear !== null;
+  const severity        = getSeverity(t.displaced ?? 0.4);
+  const toneGuidance    = getToneGuidance(severity, crisisTriggered);
 
-  return `You are an economic analyst synthesising a macroeconomic simulation for researchers.
+  const fiscalName   = { none: "No fiscal intervention (baseline drift)", robot_ubi: "Robot Tax + Universal Basic Income", austerity: "Austerity (spending cap at 92% of baseline)" }[t.fiscalPolicy]   || t.fiscalPolicy;
+  const monetaryName = { none: "No monetary intervention", qe: "Quantitative Easing (30% yield suppression)", ycc: "Yield Curve Control (hard 4.5% cap)", repression: "Financial Repression" }[t.monetaryPolicy] || t.monetaryPolicy;
+  const cryptoName   = { ban: "Ban & Restrict", tax: "Tax & Regulate", none: "Ignore / Accommodate" }[t.cryptoPolicy]  || t.cryptoPolicy;
 
-SCENARIO DATA (Year ${d.year}):
-- Debt/GDP: ${d.debtGDP}%
-- Inflation: ${d.infl}%
-- Unemployment: ${d.unemp}%
-- 10-Year Bond Yield: ${d.yld}%
-- Crypto capital flight: ${d.cryptoFlight}% (was ~1% in 2026)
-- Labour share of GDP: ${d.labShare}% (was 60% in 2026)
-- Capital share of GDP: ${d.capShare}% (was 25% in 2026)
-- Gini coefficient: ${gini} (was ~0.48 in 2026)
-- Fiscal Policy: ${fiscalName}
+  return `You are an economic analyst synthesising a 10-year macroeconomic simulation for researchers.
+
+TRAJECTORY DATA (2026–2035):
+- Debt/GDP:     ${t.startDebt}% → ${t.endDebt}%  (peak: ${t.peakDebt}%)
+- Unemployment: ${t.startUnemp}% → ${t.endUnemp}%  (peak: ${t.peakUnemp}%)
+- Inflation:    ${t.startInfl}% → ${t.endInfl}%
+- 10Y Yield:    ${t.startYld}% → ${t.endYld}%
+- Crypto flight:${t.startCrypto}% → ${t.endCrypto}%  (peak: ${t.peakCrypto}%)
+- Gini coeff:   ${t.startGini} → ${t.endGini}
+- Crisis triggered: ${crisisTriggered ? `YES — in ${t.crisisYear}` : "NO"}
+- AI displacement scenario: ${Math.round((t.displaced ?? 0.4) * 100)}% by 2035
+- Fiscal Policy:   ${fiscalName}
 - Monetary Policy: ${monetaryName}
-- Crypto Regime: ${cryptoName}
+- Crypto Regime:   ${cryptoName}
 
-CONTEXT:
-This simulates the collision between AI-driven deflation compressing the tax base and unsustainable sovereign debt forcing monetary debasement.
-${crisisContext}
-
-Crisis triggers: Debt>175%, Unemployment>20%, Inflation<-7%, or (Yield>6.5% AND Debt>150%).
+TONE CALIBRATION:
+${toneGuidance}
 
 TASK:
-Write exactly 4 paragraphs (200-250 words total). No preamble, no conclusion beyond paragraph 4. Paragraphs separated by a single blank line.
+Write exactly 4 paragraphs analysing the FULL 2026–2035 ARC. Separate paragraphs with a blank line. No preamble, no conclusion beyond paragraph 4.
 
-Paragraph 1 — FISCAL STRESS & DEBT DYNAMICS: current debt sustainability, interest burden, r vs g dynamics. Reference specific numbers.
+Paragraph 1 — BUILD-UP (2026–${t.crisisYear ? t.crisisYear : "2035"}): Starting conditions (debt ${t.startDebt}%, unemployment ${t.startUnemp}%), what accumulates, early warning signals${!crisisTriggered ? ", and why the system remained stable throughout" : ""}.
 
-Paragraph 2 — AI DISPLACEMENT & LABOUR MARKETS: unemployment trajectory, AI productivity effects, ghost GDP (productivity rising while employment falls), automatic stabiliser drag on the deficit.
+Paragraph 2 — ${crisisTriggered ? `CRISIS ONSET & CASCADE (${t.crisisYear} onwards)` : "ADJUSTMENT DYNAMICS"}: ${crisisTriggered ? `Which threshold breaks in ${t.crisisYear} and why, what cascades from there, feedback loops between debt, unemployment, and crypto flight.` : "How the system absorbs structural pressure without breaking; what prevents a crisis trigger."}
 
-Paragraph 3 — MONETARY POLICY & CAPITAL FLIGHT: Federal Reserve response (${monetaryName}), inflation/deflation dynamics, crypto flight at ${d.cryptoFlight}% and government response (${cryptoName}), K-shape inequality (Gini ${gini}).
+Paragraph 3 — POLICY RESPONSE & INEQUALITY: How ${fiscalName} and ${monetaryName} shape the trajectory over the full period. Crypto regime (${cryptoName}) — how capital flight evolves from ${t.startCrypto}% to ${t.endCrypto}%. K-shape inequality: Gini ${t.startGini} → ${t.endGini}, who gains and who loses across the decade.
 
-Paragraph 4 — INVESTMENT IMPLICATIONS: which hedges work and which fail at these levels, who preserves wealth versus who loses purchasing power.${isPostCrisis ? " Conventional hedges (TIPS, 60/40, gold ETFs) have failed — explain why." : ""}
+Paragraph 4 — END STATE & INVESTMENT IMPLICATIONS (by 2035): Debt at ${t.endDebt}%, crypto adoption at ${t.endCrypto}%.${crisisTriggered ? " How conventional hedges (TIPS, 60/40, gold ETFs) performed and when they failed. Which assets preserved purchasing power." : " Whether traditional portfolio construction (60/40, TIPS) remains viable. Hard assets vs conventional allocation."}
 
 RULES:
-- Ground every claim in specific numbers from the data
-- Explain causality — WHY things are happening, not just WHAT
-- Plain prose only — no bullet points, no headers, no bold
-- Do not mention SPICE, ZPC, or any token names
-- Tone: analytical, factual, like a high-quality economic briefing`;
+- Analyse the ARC across time, not a single snapshot
+- Reference specific years for inflection points ("debt crosses 175% in 2030", "crypto flight accelerates from 2031")
+- Ground every claim in the trajectory numbers above
+- Explain causality — WHY things happen, not just WHAT
+- No bullet points, no headers within paragraphs
+- Do NOT mention "SPICE" or "ZPC"
+- Tone: analytical narrative — tell the story of how this scenario unfolds`;
 }
+
+// ─── HANDLER ────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const d = req.body;
-  if (!d || !d.year) return res.status(400).json({ error: "Missing data" });
+  const t = req.body;
+  if (!t || !t.startDebt) return res.status(400).json({ error: "Missing trajectory data" });
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return res.status(500).json({ error: "API key not configured" });
@@ -89,8 +101,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
-        messages: [{ role: "user", content: buildPrompt(d) }],
+        max_tokens: 650,
+        messages: [{ role: "user", content: buildPrompt(t) }],
       }),
     });
 

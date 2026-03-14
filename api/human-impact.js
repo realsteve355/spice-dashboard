@@ -1,3 +1,40 @@
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function getSeverity(displaced) {
+  if ((displaced ?? 0.4) < 0.15) return "benign";
+  if ((displaced ?? 0.4) < 0.35) return "moderate";
+  if ((displaced ?? 0.4) < 0.55) return "severe";
+  return "extreme";
+}
+
+function isCrisisTriggered(d) {
+  return d.debtGDP > 175 || d.unemp > 20 || d.infl < -7 || (d.yld > 6.5 && d.debtGDP > 150);
+}
+
+function getToneGuidance(severity, crisisTriggered) {
+  if (severity === "benign" && !crisisTriggered) {
+    return `This is a MILD scenario. The system is adjusting, not breaking.
+FORBIDDEN WORDS — do NOT use: "collapse", "catastrophic", "crisis", "disaster", "breakdown", "devastation"
+APPROPRIATE LANGUAGE: "gradual pressure", "modest headwinds", "manageable adjustment", "noticeable but manageable", "building stress"
+Example tone: "Inflation of 3.2% creates gradual purchasing power pressure — noticeable but manageable with household budget adjustments."`;
+  }
+  if (severity === "moderate" && !crisisTriggered) {
+    return `This is a MODERATE scenario. Acknowledge real challenges — avoid hyperbole.
+AVOID: "collapse", "catastrophic", "breakdown" (crisis not yet triggered)
+APPROPRIATE LANGUAGE: "significant challenges", "mounting pressure", "policy response needed", "material disruption"`;
+  }
+  if (crisisTriggered) {
+    return `Crisis IS UNDERWAY. Serious, urgent language is appropriate and accurate.
+USE (grounded in numbers): "catastrophic", "systemic stress", "breakdown", "collapse"
+Ground severity in specific numbers: "unemployment at ${severity === "extreme" ? "25%+" : "18%"} and inflation at that level constitute severe simultaneous shocks"`;
+  }
+  return `SEVERE scenario trending toward crisis. Signal clear danger — but crisis has not yet triggered.
+SIGNAL: "crisis approaching", "break point nearing", "without intervention this trajectory leads to..."
+DO NOT YET SAY "crisis underway" — it hasn't triggered`;
+}
+
+// ─── GROUPS ─────────────────────────────────────────────────────────────────
+
 const GROUPS = [
   {
     key: "lowIncome",
@@ -25,9 +62,15 @@ const GROUPS = [
   },
 ];
 
+// ─── PROMPT ─────────────────────────────────────────────────────────────────
+
 function buildPrompt(group, d) {
-  const kGap = (d.capShare - 25 + (60 - d.labShare)).toFixed(1);
-  return `You are analyzing the economic impact of "The Great Collision" — a structural crisis where AI-driven deflation collides with sovereign debt monetization.
+  const kGap      = (d.capShare - 25 + (60 - d.labShare)).toFixed(1);
+  const severity  = getSeverity(d.displaced);
+  const crisis    = isCrisisTriggered(d);
+  const tone      = getToneGuidance(severity, crisis);
+
+  return `You are analyzing the economic impact of "The Great Collision" — a structural scenario where AI-driven deflation collides with sovereign debt monetization.
 
 Economic state in ${d.year}:
 - Debt/GDP: ${d.debtGDP}%
@@ -38,6 +81,12 @@ Economic state in ${d.year}:
 - Labour share of GDP: ${d.labShare}% (was 60% in 2026)
 - Capital share of GDP: ${d.capShare}% (was 25% in 2026)
 - K-shape inequality gap widened by ${kGap} percentage points since 2026
+
+CRISIS STATUS: ${crisis ? "TRIGGERED — thresholds breached" : "NOT TRIGGERED — structural stress building but system intact"}
+SCENARIO SEVERITY: ${severity.toUpperCase()} (AI displacement: ${Math.round((d.displaced ?? 0.4) * 100)}%)
+
+TONE CALIBRATION:
+${tone}
 
 Group: ${group.name}
 Profile: ${group.profile}
@@ -60,8 +109,10 @@ REALISTIC OPTIONS
 • [what they can actually do — be direct if options are limited]
 • [second option or honest assessment of constraints]
 
-Rules: clinical and honest, structural crisis not cyclical recession, ground every point in the specific numbers provided, no generic advice, no named financial products or investment services.`;
+Rules: clinical and honest, structural scenario not cyclical recession, ground every point in specific numbers, no generic advice, no named financial products or investment services.`;
 }
+
+// ─── HANDLER ────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();

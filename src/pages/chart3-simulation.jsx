@@ -410,7 +410,23 @@ export default function Chart3Simulation() {
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
 
   useEffect(() => {
-    const cacheKey = `${last.year}|${last.debtGDP}|${last.unemp}|${last.infl}|${last.yld}|${last.cryptoFlight}|${last.labShare}|${last.capShare}|${fiscalId}|${monetaryId}|${cryptoPolicy}`;
+    const r0 = rows[0], rN = rows[rows.length - 1];
+    const gini = r => +(0.48 + ((r.capShare - 25) + (60 - r.labShare)) * 0.008).toFixed(2);
+    const crisisRow = rows.find(r =>
+      r.debtGDP > 175 || r.unemp > 20 || r.infl < -7 || (r.yld > 6.5 && r.debtGDP > 150)
+    );
+    const traj = {
+      startDebt:  r0.debtGDP,  endDebt:  rN.debtGDP,  peakDebt:  Math.max(...rows.map(r => r.debtGDP)),
+      startUnemp: r0.unemp,    endUnemp: rN.unemp,    peakUnemp: +Math.max(...rows.map(r => r.unemp)).toFixed(1),
+      startInfl:  r0.infl,     endInfl:  rN.infl,
+      startYld:   r0.yld,      endYld:   rN.yld,
+      startCrypto:r0.cryptoFlight, endCrypto: rN.cryptoFlight, peakCrypto: Math.round(Math.max(...rows.map(r => r.cryptoFlight))),
+      startGini:  gini(r0),    endGini:  gini(rN),
+      crisisYear: crisisRow ? crisisRow.year : null,
+      displaced,
+      fiscalPolicy: fiscalId,  monetaryPolicy: monetaryId,  cryptoPolicy,
+    };
+    const cacheKey = `${fiscalId}|${monetaryId}|${cryptoPolicy}|${Math.round(displaced * 100)}|${Math.round(cryptoAdopt * 100)}`;
     if (overviewCache.current[cacheKey]) {
       setEconomyOverview(overviewCache.current[cacheKey]);
       return;
@@ -422,7 +438,7 @@ export default function Chart3Simulation() {
         const res = await fetch("/api/economy-overview", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...last, fiscalPolicy: fiscalId, monetaryPolicy: monetaryId, cryptoPolicy }),
+          body: JSON.stringify(traj),
         });
         if (!res.ok) throw new Error();
         const data = await res.json();
@@ -437,7 +453,7 @@ export default function Chart3Simulation() {
     }, 600);
     return () => clearTimeout(overviewDebounce.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [last.year, last.debtGDP, last.unemp, last.infl, last.yld, last.cryptoFlight, last.labShare, last.capShare, fiscalId, monetaryId, cryptoPolicy]);
+  }, [displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy]);
 
   return (
     <div style={{ background:"#fff", color:"#111",
