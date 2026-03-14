@@ -1,4 +1,4 @@
-import { useState, useMemo, useTransition, useEffect } from "react";
+import { useState, useMemo, useTransition, useEffect, useRef } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
@@ -388,7 +388,11 @@ export default function Chart3Simulation() {
   const [cryptoAdopt,  setCryptoAdopt]  = useState(_s?.cryptoAdopt  ?? 0.5);
   const [cryptoPolicy, setCryptoPolicy] = useState(_s?.cryptoPolicy ?? "ban");
   const [, startTransition] = useTransition();
-  const [showThresholds, setShowThresholds] = useState(false);
+  const [showThresholds,  setShowThresholds]  = useState(false);
+  const [economyOverview, setEconomyOverview] = useState("");
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const overviewDebounce = useRef(null);
+  const overviewCache    = useRef({});
 
   useEffect(() => {
     saveSimState({ displaced, fiscalId, monetaryId, kpiYear, cryptoAdopt, cryptoPolicy });
@@ -404,6 +408,36 @@ export default function Chart3Simulation() {
   const actMonetary = MONETARY_POLICIES.find(p => p.id === monetaryId);
   const anchor      = ANCHORS.reduce((a,b) =>
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
+
+  useEffect(() => {
+    const cacheKey = `${last.year}|${last.debtGDP}|${last.unemp}|${last.infl}|${last.yld}|${last.cryptoFlight}|${last.labShare}|${last.capShare}|${fiscalId}|${monetaryId}|${cryptoPolicy}`;
+    if (overviewCache.current[cacheKey]) {
+      setEconomyOverview(overviewCache.current[cacheKey]);
+      return;
+    }
+    if (overviewDebounce.current) clearTimeout(overviewDebounce.current);
+    overviewDebounce.current = setTimeout(async () => {
+      setOverviewLoading(true);
+      try {
+        const res = await fetch("/api/economy-overview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...last, fiscalPolicy: fiscalId, monetaryPolicy: monetaryId, cryptoPolicy }),
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        overviewCache.current[cacheKey] = data.overview;
+        setEconomyOverview(data.overview);
+      } catch {
+        setEconomyOverview("Economic analysis temporarily unavailable.");
+      } finally {
+        setOverviewLoading(false);
+      }
+    }, 600);
+    return () => clearTimeout(overviewDebounce.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [last.year, last.debtGDP, last.unemp, last.infl, last.yld, last.cryptoFlight, last.labShare, last.capShare, fiscalId, monetaryId, cryptoPolicy]);
 
   return (
     <div style={{ background:"#fff", color:"#111",
@@ -619,7 +653,7 @@ export default function Chart3Simulation() {
         </div>
 
         {/* RIGHT PANEL */}
-        <div style={{ flex:1, overflow:"hidden", padding:"10px 12px",
+        <div style={{ flex:1, overflow:"auto", padding:"10px 12px",
           display:"flex", flexDirection:"column" }}>
 
           {/* Snapshot year selector */}
@@ -689,6 +723,33 @@ export default function Chart3Simulation() {
           <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>
             Sources: CBO 2025 · IMF WP/2025/076 · Reinhart-Rogoff NBER w15639 · Goldman Sachs · Dallas Fed 2025
           </div>
+
+          {/* Economy Overview Card */}
+          {overviewLoading ? (
+            <div style={{ margin:"16px 0 8px", padding:"28px 20px",
+              background:"#fafafa", border:"1px solid #e2e2e2",
+              textAlign:"center", flexShrink:0 }}>
+              <span style={{ fontSize:11, color:"#aaa", fontStyle:"italic" }}>
+                Generating economic overview...
+              </span>
+            </div>
+          ) : economyOverview && (
+            <div style={{ margin:"16px 0 8px", padding:"16px 20px",
+              background:"#fafafa", border:"1px solid #e2e2e2", flexShrink:0 }}>
+              <div style={{ fontSize:9, fontWeight:700, color:"#111",
+                textTransform:"uppercase", letterSpacing:"0.12em",
+                borderBottom:"1px solid #e2e2e2", paddingBottom:7, marginBottom:12 }}>
+                Economic Overview — {last.year}
+              </div>
+              <div style={{ fontSize:11, lineHeight:1.7, color:"#333" }}>
+                {economyOverview.split("\n\n").map((para, i, arr) => (
+                  <p key={i} style={{ margin:0, marginBottom: i < arr.length - 1 ? 10 : 0 }}>
+                    {para}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
