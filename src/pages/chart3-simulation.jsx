@@ -59,7 +59,7 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[100,310]} ticks={[125,175,225,275]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
@@ -90,7 +90,7 @@ function UnempChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[0,50]} ticks={[5,15,25,35,45]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
@@ -121,7 +121,7 @@ function InflChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[-12,20]} ticks={[-10,-5,0,5,10,15]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
@@ -152,7 +152,7 @@ function YieldChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[2,14]} ticks={[3,5,7,9,11,13]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
@@ -207,7 +207,7 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:36, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis yAxisId="idx" domain={[0, axMax]} ticks={idxTicks}
               tick={axTick} tickLine={false} axisLine={false} width={52}
               tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
@@ -274,7 +274,7 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[20,65]} ticks={[25,35,45,55]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
@@ -835,16 +835,21 @@ export default function Chart3Simulation() {
             Sources: CBO 2025 · IMF WP/2025/076 · Reinhart-Rogoff NBER w15639 · Goldman Sachs · Dallas Fed 2025
           </div>
 
-          {/* Collision vs Conventional box */}
-          {collisionStatus !== "NO_CRISIS" && (
-            <div style={{ margin:"14px 0 0", padding:"12px 16px", flexShrink:0,
-              background: collisionStatus === "COLLISION" ? "#fef2f2" : "#fefce8",
-              border: `1px solid ${collisionStatus === "COLLISION" ? "#dc262640" : "#ca8a0440"}` }}>
-              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em",
-                color: collisionStatus === "COLLISION" ? "#dc2626" : "#92400e",
-                marginBottom:6 }}>
-                {collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}` : `CONVENTIONAL CRISIS — ${collisionYear}`}
+          {/* Crisis classification box — always visible */}
+          {(() => {
+            const bg    = collisionStatus === "COLLISION" ? "#fef2f2" : collisionStatus === "CONVENTIONAL" ? "#fefce8" : "#f9fafb";
+            const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#e2e2e260";
+            const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#92400e"   : "#16a34a";
+            const hdTxt = collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}`
+                        : collisionStatus === "CONVENTIONAL" ? `CONVENTIONAL CRISIS — ${collisionYear}`
+                        : "NO CRISIS — SYSTEM STABLE 2026–2035";
+            return (
+            <div style={{ margin:"14px 0 0", padding:"12px 16px", flexShrink:0, background:bg, border:`1px solid ${bdr}` }}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:hdClr,
+                marginBottom: collisionStatus === "NO_CRISIS" ? 0 : 6 }}>
+                {hdTxt}
               </div>
+              {collisionStatus !== "NO_CRISIS" && (
               <div style={{ fontSize:10, color:"#444", lineHeight:1.6, marginBottom: collisionStatus === "CONVENTIONAL" ? 8 : 0 }}>
                 {collisionStatus === "COLLISION" ? (
                   <>
@@ -858,13 +863,15 @@ export default function Chart3Simulation() {
                   </>
                 )}
               </div>
+              )}
               {collisionStatus === "CONVENTIONAL" && (
                 <div style={{ fontSize:9, color:"#92400e" }}>
                   Increase AI above 15% or Crypto above 20% to model The Collision.
                 </div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* Economy Overview Card */}
           {overviewLoading ? (
