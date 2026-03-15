@@ -1,7 +1,7 @@
 import { useState, useMemo, useTransition, useEffect, useRef } from "react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine,
+  Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea,
 } from "recharts";
 import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSimState, saveSimState, kpiColor, getCollisionStatus } from "../lib/sim-engine";
 
@@ -20,17 +20,19 @@ function PanelHead({ label, color, children }) {
   );
 }
 
-function SimpleTip({ active, payload, label, color, unit, rows }) {
+function SimpleTip({ active, payload, label, color, unit, rows, fogYear }) {
   if (!active || !payload?.length) return null;
   const d   = payload[0]?.payload;
   const val = payload[0]?.value;
   const raw = rows?.find(r => r.year === d?.year);
+  const isSpeculative = fogYear && d?.year > fogYear;
   return (
     <div style={{ background:"#fff", border:`1px solid ${color}50`,
       padding:"6px 10px", fontFamily:"'IBM Plex Mono',monospace",
       fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,.1)", pointerEvents:"none" }}>
       <div style={{ color:"#999", fontSize:9, marginBottom:2 }}>
         {label}
+        {isSpeculative && <span style={{ marginLeft:5, color:"#888", fontSize:8, fontStyle:"italic" }}> speculative</span>}
         {d?.spiceLevel !== undefined && (
           <span style={{ marginLeft:5, color: SIM_LEVELS[d.spiceLevel].color, fontWeight:700 }}>
             ■ {SIM_LEVELS[d.spiceLevel].label}
@@ -46,7 +48,7 @@ function SimpleTip({ active, payload, label, color, unit, rows }) {
 
 // ─── CHART COMPONENTS ──────────────────────────────────────────────────────
 
-function DebtChart({ rows, firstRedYear }) {
+function DebtChart({ rows, firstRedYear, fogYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Debt / GDP" color="#ef4444">
@@ -59,10 +61,17 @@ function DebtChart({ rows, firstRedYear }) {
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
             <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
             <YAxis domain={[100,310]} ticks={[125,175,225,275]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
-            <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} />} />
+            <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={175} stroke="#ef444480" strokeDasharray="3 4" label={{ value:"175%", fill:"#ef444480", fontSize:7, position:"insideTopRight" }} />
-            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             <Line type="monotone" dataKey="debtGDP" stroke="#ef4444" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#ef4444", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -71,7 +80,7 @@ function DebtChart({ rows, firstRedYear }) {
   );
 }
 
-function UnempChart({ rows, firstRedYear }) {
+function UnempChart({ rows, firstRedYear, fogYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Unemployment" color="#8b5cf6">
@@ -83,10 +92,17 @@ function UnempChart({ rows, firstRedYear }) {
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
             <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
             <YAxis domain={[0,50]} ticks={[5,15,25,35,45]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
-            <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} />} />
+            <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={20} stroke="#8b5cf670" strokeDasharray="3 4" label={{ value:"20% depression", fill:"#8b5cf670", fontSize:7, position:"insideTopRight" }} />
-            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             <Line type="monotone" dataKey="unemp" stroke="#8b5cf6" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#8b5cf6", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -95,7 +111,7 @@ function UnempChart({ rows, firstRedYear }) {
   );
 }
 
-function InflChart({ rows, firstRedYear }) {
+function InflChart({ rows, firstRedYear, fogYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="Inflation / Deflation" color="#3b82f6">
@@ -107,10 +123,17 @@ function InflChart({ rows, firstRedYear }) {
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
             <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
             <YAxis domain={[-12,20]} ticks={[-10,-5,0,5,10,15]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
-            <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} />} />
+            <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={-8} stroke="#3b82f6aa" strokeDasharray="3 4" label={{ value:"−8% Fisher", fill:"#3b82f6aa", fontSize:7, position:"insideTopRight" }} />
-            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             <Line type="monotone" dataKey="infl" stroke="#3b82f6" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#3b82f6", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -119,7 +142,7 @@ function InflChart({ rows, firstRedYear }) {
   );
 }
 
-function YieldChart({ rows, firstRedYear }) {
+function YieldChart({ rows, firstRedYear, fogYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <PanelHead label="10Y Bond Yield" color="#eab308">
@@ -131,10 +154,17 @@ function YieldChart({ rows, firstRedYear }) {
             <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
             <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} interval={3} />
             <YAxis domain={[2,14]} ticks={[3,5,7,9,11,13]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
-            <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} />} />
+            <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={6} stroke="#eab30880" strokeDasharray="3 4" label={{ value:"6% stress", fill:"#eab30880", fontSize:7, position:"insideTopRight" }} />
-            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             <Line type="monotone" dataKey="yld" stroke="#eab308" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#eab308", strokeWidth:0 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -143,7 +173,7 @@ function YieldChart({ rows, firstRedYear }) {
   );
 }
 
-function BitcoinChart({ rows, firstRedYear }) {
+function BitcoinChart({ rows, firstRedYear, fogYear }) {
   const maxBtc    = Math.max(...rows.map(r => r.bitcoin));
   const roundTo   = maxBtc < 200000 ? 25000 : maxBtc < 500000 ? 50000 : 100000;
   const axMax     = Math.ceil(maxBtc * 1.15 / roundTo) * roundTo;
@@ -198,11 +228,19 @@ function BitcoinChart({ rows, firstRedYear }) {
                   <div style={{ fontWeight:700, marginBottom:3 }}>{d.year}</div>
                   <div style={{ color:"#f59e0b" }}>Bitcoin: {fmtUsd(d.bitcoin)} ({mult}×)</div>
                   <div style={{ color:"#93c5fd" }}>Crypto flight: {d.cryptoFlight}%</div>
+                  {fogYear && d.year > fogYear && <div style={{ color:"#888", fontSize:8, fontStyle:"italic" }}>speculative</div>}
                   {d.spiceLevel !== undefined && <div style={{ color: SIM_LEVELS[d.spiceLevel].color, marginTop:3 }}>■ {SIM_LEVELS[d.spiceLevel].label}</div>}
                 </div>
               );
             }} />
-            {firstRedYear && <ReferenceLine yAxisId="idx" x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea yAxisId="idx" x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine yAxisId="idx" x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine yAxisId="idx" x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             {refLines.map(r => (
               <ReferenceLine key={r.label} yAxisId="idx" y={r.y} stroke="#f59e0b30" strokeDasharray="3 4"
                 label={{ value:r.label, fill:"#f59e0b70", fontSize:6, position:"insideTopRight" }} />
@@ -219,7 +257,7 @@ function BitcoinChart({ rows, firstRedYear }) {
   );
 }
 
-function KShapeChart({ rows, firstRedYear }) {
+function KShapeChart({ rows, firstRedYear, fogYear }) {
   return (
     <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
       <div style={{ fontSize:8, fontFamily:"'IBM Plex Mono',monospace",
@@ -252,12 +290,20 @@ function KShapeChart({ rows, firstRedYear }) {
                   <div style={{ color:"#888", fontSize:8, marginTop:2 }}>
                     Gap widened: +{Math.max(0, (d.capShare - 25) + (60 - d.labShare)).toFixed(1)}pp
                   </div>
+                  {fogYear && d.year > fogYear && <div style={{ color:"#888", fontSize:8, fontStyle:"italic", marginTop:2 }}>speculative</div>}
                 </div>
               );
             }} />
             <ReferenceLine y={60} stroke="#22c55e30" strokeDasharray="3 4" label={{ value:"Labour 2026", fill:"#22c55e50", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={25} stroke="#ef444430" strokeDasharray="3 4" label={{ value:"Capital 2026", fill:"#ef444450", fontSize:7, position:"insideTopRight" }} />
-            {firstRedYear && <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />}
+            {fogYear ? (
+              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+            ) : firstRedYear && (
+              <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
+            )}
+            {fogYear && <ReferenceLine x={fogYear} stroke="#dc2626" strokeWidth={1.5} strokeDasharray="4 3"
+              label={{ value:`◈ ${fogYear}`, position:"insideTopLeft", fontSize:7, fill:"#dc2626", fontWeight:700, fontFamily:"'IBM Plex Mono',monospace" }} />}
             <Line type="monotone" dataKey="labShare" stroke="#22c55e" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#22c55e", strokeWidth:0 }} />
             <Line type="monotone" dataKey="capShare" stroke="#ef4444" strokeWidth={2.5} dot={false} isAnimationActive={false} activeDot={{ r:3, fill:"#ef4444", strokeWidth:0 }} />
           </LineChart>
@@ -442,6 +488,8 @@ export default function Chart3Simulation() {
   const collisionStatus = crisisRow ? getCollisionStatus(crisisRow, displaced) : "NO_CRISIS";
   const collisionYear   = crisisRow?.year ?? null;
   const collisionCrypto = crisisRow ? Math.round(crisisRow.cryptoFlight) : 0;
+  // fogYear: only set for THE COLLISION (not conventional crisis) — triggers hatched overlay
+  const fogYear = collisionStatus === "COLLISION" ? collisionYear : null;
 
   useEffect(() => {
     const r0 = rows[0], rN = rows[rows.length - 1];
@@ -706,6 +754,15 @@ export default function Chart3Simulation() {
         <div style={{ flex:1, overflow:"auto", padding:"10px 12px",
           display:"flex", flexDirection:"column" }}>
 
+          {/* SVG hatch pattern — defined once, referenced by all 6 charts */}
+          <svg width="0" height="0" style={{ position:"absolute", overflow:"hidden" }}>
+            <defs>
+              <pattern id="hatchPattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#888" strokeWidth="0.8" strokeOpacity="0.3" />
+              </pattern>
+            </defs>
+          </svg>
+
           {/* Snapshot year selector */}
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
             <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
@@ -759,15 +816,32 @@ export default function Chart3Simulation() {
             <ThresholdsPanel onClose={() => setShowThresholds(false)} />
           </>}
 
+          {/* Fog-of-war warning banner — only for THE COLLISION */}
+          {fogYear && (
+            <div style={{ marginBottom:8, padding:"10px 14px", flexShrink:0,
+              background:"#fef2f2", border:"1px solid #dc2626",
+              borderLeft:"4px solid #dc2626" }}>
+              <div style={{ fontSize:9, fontWeight:700, color:"#991b1b",
+                marginBottom:4, letterSpacing:"0.08em" }}>
+                ◈ THE COLLISION OCCURS IN {fogYear}
+              </div>
+              <div style={{ fontSize:10, color:"#333", lineHeight:1.6 }}>
+                Hatched areas on graphs mark <strong>highly speculative</strong> post-collision projections.
+                After a systemic break, outcomes depend on war, hyperinflation, crypto bans, and political
+                choices that cannot be modeled from pre-crisis dynamics.
+              </div>
+            </div>
+          )}
+
           {/* 3×2 chart grid */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)",
             gridTemplateRows:`repeat(2,${CH+32}px)`, gap:8, flexShrink:0 }}>
-            <DebtChart    rows={rows} firstRedYear={firstRedYear} />
-            <UnempChart   rows={rows} firstRedYear={firstRedYear} />
-            <InflChart    rows={rows} firstRedYear={firstRedYear} />
-            <YieldChart   rows={rows} firstRedYear={firstRedYear} />
-            <BitcoinChart rows={rows} firstRedYear={firstRedYear} />
-            <KShapeChart  rows={rows} firstRedYear={firstRedYear} />
+            <DebtChart    rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <UnempChart   rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <InflChart    rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <YieldChart   rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <BitcoinChart rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <KShapeChart  rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
           </div>
 
           <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>

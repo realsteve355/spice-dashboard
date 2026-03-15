@@ -59,6 +59,7 @@ function buildPrompt(t) {
   const severity        = getSeverity(t.displaced ?? 0.4);
   const toneGuidance    = getToneGuidance(severity, crisisTriggered);
   const collisionCtx    = getCollisionContext(t);
+  const isCollision     = crisisTriggered && ((t.displaced ?? 0) > 0.15 || (t.peakCrypto ?? 0) > 20);
 
   const fiscalName   = { none: "No fiscal intervention (baseline drift)", robot_ubi: "Robot Tax + Universal Basic Income", austerity: "Austerity (spending cap at 92% of baseline)" }[t.fiscalPolicy]   || t.fiscalPolicy;
   const monetaryName = { none: "No monetary intervention", qe: "Quantitative Easing (30% yield suppression)", ycc: "Yield Curve Control (hard 4.5% cap)", repression: "Financial Repression" }[t.monetaryPolicy] || t.monetaryPolicy;
@@ -94,7 +95,7 @@ Paragraph 2 — ${crisisTriggered ? `CRISIS ONSET & CASCADE (${t.crisisYear} onw
 
 Paragraph 3 — POLICY RESPONSE & INEQUALITY: How ${fiscalName} and ${monetaryName} shape the trajectory over the full period. Crypto regime (${cryptoName}) — how capital flight evolves from ${t.startCrypto}% to ${t.endCrypto}%. K-shape inequality: Gini ${t.startGini} → ${t.endGini}, who gains and who loses across the decade.
 
-Paragraph 4 — END STATE & INVESTMENT IMPLICATIONS (by 2035): Debt at ${t.endDebt}%, crypto adoption at ${t.endCrypto}%.${crisisTriggered ? " How conventional hedges (TIPS, 60/40, gold ETFs) performed and when they failed. Which assets preserved purchasing power." : " Whether traditional portfolio construction (60/40, TIPS) remains viable. Hard assets vs conventional allocation."}
+Paragraph 4 — END STATE & INVESTMENT IMPLICATIONS (by 2035): Debt at ${t.endDebt}%, crypto adoption at ${t.endCrypto}%.${crisisTriggered ? " How conventional hedges (TIPS, 60/40, gold ETFs) performed and when they failed. Which assets preserved purchasing power." : " Whether traditional portfolio construction (60/40, TIPS) remains viable. Hard assets vs conventional allocation."}${isCollision ? ` Close paragraph 4 with a note that projections beyond ${t.crisisYear + 1} are highly speculative — after The Collision, outcomes depend on discontinuous events (war, hyperinflation, crypto bans, debt jubilee, CBDC imposition) that the model cannot capture from pre-crisis dynamics. The simulation shows one possible trajectory; actual resolution depends on political choices outside the model's scope.` : ""}
 
 RULES:
 - Analyse the ARC across time, not a single snapshot
