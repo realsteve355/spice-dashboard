@@ -95,7 +95,7 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
     const unemp = Math.max(0, 1 - employed / lf);
     if (!ghostYear && prod > 0.03 && unemp > 0.08) ghostYear = yr;
 
-    const escapeValve = Math.min(cryptoFlight * cAdopt * 0.06, 0.015);
+    const escapeValve = Math.min(cryptoFlight * cAdopt * 0.02, 0.015);
     const inflRaw = 0.025 - t * 0.0007 - prod * 0.5 + e.iA;
     const infl    = Math.max(-0.10, Math.min(0.20, inflRaw + escapeValve));
     priceLevel *= (1 + infl);
