@@ -31,10 +31,34 @@ DO NOT YET SAY: "crisis underway" — it hasn't triggered`;
 
 // ─── PROMPT ─────────────────────────────────────────────────────────────────
 
+function getCollisionContext(t) {
+  const crisisTriggered  = t.crisisYear !== null;
+  const hasMaterialAI    = (t.displaced ?? 0) > 0.15;
+  const hasSignifCrypto  = (t.peakCrypto ?? 0) > 20;
+  if (!crisisTriggered) {
+    return `NO CRISIS TRIGGERED: All thresholds remain intact throughout 2026–2035. System adjusts without breaking.`;
+  }
+  if (hasMaterialAI || hasSignifCrypto) {
+    return `THE COLLISION (${t.crisisYear}): This is the SPICE thesis — NOT a conventional crisis.
+Novel dynamics present: AI displacement ${Math.round((t.displaced ?? 0) * 100)}%${hasSignifCrypto ? `, crypto flight peaks at ${t.peakCrypto}%` : ""}.
+What makes this different from historical crises:
+1. AI-driven deflation prevents the Fed from inflating away debt (the traditional escape route)
+2. Crypto-enabled capital flight (${hasSignifCrypto ? `${t.peakCrypto}% peak` : "building"}) constrains capital controls
+No historical precedent. Traditional Fed tools face novel structural constraints.
+EMPHASISE: This is NOT just another debt crisis. The collision of forces is the point.`;
+  }
+  return `CONVENTIONAL CRISIS (${t.crisisYear}): Standard sovereign debt crisis — NOT The Collision.
+AI displacement ${Math.round((t.displaced ?? 0) * 100)}% (below 15% threshold), peak crypto ${t.peakCrypto}% (below 20% threshold).
+This resembles historical precedents: Greece 2010, Argentina 2001, UK 1945–1970.
+Federal Reserve has established tools: QE, financial repression, gradual inflation to erode real debt.
+NOTE: Suggest user increase AI above 15% or crypto above 20% to model The Collision.`;
+}
+
 function buildPrompt(t) {
   const crisisTriggered = t.crisisYear !== null;
   const severity        = getSeverity(t.displaced ?? 0.4);
   const toneGuidance    = getToneGuidance(severity, crisisTriggered);
+  const collisionCtx    = getCollisionContext(t);
 
   const fiscalName   = { none: "No fiscal intervention (baseline drift)", robot_ubi: "Robot Tax + Universal Basic Income", austerity: "Austerity (spending cap at 92% of baseline)" }[t.fiscalPolicy]   || t.fiscalPolicy;
   const monetaryName = { none: "No monetary intervention", qe: "Quantitative Easing (30% yield suppression)", ycc: "Yield Curve Control (hard 4.5% cap)", repression: "Financial Repression" }[t.monetaryPolicy] || t.monetaryPolicy;
@@ -54,6 +78,9 @@ TRAJECTORY DATA (2026–2035):
 - Fiscal Policy:   ${fiscalName}
 - Monetary Policy: ${monetaryName}
 - Crypto Regime:   ${cryptoName}
+
+CRISIS CLASSIFICATION:
+${collisionCtx}
 
 TONE CALIBRATION:
 ${toneGuidance}

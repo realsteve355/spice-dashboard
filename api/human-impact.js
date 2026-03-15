@@ -64,11 +64,29 @@ const GROUPS = [
 
 // ─── PROMPT ─────────────────────────────────────────────────────────────────
 
+function getCollisionContext(d) {
+  const crisis = isCrisisTriggered(d);
+  if (!crisis) return `NO CRISIS: System is stressed but all thresholds remain intact.`;
+  const hasMaterialAI   = (d.displaced || 0) > 0.15;
+  const hasSignifCrypto = (d.cryptoFlight || 0) > 20;
+  if (hasMaterialAI || hasSignifCrypto) {
+    return `THE COLLISION: This is the SPICE thesis — NOT a conventional crisis.
+AI displacement ${Math.round((d.displaced || 0) * 100)}%, crypto flight ${d.cryptoFlight}%.
+Unlike historical crises, the Fed cannot inflate away this debt (AI deflation constraint) and cannot trap capital (crypto flight). No historical playbook applies.
+Emphasise the structural novelty; this is not a cyclical recession.`;
+  }
+  return `CONVENTIONAL CRISIS: Debt thresholds breached but below collision thresholds.
+AI displacement ${Math.round((d.displaced || 0) * 100)}% (below 15%), crypto ${d.cryptoFlight}% (below 20%).
+This resembles Greece 2010 or Argentina 2001. Fed tools (QE, repression) remain viable.
+Note conventional nature; avoid implying unprecedented dynamics.`;
+}
+
 function buildPrompt(group, d) {
   const kGap      = (d.capShare - 25 + (60 - d.labShare)).toFixed(1);
   const severity  = getSeverity(d.displaced);
   const crisis    = isCrisisTriggered(d);
   const tone      = getToneGuidance(severity, crisis);
+  const collision = getCollisionContext(d);
 
   return `You are analyzing the economic impact of "The Great Collision" — a structural scenario where AI-driven deflation collides with sovereign debt monetization.
 
@@ -81,6 +99,9 @@ Economic state in ${d.year}:
 - Labour share of GDP: ${d.labShare}% (was 60% in 2026)
 - Capital share of GDP: ${d.capShare}% (was 25% in 2026)
 - K-shape inequality gap widened by ${kGap} percentage points since 2026
+
+CRISIS CLASSIFICATION:
+${collision}
 
 CRISIS STATUS: ${crisis ? "TRIGGERED — thresholds breached" : "NOT TRIGGERED — structural stress building but system intact"}
 SCENARIO SEVERITY: ${severity.toUpperCase()} (AI displacement: ${Math.round((d.displaced ?? 0.4) * 100)}%)

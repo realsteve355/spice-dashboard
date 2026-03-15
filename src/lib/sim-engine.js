@@ -169,6 +169,22 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
   return { rows, firstYear, firstRedYear };
 }
 
+// ─── COLLISION DETECTION ───────────────────────────────────────────────────
+
+/**
+ * Determine if a crisis year is "The Collision" (SPICE thesis) or conventional.
+ * row.cryptoFlight is a percentage (e.g. 38.0), displaced is a decimal (e.g. 0.40).
+ * Returns 'NO_CRISIS' | 'CONVENTIONAL' | 'COLLISION'
+ */
+export function getCollisionStatus(row, displaced) {
+  const hasCrisis =
+    row.debtGDP > 175 || row.unemp > 20 || row.infl < -7 ||
+    (row.yld > 6.5 && row.debtGDP > 150);
+  if (!hasCrisis) return "NO_CRISIS";
+  if ((displaced || 0) > 0.15 || (row.cryptoFlight || 0) > 20) return "COLLISION";
+  return "CONVENTIONAL";
+}
+
 // ─── KPI CRITICALITY COLORS ────────────────────────────────────────────────
 
 export function kpiColor(type, v, debt) {

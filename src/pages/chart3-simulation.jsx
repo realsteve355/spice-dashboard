@@ -3,7 +3,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from "recharts";
-import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSimState, saveSimState, kpiColor } from "../lib/sim-engine";
+import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSimState, saveSimState, kpiColor, getCollisionStatus } from "../lib/sim-engine";
 
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
 
@@ -368,6 +368,35 @@ function ThresholdsPanel({ onClose }) {
             ))}
           </div>
         ))}
+        <div style={{ borderTop:"1px solid #f0f0f0", paddingTop:10, marginTop:4 }}>
+          <div style={{ fontSize:8, fontWeight:700, color:"#111",
+            textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
+            Crisis vs Collision
+          </div>
+          <div style={{ fontSize:8, color:"#555", lineHeight:1.6, marginBottom:8 }}>
+            <span style={{ color:"#dc2626", fontWeight:700 }}>RED</span> years flag that a crisis is occurring — conventional or collision.
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <div style={{ fontSize:8, fontWeight:700, color:"#dc2626", marginBottom:3 }}>
+              ◈ THE COLLISION
+            </div>
+            <div style={{ fontSize:8, color:"#555", lineHeight:1.6 }}>
+              Crisis + AI displacement {">"}15% or crypto flight {">"}20%.
+              AI-driven deflation prevents inflating away debt; crypto capital flight
+              prevents trapping savings. No historical precedent.
+            </div>
+          </div>
+          <div style={{ marginBottom:8 }}>
+            <div style={{ fontSize:8, fontWeight:700, color:"#ca8a04", marginBottom:3 }}>
+              CONVENTIONAL CRISIS
+            </div>
+            <div style={{ fontSize:8, color:"#555", lineHeight:1.6 }}>
+              Crisis thresholds breached but AI {"<"}15% and crypto {"<"}20%.
+              Fed has an established playbook: QE, financial repression, gradual inflation.
+              Historical precedents: Greece 2010, Argentina 2001, UK 1945–70.
+            </div>
+          </div>
+        </div>
         <div style={{ fontSize:7, color:"#ccc", borderTop:"1px solid #f0f0f0",
           paddingTop:8, lineHeight:1.6 }}>
           Sources: Reinhart-Rogoff NBER w15639 · CBO 2025 · Fisher (1933)
@@ -408,6 +437,11 @@ export default function Chart3Simulation() {
   const actMonetary = MONETARY_POLICIES.find(p => p.id === monetaryId);
   const anchor      = ANCHORS.reduce((a,b) =>
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
+
+  const crisisRow      = rows.find(r => r.debtGDP > 175 || r.unemp > 20 || r.infl < -7 || (r.yld > 6.5 && r.debtGDP > 150));
+  const collisionStatus = crisisRow ? getCollisionStatus(crisisRow, displaced) : "NO_CRISIS";
+  const collisionYear   = crisisRow?.year ?? null;
+  const collisionCrypto = crisisRow ? Math.round(crisisRow.cryptoFlight) : 0;
 
   useEffect(() => {
     const r0 = rows[0], rN = rows[rows.length - 1];
@@ -739,6 +773,37 @@ export default function Chart3Simulation() {
           <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>
             Sources: CBO 2025 · IMF WP/2025/076 · Reinhart-Rogoff NBER w15639 · Goldman Sachs · Dallas Fed 2025
           </div>
+
+          {/* Collision vs Conventional box */}
+          {collisionStatus !== "NO_CRISIS" && (
+            <div style={{ margin:"14px 0 0", padding:"12px 16px", flexShrink:0,
+              background: collisionStatus === "COLLISION" ? "#fef2f2" : "#fefce8",
+              border: `1px solid ${collisionStatus === "COLLISION" ? "#dc262640" : "#ca8a0440"}` }}>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em",
+                color: collisionStatus === "COLLISION" ? "#dc2626" : "#92400e",
+                marginBottom:6 }}>
+                {collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}` : `CONVENTIONAL CRISIS — ${collisionYear}`}
+              </div>
+              <div style={{ fontSize:10, color:"#444", lineHeight:1.6, marginBottom: collisionStatus === "CONVENTIONAL" ? 8 : 0 }}>
+                {collisionStatus === "COLLISION" ? (
+                  <>
+                    AI displacement {Math.round(displaced * 100)}%{collisionCrypto > 20 ? `, crypto flight ${collisionCrypto}%` : ""} — novel dynamics absent from all historical crises.
+                    AI-driven deflation prevents inflating away debt; crypto-enabled capital flight constrains traditional tools.
+                  </>
+                ) : (
+                  <>
+                    AI displacement {Math.round(displaced * 100)}%, crypto flight {collisionCrypto}% — both below collision thresholds.
+                    This resembles Greece 2010, Argentina 2001, or UK post-WWII. The Fed has an established playbook.
+                  </>
+                )}
+              </div>
+              {collisionStatus === "CONVENTIONAL" && (
+                <div style={{ fontSize:9, color:"#92400e" }}>
+                  Increase AI above 15% or Crypto above 20% to model The Collision.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Economy Overview Card */}
           {overviewLoading ? (
