@@ -65,8 +65,8 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={175} stroke="#ef444480" strokeDasharray="3 4" label={{ value:"175%", fill:"#ef444480", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
-              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -96,8 +96,8 @@ function UnempChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={20} stroke="#8b5cf670" strokeDasharray="3 4" label={{ value:"20% depression", fill:"#8b5cf670", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
-              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -127,8 +127,8 @@ function InflChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={-8} stroke="#3b82f6aa" strokeDasharray="3 4" label={{ value:"−8% Fisher", fill:"#3b82f6aa", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
-              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -158,8 +158,8 @@ function YieldChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={6} stroke="#eab30880" strokeDasharray="3 4" label={{ value:"6% stress", fill:"#eab30880", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
-              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -234,8 +234,8 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
               );
             }} />
             {fogYear ? (
-              <ReferenceArea yAxisId="idx" x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea yAxisId="idx" x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine yAxisId="idx" x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -297,8 +297,8 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={60} stroke="#22c55e30" strokeDasharray="3 4" label={{ value:"Labour 2026", fill:"#22c55e50", fontSize:7, position:"insideTopRight" }} />
             <ReferenceLine y={25} stroke="#ef444430" strokeDasharray="3 4" label={{ value:"Capital 2026", fill:"#ef444450", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
-              <ReferenceArea x1={fogYear} x2={2035} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopRight", fontSize:7, fill:"#999", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
+                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -478,7 +478,6 @@ export default function Chart3Simulation() {
     [displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy]
   );
 
-  const last        = rows.find(r => r.year === kpiYear) || rows[rows.length - 1];
   const actFiscal   = FISCAL_POLICIES.find(p => p.id === fiscalId);
   const actMonetary = MONETARY_POLICIES.find(p => p.id === monetaryId);
   const anchor      = ANCHORS.reduce((a,b) =>
@@ -490,6 +489,11 @@ export default function Chart3Simulation() {
   const collisionCrypto = crisisRow ? Math.round(crisisRow.cryptoFlight) : 0;
   // fogYear: only set for THE COLLISION (not conventional crisis) — triggers hatched overlay
   const fogYear = collisionStatus === "COLLISION" ? collisionYear : null;
+  // chartRows: truncate at fogYear+1 for collision scenarios (post-collision data is moot)
+  const chartRows = fogYear ? rows.filter(r => r.year <= fogYear + 1) : rows;
+  // effectiveKpiYear: clamp snapshot selector at fogYear when collision
+  const effectiveKpiYear = fogYear ? Math.min(kpiYear, fogYear) : kpiYear;
+  const last        = rows.find(r => r.year === effectiveKpiYear) || rows[rows.length - 1];
 
   useEffect(() => {
     const r0 = rows[0], rN = rows[rows.length - 1];
@@ -758,7 +762,7 @@ export default function Chart3Simulation() {
           <svg width="0" height="0" style={{ position:"absolute", overflow:"hidden" }}>
             <defs>
               <pattern id="hatchPattern" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="5" stroke="#555" strokeWidth="2" strokeOpacity="0.55" />
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#555" strokeWidth="2" strokeOpacity="0.75" />
               </pattern>
             </defs>
           </svg>
@@ -769,15 +773,15 @@ export default function Chart3Simulation() {
               textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
               Snapshot year
             </span>
-            <input type="range" min={2026} max={2035} step={1} value={kpiYear}
+            <input type="range" min={2026} max={fogYear ?? 2035} step={1} value={effectiveKpiYear}
               onChange={ev => setKpiYear(+ev.target.value)}
               style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
             <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-              {rows.map(r => (
+              {rows.filter(r => r.year <= (fogYear ?? 2035)).map(r => (
                 <span key={r.year} onClick={() => setKpiYear(r.year)}
                   style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
-                    fontWeight: r.year===kpiYear ? 700 : 400,
-                    color: r.year===kpiYear ? "#111" : "#ccc" }}>
+                    fontWeight: r.year===effectiveKpiYear ? 700 : 400,
+                    color: r.year===effectiveKpiYear ? "#111" : "#ccc" }}>
                   {r.year}
                 </span>
               ))}
@@ -789,17 +793,17 @@ export default function Chart3Simulation() {
             marginBottom:8, flexShrink:0 }}>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)",
               gap:5, flex:1 }}>
-              <KPI label={`Debt/GDP ${kpiYear}`} value={`${last.debtGDP}%`}
+              <KPI label={`Debt/GDP ${effectiveKpiYear}`} value={`${last.debtGDP}%`}
                 color={kpiColor("debt",   last.debtGDP)} warn={last.debtGDP>=150} />
-              <KPI label={`Unemp ${kpiYear}`}    value={`${last.unemp}%`}
+              <KPI label={`Unemp ${effectiveKpiYear}`}    value={`${last.unemp}%`}
                 color={kpiColor("unemp",  last.unemp)}   warn={last.unemp>=12} />
-              <KPI label={`Inflation ${kpiYear}`}value={`${last.infl}%`}
+              <KPI label={`Inflation ${effectiveKpiYear}`}value={`${last.infl}%`}
                 color={kpiColor("infl",   last.infl)}     warn={Math.abs(last.infl)>=10} />
-              <KPI label={`10Y Yield ${kpiYear}`}value={`${last.yld}%`}
+              <KPI label={`10Y Yield ${effectiveKpiYear}`}value={`${last.yld}%`}
                 color={kpiColor("yld",    last.yld, last.debtGDP)} warn={last.yld>=6} />
-              <KPI label={`Crypto ${kpiYear}`}    value={`${last.cryptoFlight}%`}
+              <KPI label={`Crypto ${effectiveKpiYear}`}    value={`${last.cryptoFlight}%`}
                 color={kpiColor("crypto", last.cryptoFlight)} warn={last.cryptoFlight>=40} />
-              <KPI label={`Gini ${kpiYear}`}     value={(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2)}
+              <KPI label={`Gini ${effectiveKpiYear}`}     value={(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2)}
                 color={kpiColor("gini", 0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008)}
                 warn={(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008) >= 0.55} />
             </div>
@@ -819,12 +823,12 @@ export default function Chart3Simulation() {
           {/* 3×2 chart grid */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)",
             gridTemplateRows:`repeat(2,${CH+32}px)`, gap:8, flexShrink:0 }}>
-            <DebtChart    rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
-            <UnempChart   rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
-            <InflChart    rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
-            <YieldChart   rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
-            <BitcoinChart rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
-            <KShapeChart  rows={rows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <DebtChart    rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <UnempChart   rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <InflChart    rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <YieldChart   rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <BitcoinChart rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
+            <KShapeChart  rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
           </div>
 
           <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>
