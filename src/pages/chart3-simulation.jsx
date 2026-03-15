@@ -757,8 +757,8 @@ export default function Chart3Simulation() {
           {/* SVG hatch pattern — defined once, referenced by all 6 charts */}
           <svg width="0" height="0" style={{ position:"absolute", overflow:"hidden" }}>
             <defs>
-              <pattern id="hatchPattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="6" stroke="#888" strokeWidth="0.8" strokeOpacity="0.3" />
+              <pattern id="hatchPattern" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#555" strokeWidth="2" strokeOpacity="0.55" />
               </pattern>
             </defs>
           </svg>
@@ -815,23 +815,6 @@ export default function Chart3Simulation() {
               style={{ position:"fixed", inset:0, zIndex:9998 }} />
             <ThresholdsPanel onClose={() => setShowThresholds(false)} />
           </>}
-
-          {/* Fog-of-war warning banner — only for THE COLLISION */}
-          {fogYear && (
-            <div style={{ marginBottom:8, padding:"10px 14px", flexShrink:0,
-              background:"#fef2f2", border:"1px solid #dc2626",
-              borderLeft:"4px solid #dc2626" }}>
-              <div style={{ fontSize:9, fontWeight:700, color:"#991b1b",
-                marginBottom:4, letterSpacing:"0.08em" }}>
-                ◈ THE COLLISION OCCURS IN {fogYear}
-              </div>
-              <div style={{ fontSize:10, color:"#333", lineHeight:1.6 }}>
-                Hatched areas on graphs mark <strong>highly speculative</strong> post-collision projections.
-                After a systemic break, outcomes depend on war, hyperinflation, crypto bans, and political
-                choices that cannot be modeled from pre-crisis dynamics.
-              </div>
-            </div>
-          )}
 
           {/* 3×2 chart grid */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)",
