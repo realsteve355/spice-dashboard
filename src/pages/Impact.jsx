@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import {
   ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim,
   IMPACT_GROUPS, impactCacheKey, getCached, setCache, parseAnalysis,
-  loadSimState, saveSimState, kpiColor,
+  loadSimState, saveSimState, kpiColor, getCollisionStatus,
 } from "../lib/sim-engine";
 
 const THRESHOLD_DATA = [
@@ -141,12 +141,19 @@ export default function Impact() {
     [displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy]
   );
 
-  const last    = rows.find(r => r.year === kpiYear) || rows[rows.length - 1];
-  const anchor  = ANCHORS.reduce((a, b) =>
+  const anchor      = ANCHORS.reduce((a, b) =>
     Math.abs(a.pct - displaced) < Math.abs(b.pct - displaced) ? a : b);
-  const lvl        = SIM_LEVELS[last.spiceLevel];
-  const actFiscal  = FISCAL_POLICIES.find(p => p.id === fiscalId);
+  const actFiscal   = FISCAL_POLICIES.find(p => p.id === fiscalId);
   const actMonetary = MONETARY_POLICIES.find(p => p.id === monetaryId);
+
+  const crisisRow      = rows.find(r => r.debtGDP > 175 || r.unemp > 20 || r.infl < -7 || (r.yld > 6.5 && r.debtGDP > 150));
+  const collisionStatus = crisisRow ? getCollisionStatus(crisisRow, displaced) : "NO_CRISIS";
+  const collisionYear   = crisisRow?.year ?? null;
+  const collisionCrypto = crisisRow ? Math.round(crisisRow.cryptoFlight) : 0;
+  const fogYear         = collisionStatus === "COLLISION" ? collisionYear : null;
+  const effectiveKpiYear = fogYear ? Math.min(kpiYear, fogYear) : kpiYear;
+  const last    = rows.find(r => r.year === effectiveKpiYear) || rows[rows.length - 1];
+  const lvl     = SIM_LEVELS[last.spiceLevel];
 
   // Debounced analysis generation
   useEffect(() => {
@@ -304,7 +311,7 @@ export default function Impact() {
               letterSpacing:"0.18em", marginBottom:3 }}>Human Impact Analysis</div>
             <div style={{ fontSize:13, color:"#555" }}>
               Real-world effects on households at{" "}
-              <span style={{ fontWeight:700, color:"#111" }}>{kpiYear}</span>
+              <span style={{ fontWeight:700, color:"#111" }}>{effectiveKpiYear}</span>
               {isGenerating && <span style={{ marginLeft:10, fontSize:9, color:"#aaa" }}>analysing...</span>}
             </div>
           </div>
@@ -352,15 +359,15 @@ export default function Impact() {
             textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
             Snapshot year
           </span>
-          <input type="range" min={2026} max={2035} step={1} value={kpiYear}
+          <input type="range" min={2026} max={fogYear ?? 2035} step={1} value={effectiveKpiYear}
             onChange={ev => setKpiYear(+ev.target.value)}
             style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
           <div style={{ display:"flex", gap:4, flexShrink:0 }}>
-            {rows.map(r => (
+            {rows.filter(r => r.year <= (fogYear ?? 2035)).map(r => (
               <span key={r.year} onClick={() => setKpiYear(r.year)}
                 style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
-                  fontWeight: r.year===kpiYear ? 700 : 400,
-                  color: r.year===kpiYear ? "#111" : "#ccc" }}>
+                  fontWeight: r.year===effectiveKpiYear ? 700 : 400,
+                  color: r.year===effectiveKpiYear ? "#111" : "#ccc" }}>
                 {r.year}
               </span>
             ))}
@@ -371,12 +378,12 @@ export default function Impact() {
         <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:14, flexShrink:0 }}>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:5, flex:1 }}>
             {[
-              { label:`Debt/GDP ${kpiYear}`, value:`${last.debtGDP}%`, color:kpiColor("debt",  last.debtGDP),            warn:last.debtGDP>=150 },
-              { label:`Unemp ${kpiYear}`,    value:`${last.unemp}%`,   color:kpiColor("unemp", last.unemp),               warn:last.unemp>=12 },
-              { label:`Inflation ${kpiYear}`,value:`${last.infl}%`,    color:kpiColor("infl",  last.infl),                warn:Math.abs(last.infl)>=10 },
-              { label:`10Y Yield ${kpiYear}`,value:`${last.yld}%`,     color:kpiColor("yld",   last.yld, last.debtGDP),   warn:last.yld>=6 },
-              { label:`Crypto ${kpiYear}`,   value:`${last.cryptoFlight}%`, color:kpiColor("crypto", last.cryptoFlight), warn:last.cryptoFlight>=40 },
-              { label:`Gini ${kpiYear}`,     value:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2),
+              { label:`Debt/GDP ${effectiveKpiYear}`, value:`${last.debtGDP}%`, color:kpiColor("debt",  last.debtGDP),            warn:last.debtGDP>=150 },
+              { label:`Unemp ${effectiveKpiYear}`,    value:`${last.unemp}%`,   color:kpiColor("unemp", last.unemp),               warn:last.unemp>=12 },
+              { label:`Inflation ${effectiveKpiYear}`,value:`${last.infl}%`,    color:kpiColor("infl",  last.infl),                warn:Math.abs(last.infl)>=10 },
+              { label:`10Y Yield ${effectiveKpiYear}`,value:`${last.yld}%`,     color:kpiColor("yld",   last.yld, last.debtGDP),   warn:last.yld>=6 },
+              { label:`Crypto ${effectiveKpiYear}`,   value:`${last.cryptoFlight}%`, color:kpiColor("crypto", last.cryptoFlight), warn:last.cryptoFlight>=40 },
+              { label:`Gini ${effectiveKpiYear}`,     value:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008).toFixed(2),
                 color:kpiColor("gini", 0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008),
                 warn:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008) >= 0.55 },
             ].map(k => (
@@ -401,6 +408,36 @@ export default function Impact() {
             style={{ position:"fixed", inset:0, zIndex:9998 }} />
           <ThresholdsPanel onClose={() => setShowThresholds(false)} />
         </>}
+
+        {/* Crisis classification box — always visible */}
+        {(() => {
+          const bg    = collisionStatus === "COLLISION" ? "#fef2f2" : collisionStatus === "CONVENTIONAL" ? "#fefce8" : "#f9fafb";
+          const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#e2e2e260";
+          const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#92400e"   : "#16a34a";
+          const hdTxt = collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}`
+                      : collisionStatus === "CONVENTIONAL" ? `CONVENTIONAL CRISIS — ${collisionYear}`
+                      : "NO CRISIS — SYSTEM STABLE 2026–2035";
+          return (
+          <div style={{ margin:"0 0 14px", padding:"10px 16px", flexShrink:0, background:bg, border:`1px solid ${bdr}` }}>
+            <div style={{ fontSize:9, fontWeight:700, letterSpacing:"0.1em", color:hdClr,
+              marginBottom: collisionStatus === "NO_CRISIS" ? 0 : 5 }}>
+              {hdTxt}
+            </div>
+            {collisionStatus !== "NO_CRISIS" && (
+              <div style={{ fontSize:10, color:"#444", lineHeight:1.6 }}>
+                {collisionStatus === "COLLISION" ? (
+                  <>AI displacement {Math.round(displaced * 100)}%{collisionCrypto > 20 ? `, crypto flight ${collisionCrypto}%` : ""} — novel dynamics absent from all historical crises.
+                  AI-driven deflation prevents inflating away debt; crypto capital flight constrains traditional tools.
+                  Impact analysis below reflects conditions at <strong>{effectiveKpiYear}</strong> — the last modelled year before system break.</>
+                ) : (
+                  <>AI displacement {Math.round(displaced * 100)}%, crypto flight {collisionCrypto}% — both below collision thresholds.
+                  This resembles Greece 2010, Argentina 2001, or UK post-WWII. The Fed has an established playbook.</>
+                )}
+              </div>
+            )}
+          </div>
+          );
+        })()}
 
         {/* 2×2 impact cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:14, flex:1 }}>
