@@ -427,8 +427,7 @@ export default function Impact() {
               <div style={{ fontSize:10, color:"#444", lineHeight:1.6 }}>
                 {collisionStatus === "COLLISION" ? (
                   <>AI displacement {Math.round(displaced * 100)}%{collisionCrypto > 20 ? `, crypto flight ${collisionCrypto}%` : ""} — novel dynamics absent from all historical crises.
-                  AI-driven deflation prevents inflating away debt; crypto capital flight constrains traditional tools.
-                  Impact analysis below reflects conditions at <strong>{effectiveKpiYear}</strong> — the last modelled year before system break.</>
+                  AI-driven deflation prevents inflating away debt; crypto capital flight constrains traditional tools.</>
                 ) : (
                   <>AI displacement {Math.round(displaced * 100)}%, crypto flight {collisionCrypto}% — both below collision thresholds.
                   This resembles Greece 2010, Argentina 2001, or UK post-WWII. The Fed has an established playbook.</>
