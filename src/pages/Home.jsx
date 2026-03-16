@@ -11,31 +11,30 @@ function SPICEDataLogo({ color }) {
   return (
     <div style={{ display: "flex", justifyContent: "center", fontFamily: F }}>
       <svg width="420" height="232" viewBox="0 0 420 232" xmlns="http://www.w3.org/2000/svg">
-        {/* Left ellipse — DEBT/GDP */}
-        <ellipse cx="53" cy="64" rx="52" ry="34" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        {/* Left arc — DEBT/GDP (right half of ellipse — opens toward circle) */}
+        <path d="M 53 30 A 52 34 0 0 1 53 98" fill="none" stroke={color} strokeWidth="1.5" />
         <text x="53" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">DEBT/GDP</text>
         <text x="53" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#dc2626" fontFamily="'IBM Plex Mono',monospace">{C.debt}%</text>
 
-        {/* Left line */}
-        <line x1="105" y1="64" x2="167" y2="64" stroke="#111" strokeWidth="2" />
+        {/* Left line — touchpoint at arc tip (105,64) to circle left edge (178,64) */}
+        <line x1="105" y1="64" x2="178" y2="64" stroke="#111" strokeWidth="2" />
 
         {/* Circle */}
         <circle cx="210" cy="64" r="32" stroke={color} strokeWidth="2.5" fill={color} fillOpacity="0.15" />
 
-        {/* Right line */}
-        <line x1="253" y1="64" x2="315" y2="64" stroke="#111" strokeWidth="2" />
+        {/* Right line — circle right edge (242,64) to arc tip (315,64) */}
+        <line x1="242" y1="64" x2="315" y2="64" stroke="#111" strokeWidth="2" />
 
-        {/* Right ellipse — AI JOBS */}
-        <ellipse cx="367" cy="64" rx="52" ry="34" fill="#fafafa" stroke={color} strokeWidth="1.5" />
-        <text x="367" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">AI JOBS LOST</text>
+        {/* Right arc — AI PENETRATION (left half of ellipse — opens toward circle) */}
+        <path d="M 367 30 A 52 34 0 0 0 367 98" fill="none" stroke={color} strokeWidth="1.5" />
+        <text x="367" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">AI PENETRATION</text>
         <text x="367" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#8b5cf6" fontFamily="'IBM Plex Mono',monospace">{C.ai}%</text>
 
-        {/* Down line + arrowhead */}
-        <line x1="210" y1="96" x2="210" y2="162" stroke="#111" strokeWidth="2" />
-        <polygon points="210,170 203,158 217,158" fill="#111" />
+        {/* Down line — circle bottom (210,96) to arc touchpoint (210,170) */}
+        <line x1="210" y1="96" x2="210" y2="170" stroke="#111" strokeWidth="2" />
 
-        {/* Bottom ellipse — CRYPTO FLIGHT */}
-        <ellipse cx="210" cy="198" rx="68" ry="28" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        {/* Bottom arc — CRYPTO FLIGHT (upper half of ellipse — opens downward) */}
+        <path d="M 142 198 A 68 28 0 0 0 278 198" fill="none" stroke={color} strokeWidth="1.5" />
         <text x="210" y="188" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">CRYPTO FLIGHT</text>
         <text x="210" y="214" textAnchor="middle" fontSize="20" fontWeight="700" fill={color} fontFamily="'IBM Plex Mono',monospace">{C.crypto}%</text>
       </svg>
@@ -111,49 +110,6 @@ export default function Home() {
 
   return (
     <div style={{ background: "#fff", color: "#111", fontFamily: F }}>
-
-      {/* ── HERO ───────────────────────────────────────────────────────── */}
-      <section style={{ textAlign: "center", padding: "64px 24px 56px", background: "linear-gradient(180deg, #fafafa 0%, #ffffff 100%)", borderBottom: "1px solid #e2e2e2" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          {/* Logo data viz */}
-          <div style={{ marginBottom: 36 }}>
-            <SPICEDataLogo color={levelColor} />
-          </div>
-
-          <h1 style={{ fontSize: 36, fontWeight: 700, margin: "0 0 16px", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
-            SPICE Protocol
-          </h1>
-          <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, maxWidth: 720, margin: "0 auto 36px" }}>
-            Sovereign debt and AI-driven deflation are on an epoch-defining collision course.
-            For the first time in history, the traditional tools that governments have to manage crises
-            are rendered impotent by capital flight to cryptocurrency.
-            SPICE models these scenarios and generates an AI-marshalled portfolio to weather the storm.
-          </p>
-
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link to="/portfolio" style={{ display: "inline-block", background: "#B8860B", color: "#fff",
-              padding: "11px 28px", fontFamily: F, fontSize: 11, fontWeight: 700,
-              textDecoration: "none", letterSpacing: "0.08em" }}>
-              View Portfolio Allocation →
-            </Link>
-            <Link to="/collision" style={{ display: "inline-block", background: "#fff", color: "#111",
-              padding: "10px 28px", fontFamily: F, fontSize: 11, fontWeight: 700,
-              textDecoration: "none", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>
-              Run Simulation →
-            </Link>
-          </div>
-
-          {/* Policy assumptions */}
-          <div style={{ marginTop: 20, fontSize: 8, color: "#aaa", letterSpacing: "0.08em" }}>
-            Model assumptions —{" "}
-            <span style={{ color: "#777" }}>Fiscal: No intervention</span>
-            {" · "}
-            <span style={{ color: "#777" }}>Monetary: No intervention</span>
-            {" · "}
-            <span style={{ color: "#777" }}>Crypto: Tax &amp; regulate</span>
-          </div>
-        </div>
-      </section>
 
       {/* ── PROJECTED CRISIS TIMELINE ──────────────────────────────────── */}
       <section style={{ padding: "48px 24px 44px", borderBottom: "1px solid #e2e2e2" }}>
@@ -269,6 +225,56 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── HERO ───────────────────────────────────────────────────────── */}
+      <section style={{ textAlign: "center", padding: "64px 24px 56px", background: "linear-gradient(180deg, #fafafa 0%, #ffffff 100%)", borderBottom: "1px solid #e2e2e2" }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          {/* Logo data viz */}
+          <div style={{ marginBottom: 16 }}>
+            <SPICEDataLogo color={levelColor} />
+          </div>
+
+          {/* Policy assumption badges — directly under diagram */}
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+            {[
+              { label: "Fiscal",    value: "No intervention", bg: "#f5f5f5",   border: "#ddd",     text: "#555"     },
+              { label: "Monetary",  value: "No intervention", bg: "#f5f5f5",   border: "#ddd",     text: "#555"     },
+              { label: "Crypto",    value: "Tax & regulate",  bg: "#eff6ff",   border: "#93c5fd",  text: "#1d4ed8"  },
+            ].map(b => (
+              <div key={b.label} style={{ background: b.bg, border: `1px solid ${b.border}`,
+                padding: "4px 10px", fontSize: 8, fontFamily: F, letterSpacing: "0.06em" }}>
+                <span style={{ color: "#aaa", textTransform: "uppercase" }}>{b.label}:</span>
+                {" "}
+                <span style={{ color: b.text, fontWeight: 700, textTransform: "uppercase" }}>{b.value}</span>
+              </div>
+            ))}
+          </div>
+
+          <h1 style={{ fontSize: 36, fontWeight: 700, margin: "0 0 16px", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+            SPICE Protocol
+          </h1>
+          <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, maxWidth: 720, margin: "0 auto 36px" }}>
+            Sovereign debt and AI-driven deflation are on an epoch-defining collision course.
+            For the first time in history, the traditional tools that governments have to manage crises
+            are rendered impotent by capital flight to cryptocurrency.
+            SPICE models these scenarios and generates an AI-marshalled portfolio to weather the storm.
+          </p>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <Link to="/portfolio" style={{ display: "inline-block", background: "#B8860B", color: "#fff",
+              padding: "11px 28px", fontFamily: F, fontSize: 11, fontWeight: 700,
+              textDecoration: "none", letterSpacing: "0.08em" }}>
+              View Portfolio Allocation →
+            </Link>
+            <Link to="/collision" style={{ display: "inline-block", background: "#fff", color: "#111",
+              padding: "10px 28px", fontFamily: F, fontSize: 11, fontWeight: 700,
+              textDecoration: "none", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>
+              Run Simulation →
+            </Link>
+          </div>
+
         </div>
       </section>
 
