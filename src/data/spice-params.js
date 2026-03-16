@@ -8,7 +8,7 @@ export const SPICE_PARAMS = {
   current: {
     debt:         122,    // Debt/GDP % — CBO/House Budget
     ai:           8,      // AI displacement % of workforce — estimate
-    crypto:       12,     // Crypto adoption/flight % — estimate
+    crypto:       3,      // Crypto as % of global investable assets — estimate
     unemployment: 3.8,    // Unemployment % — BLS
     inflation:    3.2,    // CPI YoY % — BLS
     yields:       4.32,   // 10Y Treasury % — FRED

@@ -9,42 +9,36 @@ const { current: C, projection: P, meta: M } = SPICE_PARAMS;
 
 function SPICEDataLogo({ color }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 24, fontFamily: F }}>
-      {/* Left: DEBT/GDP */}
-      <div style={{ textAlign: "right", minWidth: 110 }}>
-        <div style={{ fontSize: 9, color: "#888", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>
-          Debt / GDP
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#dc2626" }}>{C.debt}%</div>
-      </div>
+    <div style={{ display: "flex", justifyContent: "center", fontFamily: F }}>
+      <svg width="420" height="230" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg">
+        {/* Left box — DEBT/GDP */}
+        <rect x="1" y="28" width="105" height="72" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        <text x="53" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">DEBT/GDP</text>
+        <text x="53" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#dc2626" fontFamily="'IBM Plex Mono',monospace">{C.debt}%</text>
 
-      {/* Centre: SVG */}
-      <div style={{ textAlign: "center" }}>
-        <svg width="200" height="130" viewBox="0 0 280 175" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="140" cy="64" r="38" stroke={color} strokeWidth="3" fill={color} fillOpacity="0.18" />
-          <line x1="42" y1="64" x2="102" y2="64" stroke="#111" strokeWidth="2.5" />
-          <line x1="178" y1="64" x2="238" y2="64" stroke="#111" strokeWidth="2.5" />
-          <line x1="140" y1="102" x2="140" y2="142" stroke="#111" strokeWidth="2.5" />
-          <polygon points="140,148 134,136 146,136" fill="#111" />
-        </svg>
-        {/* Bottom: CRYPTO FLIGHT */}
-        <div style={{ marginTop: 4 }}>
-          <div style={{ fontSize: 9, color: "#888", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 2 }}>
-            Crypto Flight
-          </div>
-          <div style={{ fontSize: 18, fontWeight: 700, color }}>
-            {C.crypto}%
-          </div>
-        </div>
-      </div>
+        {/* Left line */}
+        <line x1="106" y1="64" x2="167" y2="64" stroke="#111" strokeWidth="2" />
 
-      {/* Right: AI JOBS */}
-      <div style={{ textAlign: "left", minWidth: 110 }}>
-        <div style={{ fontSize: 9, color: "#888", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>
-          AI Jobs Lost
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700, color: "#8b5cf6" }}>{C.ai}%</div>
-      </div>
+        {/* Circle */}
+        <circle cx="210" cy="64" r="32" stroke={color} strokeWidth="2.5" fill={color} fillOpacity="0.15" />
+
+        {/* Right line */}
+        <line x1="253" y1="64" x2="314" y2="64" stroke="#111" strokeWidth="2" />
+
+        {/* Right box — AI JOBS */}
+        <rect x="314" y="28" width="105" height="72" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        <text x="366" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">AI JOBS LOST</text>
+        <text x="366" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#8b5cf6" fontFamily="'IBM Plex Mono',monospace">{C.ai}%</text>
+
+        {/* Down line + arrowhead */}
+        <line x1="210" y1="96" x2="210" y2="158" stroke="#111" strokeWidth="2" />
+        <polygon points="210,165 203,153 217,153" fill="#111" />
+
+        {/* Bottom box — CRYPTO FLIGHT */}
+        <rect x="140" y="168" width="140" height="58" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        <text x="210" y="188" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">CRYPTO FLIGHT</text>
+        <text x="210" y="216" textAnchor="middle" fontSize="20" fontWeight="700" fill={color} fontFamily="'IBM Plex Mono',monospace">{C.crypto}%</text>
+      </svg>
     </div>
   );
 }
@@ -121,28 +115,19 @@ export default function Home() {
       {/* ── HERO ───────────────────────────────────────────────────────── */}
       <section style={{ textAlign: "center", padding: "64px 24px 56px", background: "linear-gradient(180deg, #fafafa 0%, #ffffff 100%)", borderBottom: "1px solid #e2e2e2" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          {/* SPICE level badge */}
-          <div style={{ marginBottom: 32, display: "inline-block", background: levelColor + "18",
-            border: `1px solid ${levelColor}40`, padding: "6px 14px" }}>
-            <span style={{ fontSize: 8, color: levelColor, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: "0.14em" }}>
-              SPICE LEVEL — {levelLabel}
-              {cachedLevel === null && <span style={{ color: "#aaa", fontWeight: 400 }}> (default · visit Indicators for live data)</span>}
-            </span>
-          </div>
-
           {/* Logo data viz */}
           <div style={{ marginBottom: 36 }}>
             <SPICEDataLogo color={levelColor} />
           </div>
 
           <h1 style={{ fontSize: 36, fontWeight: 700, margin: "0 0 16px", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
-            The Collision Is Coming
+            SPICE Protocol
           </h1>
           <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, maxWidth: 720, margin: "0 auto 36px" }}>
-            US sovereign debt, AI-driven deflation, and crypto-enabled capital flight are on a collision course.
-            Traditional hedges will fail when the crisis IS the financial system.
-            SPICE models the collision and positions for the transition.
+            Sovereign debt and AI-driven deflation are on an epoch-defining collision course.
+            For the first time in history, the traditional tools that governments have to manage crises
+            are rendered impotent by capital flight to cryptocurrency.
+            SPICE models these scenarios and generates an AI-marshalled portfolio to weather the storm.
           </p>
 
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -268,14 +253,14 @@ export default function Home() {
             <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 6 }}>
               SPICE Base Case
             </div>
-            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Estimated Crisis Progression</div>
+            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Projected Crisis Timeline</div>
             <p style={{ fontSize: 11, color: "#555", lineHeight: 1.7, maxWidth: 640, margin: 0 }}>
               Based on SPICE thesis parameters and current trajectory. Crisis window 2029–2032. Timeline is sensitive to policy choices.
             </p>
           </div>
 
-          {/* Gradient track */}
-          <div style={{ position: "relative", marginBottom: 40 }}>
+          {/* Gradient track + year scale */}
+          <div style={{ position: "relative", marginBottom: 48 }}>
             <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #ca8a04 20%, #ca8a04 40%, #ea580c 40%, #ea580c 60%, #dc2626 60%, #dc2626 100%)" }} />
             {/* WE ARE HERE marker */}
             <div style={{ position: "absolute", top: -6, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
@@ -286,6 +271,15 @@ export default function Home() {
                 whiteSpace: "nowrap", textTransform: "uppercase" }}>
                 ← now
               </div>
+            </div>
+            {/* Year scale */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+              {["2026","2027","2028","2029","2030","2031","2032"].map(yr => (
+                <div key={yr} style={{ fontSize: 8, color: "#aaa", textAlign: "center", position: "relative" }}>
+                  <div style={{ width: 1, height: 5, background: "#ddd", margin: "0 auto 3px" }} />
+                  {yr}
+                </div>
+              ))}
             </div>
           </div>
 
