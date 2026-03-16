@@ -105,8 +105,8 @@ export default function Home() {
     { years: "2029–2032", label: "Crisis Window",color: "#dc2626", desc: "The Collision. YCC deployed. Debt 195–245%. AI-driven deflation prevents traditional escape routes." },
   ];
 
-  // "WE ARE HERE" marker: 2026 = 0%, 2032 = 100%. Now = 2026 ≈ 5% from left.
-  const markerPct = 5;
+  // Marker position: driven by current SPICE level (0=GREEN at 0%, 4=RED at 100%)
+  const markerPct = (level / (LEVEL_LABELS.length - 1)) * 100;
 
   return (
     <div style={{ background: "#fff", color: "#111", fontFamily: F }}>
@@ -122,10 +122,7 @@ export default function Home() {
               <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 6 }}>
                 SPICE Base Case
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Projected Crisis Timeline</div>
-              <p style={{ fontSize: 11, color: "#555", lineHeight: 1.7, maxWidth: 520, margin: 0 }}>
-                Based on SPICE thesis parameters and current trajectory. Crisis window 2029–2032.
-              </p>
+              <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 0 }}>Projected Crisis Timeline</div>
             </div>
 
             {/* SPICE level colour scale — current level highlighted */}
@@ -159,13 +156,12 @@ export default function Home() {
 
           {/* Gradient track + year scale */}
           <div style={{ position: "relative", marginBottom: 48 }}>
-            <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #ca8a04 20%, #ca8a04 40%, #ea580c 40%, #ea580c 60%, #dc2626 60%, #dc2626 100%)" }} />
+            <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #3b82f6 20%, #3b82f6 40%, #ca8a04 40%, #ca8a04 60%, #ea580c 60%, #ea580c 80%, #dc2626 80%, #dc2626 100%)" }} />
             {/* WE ARE HERE marker */}
-            <div style={{ position: "absolute", top: -6, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff",
-                border: "3px solid #ea580c", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }} />
-              <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)",
-                fontSize: 7, color: "#ea580c", fontWeight: 700, letterSpacing: "0.08em",
+            <div style={{ position: "absolute", top: -5, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", border: "3px solid #111" }} />
+              <div style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)",
+                fontSize: 7, color: "#111", fontWeight: 700, letterSpacing: "0.08em",
                 whiteSpace: "nowrap", textTransform: "uppercase" }}>
                 ← now
               </div>
@@ -195,36 +191,6 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Sensitivity factors */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#fafafa",
-            border: "1px solid #e2e2e2", padding: "20px 22px" }}>
-            {[
-              {
-                title: "⚡ Accelerates if:",
-                color: "#dc2626",
-                items: ["Fiscal policy loosens further", "AI adoption faster than forecast", "Government bans crypto (drives flight)", "Geopolitical shock — war, pandemic, trade war"],
-              },
-              {
-                title: "⏸ Delays if:",
-                color: "#16a34a",
-                items: ["Credible fiscal consolidation enacted", "AI productivity offsets displacement", "Crypto adoption slower than expected", "Fed successfully manages yield curve"],
-              },
-            ].map(group => (
-              <div key={group.title}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: group.color, textTransform: "uppercase",
-                  letterSpacing: "0.08em", marginBottom: 8 }}>
-                  {group.title}
-                </div>
-                {group.items.map((item, i) => (
-                  <div key={i} style={{ fontSize: 9, color: "#555", lineHeight: 1.7, marginBottom: 3,
-                    paddingLeft: 12, position: "relative" }}>
-                    <span style={{ position: "absolute", left: 0, color: group.color }}>•</span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -252,9 +218,6 @@ export default function Home() {
             ))}
           </div>
 
-          <h1 style={{ fontSize: 36, fontWeight: 700, margin: "0 0 16px", letterSpacing: "-0.01em", lineHeight: 1.2 }}>
-            SPICE Protocol
-          </h1>
           <p style={{ fontSize: 14, color: "#555", lineHeight: 1.8, maxWidth: 720, margin: "0 auto 36px" }}>
             Sovereign debt and AI-driven deflation are on an epoch-defining collision course.
             For the first time in history, the traditional tools that governments have to manage crises
@@ -262,7 +225,7 @@ export default function Home() {
             SPICE models these scenarios and generates an AI-marshalled portfolio to weather the storm.
           </p>
 
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
             <Link to="/portfolio" style={{ display: "inline-block", background: "#B8860B", color: "#fff",
               padding: "11px 28px", fontFamily: F, fontSize: 11, fontWeight: 700,
               textDecoration: "none", letterSpacing: "0.08em" }}>
@@ -273,6 +236,37 @@ export default function Home() {
               textDecoration: "none", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>
               Run Simulation →
             </Link>
+          </div>
+
+          {/* Sensitivity factors */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#fafafa",
+            border: "1px solid #e2e2e2", padding: "20px 22px", textAlign: "left", maxWidth: 720, margin: "0 auto" }}>
+            {[
+              {
+                title: "⚡ Accelerates if:",
+                color: "#dc2626",
+                items: ["Fiscal policy loosens further", "AI adoption faster than forecast", "Government bans crypto (drives flight)", "Geopolitical shock — war, pandemic, trade war"],
+              },
+              {
+                title: "⏸ Delays if:",
+                color: "#16a34a",
+                items: ["Credible fiscal consolidation enacted", "AI productivity offsets displacement", "Crypto adoption slower than expected", "Fed successfully manages yield curve"],
+              },
+            ].map(group => (
+              <div key={group.title}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: group.color, textTransform: "uppercase",
+                  letterSpacing: "0.08em", marginBottom: 8 }}>
+                  {group.title}
+                </div>
+                {group.items.map((item, idx) => (
+                  <div key={idx} style={{ fontSize: 9, color: "#555", lineHeight: 1.7, marginBottom: 3,
+                    paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 0, color: group.color }}>•</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
 
         </div>
