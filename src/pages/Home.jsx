@@ -10,34 +10,34 @@ const { current: C, projection: P, meta: M } = SPICE_PARAMS;
 function SPICEDataLogo({ color }) {
   return (
     <div style={{ display: "flex", justifyContent: "center", fontFamily: F }}>
-      <svg width="420" height="230" viewBox="0 0 420 230" xmlns="http://www.w3.org/2000/svg">
-        {/* Left box — DEBT/GDP */}
-        <rect x="1" y="28" width="105" height="72" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+      <svg width="420" height="232" viewBox="0 0 420 232" xmlns="http://www.w3.org/2000/svg">
+        {/* Left ellipse — DEBT/GDP */}
+        <ellipse cx="53" cy="64" rx="52" ry="34" fill="#fafafa" stroke={color} strokeWidth="1.5" />
         <text x="53" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">DEBT/GDP</text>
         <text x="53" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#dc2626" fontFamily="'IBM Plex Mono',monospace">{C.debt}%</text>
 
         {/* Left line */}
-        <line x1="106" y1="64" x2="167" y2="64" stroke="#111" strokeWidth="2" />
+        <line x1="105" y1="64" x2="167" y2="64" stroke="#111" strokeWidth="2" />
 
         {/* Circle */}
         <circle cx="210" cy="64" r="32" stroke={color} strokeWidth="2.5" fill={color} fillOpacity="0.15" />
 
         {/* Right line */}
-        <line x1="253" y1="64" x2="314" y2="64" stroke="#111" strokeWidth="2" />
+        <line x1="253" y1="64" x2="315" y2="64" stroke="#111" strokeWidth="2" />
 
-        {/* Right box — AI JOBS */}
-        <rect x="314" y="28" width="105" height="72" fill="#fafafa" stroke={color} strokeWidth="1.5" />
-        <text x="366" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">AI JOBS LOST</text>
-        <text x="366" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#8b5cf6" fontFamily="'IBM Plex Mono',monospace">{C.ai}%</text>
+        {/* Right ellipse — AI JOBS */}
+        <ellipse cx="367" cy="64" rx="52" ry="34" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        <text x="367" y="52" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">AI JOBS LOST</text>
+        <text x="367" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#8b5cf6" fontFamily="'IBM Plex Mono',monospace">{C.ai}%</text>
 
         {/* Down line + arrowhead */}
-        <line x1="210" y1="96" x2="210" y2="158" stroke="#111" strokeWidth="2" />
-        <polygon points="210,165 203,153 217,153" fill="#111" />
+        <line x1="210" y1="96" x2="210" y2="162" stroke="#111" strokeWidth="2" />
+        <polygon points="210,170 203,158 217,158" fill="#111" />
 
-        {/* Bottom box — CRYPTO FLIGHT */}
-        <rect x="140" y="168" width="140" height="58" fill="#fafafa" stroke={color} strokeWidth="1.5" />
+        {/* Bottom ellipse — CRYPTO FLIGHT */}
+        <ellipse cx="210" cy="198" rx="68" ry="28" fill="#fafafa" stroke={color} strokeWidth="1.5" />
         <text x="210" y="188" textAnchor="middle" fontSize="8" fill="#888" fontFamily="'IBM Plex Mono',monospace" letterSpacing="1">CRYPTO FLIGHT</text>
-        <text x="210" y="216" textAnchor="middle" fontSize="20" fontWeight="700" fill={color} fontFamily="'IBM Plex Mono',monospace">{C.crypto}%</text>
+        <text x="210" y="214" textAnchor="middle" fontSize="20" fontWeight="700" fill={color} fontFamily="'IBM Plex Mono',monospace">{C.crypto}%</text>
       </svg>
     </div>
   );
@@ -142,6 +142,133 @@ export default function Home() {
               Run Simulation →
             </Link>
           </div>
+
+          {/* Policy assumptions */}
+          <div style={{ marginTop: 20, fontSize: 8, color: "#aaa", letterSpacing: "0.08em" }}>
+            Model assumptions —{" "}
+            <span style={{ color: "#777" }}>Fiscal: No intervention</span>
+            {" · "}
+            <span style={{ color: "#777" }}>Monetary: No intervention</span>
+            {" · "}
+            <span style={{ color: "#777" }}>Crypto: Tax &amp; regulate</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROJECTED CRISIS TIMELINE ──────────────────────────────────── */}
+      <section style={{ padding: "48px 24px 44px", borderBottom: "1px solid #e2e2e2" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+
+          {/* Header row: title + SPICE level scale */}
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start",
+            justifyContent: "space-between", gap: 16, marginBottom: 28 }}>
+            <div>
+              <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 6 }}>
+                SPICE Base Case
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Projected Crisis Timeline</div>
+              <p style={{ fontSize: 11, color: "#555", lineHeight: 1.7, maxWidth: 520, margin: 0 }}>
+                Based on SPICE thesis parameters and current trajectory. Crisis window 2029–2032.
+              </p>
+            </div>
+
+            {/* SPICE level colour scale — current level highlighted */}
+            <div style={{ flexShrink: 0 }}>
+              <div style={{ fontSize: 8, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.12em",
+                marginBottom: 6, textAlign: "right" }}>
+                Crisis Level Scale
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {LEVEL_LABELS.map((lbl, i) => {
+                  const isCurrent = i === level;
+                  return (
+                    <div key={lbl} style={{
+                      padding: isCurrent ? "5px 10px" : "4px 8px",
+                      background: isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}18`,
+                      border: `2px solid ${isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}60`}`,
+                      fontSize: isCurrent ? 9 : 8,
+                      fontWeight: isCurrent ? 700 : 400,
+                      color: isCurrent ? "#fff" : LEVEL_COLORS[i],
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      boxShadow: isCurrent ? `0 2px 8px ${LEVEL_COLORS[i]}50` : "none",
+                    }}>
+                      {lbl}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Gradient track + year scale */}
+          <div style={{ position: "relative", marginBottom: 48 }}>
+            <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #ca8a04 20%, #ca8a04 40%, #ea580c 40%, #ea580c 60%, #dc2626 60%, #dc2626 100%)" }} />
+            {/* WE ARE HERE marker */}
+            <div style={{ position: "absolute", top: -6, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff",
+                border: "3px solid #ea580c", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }} />
+              <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)",
+                fontSize: 7, color: "#ea580c", fontWeight: 700, letterSpacing: "0.08em",
+                whiteSpace: "nowrap", textTransform: "uppercase" }}>
+                ← now
+              </div>
+            </div>
+            {/* Year scale */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
+              {["2026","2027","2028","2029","2030","2031","2032"].map(yr => (
+                <div key={yr} style={{ fontSize: 8, color: "#aaa", textAlign: "center", position: "relative" }}>
+                  <div style={{ width: 1, height: 5, background: "#ddd", margin: "0 auto 3px" }} />
+                  {yr}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Phase cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 32 }}>
+            {TIMELINE_PHASES.map((ph, i) => (
+              <div key={i} style={{ background: "#fafafa", border: `2px solid ${ph.color}30`, padding: "16px 14px" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: ph.color, textTransform: "uppercase",
+                  letterSpacing: "0.1em", marginBottom: 4 }}>
+                  {ph.years}
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#111", marginBottom: 8 }}>{ph.label}</div>
+                <div style={{ fontSize: 9, color: "#555", lineHeight: 1.7 }}>{ph.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Sensitivity factors */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#fafafa",
+            border: "1px solid #e2e2e2", padding: "20px 22px" }}>
+            {[
+              {
+                title: "⚡ Accelerates if:",
+                color: "#dc2626",
+                items: ["Fiscal policy loosens further", "AI adoption faster than forecast", "Government bans crypto (drives flight)", "Geopolitical shock — war, pandemic, trade war"],
+              },
+              {
+                title: "⏸ Delays if:",
+                color: "#16a34a",
+                items: ["Credible fiscal consolidation enacted", "AI productivity offsets displacement", "Crypto adoption slower than expected", "Fed successfully manages yield curve"],
+              },
+            ].map(group => (
+              <div key={group.title}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: group.color, textTransform: "uppercase",
+                  letterSpacing: "0.08em", marginBottom: 8 }}>
+                  {group.title}
+                </div>
+                {group.items.map((item, i) => (
+                  <div key={i} style={{ fontSize: 9, color: "#555", lineHeight: 1.7, marginBottom: 3,
+                    paddingLeft: 12, position: "relative" }}>
+                    <span style={{ position: "absolute", left: 0, color: group.color }}>•</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -242,90 +369,6 @@ export default function Home() {
               borderBottom: "1px solid #B8860B", letterSpacing: "0.08em" }}>
               → View live indicator analysis
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CRISIS TIMELINE ────────────────────────────────────────────── */}
-      <section style={{ padding: "56px 24px", background: "#fafafa", borderBottom: "1px solid #e2e2e2" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 6 }}>
-              SPICE Base Case
-            </div>
-            <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Projected Crisis Timeline</div>
-            <p style={{ fontSize: 11, color: "#555", lineHeight: 1.7, maxWidth: 640, margin: 0 }}>
-              Based on SPICE thesis parameters and current trajectory. Crisis window 2029–2032. Timeline is sensitive to policy choices.
-            </p>
-          </div>
-
-          {/* Gradient track + year scale */}
-          <div style={{ position: "relative", marginBottom: 48 }}>
-            <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #ca8a04 20%, #ca8a04 40%, #ea580c 40%, #ea580c 60%, #dc2626 60%, #dc2626 100%)" }} />
-            {/* WE ARE HERE marker */}
-            <div style={{ position: "absolute", top: -6, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
-              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff",
-                border: "3px solid #ea580c", boxShadow: "0 2px 8px rgba(0,0,0,0.12)" }} />
-              <div style={{ position: "absolute", top: 24, left: "50%", transform: "translateX(-50%)",
-                fontSize: 7, color: "#ea580c", fontWeight: 700, letterSpacing: "0.08em",
-                whiteSpace: "nowrap", textTransform: "uppercase" }}>
-                ← now
-              </div>
-            </div>
-            {/* Year scale */}
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
-              {["2026","2027","2028","2029","2030","2031","2032"].map(yr => (
-                <div key={yr} style={{ fontSize: 8, color: "#aaa", textAlign: "center", position: "relative" }}>
-                  <div style={{ width: 1, height: 5, background: "#ddd", margin: "0 auto 3px" }} />
-                  {yr}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Phase cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 32 }}>
-            {TIMELINE_PHASES.map((ph, i) => (
-              <div key={i} style={{ background: "#fff", border: `2px solid ${ph.color}30`, padding: "16px 14px" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: ph.color, textTransform: "uppercase",
-                  letterSpacing: "0.1em", marginBottom: 4 }}>
-                  {ph.years}
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111", marginBottom: 8 }}>{ph.label}</div>
-                <div style={{ fontSize: 9, color: "#555", lineHeight: 1.7 }}>{ph.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Sensitivity factors */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, background: "#fff",
-            border: "1px solid #e2e2e2", padding: "20px 22px" }}>
-            {[
-              {
-                title: "⚡ Accelerates if:",
-                color: "#dc2626",
-                items: ["Fiscal policy loosens further", "AI adoption faster than forecast", "Government bans crypto (drives flight)", "Geopolitical shock — war, pandemic, trade war"],
-              },
-              {
-                title: "⏸ Delays if:",
-                color: "#16a34a",
-                items: ["Credible fiscal consolidation enacted", "AI productivity offsets displacement", "Crypto adoption slower than expected", "Fed successfully manages yield curve"],
-              },
-            ].map(group => (
-              <div key={group.title}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: group.color, textTransform: "uppercase",
-                  letterSpacing: "0.08em", marginBottom: 8 }}>
-                  {group.title}
-                </div>
-                {group.items.map((item, i) => (
-                  <div key={i} style={{ fontSize: 9, color: "#555", lineHeight: 1.7, marginBottom: 3,
-                    paddingLeft: 12, position: "relative" }}>
-                    <span style={{ position: "absolute", left: 0, color: group.color }}>•</span>
-                    {item}
-                  </div>
-                ))}
-              </div>
-            ))}
           </div>
         </div>
       </section>
