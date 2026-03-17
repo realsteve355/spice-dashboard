@@ -43,9 +43,9 @@ export const SPICE_PARAMS = {
 
   // Policy assumptions underlying the base case
   policy: {
-    fiscal:   "none",   // No fiscal adjustment
-    monetary: "none",   // Fed stays course until forced to act
-    crypto:   "tax",    // Tax & Regulate regime
+    fiscal:   "robot_ubi",  // Robot tax funds UBI — SPICE base case
+    monetary: "qe",         // QE deployed as crisis response
+    crypto:   "tax",        // Tax & Regulate regime
   },
 
   meta: {

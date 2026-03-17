@@ -95,7 +95,7 @@ export default function Home() {
     { name: "Unemployment",      value: C.unemployment, unit: "%",   trend: "flat", status: "green",  statusText: "Within baseline",       projection: `SPICE projection 2029: 10% — pre-collision surge` },
     { name: "Inflation (CPI)",   value: C.inflation,    unit: "%",   trend: "flat", status: "yellow", statusText: "Above Fed target",      projection: `SPICE projection 2029: 8% — YCC onset` },
     { name: "10Y Treasury",      value: C.yields,       unit: "%",   trend: "up",   status: "yellow", statusText: "Elevated, rising",      projection: `SPICE projection 2029: 7.8% — before YCC cap` },
-    { name: "AI Displacement",   value: C.ai,           unit: "%",   trend: "up",   status: "yellow", statusText: "Early stage",           projection: `SPICE projection 2030: 35% — McKinsey base case` },
+    { name: "AI Displacement",   value: C.ai,           unit: "%",   trend: "up",   status: "yellow", statusText: "Early stage",           projection: `SPICE projection 2030: 40% — SPICE base case` },
     { name: "Crypto Adoption",   value: C.crypto,       unit: "%",   trend: "up",   status: "green",  statusText: "Building",              projection: `SPICE projection 2029: 30% — crisis acceleration` },
   ];
 
@@ -106,8 +106,8 @@ export default function Home() {
     { years: "2029–2032", label: "Crisis Window",color: "#dc2626", desc: "The Collision. YCC deployed. Debt 195–245%. AI-driven deflation prevents traditional escape routes." },
   ];
 
-  // Marker position: driven by current SPICE level (0=GREEN at 0%, 4=RED at 100%)
-  const markerPct = (level / (LEVEL_LABELS.length - 1)) * 100;
+  // Marker = current year position on 2026–2032 axis. Early 2026 ≈ 2%.
+  const markerPct = 2;
 
   return (
     <div style={{ background: "#fff", color: "#111", fontFamily: F }}>
@@ -141,7 +141,7 @@ export default function Home() {
               <div style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)",
                 fontSize: 7, color: "#111", fontWeight: 700, letterSpacing: "0.08em",
                 whiteSpace: "nowrap", textTransform: "uppercase" }}>
-                ← now
+                today
               </div>
             </div>
 
@@ -206,7 +206,7 @@ export default function Home() {
       </section>
 
       {/* ── HERO ───────────────────────────────────────────────────────── */}
-      <section style={{ textAlign: "center", padding: "64px 24px 56px", background: "linear-gradient(180deg, #fafafa 0%, #ffffff 100%)", borderBottom: "1px solid #e2e2e2" }}>
+      <section style={{ textAlign: "center", padding: "28px 24px 48px", background: "linear-gradient(180deg, #fafafa 0%, #ffffff 100%)", borderBottom: "1px solid #e2e2e2" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {/* Logo data viz */}
           <div style={{ marginBottom: 16 }}>
@@ -216,9 +216,9 @@ export default function Home() {
           {/* Policy assumption badges — directly under diagram */}
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
             {[
-              { label: "Fiscal",    value: "No intervention", bg: "#f5f5f5",   border: "#ddd",     text: "#555"     },
-              { label: "Monetary",  value: "No intervention", bg: "#f5f5f5",   border: "#ddd",     text: "#555"     },
-              { label: "Crypto",    value: "Tax & regulate",  bg: "#eff6ff",   border: "#93c5fd",  text: "#1d4ed8"  },
+              { label: "Fiscal",   value: "Robot tax + UBI", bg: "#f0fdf4", border: "#86efac", text: "#15803d" },
+              { label: "Monetary", value: "QE",              bg: "#fefce8", border: "#fde047", text: "#92400e" },
+              { label: "Crypto",   value: "Tax & regulate",  bg: "#eff6ff", border: "#93c5fd", text: "#1d4ed8" },
             ].map(b => (
               <div key={b.label} style={{ background: b.bg, border: `1px solid ${b.border}`,
                 padding: "4px 10px", fontSize: 8, fontFamily: F, letterSpacing: "0.06em" }}>
@@ -307,7 +307,7 @@ export default function Home() {
                   { label: "Current (2026)",      value: `${C.debt}% debt/GDP` },
                   { label: "Crisis threshold",    value: "175% debt/GDP" },
                   { label: "Projected crisis",    value: `${M.crisisWindow.start}` },
-                  { label: "Assumption",          value: "No fiscal adjustment" },
+                  { label: "Assumption",          value: "Robot tax + UBI" },
                 ],
                 note: "Based on CBO projections with no policy changes. Crisis occurs when debt service exceeds tax revenue at market rates — the math breaks around 2029.",
               },
@@ -317,7 +317,7 @@ export default function Home() {
                 color: "#8b5cf6",
                 rows: [
                   { label: "Current (2026)",    value: `${C.ai}% of workforce` },
-                  { label: "Projected (2030)",  value: "35% of workforce" },
+                  { label: "Projected (2030)",  value: "40% of workforce" },
                   { label: "Collision trigger", value: ">15% displacement" },
                   { label: "Source",            value: "McKinsey / Goldman" },
                 ],
