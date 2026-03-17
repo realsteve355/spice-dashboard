@@ -137,9 +137,9 @@ export default function Home() {
 
             {/* NOW marker */}
             <div style={{ position: "absolute", top: -4, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
-              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", border: "3px solid #111" }} />
+              <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", border: `3px solid ${levelColor}` }} />
               <div style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)",
-                fontSize: 7, color: "#111", fontWeight: 700, letterSpacing: "0.08em",
+                fontSize: 7, color: levelColor, fontWeight: 700, letterSpacing: "0.08em",
                 whiteSpace: "nowrap", textTransform: "uppercase" }}>
                 today
               </div>
