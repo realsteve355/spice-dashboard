@@ -76,6 +76,7 @@ function IndicatorCard({ name, value, unit, trend, status, statusText, projectio
 
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
+  const [showPhaseDetail, setShowPhaseDetail] = useState(false);
 
   useEffect(() => {
     try {
@@ -112,53 +113,30 @@ export default function Home() {
     <div style={{ background: "#fff", color: "#111", fontFamily: F }}>
 
       {/* ── PROJECTED CRISIS TIMELINE ──────────────────────────────────── */}
-      <section style={{ padding: "48px 24px 44px", borderBottom: "1px solid #e2e2e2" }}>
+      <section style={{ padding: "36px 24px 32px", borderBottom: "1px solid #e2e2e2" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
 
-          {/* Header row: title + SPICE level scale */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start",
-            justifyContent: "space-between", gap: 16, marginBottom: 28 }}>
+          {/* Compact header */}
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 16 }}>
             <div>
-              <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 6 }}>
+              <div style={{ fontSize: 9, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 4 }}>
                 SPICE Base Case
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 0 }}>Projected Crisis Timeline</div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>Projected Crisis Timeline</div>
             </div>
-
-            {/* SPICE level colour scale — current level highlighted */}
-            <div style={{ flexShrink: 0 }}>
-              <div style={{ fontSize: 8, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.12em",
-                marginBottom: 6, textAlign: "right" }}>
-                Crisis Level Scale
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {LEVEL_LABELS.map((lbl, i) => {
-                  const isCurrent = i === level;
-                  return (
-                    <div key={lbl} style={{
-                      padding: isCurrent ? "5px 10px" : "4px 8px",
-                      background: isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}18`,
-                      border: `2px solid ${isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}60`}`,
-                      fontSize: isCurrent ? 9 : 8,
-                      fontWeight: isCurrent ? 700 : 400,
-                      color: isCurrent ? "#fff" : LEVEL_COLORS[i],
-                      letterSpacing: "0.06em",
-                      textTransform: "uppercase",
-                      boxShadow: isCurrent ? `0 2px 8px ${LEVEL_COLORS[i]}50` : "none",
-                    }}>
-                      {lbl}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <div style={{ fontSize: 8, color: "#bbb", letterSpacing: "0.06em" }}>hover bar for detail</div>
           </div>
 
-          {/* Gradient track + year scale */}
-          <div style={{ position: "relative", marginBottom: 48 }}>
-            <div style={{ height: 8, borderRadius: 4, background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #3b82f6 20%, #3b82f6 40%, #ca8a04 40%, #ca8a04 60%, #ea580c 60%, #ea580c 80%, #dc2626 80%, #dc2626 100%)" }} />
-            {/* WE ARE HERE marker */}
-            <div style={{ position: "absolute", top: -5, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
+          {/* Gradient bar — hover reveals phase detail popup */}
+          <div style={{ position: "relative" }}
+            onMouseEnter={() => setShowPhaseDetail(true)}
+            onMouseLeave={() => setShowPhaseDetail(false)}>
+
+            <div style={{ height: 10, borderRadius: 5, cursor: "default",
+              background: "linear-gradient(90deg, #16a34a 0%, #16a34a 20%, #3b82f6 20%, #3b82f6 40%, #ca8a04 40%, #ca8a04 60%, #ea580c 60%, #ea580c 80%, #dc2626 80%, #dc2626 100%)" }} />
+
+            {/* NOW marker */}
+            <div style={{ position: "absolute", top: -4, left: `${markerPct}%`, transform: "translateX(-50%)" }}>
               <div style={{ width: 18, height: 18, borderRadius: "50%", background: "#fff", border: "3px solid #111" }} />
               <div style={{ position: "absolute", top: 22, left: "50%", transform: "translateX(-50%)",
                 fontSize: 7, color: "#111", fontWeight: 700, letterSpacing: "0.08em",
@@ -166,29 +144,62 @@ export default function Home() {
                 ← now
               </div>
             </div>
+
             {/* Year scale */}
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10 }}>
               {["2026","2027","2028","2029","2030","2031","2032"].map(yr => (
-                <div key={yr} style={{ fontSize: 8, color: "#aaa", textAlign: "center", position: "relative" }}>
-                  <div style={{ width: 1, height: 5, background: "#ddd", margin: "0 auto 3px" }} />
+                <div key={yr} style={{ fontSize: 8, color: "#aaa", textAlign: "center" }}>
+                  <div style={{ width: 1, height: 4, background: "#ddd", margin: "0 auto 3px" }} />
                   {yr}
                 </div>
               ))}
             </div>
-          </div>
 
-          {/* Phase cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 32 }}>
-            {TIMELINE_PHASES.map((ph, i) => (
-              <div key={i} style={{ background: "#fafafa", border: `2px solid ${ph.color}30`, padding: "16px 14px" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: ph.color, textTransform: "uppercase",
-                  letterSpacing: "0.1em", marginBottom: 4 }}>
-                  {ph.years}
+            {/* Hover popup — colour scale + phase cards */}
+            {showPhaseDetail && (
+              <div style={{ position: "absolute", top: "calc(100% + 12px)", left: 0, right: 0, zIndex: 30,
+                background: "#fff", border: "1px solid #e2e2e2", padding: "18px 20px",
+                boxShadow: "0 6px 24px rgba(0,0,0,0.10)" }}>
+
+                {/* Colour scale row */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 14, alignItems: "center" }}>
+                  <span style={{ fontSize: 8, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.1em", marginRight: 6 }}>
+                    Crisis level:
+                  </span>
+                  {LEVEL_LABELS.map((lbl, i) => {
+                    const isCurrent = i === level;
+                    return (
+                      <div key={lbl} style={{
+                        padding: isCurrent ? "4px 10px" : "3px 8px",
+                        background: isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}18`,
+                        border: `2px solid ${isCurrent ? LEVEL_COLORS[i] : `${LEVEL_COLORS[i]}60`}`,
+                        fontSize: isCurrent ? 9 : 8,
+                        fontWeight: isCurrent ? 700 : 400,
+                        color: isCurrent ? "#fff" : LEVEL_COLORS[i],
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                      }}>
+                        {lbl}
+                      </div>
+                    );
+                  })}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#111", marginBottom: 8 }}>{ph.label}</div>
-                <div style={{ fontSize: 9, color: "#555", lineHeight: 1.7 }}>{ph.desc}</div>
+
+                {/* Phase cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+                  {TIMELINE_PHASES.map((ph, i) => (
+                    <div key={i} style={{ background: "#fafafa", border: `2px solid ${ph.color}30`, padding: "12px" }}>
+                      <div style={{ fontSize: 8, fontWeight: 700, color: ph.color, textTransform: "uppercase",
+                        letterSpacing: "0.1em", marginBottom: 3 }}>
+                        {ph.years}
+                      </div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#111", marginBottom: 6 }}>{ph.label}</div>
+                      <div style={{ fontSize: 8, color: "#555", lineHeight: 1.7 }}>{ph.desc}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
 
         </div>
