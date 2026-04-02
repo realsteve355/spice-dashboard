@@ -8,6 +8,7 @@ import CrisisScenarios from "./pages/CrisisScenarios";
 import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 import Config from "./pages/Config";
+import Mars from "./pages/Mars.jsx";
 
 function Nav() {
   const loc = useLocation();
@@ -45,6 +46,9 @@ function Nav() {
         <NavLink to="/coin" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Coin
         </NavLink>
+        <NavLink to="/mars" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Mars Colony
+        </NavLink>
         <a href="/spice-methodology.html" style={S.navLink}>
           Methodology
         </a>
@@ -71,6 +75,7 @@ export default function App() {
           <Route path="/apocalypse" element={<ApocalypseIndicator />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/config" element={<Config />} />
+          <Route path="/mars" element={<Mars />} />
         </Routes>
       </div>
     </BrowserRouter>
