@@ -145,6 +145,64 @@
   .md-grid-2 { grid-template-columns: 1fr; }
 }
 
+/* ── Three column grid ── */
+.md-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .md-grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .md-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ── Services bar chart ── */
+.md-services {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.md-svc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+}
+
+.md-svc-name {
+  color: #8899bb;
+  min-width: 160px;
+  letter-spacing: 0.03em;
+}
+
+.md-svc-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: #141c2e;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.md-svc-bar {
+  height: 100%;
+  background: #4488ff;
+  border-radius: 1px;
+  transition: width 0.3s ease;
+}
+
+.md-svc-val {
+  color: #4a5878;
+  min-width: 50px;
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
 /* ── Chart container ── */
 .md-chart {
   width: 100%;
@@ -237,7 +295,53 @@
   display: block;
 }
 
-/* ── Year slider ── */
+/* ── Year slider (layout-level bar) ── */
+.mars-year-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 28px;
+  background: #080c16;
+  border-bottom: 1px solid #1e2a42;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.mars-year-label {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #4a5878;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mars-year-num {
+  font-size: 22px;
+  color: #c8a96e;
+  min-width: 44px;
+  line-height: 1;
+}
+
+.mars-year-bar input[type=range] {
+  flex: 1;
+  accent-color: #c8a96e;
+  max-width: 360px;
+}
+
+.mars-year-hint {
+  font-size: 9px;
+  color: #2a3a5c;
+  letter-spacing: 0.1em;
+}
+
+.mars-year-txns {
+  margin-left: auto;
+  font-size: 9px;
+  color: #4a5878;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+/* ── Old inline year control (Overview) ── */
 .md-year-control {
   display: flex;
   align-items: center;

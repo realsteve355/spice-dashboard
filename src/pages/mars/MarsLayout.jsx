@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import './MarsLayout.css'
 import { useColonyData } from '../../hooks/useColonyData.js'
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useState } from 'react'
 
 export const ColonyContext = createContext(null)
 export const useColony = () => useContext(ColonyContext)
@@ -15,8 +15,17 @@ const NAV_ITEMS = [
   { to: '/mars/health',     label: 'Health Check'},
 ]
 
+function fmt(n) {
+  if (n == null) return '—'
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M'
+  if (n >= 1000)    return (n/1000).toFixed(1) + 'K'
+  return Math.round(n).toLocaleString()
+}
+
 export default function MarsLayout() {
   const { data, loading, error } = useColonyData()
+  const [year, setYear] = useState(200)
+  const maxYear = (data.annual_summaries?.length) || 200
 
   return (
     <div className="mars-dash">
@@ -34,6 +43,20 @@ export default function MarsLayout() {
         ))}
       </nav>
 
+      {!loading && !error && (
+        <div className="mars-year-bar">
+          <span className="mars-year-label">VIEWING YEAR</span>
+          <span className="mars-year-num">{year}</span>
+          <input
+            type="range" min={1} max={maxYear}
+            value={year}
+            onChange={e => setYear(+e.target.value)}
+          />
+          <span className="mars-year-hint">drag to explore</span>
+          <span className="mars-year-txns">{fmt(data.meta?.total_transactions)} TRANSACTIONS</span>
+        </div>
+      )}
+
       <div className="mars-dash-content">
         {loading && (
           <div className="mars-loading">
@@ -49,7 +72,7 @@ export default function MarsLayout() {
           </div>
         )}
         {!loading && !error && (
-          <ColonyContext.Provider value={data}>
+          <ColonyContext.Provider value={{ ...data, year, setYear }}>
             <Outlet />
           </ColonyContext.Provider>
         )}
