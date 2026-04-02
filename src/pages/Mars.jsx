@@ -62,7 +62,7 @@ export default function Mars() {
         <div className="mars-dome-wrap">
           <img
             className="mars-dome-img"
-            src="/mars-dome.jpg"
+            src="/mars-dome.png"
             alt="Mars Colony Dome Alpha — interior cross-section view"
             onError={e => {
               e.target.style.display = 'none'
