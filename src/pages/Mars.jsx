@@ -1,6 +1,7 @@
 import './Mars.css'
+import { Link } from 'react-router-dom'
 
-const COLONY_DASHBOARD_URL = 'http://localhost:5000'
+const COLONY_DASHBOARD_URL = '/mars/dashboard'
 
 const PROOF_POINTS = [
   'Population stabilises using an Earth-realistic age distribution — births replace deaths across all age groups over 200 simulated years.',
@@ -140,16 +141,11 @@ export default function Mars() {
         <div className="mars-section-label">Explore the simulation</div>
         <div className="mars-cta">
           <div>
-            <a
-              className="mars-btn-primary"
-              href={COLONY_DASHBOARD_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Launch Colony Dashboard →
-            </a>
+            <Link className="mars-btn-primary" to={COLONY_DASHBOARD_URL}>
+              Open Colony Dashboard →
+            </Link>
             <div className="mars-btn-note">
-              Running locally · mars.zpc.finance coming soon
+              200-year simulation · live data
             </div>
           </div>
           <div>

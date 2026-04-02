@@ -1,0 +1,374 @@
+/* MarsLayout.css — dashboard shell styles */
+
+.mars-dash {
+  min-height: 100vh;
+  background: #0a0e1a;
+  color: #e8eaf0;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* ── Sub-nav ── */
+.mars-subnav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #1e2a42;
+  background: #0a0e1a;
+  position: sticky;
+  top: 57px;   /* height of the SPICE main nav */
+  z-index: 50;
+  padding: 0 28px;
+  overflow-x: auto;
+}
+
+.mars-subnav-link {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4a5878;
+  text-decoration: none;
+  padding: 12px 18px;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.mars-subnav-link:hover {
+  color: #8899bb;
+}
+
+.mars-subnav-link.active {
+  color: #c8a96e;
+  border-bottom: 2px solid #c8a96e;
+}
+
+/* ── Content area ── */
+.mars-dash-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 28px 80px;
+}
+
+/* ── Loading / error states ── */
+.mars-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  font-size: 11px;
+  color: #4a5878;
+  letter-spacing: 0.15em;
+}
+
+.mars-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  font-size: 11px;
+  color: #ff4d6a;
+  letter-spacing: 0.1em;
+  text-align: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mars-error-hint {
+  font-size: 10px;
+  color: #4a5878;
+}
+
+/* ── Shared panel ── */
+.md-panel {
+  background: #0f1520;
+  border: 1px solid #1e2a42;
+  border-radius: 2px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+.md-panel-title {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #4a5878;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #141c2e;
+}
+
+/* ── Shared stat row ── */
+.md-stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.md-stat {
+  background: #0f1520;
+  border: 1px solid #1e2a42;
+  border-radius: 2px;
+  padding: 14px 16px;
+}
+
+.md-stat-label {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #4a5878;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.md-stat-value {
+  font-size: 22px;
+  color: #e8eaf0;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.md-stat-sub {
+  font-size: 9px;
+  color: #4a5878;
+  letter-spacing: 0.08em;
+}
+
+/* ── Two column grid ── */
+.md-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 700px) {
+  .md-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ── Chart container ── */
+.md-chart {
+  width: 100%;
+  height: 180px;
+}
+
+/* ── Table ── */
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.md-table th {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #4a5878;
+  text-transform: uppercase;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid #1e2a42;
+}
+
+.md-table td {
+  padding: 8px 8px;
+  border-bottom: 1px solid #141c2e;
+  color: #8899bb;
+}
+
+.md-table tr:last-child td {
+  border-bottom: none;
+}
+
+.md-table tr:hover td {
+  background: #141c2e;
+  cursor: pointer;
+}
+
+.md-table .val {
+  color: #e8eaf0;
+  text-align: right;
+}
+
+.md-table .gold { color: #c8a96e; }
+.md-table .green { color: #3dffa0; }
+.md-table .red { color: #ff4d6a; }
+.md-table .amber { color: #e8a020; }
+
+/* ── Verdict badges ── */
+.md-verdict {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+
+.md-verdict.green {
+  background: rgba(61,255,160,0.1);
+  color: #3dffa0;
+  border: 1px solid rgba(61,255,160,0.25);
+}
+
+.md-verdict.amber {
+  background: rgba(232,160,32,0.1);
+  color: #e8a020;
+  border: 1px solid rgba(232,160,32,0.25);
+}
+
+.md-verdict.red {
+  background: rgba(255,77,106,0.1);
+  color: #ff4d6a;
+  border: 1px solid rgba(255,77,106,0.25);
+}
+
+/* ── Section label ── */
+.md-label {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: #4a5878;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #1e2a42;
+  padding-bottom: 8px;
+}
+
+/* ── Sparkline ── */
+.md-spark svg {
+  display: block;
+}
+
+/* ── Year slider ── */
+.md-year-control {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  font-size: 10px;
+  color: #4a5878;
+}
+
+.md-year-control input[type=range] {
+  flex: 1;
+  accent-color: #c8a96e;
+}
+
+.md-year-value {
+  font-size: 14px;
+  color: #c8a96e;
+  min-width: 50px;
+}
+
+/* ── Health check cards ── */
+.md-health-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .md-health-grid { grid-template-columns: 1fr; }
+}
+
+.md-health-card {
+  background: #0f1520;
+  border: 1px solid #1e2a42;
+  border-left: 3px solid #1e2a42;
+  border-radius: 2px;
+  padding: 14px 16px;
+}
+
+.md-health-card.green { border-left-color: #3dffa0; }
+.md-health-card.amber { border-left-color: #e8a020; }
+.md-health-card.red   { border-left-color: #ff4d6a; }
+
+.md-health-name {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #4a5878;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.md-health-metric {
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+.md-health-metric.green { color: #3dffa0; }
+.md-health-metric.amber { color: #e8a020; }
+.md-health-metric.red   { color: #ff4d6a; }
+
+.md-health-interp {
+  font-size: 10px;
+  color: #4a5878;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+/* ── Life story ── */
+.md-story-citizen {
+  font-size: 14px;
+  color: #c8a96e;
+  margin-bottom: 4px;
+}
+
+.md-story-meta {
+  font-size: 10px;
+  color: #4a5878;
+  margin-bottom: 16px;
+}
+
+.md-event-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #141c2e;
+  font-size: 10px;
+}
+
+.md-event-year {
+  color: #c8a96e;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.md-event-text {
+  color: #8899bb;
+}
+
+/* ── Citizen list ── */
+.md-citizen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.md-citizen-card {
+  background: #0f1520;
+  border: 1px solid #1e2a42;
+  border-radius: 2px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.md-citizen-card:hover {
+  border-color: #c8a96e;
+}
+
+.md-citizen-name {
+  font-size: 12px;
+  color: #e8eaf0;
+  margin-bottom: 4px;
+}
+
+.md-citizen-prof {
+  font-size: 10px;
+  color: #4a5878;
+  margin-bottom: 8px;
+}
+
+.md-citizen-v {
+  font-size: 11px;
+  color: #c8a96e;
+}

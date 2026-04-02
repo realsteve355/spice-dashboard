@@ -9,6 +9,13 @@ import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 import Config from "./pages/Config";
 import Mars from "./pages/Mars.jsx";
+import MarsLayout   from './pages/mars/MarsLayout.jsx'
+import MarsOverview from './pages/mars/MarsOverview.jsx'
+import MarsTimeline from './pages/mars/MarsTimeline.jsx'
+import MarsCompanies from './pages/mars/MarsCompanies.jsx'
+import MarsCitizens from './pages/mars/MarsCitizens.jsx'
+import MarsMCC      from './pages/mars/MarsMCC.jsx'
+import MarsHealth   from './pages/mars/MarsHealth.jsx'
 
 function Nav() {
   const loc = useLocation();
@@ -76,6 +83,14 @@ export default function App() {
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/config" element={<Config />} />
           <Route path="/mars" element={<Mars />} />
+          <Route path="/mars" element={<MarsLayout />}>
+            <Route path="dashboard"  element={<MarsOverview />} />
+            <Route path="timeline"   element={<MarsTimeline />} />
+            <Route path="companies"  element={<MarsCompanies />} />
+            <Route path="citizens"   element={<MarsCitizens />} />
+            <Route path="mcc"        element={<MarsMCC />} />
+            <Route path="health"     element={<MarsHealth />} />
+          </Route>
         </Routes>
       </div>
     </BrowserRouter>
