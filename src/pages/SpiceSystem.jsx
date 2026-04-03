@@ -12,7 +12,6 @@ const T2   = "#8899bb";
 const T3   = "#4a5878";
 const GOLD = "#c8a96e";
 
-// ── Colour palette ────────────────────────────────────────────────────────────
 const C = {
   s:       "#ef4444",   // S token — red (volatile, transient)
   v:       "#c8a96e",   // V token — gold (persistent value)
@@ -45,13 +44,13 @@ function Box({ x, y, w, h, color, label, sub, icon }) {
   );
 }
 
-function Token({ cx, cy, color, label, size = 22 }) {
+function Token({ cx, cy, color, label, size = 26 }) {
   return (
     <g>
       <circle cx={cx} cy={cy} r={size} fill={`${color}18`}
         stroke={color} strokeWidth={1.5} />
       <text x={cx} y={cy + 4} textAnchor="middle"
-        fontSize={10} fontWeight={700} fill={color} fontFamily={F}>{label}</text>
+        fontSize={12} fontWeight={700} fill={color} fontFamily={F}>{label}</text>
     </g>
   );
 }
@@ -60,7 +59,7 @@ function Arrow({ x1, y1, x2, y2, color = C.arrow, label, dashed }) {
   const dx = x2 - x1, dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);
   const nx = dx / len, ny = dy / len;
-  const ax = x2 - nx * 8, ay = y2 - ny * 8;
+  const ax = x2 - nx * 9, ay = y2 - ny * 9;
   const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
   return (
     <g>
@@ -78,26 +77,9 @@ function Arrow({ x1, y1, x2, y2, color = C.arrow, label, dashed }) {
   );
 }
 
-function CurvedArrow({ d, color = C.arrow, label, lx, ly, dashed }) {
-  return (
-    <g>
-      <path d={d} fill="none" stroke={color} strokeWidth={1.2}
-        strokeDasharray={dashed ? "4 3" : undefined}
-        markerEnd={`url(#ah-${color.replace("#", "")})`} />
-      {label && (
-        <text x={lx} y={ly} textAnchor="middle" fontSize={7.5} fill={T2} fontFamily={F}>
-          {label}
-        </text>
-      )}
-    </g>
-  );
-}
-
-// ── Legend item ───────────────────────────────────────────────────────────────
-
 function LegendItem({ color, label, sub }) {
   return (
-    <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:10 }}>
+    <div style={{ display:"flex", alignItems:"flex-start", gap:8, marginBottom:12 }}>
       <div style={{ width:10, height:10, borderRadius:"50%",
         background:color, flexShrink:0, marginTop:2 }} />
       <div>
@@ -110,7 +92,7 @@ function LegendItem({ color, label, sub }) {
 
 // ── Main diagram ──────────────────────────────────────────────────────────────
 
-const W = 720, H = 460;
+const W = 720, H = 420;
 
 export default function SpiceSystem() {
   return (
@@ -138,8 +120,7 @@ export default function SpiceSystem() {
           <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="auto"
             style={{ overflow:"visible", display:"block" }}>
             <defs>
-              {/* Arrow markers for each colour */}
-              {[C.s, C.v, C.mcc, C.citizen, C.company, C.arrow, T3].map(col => (
+              {[C.s, C.v, C.mcc, C.citizen, C.company, C.arrow, "#dc2626"].map(col => (
                 <marker key={col}
                   id={`ah-${col.replace("#","")}`}
                   markerWidth={6} markerHeight={6}
@@ -150,139 +131,95 @@ export default function SpiceSystem() {
             </defs>
 
             {/* ── Background zones ── */}
-            {/* Government / Fiscal zone */}
-            <rect x={8} y={8} width={210} height={H - 16} rx={4}
+            <rect x={8} y={8} width={196} height={H - 16} rx={4}
               fill="rgba(61,255,160,0.03)" stroke={C.citizen} strokeWidth={0.5} strokeDasharray="4 4" />
             <text x={20} y={24} fontSize={7.5} fill={C.citizen} fontFamily={F}
-              letterSpacing="0.2em" textTransform="uppercase">FISCAL ZONE</text>
+              letterSpacing="0.2em">FISCAL ZONE</text>
 
-            {/* Protocol / MCC zone */}
-            <rect x={252} y={8} width={216} height={H - 16} rx={4}
+            <rect x={232} y={8} width={256} height={H - 16} rx={4}
               fill="rgba(68,136,255,0.03)" stroke={C.mcc} strokeWidth={0.5} strokeDasharray="4 4" />
-            <text x={264} y={24} fontSize={7.5} fill={C.mcc} fontFamily={F}
+            <text x={244} y={24} fontSize={7.5} fill={C.mcc} fontFamily={F}
               letterSpacing="0.2em">PROTOCOL ZONE</text>
 
-            {/* Market / Company zone */}
-            <rect x={502} y={8} width={210} height={H - 16} rx={4}
+            <rect x={508} y={8} width={204} height={H - 16} rx={4}
               fill="rgba(153,102,255,0.03)" stroke={C.company} strokeWidth={0.5} strokeDasharray="4 4" />
-            <text x={514} y={24} fontSize={7.5} fill={C.company} fontFamily={F}
+            <text x={520} y={24} fontSize={7.5} fill={C.company} fontFamily={F}
               letterSpacing="0.2em">MARKET ZONE</text>
 
-            {/* ── Entities ── */}
-
-            {/* Fiscal Citizen A (individual holder) */}
-            <Box x={24} y={50} w={86} h={64} color={C.citizen}
+            {/* ── Fiscal Citizens ── */}
+            <Box x={20} y={50} w={82} h={60} color={C.citizen}
+              icon="◉" label="CITIZEN" sub="individual" />
+            <Box x={114} y={50} w={82} h={60} color={C.citizen}
               icon="◉" label="CITIZEN" sub="individual" />
 
-            {/* Fiscal Citizen B */}
-            <Box x={118} y={50} w={86} h={64} color={C.citizen}
-              icon="◉" label="CITIZEN" sub="individual" />
+            {/* Citizens → MCC (tax / mint premium) */}
+            <Arrow x1={80} y1={92} x2={280} y2={130} color={C.citizen} label="ZPC tax" />
+            <Arrow x1={156} y1={92} x2={300} y2={130} color={C.citizen} />
 
-            {/* Tax / revenue flow label */}
-            <text x={113} y={145} textAnchor="middle" fontSize={7.5}
-              fill={T3} fontFamily={F}>pays tax / mint premium</text>
-
-            {/* Citizens → MCC */}
-            <Arrow x1={86} y1={98} x2={290} y2={130} color={C.citizen}
-              label="ZPC tax" />
-            <Arrow x1={162} y1={98} x2={310} y2={130} color={C.citizen} />
-
-            {/* MCC Treasury */}
-            <Box x={264} y={140} w={184} h={72} color={C.mcc}
+            {/* ── MCC Treasury ── */}
+            <Box x={244} y={140} w={192} h={68} color={C.mcc}
               icon="▣" label="MCC TREASURY" sub="Monetary Control Committee" />
 
-            {/* V Token (persistent) — top right of MCC */}
-            <Token cx={360} cy={268} color={C.v} label="V" />
-            <text x={360} y={300} textAnchor="middle" fontSize={7.5}
-              fill={C.v} fontFamily={F}>PERSISTENT</text>
-            <text x={360} y={310} textAnchor="middle" fontSize={7}
-              fill={T3} fontFamily={F}>accrues yield</text>
-
-            {/* MCC → V token (issues/backs) */}
-            <Arrow x1={360} y1={212} x2={360} y2={246} color={C.v}
-              label="backs" />
-
-            {/* S Token (volatile) — left area */}
-            <Token cx={113} cy={260} color={C.s} label="S" />
-            <text x={113} y={292} textAnchor="middle" fontSize={7.5}
+            {/* ── S Token ── */}
+            <Token cx={108} cy={260} color={C.s} label="S" />
+            <text x={108} y={296} textAnchor="middle" fontSize={8}
               fill={C.s} fontFamily={F}>TRANSIENT</text>
-            <text x={113} y={302} textAnchor="middle" fontSize={7}
+            <text x={108} y={307} textAnchor="middle" fontSize={7}
               fill={T3} fontFamily={F}>minted / burned</text>
 
-            {/* S mint: MCC → S */}
-            <Arrow x1={270} y1={200} x2={145} y2={248} color={C.s}
-              label="mints" />
+            {/* MCC mints S */}
+            <Arrow x1={252} y1={192} x2={138} y2={248} color={C.s} label="mints" />
 
-            {/* S burn: S → MCC */}
-            <path d="M 86 268 Q 60 320 60 370 Q 60 400 200 390 Q 280 385 278 340 Q 276 310 276 295"
+            {/* S burned → MCC */}
+            <path d="M 82 268 Q 60 320 60 360 Q 60 390 200 382 Q 270 376 270 340 Q 270 310 268 290"
               fill="none" stroke={C.s} strokeWidth={1.2} strokeDasharray="4 3"
               markerEnd={`url(#ah-${C.s.replace("#","")})`} />
-            <text x={100} y={380} textAnchor="middle" fontSize={7.5}
+            <text x={95} y={375} textAnchor="middle" fontSize={7.5}
               fill={C.s} fontFamily={F}>burned / redeemed</text>
 
             {/* Citizens hold S */}
-            <Arrow x1={113} y1={114} x2={113} y2={238} color={C.s}
-              label="hold S" />
+            <Arrow x1={108} y1={110} x2={108} y2={234} color={C.s} label="hold S" />
 
-            {/* Company (institutional) */}
-            <Box x={516} y={50} w={182} h={64} color={C.company}
-              icon="⬡" label="COMPANY / INSTITUTION" sub="ZPC participant" />
+            {/* ── V Token ── */}
+            <Token cx={360} cy={278} color={C.v} label="V" />
+            <text x={360} y={314} textAnchor="middle" fontSize={8}
+              fill={C.v} fontFamily={F}>PERSISTENT</text>
+            <text x={360} y={325} textAnchor="middle" fontSize={7}
+              fill={T3} fontFamily={F}>accrues yield</text>
 
-            {/* Company ↔ MCC */}
-            <Arrow x1={448} y1={168} x2={516} y2={95} color={C.company}
-              label="V yield" />
-            <Arrow x1={516} y1={115} x2={456} y2={175} color={C.mcc}
-              label="stake ZPC" dashed />
+            {/* MCC backs V */}
+            <Arrow x1={360} y1={208} x2={360} y2={252} color={C.v} label="backs" />
+
+            {/* ── Company ── */}
+            <Box x={520} y={50} w={176} h={64} color={C.company}
+              icon="⬡" label="COMPANY" sub="ZPC participant" />
+
+            {/* Company stakes ZPC → MCC */}
+            <Arrow x1={520} y1={108} x2={436} y2={168} color={C.mcc} label="stake ZPC" dashed />
+
+            {/* MCC → Company (V yield) */}
+            <Arrow x1={436} y1={158} x2={520} y2={95} color={C.v} label="V yield" />
 
             {/* Company holds V */}
-            <Arrow x1={607} y1={114} x2={420} y2={255} color={C.v}
-              label="hold V" />
+            <Arrow x1={608} y1={114} x2={408} y2={265} color={C.v} label="hold V" />
 
-            {/* V token → Company yield */}
-            <path d="M 382 268 Q 460 268 520 200 Q 570 150 607 128"
-              fill="none" stroke={C.v} strokeWidth={1.2}
-              markerEnd={`url(#ah-${C.v.replace("#","")})`} />
-            <text x={500} y={252} fontSize={7.5} fill={C.v} fontFamily={F}>yield distributions</text>
-
-            {/* Crisis event → S spike */}
-            <rect x={24} y={340} width={180} height={54} rx={3}
+            {/* ── Crisis box ── */}
+            <rect x={20} y={334} width={176} height={58} rx={3}
               fill="rgba(220,38,38,0.08)" stroke="#dc2626" strokeWidth={0.8} strokeDasharray="3 3" />
-            <text x={114} y={360} textAnchor="middle" fontSize={8}
+            <text x={108} y={354} textAnchor="middle" fontSize={8}
               fontWeight={700} fill="#dc2626" fontFamily={F} letterSpacing="0.1em">
-              ◈ CRISIS / COLLISION
+              ◈ COLLISION EVENT
             </text>
-            <text x={114} y={374} textAnchor="middle" fontSize={7.5}
+            <text x={108} y={368} textAnchor="middle" fontSize={7.5}
               fill={T2} fontFamily={F}>debt spiral · AI displacement</text>
-            <text x={114} y={385} textAnchor="middle" fontSize={7.5}
-              fill={T2} fontFamily={F}>crypto capital flight</text>
+            <text x={108} y={380} textAnchor="middle" fontSize={7.5}
+              fill={T2} fontFamily={F}>triggers S demand spike</text>
 
-            {/* Crisis → S demand spike */}
-            <Arrow x1={150} y1={340} x2={120} y2={300} color="#dc2626"
-              label="↑ S demand" />
+            {/* Crisis → S demand */}
+            <Arrow x1={140} y1={334} x2={122} y2={300} color="#dc2626" label="↑ S demand" />
 
             {/* Crisis → V safe haven */}
-            <Arrow x1={192} y1={358} x2={330} y2={300} color={C.v}
-              label="↑ V safe-haven" />
-
-            {/* Company response box */}
-            <rect x={516} y={320} width={182} height={90} rx={3}
-              fill="rgba(153,102,255,0.06)" stroke={C.company} strokeWidth={0.8} />
-            <text x={607} y={340} textAnchor="middle" fontSize={8}
-              fontWeight={700} fill={C.company} fontFamily={F} letterSpacing="0.1em">PORTFOLIO</text>
-            <text x={607} y={354} textAnchor="middle" fontSize={7.5}
-              fill={T2} fontFamily={F}>BTC  ·  PAXG (gold)</text>
-            <text x={607} y={366} textAnchor="middle" fontSize={7.5}
-              fill={T2} fontFamily={F}>synthetic bond shorts</text>
-            <text x={607} y={382} textAnchor="middle" fontSize={7}
-              fill={T3} fontFamily={F}>inversely correlated</text>
-            <text x={607} y={393} textAnchor="middle" fontSize={7}
-              fill={T3} fontFamily={F}>with fiat system stability</text>
-
-            {/* Company → Portfolio */}
-            <Arrow x1={607} y1={114} x2={607} y2={320} color={C.company} />
-
-            {/* V token connected to portfolio */}
-            <Arrow x1={382} y1={290} x2={516} y2={355} color={C.v} dashed />
+            <Arrow x1={184} y1={356} x2={328} y2={300} color={C.v} label="↑ V safe-haven" />
 
           </svg>
         </div>
@@ -290,7 +227,6 @@ export default function SpiceSystem() {
         {/* Legend + Notes */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
 
-          {/* Legend */}
           <div style={{ background:BG2, border:`1px solid ${BD}`,
             borderRadius:3, padding:"20px 20px" }}>
             <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em",
@@ -301,16 +237,15 @@ export default function SpiceSystem() {
             <LegendItem color={C.s} label="S Token (SPICE)"
               sub="Minted when crisis stress rises, burned on redemption. Fungible, liquid, volatile." />
             <LegendItem color={C.v} label="V Token (Vault)"
-              sub="Persistent yield-bearing position. Long-term hedge; not freely circulated." />
+              sub="Persistent yield-bearing position. Long-term stake; accrues yield from ZPC tax flows." />
             <LegendItem color={C.mcc} label="MCC Treasury"
               sub="Monetary Control Committee. Issues tokens, manages reserves, distributes yield." />
             <LegendItem color={C.citizen} label="Fiscal Citizen"
-              sub="Individual participant. Pays ZPC tax, holds S tokens, benefits from V yield." />
+              sub="Individual participant. Pays ZPC tax, holds S tokens, receives V yield distributions." />
             <LegendItem color={C.company} label="Company / Institution"
-              sub="Institutional actor. Stakes ZPC, holds V, manages BTC/PAXG/short portfolio." />
+              sub="Institutional actor. Stakes ZPC, holds V tokens, receives yield from MCC." />
           </div>
 
-          {/* Key mechanics */}
           <div style={{ background:BG2, border:`1px solid ${BD}`,
             borderRadius:3, padding:"20px 20px" }}>
             <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em",
@@ -320,13 +255,13 @@ export default function SpiceSystem() {
             </div>
             {[
               { head:"S Token lifecycle",
-                body:"Minted by the MCC in response to SPICE-level stress indicators. Circulates among citizens as a crisis hedge. Burned (and redeemed for underlying assets) when the crisis resolves or the holder exits." },
+                body:"Minted by the MCC in response to SPICE-level stress indicators. Circulates among citizens as a crisis hedge. Burned (and redeemed for underlying value) when the crisis resolves or the holder exits." },
               { head:"V Token persistence",
-                body:"Represents a long-duration stake in the protocol treasury. Accrues yield from ZPC taxes and MCC operations. Cannot be freely burned — designed to persist through the crisis cycle." },
+                body:"Represents a long-duration stake in the protocol treasury. Accrues yield from ZPC taxes and MCC operations. Cannot be freely burned — designed to persist through the full crisis cycle." },
               { head:"MCC role",
-                body:"The Monetary Control Committee manages minting, yield distribution, and reserves. Analogous to a central bank for the protocol economy. Its mandate: preserve purchasing power through the fiat debt spiral." },
+                body:"The Monetary Control Committee manages minting, yield distribution, and reserves. Its mandate: preserve purchasing power through the fiat debt spiral. Analogous to a central bank for the protocol economy." },
               { head:"Collision response",
-                body:"When SPICE indicators reach RED/COLLISION threshold, S token demand spikes, V becomes the primary safe-haven, and portfolio assets (BTC, PAXG, bond shorts) appreciate inversely to fiat system stress." },
+                body:"When SPICE indicators reach COLLISION threshold, S token demand spikes as citizens seek the crisis hedge. V token becomes the primary store of value for institutional participants." },
             ].map(({ head, body }) => (
               <div key={head} style={{ marginBottom:14 }}>
                 <div style={{ fontSize:9, fontWeight:700, color:GOLD,
