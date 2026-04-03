@@ -46,6 +46,9 @@ function Nav() {
         <NavLink to="/earth" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Earth
         </NavLink>
+        <NavLink to="/spice-system" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          System
+        </NavLink>
         <NavLink to="/coin" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Coin
         </NavLink>
