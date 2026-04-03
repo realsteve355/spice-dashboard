@@ -19,6 +19,16 @@ const ERC20_ABI = [
   "function faucetOne() external",
 ];
 
+// Dark palette
+const BG0  = "#0a0e1a";
+const BG1  = "#080c16";
+const BG2  = "#0f1520";
+const BD   = "#1e2a42";
+const T1   = "#e8eaf0";
+const T2   = "#8899bb";
+const T3   = "#4a5878";
+const GOLD = "#c8a96e";
+
 const fmt8 = (v, dec = 2) => {
   if (!v && v !== 0) return "—";
   return (Number(v) / 1e8).toLocaleString("en-US", { minimumFractionDigits: dec, maximumFractionDigits: dec });
@@ -211,7 +221,7 @@ export default function Dashboard() {
                   <div key={p.label} style={S.posRow}>
                     <div style={S.posLabel}><span style={{ ...S.posDot, background: p.color }} />{p.label}</div>
                     <div style={S.posBar}><div style={{ ...S.posBarFill, width: `${pct}%`, background: p.color }} /></div>
-                    <div style={S.posValues}><span>{fmtUSD(p.value)}</span><span style={{ color: "#666" }}>{pct.toFixed(1)}%</span></div>
+                    <div style={S.posValues}><span>{fmtUSD(p.value)}</span><span style={{ color: T2 }}>{pct.toFixed(1)}%</span></div>
                   </div>
                 );
               }) : <p style={S.muted}>Loading…</p>}
@@ -294,7 +304,7 @@ function KPI({ label, value, accent }) {
   return (
     <div style={S.kpi}>
       <span style={S.kpiLabel}>{label}</span>
-      <span style={{ ...S.kpiValue, color: accent ? "#B8860B" : "#000000" }}>{value}</span>
+      <span style={{ ...S.kpiValue, color: accent ? GOLD : T1 }}>{value}</span>
     </div>
   );
 }
@@ -302,7 +312,7 @@ function StatRow({ label, value, accent }) {
   return (
     <div style={S.statRow}>
       <span style={S.statLabel}>{label}</span>
-      <span style={{ ...S.statValue, color: accent ? "#B8860B" : "#000000" }}>{value}</span>
+      <span style={{ ...S.statValue, color: accent ? GOLD : T1 }}>{value}</span>
     </div>
   );
 }
@@ -321,225 +331,225 @@ function InputGroup({ label, value, onChange, unit, hint, mono }) {
 }
 function TxFeedback({ state, msg }) {
   if (state === "idle") return null;
-  const color = state === "success" ? "#2E8B7A" : state === "error" ? "#CC4444" : "#B8860B";
+  const color = state === "success" ? "#2E8B7A" : state === "error" ? "#CC4444" : GOLD;
   return <div style={{ ...S.txFeedback, borderColor: color, color }}>{msg}</div>;
 }
 
 const S = {
-  page: { position: "relative", zIndex: 1, background: "#FFFFFF" },
-  testnetBanner: { 
-    background: "#F8F8F8", 
-    color: "#666666", 
-    padding: "8px 32px", 
-    fontSize: 10, 
-    letterSpacing: "0.12em", 
-    textAlign: "center", 
-    borderBottom: "1px solid #E0E0E0",
-    fontWeight: 600
+  page: { position: "relative", zIndex: 1, background: BG0, color: T1, fontFamily: "'IBM Plex Mono', monospace" },
+  testnetBanner: {
+    background: BG2,
+    color: T2,
+    padding: "8px 32px",
+    fontSize: 10,
+    letterSpacing: "0.12em",
+    textAlign: "center",
+    borderBottom: `1px solid ${BD}`,
+    fontWeight: 600,
   },
-  walletBar: { 
-    display: "flex", 
-    justifyContent: "flex-end", 
-    padding: "12px 32px", 
-    borderBottom: "2px solid #E0E0E0",
-    background: "#FFFFFF"
+  walletBar: {
+    display: "flex",
+    justifyContent: "flex-end",
+    padding: "12px 32px",
+    borderBottom: `2px solid ${BD}`,
+    background: BG1,
   },
   walletRow: { display: "flex", alignItems: "center", gap: 8 },
-  walletPill: { 
-    display: "flex", 
-    alignItems: "center", 
-    gap: 8, 
-    padding: "6px 12px", 
-    border: "1px solid #CCCCCC", 
-    fontSize: 12, 
-    color: "#333333", 
-    background: "#F8F8F8" 
+  walletPill: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "6px 12px",
+    border: `1px solid ${BD}`,
+    fontSize: 12,
+    color: T2,
+    background: BG2,
   },
   dot: { width: 6, height: 6, borderRadius: "50%", background: "#2E8B7A" },
-  disconnectBtn: { 
-    background: "none", 
-    border: "1px solid #CCCCCC", 
-    color: "#666666", 
-    padding: "6px 12px", 
-    fontSize: 11, 
-    cursor: "pointer", 
-    fontFamily: "inherit" 
+  disconnectBtn: {
+    background: "none",
+    border: `1px solid ${BD}`,
+    color: T2,
+    padding: "6px 12px",
+    fontSize: 11,
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
-  connectBtn: { 
-    padding: "8px 20px", 
-    background: "#B8860B", 
-    border: "none", 
-    color: "#FFFFFF", 
-    fontSize: 12, 
-    fontWeight: 700, 
-    cursor: "pointer", 
-    letterSpacing: "0.08em", 
-    fontFamily: "inherit" 
+  connectBtn: {
+    padding: "8px 20px",
+    background: GOLD,
+    border: "none",
+    color: BG0,
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    letterSpacing: "0.08em",
+    fontFamily: "inherit",
   },
   inner: { maxWidth: 1100, margin: "0 auto", padding: "32px 24px" },
-  kpiStrip: { 
-    display: "flex", 
-    gap: 1, 
-    marginBottom: 32, 
-    background: "#F8F8F8", 
-    border: "2px solid #E0E0E0" 
+  kpiStrip: {
+    display: "flex",
+    gap: 1,
+    marginBottom: 32,
+    background: BG1,
+    border: `2px solid ${BD}`,
   },
-  kpi: { 
-    flex: 1, 
-    display: "flex", 
-    flexDirection: "column", 
-    gap: 4, 
-    padding: "16px 20px", 
-    borderRight: "1px solid #E0E0E0" 
+  kpi: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    padding: "16px 20px",
+    borderRight: `1px solid ${BD}`,
   },
-  kpiLabel: { 
-    fontSize: 9, 
-    color: "#666666", 
-    letterSpacing: "0.12em", 
+  kpiLabel: {
+    fontSize: 9,
+    color: T2,
+    letterSpacing: "0.12em",
     textTransform: "uppercase",
-    fontWeight: 600
+    fontWeight: 600,
   },
   kpiValue: { fontSize: 18, fontWeight: 700 },
-  tabs: { 
-    display: "flex", 
-    gap: 1, 
-    marginBottom: 24, 
-    borderBottom: "2px solid #E0E0E0" 
+  tabs: {
+    display: "flex",
+    gap: 1,
+    marginBottom: 24,
+    borderBottom: `2px solid ${BD}`,
   },
-  tab: { 
-    padding: "10px 20px", 
-    background: "none", 
-    border: "none", 
-    color: "#666666", 
-    fontSize: 11, 
-    letterSpacing: "0.1em", 
-    cursor: "pointer", 
-    fontFamily: "inherit", 
-    textTransform: "uppercase", 
-    borderBottom: "2px solid transparent", 
+  tab: {
+    padding: "10px 20px",
+    background: "none",
+    border: "none",
+    color: T2,
+    fontSize: 11,
+    letterSpacing: "0.1em",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    textTransform: "uppercase",
+    borderBottom: "2px solid transparent",
     marginBottom: -2,
-    fontWeight: 600
+    fontWeight: 600,
   },
-  tabActive: { color: "#B8860B", borderBottom: "2px solid #B8860B" },
+  tabActive: { color: GOLD, borderBottom: `2px solid ${GOLD}` },
   twoCol: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 },
-  card: { 
-    background: "#FFFFFF", 
-    border: "2px solid #E0E0E0", 
-    padding: "24px", 
-    marginBottom: 16 
+  card: {
+    background: BG2,
+    border: `2px solid ${BD}`,
+    padding: "24px",
+    marginBottom: 16,
   },
-  narrowCard: { 
-    background: "#FFFFFF", 
-    border: "2px solid #E0E0E0", 
-    padding: "28px", 
-    maxWidth: 520 
+  narrowCard: {
+    background: BG2,
+    border: `2px solid ${BD}`,
+    padding: "28px",
+    maxWidth: 520,
   },
-  cardTitle: { 
-    fontSize: 11, 
-    color: "#666666", 
-    letterSpacing: "0.15em", 
+  cardTitle: {
+    fontSize: 11,
+    color: T2,
+    letterSpacing: "0.15em",
     margin: "0 0 20px",
     fontWeight: 700,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   posRow: { marginBottom: 14 },
-  posLabel: { 
-    display: "flex", 
-    alignItems: "center", 
-    gap: 8, 
-    fontSize: 12, 
-    color: "#333333", 
+  posLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 12,
+    color: T2,
     marginBottom: 6,
-    fontWeight: 600
+    fontWeight: 600,
   },
   posDot: { width: 8, height: 8, borderRadius: "50%" },
-  posBar: { height: 4, background: "#E0E0E0", marginBottom: 4 },
+  posBar: { height: 4, background: BD, marginBottom: 4 },
   posBarFill: { height: "100%", transition: "width 0.5s ease" },
   posValues: { display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600 },
-  statRow: { 
-    display: "flex", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    padding: "10px 0", 
-    borderBottom: "1px solid #E0E0E0" 
+  statRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 0",
+    borderBottom: `1px solid ${BD}`,
   },
-  statLabel: { fontSize: 11, color: "#666666", fontWeight: 600 },
+  statLabel: { fontSize: 11, color: T2, fontWeight: 600 },
   statValue: { fontSize: 13, fontWeight: 700 },
   inputGroup: { marginBottom: 16 },
-  inputLabel: { 
-    display: "block", 
-    fontSize: 10, 
-    color: "#666666", 
-    letterSpacing: "0.1em", 
+  inputLabel: {
+    display: "block",
+    fontSize: 10,
+    color: T2,
+    letterSpacing: "0.1em",
     marginBottom: 8,
     fontWeight: 700,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   inputRow: { display: "flex", alignItems: "center" },
-  input: { 
-    flex: 1, 
-    background: "#FFFFFF", 
-    border: "2px solid #CCCCCC", 
-    color: "#000000", 
-    padding: "10px 14px", 
-    fontSize: 14, 
-    fontFamily: "inherit", 
-    outline: "none" 
+  input: {
+    flex: 1,
+    background: BG1,
+    border: `2px solid ${BD}`,
+    color: T1,
+    padding: "10px 14px",
+    fontSize: 14,
+    fontFamily: "inherit",
+    outline: "none",
   },
-  inputUnit: { 
-    background: "#F8F8F8", 
-    border: "2px solid #CCCCCC", 
-    borderLeft: "none", 
-    padding: "10px 12px", 
-    fontSize: 11, 
-    color: "#666666",
-    fontWeight: 600
+  inputUnit: {
+    background: BG2,
+    border: `2px solid ${BD}`,
+    borderLeft: "none",
+    padding: "10px 12px",
+    fontSize: 11,
+    color: T2,
+    fontWeight: 600,
   },
-  inputHint: { fontSize: 10, color: "#999999", marginTop: 6, display: "block" },
-  actionBtn: { 
-    width: "100%", 
-    padding: "12px", 
-    background: "#B8860B", 
-    border: "none", 
-    color: "#FFFFFF", 
-    fontSize: 12, 
-    fontWeight: 700, 
-    cursor: "pointer", 
-    letterSpacing: "0.1em", 
-    fontFamily: "inherit", 
-    marginBottom: 12 
+  inputHint: { fontSize: 10, color: T3, marginTop: 6, display: "block" },
+  actionBtn: {
+    width: "100%",
+    padding: "12px",
+    background: GOLD,
+    border: "none",
+    color: BG0,
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    letterSpacing: "0.1em",
+    fontFamily: "inherit",
+    marginBottom: 12,
   },
-  faucetBtn: { 
-    width: "100%", 
-    padding: "10px", 
-    background: "none", 
-    border: "2px solid #CCCCCC", 
-    color: "#666666", 
-    fontSize: 11, 
-    cursor: "pointer", 
-    fontFamily: "inherit", 
+  faucetBtn: {
+    width: "100%",
+    padding: "10px",
+    background: "none",
+    border: `2px solid ${BD}`,
+    color: T2,
+    fontSize: 11,
+    cursor: "pointer",
+    fontFamily: "inherit",
     marginTop: 8,
-    fontWeight: 600
+    fontWeight: 600,
   },
   connectPrompt: { textAlign: "center", padding: "24px 0" },
-  phase2Warning: { 
-    background: "#FFF8E1", 
-    border: "2px solid #FFD54F", 
-    color: "#B8860B", 
-    padding: "12px 16px", 
-    fontSize: 11, 
-    marginBottom: 20, 
+  phase2Warning: {
+    background: "#1a1500",
+    border: `2px solid #5a4500`,
+    color: GOLD,
+    padding: "12px 16px",
+    fontSize: 11,
+    marginBottom: 20,
     lineHeight: 1.6,
-    fontWeight: 600
+    fontWeight: 600,
   },
-  txFeedback: { 
-    marginTop: 16, 
-    padding: "12px 16px", 
-    border: "2px solid", 
-    fontSize: 12, 
+  txFeedback: {
+    marginTop: 16,
+    padding: "12px 16px",
+    border: "2px solid",
+    fontSize: 12,
     lineHeight: 1.5,
-    fontWeight: 600
+    fontWeight: 600,
   },
-  divider: { borderTop: "1px solid #E0E0E0", margin: "16px 0" },
-  muted: { color: "#666666", fontSize: 12, lineHeight: 1.6, margin: "0 0 16px" },
+  divider: { borderTop: `1px solid ${BD}`, margin: "16px 0" },
+  muted: { color: T2, fontSize: 12, lineHeight: 1.6, margin: "0 0 16px" },
 };

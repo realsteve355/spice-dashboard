@@ -5,6 +5,16 @@ import {
   loadSimState, saveSimState, kpiColor, getCollisionStatus,
 } from "../lib/sim-engine";
 
+// Dark palette
+const BG0  = "#0a0e1a";
+const BG1  = "#080c16";
+const BG2  = "#0f1520";
+const BD   = "#1e2a42";
+const T1   = "#e8eaf0";
+const T2   = "#8899bb";
+const T3   = "#4a5878";
+const GOLD = "#c8a96e";
+
 const THRESHOLD_DATA = [
   { label:"Debt / GDP",    rows:[{level:"GREEN",color:"#16a34a",range:"< 120%"},{level:"YELLOW",color:"#ca8a04",range:"120 – 150%"},{level:"ORANGE",color:"#ea580c",range:"150 – 175%"},{level:"RED",color:"#dc2626",range:"> 175%"}]},
   { label:"Unemployment",  rows:[{level:"GREEN",color:"#16a34a",range:"< 8%"},{level:"YELLOW",color:"#ca8a04",range:"8 – 12%"},{level:"ORANGE",color:"#ea580c",range:"12 – 20%"},{level:"RED",color:"#dc2626",range:"> 20%"}]},
@@ -19,35 +29,35 @@ function ThresholdsPanel({ onClose }) {
   return (
     <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
       zIndex:9999, width:380, maxHeight:"80vh", overflowY:"auto",
-      background:"#fff", border:"1px solid #e2e2e2",
-      boxShadow:"0 8px 32px rgba(0,0,0,0.18)", fontFamily:F }}>
+      background:BG2, border:`1px solid ${BD}`,
+      boxShadow:"0 8px 32px rgba(0,0,0,0.5)", fontFamily:F }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-        padding:"10px 14px", borderBottom:"1px solid #f0f0f0", background:"#fafafa" }}>
-        <div style={{ fontSize:9, fontWeight:700, color:"#111", textTransform:"uppercase", letterSpacing:"0.12em" }}>
+        padding:"10px 14px", borderBottom:`1px solid ${BD}`, background:BG1 }}>
+        <div style={{ fontSize:9, fontWeight:700, color:T1, textTransform:"uppercase", letterSpacing:"0.12em" }}>
           Crisis Thresholds
         </div>
         <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer",
-          fontSize:16, color:"#aaa", fontFamily:F, lineHeight:1 }}>✕</button>
+          fontSize:16, color:T3, fontFamily:F, lineHeight:1 }}>✕</button>
       </div>
       <div style={{ padding:"12px 14px 8px" }}>
-        <div style={{ fontSize:9, color:"#888", lineHeight:1.6, marginBottom:10 }}>
-          Each year's colour is set by the <strong style={{ color:"#111" }}>worst indicator</strong> for that year.
+        <div style={{ fontSize:9, color:T2, lineHeight:1.6, marginBottom:10 }}>
+          Each year's colour is set by the <strong style={{ color:T1 }}>worst indicator</strong> for that year.
         </div>
         {THRESHOLD_DATA.map(ind => (
           <div key={ind.label} style={{ marginBottom:12 }}>
-            <div style={{ fontSize:8, fontWeight:700, color:"#555", textTransform:"uppercase",
+            <div style={{ fontSize:8, fontWeight:700, color:T2, textTransform:"uppercase",
               letterSpacing:"0.1em", marginBottom:5 }}>{ind.label}</div>
             {ind.rows.map(r => (
               <div key={r.level} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
                 <span style={{ width:6, height:6, borderRadius:"50%", background:r.color,
                   flexShrink:0, display:"inline-block" }} />
                 <span style={{ fontSize:8, color:r.color, fontWeight:700, minWidth:46 }}>{r.level}</span>
-                <span style={{ fontSize:8, color:"#555" }}>{r.range}</span>
+                <span style={{ fontSize:8, color:T2 }}>{r.range}</span>
               </div>
             ))}
           </div>
         ))}
-        <div style={{ fontSize:7, color:"#ccc", borderTop:"1px solid #f0f0f0", paddingTop:8 }}>
+        <div style={{ fontSize:7, color:T3, borderTop:`1px solid ${BD}`, paddingTop:8 }}>
           Sources: Reinhart-Rogoff NBER w15639 · CBO 2025 · Fisher (1933)
         </div>
       </div>
@@ -63,10 +73,10 @@ function PolicyButton({ label, desc, active, color, onClick }) {
       style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
         padding:"5px 7px", marginBottom:3,
         background: active ? `${color}0f` : "transparent",
-        border: `1px solid ${active ? color : "#e8e8e8"}`,
+        border: `1px solid ${active ? color : BD}`,
         fontFamily:"'IBM Plex Mono',monospace" }}>
-      <div style={{ fontSize:9, fontWeight:700, color: active ? color : "#555" }}>{label}</div>
-      <div style={{ fontSize:7, color:"#aaa", marginTop:1, lineHeight:1.4 }}>{desc}</div>
+      <div style={{ fontSize:9, fontWeight:700, color: active ? color : T2 }}>{label}</div>
+      <div style={{ fontSize:7, color:T3, marginTop:1, lineHeight:1.4 }}>{desc}</div>
     </button>
   );
 }
@@ -76,30 +86,30 @@ function PolicyButton({ label, desc, active, color, onClick }) {
 function ImpactCard({ group, text, isGenerating, genError }) {
   const parsed = parseAnalysis(text);
   return (
-    <div style={{ background:"#fff", border:"1px solid #e2e2e2", padding:"20px 22px",
+    <div style={{ background:BG2, border:`1px solid ${BD}`, padding:"20px 22px",
       display:"flex", flexDirection:"column" }}>
       <div style={{ marginBottom:14 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:"#111",
+        <div style={{ fontSize:10, fontWeight:700, color:T1,
           textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:3 }}>
           {group.label}
         </div>
-        <div style={{ fontSize:8, color:"#999" }}>{group.sub}</div>
+        <div style={{ fontSize:8, color:T3 }}>{group.sub}</div>
       </div>
-      <div style={{ borderTop:"1px solid #f0f0f0", paddingTop:14, flex:1 }}>
+      <div style={{ borderTop:`1px solid ${BD}`, paddingTop:14, flex:1 }}>
         {genError ? (
-          <span style={{ fontSize:10, color:"#aaa" }}>Unable to generate analysis. Check API configuration.</span>
+          <span style={{ fontSize:10, color:T3 }}>Unable to generate analysis. Check API configuration.</span>
         ) : isGenerating && !parsed ? (
-          <span style={{ fontSize:10, color:"#ccc" }}>Analysing impact...</span>
+          <span style={{ fontSize:10, color:T3 }}>Analysing impact...</span>
         ) : parsed ? (
           parsed.map(section => (
             <div key={section.heading} style={{ marginBottom:14 }}>
-              <div style={{ fontSize:8, fontWeight:700, color:"#555",
+              <div style={{ fontSize:8, fontWeight:700, color:T2,
                 textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:5 }}>
                 {section.heading}
               </div>
               <ul style={{ margin:0, paddingLeft:14 }}>
                 {section.bullets.map((b, i) => (
-                  <li key={i} style={{ fontSize:11, color:"#333", lineHeight:1.7,
+                  <li key={i} style={{ fontSize:11, color:T2, lineHeight:1.7,
                     marginBottom:3, fontFamily:"'IBM Plex Mono',monospace" }}>
                     {b}
                   </li>
@@ -108,7 +118,7 @@ function ImpactCard({ group, text, isGenerating, genError }) {
             </div>
           ))
         ) : (
-          <span style={{ fontSize:10, color:"#ccc" }}>Loading...</span>
+          <span style={{ fontSize:10, color:T3 }}>Loading...</span>
         )}
       </div>
     </div>
@@ -185,29 +195,29 @@ export default function Impact() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [last.year, last.debtGDP, last.unemp, last.infl, last.yld, last.cryptoFlight, last.labShare, last.capShare]);
 
-  const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:"#bbb" };
+  const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:T3 };
 
   return (
-    <div style={{ background:"#fff", color:"#111", fontFamily:"'IBM Plex Mono',monospace",
+    <div style={{ background:BG0, color:T1, fontFamily:"'IBM Plex Mono',monospace",
       display:"flex", height:"100vh", overflow:"hidden", maxWidth:1200, margin:"0 auto" }}>
 
       {/* ── LEFT PANEL ──────────────────────────────────────────────────── */}
-      <div style={{ width:220, flexShrink:0, borderRight:"1px solid #f0f0f0",
-        padding:"12px 12px", overflowY:"auto", background:"#fafafa" }}>
+      <div style={{ width:220, flexShrink:0, borderRight:`1px solid ${BD}`,
+        padding:"12px 12px", overflowY:"auto", background:BG1 }}>
 
         {/* Header */}
-        <div style={{ fontSize:15, fontWeight:700, marginBottom:14 }}>
-          Human <span style={{ color:"#B8860B" }}>Impact</span>
+        <div style={{ fontSize:15, fontWeight:700, marginBottom:14, color:T1 }}>
+          Human <span style={{ color:GOLD }}>Impact</span>
         </div>
 
         {/* Displacement */}
-        <div style={{ fontSize:10, color:"#555", lineHeight:1.5, marginBottom:7 }}>
+        <div style={{ fontSize:10, color:T2, lineHeight:1.5, marginBottom:7 }}>
           What fraction of knowledge workers will be substantially displaced by AI{" "}
-          <strong style={{ color:"#111" }}>BY 2030?</strong>
+          <strong style={{ color:T1 }}>BY 2030?</strong>
         </div>
         <input type="range" min={0} max={0.65} step={0.01} value={displaced}
           onChange={ev => { const v = +ev.target.value; startTransition(() => setDisplaced(v)); }}
-          style={{ width:"100%", accentColor:"#B8860B", cursor:"pointer", marginBottom:4 }} />
+          style={{ width:"100%", accentColor:GOLD, cursor:"pointer", marginBottom:4 }} />
         <div style={{ position:"relative", height:26, marginBottom:6 }}>
           {ANCHORS.map(a => {
             const lp = (a.pct / 0.65) * 100;
@@ -216,24 +226,24 @@ export default function Impact() {
               <div key={a.label} onClick={() => setDisplaced(a.pct)}
                 style={{ position:"absolute", left:`${lp}%`, transform:"translateX(-50%)",
                   textAlign:"center", cursor:"pointer" }}>
-                <div style={{ width:1, height:5, margin:"0 auto 2px", background:on?"#B8860B":"#ddd" }} />
+                <div style={{ width:1, height:5, margin:"0 auto 2px", background:on?GOLD:BD }} />
                 <div style={{ fontSize:8, whiteSpace:"nowrap", fontWeight:on?700:400,
-                  color:on?"#B8860B":"#ccc" }}>{a.label}</div>
+                  color:on?GOLD:T3 }}>{a.label}</div>
               </div>
             );
           })}
         </div>
-        <div style={{ background:"#fff", border:"1px solid #ebebeb", padding:"5px 8px",
-          fontSize:8, color:"#888", lineHeight:1.6, marginBottom:11 }}>
-          <span style={{ color:"#B8860B", fontWeight:700 }}>
+        <div style={{ background:BG2, border:`1px solid ${BD}`, padding:"5px 8px",
+          fontSize:8, color:T2, lineHeight:1.6, marginBottom:11 }}>
+          <span style={{ color:GOLD, fontWeight:700 }}>
             {anchor.label} — {Math.round(displaced*100)}%
           </span><br />{anchor.desc}
         </div>
 
-        <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
+        <div style={{ borderTop:`1px solid ${BD}`, marginBottom:9 }} />
 
         {/* Crypto flight */}
-        <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+        <div style={{ fontSize:9, color:T3, textTransform:"uppercase",
           letterSpacing:"0.1em", marginBottom:6 }}>Crypto Flight Speed</div>
         <input type="range" min={0} max={1} step={0.05} value={cryptoAdopt}
           onChange={ev => { const v = +ev.target.value; startTransition(() => setCryptoAdopt(v)); }}
@@ -246,16 +256,16 @@ export default function Impact() {
               <div key={a.l} onClick={() => setCryptoAdopt(a.v)}
                 style={{ position:"absolute", left:`${lp}%`, transform:"translateX(-50%)",
                   textAlign:"center", cursor:"pointer" }}>
-                <div style={{ width:1, height:4, margin:"0 auto 2px", background:on?"#93c5fd":"#ddd" }} />
+                <div style={{ width:1, height:4, margin:"0 auto 2px", background:on?"#93c5fd":BD }} />
                 <div style={{ fontSize:7, whiteSpace:"nowrap", fontWeight:on?700:400,
-                  color:on?"#60a5fa":"#ccc" }}>{a.l}</div>
+                  color:on?"#60a5fa":T3 }}>{a.l}</div>
               </div>
             );
           })}
         </div>
 
-        <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
-        <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+        <div style={{ borderTop:`1px solid ${BD}`, marginBottom:9 }} />
+        <div style={{ fontSize:9, color:T3, textTransform:"uppercase",
           letterSpacing:"0.1em", marginBottom:7 }}>Government Response</div>
 
         <div style={{ fontSize:8, color:"#22c55e", fontWeight:700, textTransform:"uppercase",
@@ -274,7 +284,7 @@ export default function Impact() {
             onClick={() => setMonetaryId(opt.id)} />
         ))}
 
-        <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
+        <div style={{ borderTop:`1px solid ${BD}`, margin:"9px 0 7px" }} />
         <div style={{ fontSize:8, color:"#93c5fd", fontWeight:700, textTransform:"uppercase",
           letterSpacing:"0.08em", marginBottom:4 }}>Crypto Policy</div>
         {[
@@ -287,11 +297,11 @@ export default function Impact() {
             onClick={() => setCryptoPolicy(opt.id)} />
         ))}
 
-        <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
-        <div style={{ fontSize:7, color:"#ccc", lineHeight:1.9 }}>
+        <div style={{ borderTop:`1px solid ${BD}`, margin:"9px 0 7px" }} />
+        <div style={{ fontSize:7, color:T3, lineHeight:1.9 }}>
           {SIM_LEVELS.map(lm => (
             <div key={lm.label}><span style={{ color:lm.color }}>■ </span>
-              <span style={{ color:"#bbb" }}>{lm.label}</span></div>
+              <span style={{ color:T3 }}>{lm.label}</span></div>
           ))}
           <div style={{ marginTop:4, lineHeight:1.5 }}>
             CBO · IMF WP/2025/076 · Reinhart-Rogoff
@@ -305,32 +315,32 @@ export default function Impact() {
 
         {/* Header row */}
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-          borderBottom:"1px solid #f0f0f0", paddingBottom:10, marginBottom:12, flexShrink:0 }}>
+          borderBottom:`1px solid ${BD}`, paddingBottom:10, marginBottom:12, flexShrink:0 }}>
           <div>
-            <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+            <div style={{ fontSize:9, color:T3, textTransform:"uppercase",
               letterSpacing:"0.18em", marginBottom:3 }}>Human Impact Analysis</div>
-            <div style={{ fontSize:13, color:"#555" }}>
+            <div style={{ fontSize:13, color:T2 }}>
               Real-world effects on households at{" "}
-              <span style={{ fontWeight:700, color:"#111" }}>{effectiveKpiYear}</span>
-              {isGenerating && <span style={{ marginLeft:10, fontSize:9, color:"#aaa" }}>analysing...</span>}
+              <span style={{ fontWeight:700, color:T1 }}>{effectiveKpiYear}</span>
+              {isGenerating && <span style={{ marginLeft:10, fontSize:9, color:T3 }}>analysing...</span>}
             </div>
           </div>
           {/* Policy badges */}
           <div style={{ display:"flex", gap:5, alignItems:"center", flexWrap:"wrap", justifyContent:"flex-end" }}>
             {fiscalId !== "none" && (
               <div style={{ padding:"3px 8px", fontSize:8,
-                background:"#f0fdf4", border:"1px solid #22c55e50", color:"#22c55e" }}>
+                background:"#0a1f0f", border:"1px solid #22c55e50", color:"#22c55e" }}>
                 📋 {fiscalId==="robot_ubi" ? "Robot+UBI" : "Austerity"}
               </div>
             )}
             {monetaryId !== "none" && (
               <div style={{ padding:"3px 8px", fontSize:8,
-                background:"#fff5f5", border:"1px solid #ef444450", color:"#ef4444" }}>
+                background:"#1a0a0a", border:"1px solid #ef444450", color:"#ef4444" }}>
                 🖨 {monetaryId==="qe" ? "QE" : monetaryId==="ycc" ? "YCC" : "Repression"}
               </div>
             )}
             <div style={{ padding:"3px 8px", fontSize:8,
-              background:"#eff6ff", border:"1px solid #3b82f650", color:"#3b82f6" }}>
+              background:"#0a0f1a", border:"1px solid #3b82f650", color:"#3b82f6" }}>
               ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax" : "Ignore"}
             </div>
           </div>
@@ -342,9 +352,9 @@ export default function Impact() {
               return (
                 <div key={lm.label}
                   style={{ padding:"3px 7px", fontSize:9, fontWeight:700,
-                    background: yr ? lm.bg : "#f5f5f5",
-                    border:`1px solid ${yr ? lm.color : "#ddd"}`,
-                    color: yr ? lm.color : "#ccc",
+                    background: yr ? lm.bg : BG2,
+                    border:`1px solid ${yr ? lm.color : BD}`,
+                    color: yr ? lm.color : T3,
                     minWidth:34, textAlign:"center" }}>
                   {yr ? String(yr).slice(2) : "—"}
                 </div>
@@ -355,19 +365,19 @@ export default function Impact() {
 
         {/* Snapshot year selector */}
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
-          <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
+          <span style={{ fontSize:8, color:T3, fontFamily:"'IBM Plex Mono',monospace",
             textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
             Snapshot year
           </span>
           <input type="range" min={2026} max={fogYear ?? 2035} step={1} value={effectiveKpiYear}
             onChange={ev => setKpiYear(+ev.target.value)}
-            style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
+            style={{ flex:1, accentColor:T2, cursor:"pointer" }} />
           <div style={{ display:"flex", gap:4, flexShrink:0 }}>
             {rows.filter(r => r.year <= (fogYear ?? 2035)).map(r => (
               <span key={r.year} onClick={() => setKpiYear(r.year)}
                 style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
                   fontWeight: r.year===effectiveKpiYear ? 700 : 400,
-                  color: r.year===effectiveKpiYear ? "#111" : "#ccc" }}>
+                  color: r.year===effectiveKpiYear ? T1 : T3 }}>
                 {r.year}
               </span>
             ))}
@@ -387,9 +397,9 @@ export default function Impact() {
                 color:kpiColor("gini", 0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008),
                 warn:(0.48 + ((last.capShare - 25) + (60 - last.labShare)) * 0.008) >= 0.55 },
             ].map(k => (
-              <div key={k.label} style={{ background:k.warn?"#fff5f5":"#f9f9f9",
-                border:`1px solid ${k.warn?"#ef444440":"#ebebeb"}`, padding:"5px 8px" }}>
-                <div style={{ fontSize:7, color:"#bbb", fontFamily:"'IBM Plex Mono',monospace",
+              <div key={k.label} style={{ background:k.warn?"#1a0808":BG2,
+                border:`1px solid ${k.warn?"#ef444440":BD}`, padding:"5px 8px" }}>
+                <div style={{ fontSize:7, color:T3, fontFamily:"'IBM Plex Mono',monospace",
                   textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:2 }}>{k.label}</div>
                 <div style={{ fontSize:14, fontWeight:700, color:k.color,
                   fontFamily:"'IBM Plex Mono',monospace" }}>{k.value}</div>
@@ -398,7 +408,7 @@ export default function Impact() {
           </div>
           <button onClick={() => setShowThresholds(s => !s)}
             style={{ flexShrink:0, padding:"4px 7px", fontSize:8, cursor:"pointer",
-              background:"#f9f9f9", border:"1px solid #e2e2e2", color:"#888",
+              background:BG2, border:`1px solid ${BD}`, color:T2,
               fontFamily:"'IBM Plex Mono',monospace" }}>
             ℹ
           </button>
@@ -411,9 +421,9 @@ export default function Impact() {
 
         {/* Crisis classification box — always visible */}
         {(() => {
-          const bg    = collisionStatus === "COLLISION" ? "#fef2f2" : collisionStatus === "CONVENTIONAL" ? "#fefce8" : "#f9fafb";
-          const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#e2e2e260";
-          const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#92400e"   : "#16a34a";
+          const bg    = collisionStatus === "COLLISION" ? "#1a0808" : collisionStatus === "CONVENTIONAL" ? "#1a1400" : BG2;
+          const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : `${BD}60`;
+          const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#ca8a04"   : "#16a34a";
           const hdTxt = collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}`
                       : collisionStatus === "CONVENTIONAL" ? `CONVENTIONAL CRISIS — ${collisionYear}`
                       : "NO CRISIS — SYSTEM STABLE 2026–2035";
@@ -424,7 +434,7 @@ export default function Impact() {
               {hdTxt}
             </div>
             {collisionStatus !== "NO_CRISIS" && (
-              <div style={{ fontSize:10, color:"#444", lineHeight:1.6 }}>
+              <div style={{ fontSize:10, color:T2, lineHeight:1.6 }}>
                 {collisionStatus === "COLLISION" ? (
                   <>AI displacement {Math.round(displaced * 100)}%{collisionCrypto > 20 ? `, crypto flight ${collisionCrypto}%` : ""} — novel dynamics absent from all historical crises.
                   AI-driven deflation prevents inflating away debt; crypto capital flight constrains traditional tools.</>
@@ -448,7 +458,7 @@ export default function Impact() {
           ))}
         </div>
 
-        <div style={{ fontSize:7, color:"#ccc", marginTop:12, flexShrink:0 }}>
+        <div style={{ fontSize:7, color:T3, marginTop:12, flexShrink:0 }}>
           Analysis generated by AI from simulation outputs. Reflects structural crisis dynamics — not investment advice.
           Sources: CBO 2025 · IMF WP/2025/076 · Reinhart-Rogoff NBER w15639
         </div>

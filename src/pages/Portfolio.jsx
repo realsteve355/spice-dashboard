@@ -20,6 +20,16 @@ const PRICE_IDS = {
 function fmt(n)    { return n.toLocaleString("en-US", { maximumFractionDigits: 0 }); }
 function fmtBtc(n) { return n.toFixed(4); }
 
+// Dark palette
+const BG0  = "#0a0e1a";
+const BG1  = "#080c16";
+const BG2  = "#0f1520";
+const BD   = "#1e2a42";
+const T1   = "#e8eaf0";
+const T2   = "#8899bb";
+const T3   = "#4a5878";
+const GOLD = "#c8a96e";
+
 export default function Portfolio() {
   const [params] = useSearchParams();
   const currentLevel = (() => {
@@ -119,9 +129,9 @@ export default function Portfolio() {
               key={alloc.level}
               style={{
                 ...S.column,
-                border: isActive ? `2px solid ${alloc.color}` : "1px solid #e2e2e2",
+                border: isActive ? `2px solid ${alloc.color}` : `1px solid ${BD}`,
                 borderTop: `4px solid ${alloc.color}`,
-                background: isActive ? alloc.bg : "#fff",
+                background: isActive ? alloc.bg : BG2,
               }}
             >
               {isActive && (
@@ -204,14 +214,14 @@ export default function Portfolio() {
               <div key={a.name} style={S.notionalRow}>
                 <div style={{ flex: "0 0 160px", display: "flex", alignItems: "center", gap: 6 }}>
                   <div style={{ ...S.dot, background: a.color }} />
-                  <span style={{ fontSize: 11, color: "#333" }}>{a.name}</span>
+                  <span style={{ fontSize: 11, color: T2 }}>{a.name}</span>
                 </div>
                 <span style={{ flex: "0 0 50px", textAlign: "right", fontSize: 12, fontWeight: 700, color: activeAlloc.color }}>{a.pct}%</span>
-                <span style={{ flex: 1, textAlign: "right", fontSize: 12, fontWeight: 700, color: "#111" }}>${fmt(usdVal)}</span>
-                <span style={{ flex: "0 0 160px", textAlign: "right", fontSize: 11, color: "#555" }}>
+                <span style={{ flex: 1, textAlign: "right", fontSize: 12, fontWeight: 700, color: T1 }}>${fmt(usdVal)}</span>
+                <span style={{ flex: "0 0 160px", textAlign: "right", fontSize: 11, color: T2 }}>
                   {spot ? units : "synthetic / basket"}
                 </span>
-                <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 10, color: "#aaa" }}>
+                <span style={{ flex: "0 0 120px", textAlign: "right", fontSize: 10, color: T3 }}>
                   {spot ? `$${fmt(spot)} / unit` : ""}
                 </span>
               </div>
@@ -225,8 +235,8 @@ export default function Portfolio() {
         <div>Instruments: PAXG · XAUT · BTC · NVDA synthetic · tokenised commodities · Synthetix perps for bond shorts.</div>
         <div>Sovereign bond shorts: primary targets JGB (highest conviction), Italian BTPs, UK Gilts. USD/JPY short via dYdX perpetuals at Orange/Red.</div>
         <div>
-          Allocations editable via <a href="/config" style={{ color: "#B8860B" }}>configuration page</a>
-          {" "}· Live indicators: <a href="/indicators" style={{ color: "#B8860B" }}>Indicators</a>
+          Allocations editable via <a href="/config" style={{ color: GOLD }}>configuration page</a>
+          {" "}· Live indicators: <a href="/indicators" style={{ color: GOLD }}>Indicators</a>
           {" "}· Prices: CoinGecko
         </div>
       </div>
@@ -240,6 +250,8 @@ const S = {
     margin: "0 auto",
     padding: "48px 40px 80px",
     fontFamily: "'IBM Plex Mono', monospace",
+    background: BG0,
+    color: T1,
   },
 
   // Status banner
@@ -252,19 +264,19 @@ const S = {
     marginBottom: 20,
   },
   statusLeft: { flex: 1 },
-  statusEyebrow: { fontSize: 10, color: "#999", letterSpacing: "0.15em", marginBottom: 8 },
+  statusEyebrow: { fontSize: 10, color: T3, letterSpacing: "0.15em", marginBottom: 8 },
   statusLevel: { fontSize: 40, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 10 },
-  statusContext: { fontSize: 12, color: "#444", lineHeight: 1.65, maxWidth: 560 },
+  statusContext: { fontSize: 12, color: T2, lineHeight: 1.65, maxWidth: 560 },
   statusRight: { textAlign: "right", paddingTop: 4 },
   statusScoreRange: { fontSize: 22, fontWeight: 700, marginBottom: 10 },
   statusLink: { fontSize: 11, textDecoration: "none", letterSpacing: "0.06em" },
   noStatusBanner: {
     padding: "14px 20px",
-    background: "#fafafa",
-    border: "1px solid #e2e2e2",
+    background: BG2,
+    border: `1px solid ${BD}`,
     marginBottom: 20,
   },
-  noStatusText: { fontSize: 12, color: "#aaa" },
+  noStatusText: { fontSize: 12, color: T3 },
 
   // AUM box
   aumBox: {
@@ -272,18 +284,18 @@ const S = {
     alignItems: "flex-start",
     gap: 48,
     padding: "18px 24px",
-    background: "#fafafa",
-    border: "1px solid #e2e2e2",
+    background: BG2,
+    border: `1px solid ${BD}`,
     marginBottom: 32,
   },
   aumBoxLeft: { flex: "0 0 auto" },
   aumBoxRight: { flex: 1, position: "relative" },
   aumInputRow: { display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 },
-  aumCurrency: { fontSize: 22, fontWeight: 700, color: "#111" },
+  aumCurrency: { fontSize: 22, fontWeight: 700, color: T1 },
   aumInput: {
     fontSize: 28,
     fontWeight: 700,
-    color: "#111",
+    color: T1,
     fontFamily: "'IBM Plex Mono', monospace",
     border: "none",
     background: "transparent",
@@ -291,28 +303,28 @@ const S = {
     width: 180,
     padding: 0,
   },
-  aumHint: { fontSize: 9, color: "#bbb", letterSpacing: "0.06em" },
-  priceEyebrow: { fontSize: 9, color: "#aaa", letterSpacing: "0.12em", marginBottom: 10 },
+  aumHint: { fontSize: 9, color: T3, letterSpacing: "0.06em" },
+  priceEyebrow: { fontSize: 9, color: T3, letterSpacing: "0.12em", marginBottom: 10 },
   priceRow: { display: "flex", gap: 28 },
   priceItem: {},
-  priceLabel: { fontSize: 9, color: "#aaa", letterSpacing: "0.06em", marginBottom: 3 },
-  priceValSm: { fontSize: 14, fontWeight: 700, color: "#555" },
+  priceLabel: { fontSize: 9, color: T3, letterSpacing: "0.06em", marginBottom: 3 },
+  priceValSm: { fontSize: 14, fontWeight: 700, color: T2 },
   priceSrc: {
     fontSize: 9,
-    color: "#ccc",
+    color: T3,
     letterSpacing: "0.06em",
     marginTop: 10,
   },
 
   // Header
   pageHeader: {
-    borderBottom: "1px solid #e2e2e2",
+    borderBottom: `1px solid ${BD}`,
     paddingBottom: 28,
     marginBottom: 32,
   },
-  eyebrow: { fontSize: 10, color: "#B8860B", letterSpacing: "0.15em", marginBottom: 10 },
-  title: { fontSize: 30, fontWeight: 700, color: "#111", margin: "0 0 12px", letterSpacing: "-0.01em" },
-  subtitle: { fontSize: 12, color: "#555", lineHeight: 1.75, maxWidth: 680, margin: 0 },
+  eyebrow: { fontSize: 10, color: GOLD, letterSpacing: "0.15em", marginBottom: 10 },
+  title: { fontSize: 30, fontWeight: 700, color: T1, margin: "0 0 12px", letterSpacing: "-0.01em" },
+  subtitle: { fontSize: 12, color: T2, lineHeight: 1.75, maxWidth: 680, margin: 0 },
 
   // Grid
   grid: {
@@ -322,7 +334,7 @@ const S = {
     marginBottom: 32,
   },
   column: {
-    border: "1px solid #e2e2e2",
+    border: `1px solid ${BD}`,
     padding: "18px 16px",
     transition: "box-shadow 0.2s",
   },
@@ -332,23 +344,24 @@ const S = {
     fontSize: 9, fontWeight: 700, color: "#fff", letterSpacing: "0.12em",
     textAlign: "center", padding: "4px 0", margin: "-18px -16px 14px",
   },
-  scoreRange: { fontSize: 9, color: "#aaa", letterSpacing: "0.06em", marginBottom: 14 },
+  scoreRange: { fontSize: 9, color: T3, letterSpacing: "0.06em", marginBottom: 14 },
   stackBar: { display: "flex", height: 8, borderRadius: 3, overflow: "hidden", marginBottom: 14 },
   assetList: { display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 },
   assetRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   assetLeft: { display: "flex", alignItems: "center", gap: 6, minWidth: 0 },
   dot: { width: 7, height: 7, borderRadius: "50%", flexShrink: 0 },
-  assetName: { fontSize: 10, color: "#333", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  assetName: { fontSize: 10, color: T2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   assetPct: { fontSize: 12, fontWeight: 700, flexShrink: 0, paddingLeft: 6 },
-  divider: { height: 1, background: "#f0f0f0", marginBottom: 10 },
-  objectiveLabel: { fontSize: 8, color: "#bbb", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 },
-  objective: { fontSize: 10, color: "#666", lineHeight: 1.6 },
+  divider: { height: 1, background: BD, marginBottom: 10 },
+  objectiveLabel: { fontSize: 8, color: T3, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 },
+  objective: { fontSize: 10, color: T2, lineHeight: 1.6 },
 
   // Notional valuation
   notionalWrap: {
     border: "2px solid",
     padding: "20px 24px",
     marginBottom: 32,
+    background: BG2,
   },
   notionalHeader: {
     display: "flex",
@@ -356,20 +369,20 @@ const S = {
     alignItems: "flex-start",
     marginBottom: 16,
     paddingBottom: 16,
-    borderBottom: "1px solid #e8e8e8",
+    borderBottom: `1px solid ${BD}`,
   },
   notionalEyebrow: { fontSize: 10, letterSpacing: "0.12em", fontWeight: 700, marginBottom: 4 },
-  notionalSub: { fontSize: 11, color: "#666" },
-  notionalTotal: { fontSize: 20, fontWeight: 700, color: "#111" },
-  notionalTotalUsd: { fontSize: 12, color: "#666" },
+  notionalSub: { fontSize: 11, color: T2 },
+  notionalTotal: { fontSize: 20, fontWeight: 700, color: T1 },
+  notionalTotalUsd: { fontSize: 12, color: T2 },
   notionalTableHead: {
     display: "flex",
     fontSize: 9,
-    color: "#aaa",
+    color: T3,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
     paddingBottom: 8,
-    borderBottom: "1px solid #f0f0f0",
+    borderBottom: `1px solid ${BD}`,
     marginBottom: 6,
   },
   notionalRow: {
@@ -377,7 +390,7 @@ const S = {
     alignItems: "center",
     paddingTop: 8,
     paddingBottom: 8,
-    borderBottom: "1px solid #f8f8f8",
+    borderBottom: `1px solid ${BD}`,
   },
 
   // Context row
@@ -386,19 +399,19 @@ const S = {
     gridTemplateColumns: "repeat(5, 1fr)",
     gap: 16,
     marginBottom: 48,
-    borderTop: "1px solid #e2e2e2",
+    borderTop: `1px solid ${BD}`,
     paddingTop: 20,
   },
   contextCell: { paddingRight: 8 },
   contextLabel: { fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", marginBottom: 6 },
-  contextText: { fontSize: 10, color: "#777", lineHeight: 1.65 },
+  contextText: { fontSize: 10, color: T2, lineHeight: 1.65 },
 
   // Footer
   footer: {
     paddingTop: 24,
-    borderTop: "1px solid #e2e2e2",
+    borderTop: `1px solid ${BD}`,
     fontSize: 10,
-    color: "#aaa",
+    color: T3,
     lineHeight: 2,
     letterSpacing: "0.04em",
   },
