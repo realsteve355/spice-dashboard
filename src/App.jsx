@@ -18,6 +18,7 @@ import MarsCitizens  from './pages/mars/MarsCitizens.jsx'
 import MarsMCC       from './pages/mars/MarsMCC.jsx'
 import MarsHealth    from './pages/mars/MarsHealth.jsx'
 import CollisionLayout from './pages/CollisionLayout.jsx'
+import SpiceSystem from './pages/SpiceSystem.jsx'
 
 function Nav() {
   return (
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mars" element={<Mars />} />
           <Route path="/earth" element={<Earth />} />
+          <Route path="/spice-system" element={<SpiceSystem />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}

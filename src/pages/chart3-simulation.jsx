@@ -8,8 +8,16 @@ import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSi
 
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
 
-const CH = 148;
-const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:"#bbb" };
+const CH   = 148;
+const BG0  = "#0a0e1a";
+const BG1  = "#080c16";
+const BG2  = "#0f1520";
+const BD   = "1px solid #1e2a42";
+const BD2  = "1px solid #141c2e";
+const T1   = "#e8eaf0";
+const T2   = "#8899bb";
+const T3   = "#4a5878";
+const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:T3 };
 
 function PanelHead({ label, color, children }) {
   return (
@@ -28,10 +36,10 @@ function SimpleTip({ active, payload, label, color, unit, rows, fogYear }) {
   const raw = rows?.find(r => r.year === d?.year);
   const isSpeculative = fogYear && d?.year > fogYear;
   return (
-    <div style={{ background:"#fff", border:`1px solid ${color}50`,
+    <div style={{ background:BG2, border:`1px solid ${color}50`,
       padding:"6px 10px", fontFamily:"'IBM Plex Mono',monospace",
-      fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,.1)", pointerEvents:"none" }}>
-      <div style={{ color:"#999", fontSize:9, marginBottom:2 }}>
+      fontSize:11, boxShadow:"0 4px 16px rgba(0,0,0,.5)", pointerEvents:"none" }}>
+      <div style={{ color:T3, fontSize:9, marginBottom:2 }}>
         {label}
         {isSpeculative && <span style={{ marginLeft:5, color:"#888", fontSize:8, fontStyle:"italic" }}> speculative</span>}
         {d?.spiceLevel !== undefined && (
@@ -51,7 +59,7 @@ function SimpleTip({ active, payload, label, color, unit, rows, fogYear }) {
 
 function DebtChart({ rows, firstRedYear, fogYear }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <PanelHead label="Debt / GDP" color="#ef4444">
         <span style={{ fontSize:7, fontWeight:400, color:"#bbb", marginLeft:6 }}>capped at 300%</span>
         <span style={{ fontSize:7, fontWeight:700, color:"#ef444470", marginLeft:8, letterSpacing:"0.08em" }}>DEBT</span>
@@ -59,8 +67,8 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[100,310]} ticks={[125,175,225,275]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
@@ -83,15 +91,15 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
 
 function UnempChart({ rows, firstRedYear, fogYear }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <PanelHead label="Unemployment" color="#8b5cf6">
         <span style={{ fontSize:7, fontWeight:700, color:"#8b5cf670", marginLeft:8, letterSpacing:"0.08em" }}>UNEMPLOYMENT</span>
       </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[0,50]} ticks={[5,15,25,35,45]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
@@ -114,15 +122,15 @@ function UnempChart({ rows, firstRedYear, fogYear }) {
 
 function InflChart({ rows, firstRedYear, fogYear }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <PanelHead label="Inflation / Deflation" color="#3b82f6">
         <span style={{ fontSize:7, fontWeight:700, color:"#3b82f670", marginLeft:8, letterSpacing:"0.08em" }}>INFLATION</span>
       </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[-12,20]} ticks={[-10,-5,0,5,10,15]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
@@ -145,15 +153,15 @@ function InflChart({ rows, firstRedYear, fogYear }) {
 
 function YieldChart({ rows, firstRedYear, fogYear }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <PanelHead label="10Y Bond Yield" color="#eab308">
         <span style={{ fontSize:7, fontWeight:700, color:"#eab30870", marginLeft:8, letterSpacing:"0.08em" }}>DEBT</span>
       </PanelHead>
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[2,14]} ticks={[3,5,7,9,11,13]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
@@ -193,10 +201,10 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
   ].filter(r => r.y < axMax * 0.92);
 
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <div style={{ fontSize:8, fontFamily:"'IBM Plex Mono',monospace",
         textTransform:"uppercase", letterSpacing:"0.1em",
-        color:"#555", fontWeight:700, marginBottom:3 }}>
+        color:T2, fontWeight:700, marginBottom:3 }}>
         Crypto Flight
         <span style={{ marginLeft:8, fontSize:7, fontWeight:400 }}>
           <span style={{ color:"#f59e0b" }}>&#x2501; Bitcoin (USD)  </span>
@@ -207,8 +215,8 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:36, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis yAxisId="idx" domain={[0, axMax]} ticks={idxTicks}
               tick={axTick} tickLine={false} axisLine={false} width={52}
               tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
@@ -224,9 +232,9 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
                 : `$${v >= 1000 ? (v/1000).toFixed(1)+"k" : v}`;
               const mult = (d.bitcoin / 85000).toFixed(1);
               return (
-                <div style={{ background:"#fff", border:"1px solid #e8e8e8",
-                  padding:"5px 8px", fontSize:8, fontFamily:"'IBM Plex Mono',monospace" }}>
-                  <div style={{ fontWeight:700, marginBottom:3 }}>{d.year}</div>
+                <div style={{ background:BG2, border:BD,
+                  padding:"5px 8px", fontSize:8, fontFamily:"'IBM Plex Mono',monospace", color:T2 }}>
+                  <div style={{ fontWeight:700, marginBottom:3, color:T1 }}>{d.year}</div>
                   <div style={{ color:"#f59e0b" }}>Bitcoin: {fmtUsd(d.bitcoin)} ({mult}×)</div>
                   <div style={{ color:"#93c5fd" }}>Crypto flight: {d.cryptoFlight}%</div>
                   {fogYear && d.year > fogYear && <div style={{ color:"#888", fontSize:8, fontStyle:"italic" }}>speculative</div>}
@@ -260,10 +268,10 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
 
 function KShapeChart({ rows, firstRedYear, fogYear }) {
   return (
-    <div style={{ background:"#fff", border:"1px solid #e8e8e8", padding:"8px 8px 4px" }}>
+    <div style={{ background:BG2, border:BD, padding:"8px 8px 4px" }}>
       <div style={{ fontSize:8, fontFamily:"'IBM Plex Mono',monospace",
         textTransform:"uppercase", letterSpacing:"0.1em",
-        color:"#555", fontWeight:700, marginBottom:3 }}>
+        color:T2, fontWeight:700, marginBottom:3 }}>
         K-Shaped Economy
         <span style={{ marginLeft:8, fontSize:7, fontWeight:400 }}>
           <span style={{ color:"#22c55e" }}>━ Labour  </span>
@@ -274,21 +282,21 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#f4f4f4" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#ebebeb" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[20,65]} ticks={[25,35,45,55]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
               const d = payload[0]?.payload;
               if (!d) return null;
               return (
-                <div style={{ background:"#fff", border:"1px solid #ddd",
+                <div style={{ background:BG2, border:BD,
                   padding:"6px 10px", fontFamily:"'IBM Plex Mono',monospace",
-                  fontSize:11, boxShadow:"0 2px 8px rgba(0,0,0,.1)", pointerEvents:"none" }}>
-                  <div style={{ color:"#999", fontSize:9, marginBottom:4 }}>{label}</div>
+                  fontSize:11, boxShadow:"0 4px 16px rgba(0,0,0,.5)", pointerEvents:"none" }}>
+                  <div style={{ color:T3, fontSize:9, marginBottom:4 }}>{label}</div>
                   <div style={{ color:"#22c55e", fontWeight:700 }}>Labour: {d.labShare}%</div>
                   <div style={{ color:"#ef4444", fontWeight:700 }}>Capital: {d.capShare}%</div>
-                  <div style={{ color:"#888", fontSize:8, marginTop:2 }}>
+                  <div style={{ color:T3, fontSize:8, marginTop:2 }}>
                     Gap widened: +{Math.max(0, (d.capShare - 25) + (60 - d.labShare)).toFixed(1)}pp
                   </div>
                   {fogYear && d.year > fogYear && <div style={{ color:"#888", fontSize:8, fontStyle:"italic", marginTop:2 }}>speculative</div>}
@@ -310,7 +318,7 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div style={{ fontSize:7, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
+      <div style={{ fontSize:7, color:T3, fontFamily:"'IBM Plex Mono',monospace",
         marginTop:3, lineHeight:1.5, paddingLeft:2 }}>
         Labour + Capital ≈ 85% of GDP. Residual ~15% = depreciation, taxes, proprietors' income.
         The K-shape shows the <em>transfer within</em> that 85%.
@@ -323,9 +331,9 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
 
 function KPI({ label, value, color, warn }) {
   return (
-    <div style={{ background:warn?"#fff5f5":"#f9f9f9",
-      border:`1px solid ${warn?"#ef444440":"#ebebeb"}`, padding:"5px 8px" }}>
-      <div style={{ fontSize:7, color:"#bbb", fontFamily:"'IBM Plex Mono',monospace",
+    <div style={{ background:warn?"rgba(239,68,68,0.08)":BG2,
+      border:`1px solid ${warn?"#ef444450":"#1e2a42"}`, padding:"5px 8px" }}>
+      <div style={{ fontSize:7, color:T3, fontFamily:"'IBM Plex Mono',monospace",
         textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:2 }}>{label}</div>
       <div style={{ fontSize:14, fontWeight:700, color,
         fontFamily:"'IBM Plex Mono',monospace" }}>{value}</div>
@@ -380,26 +388,26 @@ function ThresholdsPanel({ onClose }) {
     <div style={{ position:"fixed", top:"50%", left:"50%",
       transform:"translate(-50%,-50%)", zIndex:9999,
       width:380, maxHeight:"80vh", overflowY:"auto",
-      background:"#fff", border:"1px solid #e2e2e2",
-      boxShadow:"0 8px 32px rgba(0,0,0,0.18)", fontFamily:F }}>
+      background:BG2, border:BD,
+      boxShadow:"0 8px 32px rgba(0,0,0,0.7)", fontFamily:F }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center",
-        padding:"10px 14px", borderBottom:"1px solid #f0f0f0", background:"#fafafa" }}>
-        <div style={{ fontSize:9, fontWeight:700, color:"#111",
+        padding:"10px 14px", borderBottom:BD2, background:BG1 }}>
+        <div style={{ fontSize:9, fontWeight:700, color:T1,
           textTransform:"uppercase", letterSpacing:"0.12em" }}>
           Crisis Thresholds
         </div>
         <button onClick={onClose}
           style={{ background:"none", border:"none", cursor:"pointer",
-            fontSize:16, color:"#aaa", fontFamily:F, lineHeight:1 }}>✕</button>
+            fontSize:16, color:T3, fontFamily:F, lineHeight:1 }}>✕</button>
       </div>
       <div style={{ padding:"12px 14px 8px" }}>
-        <div style={{ fontSize:9, color:"#888", lineHeight:1.6, marginBottom:10 }}>
-          Each year's colour is set by the <strong style={{ color:"#111" }}>worst indicator</strong> for that year.
+        <div style={{ fontSize:9, color:T2, lineHeight:1.6, marginBottom:10 }}>
+          Each year's colour is set by the <strong style={{ color:T1 }}>worst indicator</strong> for that year.
           Indicator chip colours below use the same logic — independent of graph line colours.
         </div>
         {THRESHOLD_DATA.map(ind => (
           <div key={ind.label} style={{ marginBottom:12 }}>
-            <div style={{ fontSize:8, fontWeight:700, color:"#555",
+            <div style={{ fontSize:8, fontWeight:700, color:T2,
               textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:5 }}>
               {ind.label}
             </div>
@@ -410,24 +418,24 @@ function ThresholdsPanel({ onClose }) {
                   background:r.color, flexShrink:0, display:"inline-block" }} />
                 <span style={{ fontSize:8, color:r.color, fontWeight:700,
                   minWidth:46 }}>{r.level}</span>
-                <span style={{ fontSize:8, color:"#555" }}>{r.range}</span>
+                <span style={{ fontSize:8, color:T2 }}>{r.range}</span>
               </div>
             ))}
           </div>
         ))}
-        <div style={{ borderTop:"1px solid #f0f0f0", paddingTop:10, marginTop:4 }}>
-          <div style={{ fontSize:8, fontWeight:700, color:"#111",
+        <div style={{ borderTop:BD2, paddingTop:10, marginTop:4 }}>
+          <div style={{ fontSize:8, fontWeight:700, color:T1,
             textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:8 }}>
             Crisis vs Collision
           </div>
-          <div style={{ fontSize:8, color:"#555", lineHeight:1.6, marginBottom:8 }}>
+          <div style={{ fontSize:8, color:T2, lineHeight:1.6, marginBottom:8 }}>
             <span style={{ color:"#dc2626", fontWeight:700 }}>RED</span> years flag that a crisis is occurring — conventional or collision.
           </div>
           <div style={{ marginBottom:8 }}>
             <div style={{ fontSize:8, fontWeight:700, color:"#dc2626", marginBottom:3 }}>
               ◈ THE COLLISION
             </div>
-            <div style={{ fontSize:8, color:"#555", lineHeight:1.6 }}>
+            <div style={{ fontSize:8, color:T2, lineHeight:1.6 }}>
               Crisis + AI displacement {">"}15% or crypto flight {">"}20%.
               AI-driven deflation prevents inflating away debt; crypto capital flight
               prevents trapping savings. No historical precedent.
@@ -437,14 +445,14 @@ function ThresholdsPanel({ onClose }) {
             <div style={{ fontSize:8, fontWeight:700, color:"#ca8a04", marginBottom:3 }}>
               CONVENTIONAL CRISIS
             </div>
-            <div style={{ fontSize:8, color:"#555", lineHeight:1.6 }}>
+            <div style={{ fontSize:8, color:T2, lineHeight:1.6 }}>
               Crisis thresholds breached but AI {"<"}15% and crypto {"<"}20%.
               Fed has an established playbook: QE, financial repression, gradual inflation.
               Historical precedents: Greece 2010, Argentina 2001, UK 1945–70.
             </div>
           </div>
         </div>
-        <div style={{ fontSize:7, color:"#ccc", borderTop:"1px solid #f0f0f0",
+        <div style={{ fontSize:7, color:T3, borderTop:BD2,
           paddingTop:8, lineHeight:1.6 }}>
           Sources: Reinhart-Rogoff NBER w15639 · CBO 2025 · Fisher (1933)
         </div>
@@ -543,34 +551,34 @@ export default function Chart3Simulation() {
   }, [displaced, fiscalId, monetaryId, cryptoAdopt, cryptoPolicy]);
 
   return (
-    <div style={{ background:"#fff", color:"#111",
+    <div style={{ background:BG0, color:T1,
       fontFamily:"'IBM Plex Mono',monospace",
       display:"flex", flexDirection:"column",
       height:"100vh", overflow:"hidden", maxWidth:1200, margin:"0 auto" }}>
 
       {/* HEADER */}
-      <div style={{ borderBottom:"2px solid #f0f0f0", padding:"7px 18px",
+      <div style={{ borderBottom:`2px solid #1e2a42`, padding:"7px 18px",
         display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
         <div>
           <span style={{ fontSize:15, fontWeight:700 }}>
-            Debt <span style={{ color:"#B8860B" }}>Collision</span> Simulation
+            Debt <span style={{ color:"#c8a96e" }}>Collision</span> Simulation
           </span>
         </div>
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
           {fiscalId !== "none" && (
             <div style={{ padding:"3px 8px", fontSize:8,
-              background:"#f0fdf4", border:"1px solid #22c55e50", color:"#22c55e" }}>
-              📋 {fiscalId==="robot_ubi" ? "Robot+UBI" : "Austerity"}
+              background:"rgba(34,197,94,0.1)", border:"1px solid #22c55e50", color:"#22c55e" }}>
+              {fiscalId==="robot_ubi" ? "Robot+UBI" : "Austerity"}
             </div>
           )}
           {monetaryId !== "none" && (
             <div style={{ padding:"3px 8px", fontSize:8,
-              background:"#fff5f5", border:"1px solid #ef444450", color:"#ef4444" }}>
-              🖨 {monetaryId==="qe" ? "QE" : monetaryId==="ycc" ? "YCC" : "Repression"}
+              background:"rgba(239,68,68,0.1)", border:"1px solid #ef444450", color:"#ef4444" }}>
+              {monetaryId==="qe" ? "QE" : monetaryId==="ycc" ? "YCC" : "Repression"}
             </div>
           )}
           <div style={{ padding:"3px 8px", fontSize:8,
-            background:"#eff6ff", border:"1px solid #3b82f650", color:"#3b82f6" }}>
+            background:"rgba(59,130,246,0.1)", border:"1px solid #3b82f650", color:"#3b82f6" }}>
             ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax" : "Ignore"}
           </div>
 
@@ -580,9 +588,9 @@ export default function Chart3Simulation() {
             return (
               <div key={lm.label}
                 style={{ padding:"3px 7px", fontSize:9, fontWeight:700, cursor:"default",
-                  background: yr ? lm.bg : "#f5f5f5",
-                  border:`1px solid ${yr ? lm.color : "#ddd"}`,
-                  color: yr ? lm.color : "#ccc",
+                  background: yr ? `${lm.color}18` : BG2,
+                  border:`1px solid ${yr ? lm.color : "#1e2a42"}`,
+                  color: yr ? lm.color : "#2a3a5c",
                   minWidth:38, textAlign:"center" }}>
                 {yr ? String(yr).slice(2) : "—"}
               </div>
@@ -595,12 +603,12 @@ export default function Chart3Simulation() {
       <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
 
         {/* LEFT PANEL */}
-        <div style={{ width:220, flexShrink:0, borderRight:"1px solid #f0f0f0",
-          padding:"12px 12px", overflowY:"auto", background:"#fafafa" }}>
+        <div style={{ width:220, flexShrink:0, borderRight:BD,
+          padding:"12px 12px", overflowY:"auto", background:BG1 }}>
 
-          <div style={{ fontSize:10, color:"#555", lineHeight:1.5, marginBottom:7 }}>
+          <div style={{ fontSize:10, color:T2, lineHeight:1.5, marginBottom:7 }}>
             What fraction of knowledge workers will be substantially displaced by AI{" "}
-            <strong style={{ color:"#111" }}>BY 2030?</strong>
+            <strong style={{ color:T1 }}>BY 2030?</strong>
           </div>
 
           <input type="range" min={0} max={0.65} step={0.01} value={displaced}
@@ -616,27 +624,27 @@ export default function Chart3Simulation() {
                   style={{ position:"absolute", left:`${lp}%`,
                     transform:"translateX(-50%)", textAlign:"center", cursor:"pointer" }}>
                   <div style={{ width:1, height:5, margin:"0 auto 2px",
-                    background:on?"#B8860B":"#ddd" }} />
+                    background:on?"#c8a96e":"#2a3a5c" }} />
                   <div style={{ fontSize:8, whiteSpace:"nowrap",
-                    fontWeight:on?700:400, color:on?"#B8860B":"#ccc" }}>{a.label}</div>
+                    fontWeight:on?700:400, color:on?"#c8a96e":"#2a3a5c" }}>{a.label}</div>
                 </div>
               );
             })}
           </div>
 
-          <div style={{ background:"#fff", border:"1px solid #ebebeb", padding:"5px 8px",
-            fontSize:8, color:"#888", lineHeight:1.6, marginBottom:11 }}>
-            <span style={{ color:"#B8860B", fontWeight:700 }}>
+          <div style={{ background:BG0, border:BD, padding:"5px 8px",
+            fontSize:8, color:T3, lineHeight:1.6, marginBottom:11 }}>
+            <span style={{ color:"#c8a96e", fontWeight:700 }}>
               {anchor.label} — {Math.round(displaced*100)}%
             </span><br />{anchor.desc}
           </div>
 
-          <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
-          <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+          <div style={{ borderTop:BD, marginBottom:9 }} />
+          <div style={{ fontSize:9, color:T3, textTransform:"uppercase",
             letterSpacing:"0.1em", marginBottom:6 }}>Crypto Flight Speed</div>
-          <div style={{ fontSize:10, color:"#555", lineHeight:1.5, marginBottom:7 }}>
+          <div style={{ fontSize:10, color:T2, lineHeight:1.5, marginBottom:7 }}>
             How fast does capital{" "}
-            <strong style={{ color:"#111" }}>flee to crypto</strong> when stress rises?
+            <strong style={{ color:T1 }}>flee to crypto</strong> when stress rises?
           </div>
 
           <input type="range" min={0} max={1} step={0.05} value={cryptoAdopt}
@@ -652,16 +660,16 @@ export default function Chart3Simulation() {
                   style={{ position:"absolute", left:`${lp}%`,
                     transform:"translateX(-50%)", textAlign:"center", cursor:"pointer" }}>
                   <div style={{ width:1, height:4, margin:"0 auto 2px",
-                    background:on?"#93c5fd":"#ddd" }} />
+                    background:on?"#93c5fd":"#2a3a5c" }} />
                   <div style={{ fontSize:7, whiteSpace:"nowrap",
-                    fontWeight:on?700:400, color:on?"#60a5fa":"#ccc" }}>{a.l}</div>
+                    fontWeight:on?700:400, color:on?"#60a5fa":"#2a3a5c" }}>{a.l}</div>
                 </div>
               );
             })}
           </div>
 
-          <div style={{ background:"#fff", border:"1px solid #ebebeb", padding:"5px 8px",
-            fontSize:8, color:"#888", lineHeight:1.6, marginBottom:3 }}>
+          <div style={{ background:BG0, border:BD, padding:"5px 8px",
+            fontSize:8, color:T3, lineHeight:1.6, marginBottom:3 }}>
             <span style={{ color:"#60a5fa", fontWeight:700 }}>
               {cryptoAdopt === 0 ? "No flight" :
                cryptoAdopt < 0.3 ? "Slow drift" :
@@ -675,8 +683,8 @@ export default function Chart3Simulation() {
              "Full informal dollarization via crypto. P2P stablecoin economy."}
           </div>
 
-          <div style={{ borderTop:"1px solid #ebebeb", marginBottom:9 }} />
-          <div style={{ fontSize:9, color:"#aaa", textTransform:"uppercase",
+          <div style={{ borderTop:BD, marginBottom:9 }} />
+          <div style={{ fontSize:9, color:T3, textTransform:"uppercase",
             letterSpacing:"0.1em", marginBottom:7 }}>Government Response</div>
 
           <div style={{ fontSize:8, color:"#22c55e", fontWeight:700, textTransform:"uppercase",
@@ -685,12 +693,12 @@ export default function Chart3Simulation() {
             <button key={opt.id} onClick={() => setFiscalId(opt.id)}
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
-                background:fiscalId===opt.id?"#22c55e0f":"transparent",
-                border:`1px solid ${fiscalId===opt.id?"#22c55e":"#e8e8e8"}`,
+                background:fiscalId===opt.id?"rgba(34,197,94,0.1)":"transparent",
+                border:`1px solid ${fiscalId===opt.id?"#22c55e":"#1e2a42"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
-                color:fiscalId===opt.id?"#22c55e":"#555" }}>{opt.label}</div>
-              <div style={{ fontSize:7, color:"#aaa", marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
+                color:fiscalId===opt.id?"#22c55e":T2 }}>{opt.label}</div>
+              <div style={{ fontSize:7, color:T3, marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
             </button>
           ))}
 
@@ -700,16 +708,16 @@ export default function Chart3Simulation() {
             <button key={opt.id} onClick={() => setMonetaryId(opt.id)}
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
-                background:monetaryId===opt.id?"#ef44440f":"transparent",
-                border:`1px solid ${monetaryId===opt.id?"#ef4444":"#e8e8e8"}`,
+                background:monetaryId===opt.id?"rgba(239,68,68,0.1)":"transparent",
+                border:`1px solid ${monetaryId===opt.id?"#ef4444":"#1e2a42"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
-                color:monetaryId===opt.id?"#ef4444":"#555" }}>{opt.label}</div>
-              <div style={{ fontSize:7, color:"#aaa", marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
+                color:monetaryId===opt.id?"#ef4444":T2 }}>{opt.label}</div>
+              <div style={{ fontSize:7, color:T3, marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
             </button>
           ))}
 
-          <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
+          <div style={{ borderTop:BD, margin:"9px 0 7px" }} />
 
           <div style={{ fontSize:8, color:"#93c5fd", fontWeight:700, textTransform:"uppercase",
             letterSpacing:"0.08em", marginBottom:4 }}>Crypto Policy</div>
@@ -721,21 +729,21 @@ export default function Chart3Simulation() {
             <button key={opt.id} onClick={() => setCryptoPolicy(opt.id)}
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
-                background:cryptoPolicy===opt.id?"#93c5fd0f":"transparent",
-                border:`1px solid ${cryptoPolicy===opt.id?"#93c5fd":"#e8e8e8"}`,
+                background:cryptoPolicy===opt.id?"rgba(147,197,253,0.1)":"transparent",
+                border:`1px solid ${cryptoPolicy===opt.id?"#93c5fd":"#1e2a42"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
-                color:cryptoPolicy===opt.id?"#93c5fd":"#555" }}>{opt.label}</div>
-              <div style={{ fontSize:7, color:"#aaa", marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
+                color:cryptoPolicy===opt.id?"#93c5fd":T2 }}>{opt.label}</div>
+              <div style={{ fontSize:7, color:T3, marginTop:1, lineHeight:1.4 }}>{opt.desc}</div>
             </button>
           ))}
 
-          <div style={{ borderTop:"1px solid #ebebeb", margin:"9px 0 7px" }} />
-          <div style={{ fontSize:7, color:"#ccc", lineHeight:1.9 }}>
+          <div style={{ borderTop:BD, margin:"9px 0 7px" }} />
+          <div style={{ fontSize:7, color:T3, lineHeight:1.9 }}>
             {SIM_LEVELS.map(lm => (
               <div key={lm.label}>
                 <span style={{ color: lm.color }}>■ </span>
-                <span style={{ color:"#bbb" }}>{lm.label}</span>
+                <span style={{ color:T2 }}>{lm.label}</span>
               </div>
             ))}
             <div style={{ marginTop:3, lineHeight:1.5 }}>
@@ -763,26 +771,26 @@ export default function Chart3Simulation() {
           <svg width="0" height="0" style={{ position:"absolute", overflow:"hidden" }}>
             <defs>
               <pattern id="hatchPattern" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
-                <line x1="0" y1="0" x2="0" y2="5" stroke="#555" strokeWidth="2" strokeOpacity="0.75" />
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#2a3a5c" strokeWidth="2" strokeOpacity="0.8" />
               </pattern>
             </defs>
           </svg>
 
           {/* Snapshot year selector */}
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6, flexShrink:0 }}>
-            <span style={{ fontSize:8, color:"#aaa", fontFamily:"'IBM Plex Mono',monospace",
+            <span style={{ fontSize:8, color:T3, fontFamily:"'IBM Plex Mono',monospace",
               textTransform:"uppercase", letterSpacing:"0.1em", whiteSpace:"nowrap" }}>
               Snapshot year
             </span>
             <input type="range" min={2026} max={fogYear ?? 2035} step={1} value={effectiveKpiYear}
               onChange={ev => setKpiYear(+ev.target.value)}
-              style={{ flex:1, accentColor:"#555", cursor:"pointer" }} />
+              style={{ flex:1, accentColor:"#c8a96e", cursor:"pointer" }} />
             <div style={{ display:"flex", gap:4, flexShrink:0 }}>
               {rows.filter(r => r.year <= (fogYear ?? 2035)).map(r => (
                 <span key={r.year} onClick={() => setKpiYear(r.year)}
                   style={{ fontSize:7, cursor:"pointer", fontFamily:"'IBM Plex Mono',monospace",
                     fontWeight: r.year===effectiveKpiYear ? 700 : 400,
-                    color: r.year===effectiveKpiYear ? "#111" : "#ccc" }}>
+                    color: r.year===effectiveKpiYear ? T1 : "#2a3a5c" }}>
                   {r.year}
                 </span>
               ))}
@@ -810,7 +818,7 @@ export default function Chart3Simulation() {
             </div>
             <button onClick={() => setShowThresholds(s => !s)}
               style={{ flexShrink:0, padding:"4px 7px", fontSize:8, cursor:"pointer",
-                background:"#f9f9f9", border:"1px solid #e2e2e2", color:"#888",
+                background:BG2, border:BD, color:T3,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               ℹ
             </button>
@@ -832,15 +840,15 @@ export default function Chart3Simulation() {
             <KShapeChart  rows={chartRows} firstRedYear={firstRedYear} fogYear={fogYear} />
           </div>
 
-          <div style={{ fontSize:7, color:"#ccc", marginTop:7, flexShrink:0 }}>
+          <div style={{ fontSize:7, color:T3, marginTop:7, flexShrink:0 }}>
             Sources: CBO 2025 · IMF WP/2025/076 · Reinhart-Rogoff NBER w15639 · Goldman Sachs · Dallas Fed 2025
           </div>
 
           {/* Crisis classification box — always visible */}
           {(() => {
-            const bg    = collisionStatus === "COLLISION" ? "#fef2f2" : collisionStatus === "CONVENTIONAL" ? "#fefce8" : "#f9fafb";
-            const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#e2e2e260";
-            const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#92400e"   : "#16a34a";
+            const bg    = collisionStatus === "COLLISION" ? "rgba(220,38,38,0.1)" : collisionStatus === "CONVENTIONAL" ? "rgba(202,138,4,0.1)" : BG2;
+            const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#1e2a42";
+            const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#ca8a04"   : "#22c55e";
             const hdTxt = collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}`
                         : collisionStatus === "CONVENTIONAL" ? `CONVENTIONAL CRISIS — ${collisionYear}`
                         : "NO CRISIS — SYSTEM STABLE 2026–2035";
@@ -851,7 +859,7 @@ export default function Chart3Simulation() {
                 {hdTxt}
               </div>
               {collisionStatus !== "NO_CRISIS" && (
-              <div style={{ fontSize:10, color:"#444", lineHeight:1.6, marginBottom: collisionStatus === "CONVENTIONAL" ? 8 : 0 }}>
+              <div style={{ fontSize:10, color:T2, lineHeight:1.6, marginBottom: collisionStatus === "CONVENTIONAL" ? 8 : 0 }}>
                 {collisionStatus === "COLLISION" ? (
                   <>
                     AI displacement {Math.round(displaced * 100)}%{collisionCrypto > 20 ? `, crypto flight ${collisionCrypto}%` : ""} — novel dynamics absent from all historical crises.
@@ -866,7 +874,7 @@ export default function Chart3Simulation() {
               </div>
               )}
               {collisionStatus === "CONVENTIONAL" && (
-                <div style={{ fontSize:9, color:"#92400e" }}>
+                <div style={{ fontSize:9, color:"#ca8a04" }}>
                   Increase AI above 15% or Crypto above 20% to model The Collision.
                 </div>
               )}
@@ -888,21 +896,21 @@ export default function Chart3Simulation() {
           {/* Economy Overview Card */}
           {overviewLoading ? (
             <div style={{ margin:"16px 0 8px", padding:"28px 20px",
-              background:"#fafafa", border:"1px solid #e2e2e2",
+              background:BG2, border:BD,
               textAlign:"center", flexShrink:0 }}>
-              <span style={{ fontSize:11, color:"#aaa", fontStyle:"italic" }}>
+              <span style={{ fontSize:11, color:T3, fontStyle:"italic" }}>
                 Generating economic overview...
               </span>
             </div>
           ) : economyOverview && (
             <div style={{ margin:"16px 0 8px", padding:"16px 20px",
-              background:"#fafafa", border:"1px solid #e2e2e2", flexShrink:0 }}>
-              <div style={{ fontSize:9, fontWeight:700, color:"#111",
+              background:BG2, border:BD, flexShrink:0 }}>
+              <div style={{ fontSize:9, fontWeight:700, color:T1,
                 textTransform:"uppercase", letterSpacing:"0.12em",
-                borderBottom:"1px solid #e2e2e2", paddingBottom:7, marginBottom:12 }}>
+                borderBottom:BD2, paddingBottom:7, marginBottom:12 }}>
                 Economic Overview — {last.year}
               </div>
-              <div style={{ fontSize:11, lineHeight:1.7, color:"#333" }}>
+              <div style={{ fontSize:11, lineHeight:1.7, color:T2 }}>
                 {economyOverview.split("\n\n").map((para, i, arr) => (
                   <p key={i} style={{ margin:0, marginBottom: i < arr.length - 1 ? 10 : 0 }}>
                     {para}
