@@ -7,24 +7,44 @@ It contains everything needed to work on this project without prior context.
 
 ## What This Project Is
 
-**SPICE Protocol** (`zpc.finance`) is a research project and pre-launch DeFi
-protocol exploring the collision between:
-- US sovereign debt on an unsustainable trajectory (CBO: 154–199% GDP by 2054)
-- AI-driven deflation (structural downward pressure on prices from automation)
-- Governments' need for inflation to manage that debt
+**SPICE Protocol** (`zpc.finance`) is a post-collapse community economic system,
+not a hedge fund or investment vehicle. The concept has two distinct phases:
 
-The thesis: governments will deploy monetary tools (QE, yield curve control,
-financial repression) to win the inflation battle, debasing fiat currency.
-SPICE is designed as a hedge — holding BTC, gold (PAXG), and synthetic bond
-shorts — inversely correlated with fiat system stability.
+### Phase 1 — The Collision (precursor context)
+The macro thesis: US sovereign debt is on an unsustainable trajectory
+(CBO: 154–199% GDP by 2054), AI-driven automation is causing structural
+unemployment, and governments will deploy monetary tools (QE, YCC, financial
+repression) that debase fiat currency. This collision between debt, deflation
+and capital flight to crypto leads to fiat breakdown.
 
-The site serves two audiences:
-1. **Sceptical researchers / potential co-founders** — want to interrogate the
-   model, see the formulae, check the citations
-2. **Potential investors** — want to understand the thesis at a high level
+### Phase 2 — The SPICE Colony Economy (the actual product)
+After the Collision — fiat breakdown, AI unemployment, civil reorganisation —
+communities self-organise into **colonies**. Each colony runs the SPICE system:
 
-The site has a **research feel**, not a product/marketing feel. Think working
-paper or research institute, not startup landing page.
+- **S-token (= SPICE coin = ZPC)** — the colony's everyday currency. Issued by
+  the MCC as basic income (UBI). Used for all internal transactions. Not backed
+  by fiat.
+- **V-token** — long-term savings instrument. Accrues yield from colony economic
+  activity and S-tax receipts. Not freely spent.
+- **MCC (Monetary Control Committee)** — the colony's monetary authority. Issues
+  S, backs V, distributes yield.
+- **Fiscal citizens** — colony members. Receive S as UBI, spend S, may hold V.
+- **Companies** — colony enterprises. Pay/receive S, hold V, pay S-tax to MCC.
+- **External settlement** — inter-colony trade uses BTC, ETH, or SOL. Not part
+  of the internal SPICE system.
+
+### What SPICE is NOT
+- Not a hedge fund or crypto investment vehicle
+- Not backed by BTC/gold/bond shorts
+- The old "IRON/SPICE two-token hedge fund" concept is **retired**
+- A separate portfolio suggestion page may exist for pre-collapse investment
+  ideas, but this is entirely separate from the SPICE system itself
+
+The site serves:
+1. **Potential co-founders / researchers** — interrogate the economic model
+2. **Community builders** — understand the colony concept and how to participate
+
+Research feel — no marketing language, no exclamation marks.
 
 ---
 

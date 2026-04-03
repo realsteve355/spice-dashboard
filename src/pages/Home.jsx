@@ -46,132 +46,114 @@ const SC = {
   mcc:     "#4488ff",
   citizen: "#3dffa0",
   company: "#9966ff",
-  arrow:   "#2a3a5c",
+  ext:     "#f97316",
 };
 
-function mk(col) { return `url(#ah-${col.replace("#","")})` }
+function mk(col) { return `url(#hah-${col.replace("#","")})` }
 
 function SystemDiagram() {
-  const W = 720, H = 380;
+  const W = 640, H = 360;
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%"
-      style={{ display:"block" }}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" style={{ display:"block" }}>
       <defs>
-        {[SC.s, SC.v, SC.mcc, SC.citizen, SC.company, SC.arrow, "#dc2626"].map(col => (
-          <marker key={col} id={`ah-${col.replace("#","")}`}
+        {[SC.s, SC.v, SC.mcc, SC.citizen, SC.company, SC.ext].map(col => (
+          <marker key={col} id={`hah-${col.replace("#","")}`}
             markerWidth={6} markerHeight={6} refX={5} refY={3} orient="auto">
             <polygon points="0 0, 6 3, 0 6" fill={col} />
           </marker>
         ))}
       </defs>
 
-      {/* Zones */}
-      <rect x={8} y={8} width={190} height={H-16} rx={4}
-        fill="rgba(61,255,160,0.03)" stroke={SC.citizen} strokeWidth={0.5} strokeDasharray="4 4"/>
-      <text x={20} y={24} fontSize={7} fill={SC.citizen} fontFamily={F} letterSpacing="0.2em">FISCAL ZONE</text>
+      {/* Colony boundary */}
+      <rect x={4} y={4} width={490} height={H-8} rx={5}
+        fill="rgba(42,58,92,0.15)" stroke="#2a3a5c" strokeWidth={1.5} strokeDasharray="6 4"/>
+      <text x={16} y={20} fontSize={7} fill={T3} fontFamily={F} letterSpacing="0.2em">COLONY — internal economy</text>
 
-      <rect x={224} y={8} width={272} height={H-16} rx={4}
-        fill="rgba(68,136,255,0.03)" stroke={SC.mcc} strokeWidth={0.5} strokeDasharray="4 4"/>
-      <text x={236} y={24} fontSize={7} fill={SC.mcc} fontFamily={F} letterSpacing="0.2em">PROTOCOL ZONE</text>
+      {/* External zone */}
+      <rect x={504} y={4} width={132} height={H-8} rx={5}
+        fill="rgba(249,115,22,0.04)" stroke={SC.ext} strokeWidth={1} strokeDasharray="4 4"/>
+      <text x={516} y={20} fontSize={7} fill={SC.ext} fontFamily={F} letterSpacing="0.15em">EXTERNAL</text>
 
-      <rect x={512} y={8} width={200} height={H-16} rx={4}
-        fill="rgba(153,102,255,0.03)" stroke={SC.company} strokeWidth={0.5} strokeDasharray="4 4"/>
-      <text x={524} y={24} fontSize={7} fill={SC.company} fontFamily={F} letterSpacing="0.2em">MARKET ZONE</text>
-
-      {/* Citizens */}
-      {[20, 106].map((x, i) => (
-        <g key={i}>
-          <rect x={x} y={44} width={78} height={56} rx={3}
-            fill={`${SC.citizen}14`} stroke={SC.citizen} strokeWidth={1.2}/>
-          <text x={x+39} y={62} textAnchor="middle" fontSize={12} fill={SC.citizen} fontFamily={F}>◉</text>
-          <text x={x+39} y={78} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F} letterSpacing="0.1em">CITIZEN</text>
-          <text x={x+39} y={90} textAnchor="middle" fontSize={7} fill={T3} fontFamily={F}>individual</text>
+      {/* External assets */}
+      {[["BTC","#f97316",52],["ETH","#8b9cf6",156],["SOL","#9966ff",260]].map(([l,c,y]) => (
+        <g key={l}>
+          <rect x={518} y={y} width={104} height={44} rx={3} fill={`${c}10`} stroke={c} strokeWidth={1}/>
+          <text x={570} y={y+18} textAnchor="middle" fontSize={13} fill={c} fontFamily={F} fontWeight="700">{l}</text>
+          <text x={570} y={y+32} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>settlement</text>
         </g>
       ))}
 
-      {/* Citizens → MCC */}
-      <line x1={74} y1={86} x2={266} y2={128} stroke={SC.citizen} strokeWidth={1.2}
-        markerEnd={mk(SC.citizen)}/>
-      <text x={165} y={98} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>ZPC tax</text>
-      <line x1={152} y1={86} x2={284} y2={128} stroke={SC.citizen} strokeWidth={1.2}
-        markerEnd={mk(SC.citizen)}/>
+      {/* Colony ↔ External */}
+      <line x1={494} y1={160} x2={518} y2={160} stroke={SC.ext} strokeWidth={1.2} strokeDasharray="3 2" markerEnd={mk(SC.ext)}/>
+      <line x1={518} y1={175} x2={494} y2={175} stroke={SC.ext} strokeWidth={1.2} strokeDasharray="3 2" markerEnd={mk(SC.ext)}/>
 
-      {/* MCC */}
-      <rect x={240} y={134} width={200} height={64} rx={3}
-        fill={`${SC.mcc}14`} stroke={SC.mcc} strokeWidth={1.2}/>
-      <text x={340} y={156} textAnchor="middle" fontSize={12} fill={SC.mcc} fontFamily={F}>▣</text>
-      <text x={340} y={172} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F} letterSpacing="0.1em">MCC TREASURY</text>
-      <text x={340} y={184} textAnchor="middle" fontSize={7} fill={T3} fontFamily={F}>Monetary Control Committee</text>
-
-      {/* S Token */}
-      <circle cx={100} cy={258} r={24} fill={`${SC.s}18`} stroke={SC.s} strokeWidth={1.5}/>
-      <text x={100} y={262} textAnchor="middle" fontSize={11} fontWeight={700} fill={SC.s} fontFamily={F}>S</text>
-      <text x={100} y={292} textAnchor="middle" fontSize={7} fill={SC.s} fontFamily={F}>TRANSIENT</text>
-      <text x={100} y={302} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>minted / burned</text>
-
-      {/* MCC → S */}
-      <line x1={248} y1={184} x2={126} y2={244} stroke={SC.s} strokeWidth={1.2}
-        markerEnd={mk(SC.s)}/>
-      <text x={182} y={207} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>mints</text>
-
-      {/* S burned → MCC */}
-      <path d="M 76 264 Q 52 316 52 348 Q 52 372 190 366 Q 258 360 256 332 Q 254 308 252 296"
-        fill="none" stroke={SC.s} strokeWidth={1.2} strokeDasharray="4 3"
-        markerEnd={mk(SC.s)}/>
-      <text x={88} y={362} textAnchor="middle" fontSize={7} fill={SC.s} fontFamily={F}>burned</text>
-
-      {/* Citizens → S */}
-      <line x1={100} y1={100} x2={100} y2={234} stroke={SC.s} strokeWidth={1.2}
-        markerEnd={mk(SC.s)}/>
-      <text x={82} y={168} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>hold S</text>
-
-      {/* V Token */}
-      <circle cx={340} cy={268} r={24} fill={`${SC.v}18`} stroke={SC.v} strokeWidth={1.5}/>
-      <text x={340} y={272} textAnchor="middle" fontSize={11} fontWeight={700} fill={SC.v} fontFamily={F}>V</text>
-      <text x={340} y={302} textAnchor="middle" fontSize={7} fill={SC.v} fontFamily={F}>PERSISTENT</text>
-      <text x={340} y={312} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>accrues yield</text>
-
-      {/* MCC → V */}
-      <line x1={340} y1={198} x2={340} y2={244} stroke={SC.v} strokeWidth={1.2}
-        markerEnd={mk(SC.v)}/>
-      <text x={356} y={224} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>backs</text>
+      {/* Citizens */}
+      {[18, 108].map((x, i) => (
+        <g key={i}>
+          <rect x={x} y={36} width={78} height={52} rx={3} fill={`${SC.citizen}14`} stroke={SC.citizen} strokeWidth={1.2}/>
+          <text x={x+39} y={54} textAnchor="middle" fontSize={12} fill={SC.citizen} fontFamily={F}>◉</text>
+          <text x={x+39} y={68} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F}>CITIZEN</text>
+          <text x={x+39} y={79} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>colony member</text>
+        </g>
+      ))}
 
       {/* Company */}
-      <rect x={524} y={44} width={172} height={60} rx={3}
-        fill={`${SC.company}14`} stroke={SC.company} strokeWidth={1.2}/>
-      <text x={610} y={64} textAnchor="middle" fontSize={12} fill={SC.company} fontFamily={F}>⬡</text>
-      <text x={610} y={80} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F} letterSpacing="0.1em">COMPANY</text>
-      <text x={610} y={92} textAnchor="middle" fontSize={7} fill={T3} fontFamily={F}>ZPC participant</text>
+      <rect x={352} y={36} width={126} height={52} rx={3} fill={`${SC.company}14`} stroke={SC.company} strokeWidth={1.2}/>
+      <text x={415} y={54} textAnchor="middle" fontSize={12} fill={SC.company} fontFamily={F}>⬡</text>
+      <text x={415} y={68} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F}>COMPANY</text>
+      <text x={415} y={79} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>enterprise</text>
 
-      {/* Company → MCC (stake) */}
-      <line x1={524} y1={104} x2={440} y2={162} stroke={SC.mcc} strokeWidth={1.2} strokeDasharray="4 3"
-        markerEnd={mk(SC.mcc)}/>
-      <text x={494} y={126} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>stake ZPC</text>
+      {/* MCC */}
+      <rect x={158} y={200} width={186} height={60} rx={3} fill={`${SC.mcc}14`} stroke={SC.mcc} strokeWidth={1.5}/>
+      <text x={251} y={220} textAnchor="middle" fontSize={11} fill={SC.mcc} fontFamily={F}>▣</text>
+      <text x={251} y={236} textAnchor="middle" fontSize={8} fontWeight={700} fill={T1} fontFamily={F} letterSpacing="0.1em">MCC TREASURY</text>
+      <text x={251} y={250} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>issues S · backs V · colony authority</text>
 
-      {/* MCC → Company (yield) */}
-      <line x1={440} y1={152} x2={524} y2={90} stroke={SC.v} strokeWidth={1.2}
-        markerEnd={mk(SC.v)}/>
-      <text x={494} y={112} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>V yield</text>
+      {/* S Token */}
+      <circle cx={82} cy={188} r={22} fill={`${SC.s}18`} stroke={SC.s} strokeWidth={1.5}/>
+      <text x={82} y={185} textAnchor="middle" fontSize={10} fontWeight={700} fill={SC.s} fontFamily={F}>S</text>
+      <text x={82} y={197} textAnchor="middle" fontSize={6} fill={SC.s} fontFamily={F}>SPICE</text>
+      <text x={82} y={218} textAnchor="middle" fontSize={6.5} fill={SC.s} fontFamily={F}>everyday currency</text>
 
-      {/* Company → V */}
-      <line x1={610} y1={104} x2={368} y2={254} stroke={SC.v} strokeWidth={1.2}
-        markerEnd={mk(SC.v)}/>
-      <text x={506} y={164} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>hold V</text>
+      {/* V Token */}
+      <circle cx={415} cy={188} r={22} fill={`${SC.v}18`} stroke={SC.v} strokeWidth={1.5}/>
+      <text x={415} y={185} textAnchor="middle" fontSize={10} fontWeight={700} fill={SC.v} fontFamily={F}>V</text>
+      <text x={415} y={197} textAnchor="middle" fontSize={6} fill={SC.v} fontFamily={F}>VAULT</text>
+      <text x={415} y={218} textAnchor="middle" fontSize={6.5} fill={SC.v} fontFamily={F}>savings · yield</text>
 
-      {/* Crisis */}
-      <rect x={20} y={318} width={168} height={54} rx={3}
-        fill="rgba(220,38,38,0.08)" stroke="#dc2626" strokeWidth={0.8} strokeDasharray="3 3"/>
-      <text x={104} y={338} textAnchor="middle" fontSize={7.5} fontWeight={700} fill="#dc2626" fontFamily={F} letterSpacing="0.1em">◈ COLLISION EVENT</text>
-      <text x={104} y={352} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>debt spiral · AI displacement</text>
-      <text x={104} y={363} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>triggers S demand spike</text>
+      {/* MCC → Citizens: issue S */}
+      <line x1={188} y1={214} x2={106} y2={200} stroke={SC.s} strokeWidth={1.2} markerEnd={mk(SC.s)}/>
+      <text x={142} y={201} textAnchor="middle" fontSize={6.5} fill={SC.s} fontFamily={F}>issue S (UBI)</text>
 
-      {/* Crisis → S */}
-      <line x1={132} y1={318} x2={114} y2={294} stroke="#dc2626" strokeWidth={1.2}
-        markerEnd={mk("#dc2626")}/>
-      {/* Crisis → V */}
-      <line x1={178} y1={340} x2={314} y2={296} stroke={SC.v} strokeWidth={1.2}
-        markerEnd={mk(SC.v)}/>
-      <text x={252} y={308} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>↑ V safe-haven</text>
+      {/* Citizens → MCC: S tax */}
+      <line x1={96} y1={210} x2={172} y2={224} stroke={SC.s} strokeWidth={1} strokeDasharray="3 3" markerEnd={mk(SC.s)}/>
+      <text x={126} y={225} textAnchor="middle" fontSize={6.5} fill={T2} fontFamily={F}>S tax</text>
+
+      {/* Citizens spend S → Company */}
+      <line x1={196} y1={60} x2={352} y2={60} stroke={SC.s} strokeWidth={1.4} markerEnd={mk(SC.s)}/>
+      <text x={274} y={53} textAnchor="middle" fontSize={6.5} fill={SC.s} fontFamily={F}>spend S · goods · services</text>
+
+      {/* Company → MCC: S tax */}
+      <line x1={390} y1={88} x2={318} y2={204} stroke={SC.s} strokeWidth={1} strokeDasharray="3 3" markerEnd={mk(SC.s)}/>
+      <text x={368} y={158} textAnchor="middle" fontSize={6.5} fill={T2} fontFamily={F}>S tax</text>
+
+      {/* MCC → V: backs */}
+      <line x1={344} y1={222} x2={437} y2={206} stroke={SC.v} strokeWidth={1.2} markerEnd={mk(SC.v)}/>
+      <text x={398} y={210} textAnchor="middle" fontSize={6.5} fill={T2} fontFamily={F}>backs</text>
+
+      {/* V → Company: yield */}
+      <line x1={415} y1={166} x2={415} y2={88} stroke={SC.v} strokeWidth={1.2} markerEnd={mk(SC.v)}/>
+      <text x={430} y={130} textAnchor="middle" fontSize={6.5} fill={SC.v} fontFamily={F}>yield</text>
+
+      {/* Citizens save → V */}
+      <path d="M 108 72 Q 260 110 393 178" fill="none" stroke={SC.v} strokeWidth={1} strokeDasharray="3 3" markerEnd={mk(SC.v)}/>
+      <text x={250} y={118} textAnchor="middle" fontSize={6.5} fill={SC.v} fontFamily={F}>hold V (savings)</text>
+
+      {/* S = ZPC label */}
+      <rect x={90} y={290} width={310} height={30} rx={3}
+        fill="rgba(239,68,68,0.06)" stroke={`${SC.s}40`} strokeWidth={0.8}/>
+      <text x={245} y={302} textAnchor="middle" fontSize={7.5} fontWeight={700} fill={SC.s} fontFamily={F} letterSpacing="0.08em">S TOKEN = SPICE COIN (ZPC)</text>
+      <text x={245} y={314} textAnchor="middle" fontSize={6.5} fill={T2} fontFamily={F}>colony unit of account · issued by MCC · not backed by fiat</text>
     </svg>
   );
 }
@@ -253,22 +235,28 @@ export default function Home() {
         padding:"16px 12px 12px",
       }}>
         <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-          Protocol Mechanics
+          Post-Collision Economy
         </div>
-        <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:12 }}>
-          SPICE Economic System
+        <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:4 }}>
+          SPICE Colony Economic System
+        </div>
+        <div style={{ fontSize:9, color:T2, lineHeight:1.6, marginBottom:10 }}>
+          After fiat breakdown, communities self-organise into colonies.
+          S-token (ZPC) is the everyday currency. V-token is savings.
+          External trade settles in BTC · ETH · SOL.
         </div>
         <div style={{ flex:1, minHeight:0 }}>
           <SystemDiagram />
         </div>
-        <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginTop:8, paddingTop:8,
+        <div style={{ display:"flex", gap:14, flexWrap:"wrap", marginTop:8, paddingTop:8,
           borderTop:`1px solid ${BD}` }}>
           {[
-            { color:"#ef4444", label:"S Token — transient" },
-            { color:GOLD,      label:"V Token — persistent" },
-            { color:"#4488ff", label:"MCC Treasury" },
-            { color:"#3dffa0", label:"Fiscal Citizen" },
+            { color:"#ef4444", label:"S (SPICE coin)" },
+            { color:GOLD,      label:"V (savings)" },
+            { color:"#4488ff", label:"MCC" },
+            { color:"#3dffa0", label:"Citizen" },
             { color:"#9966ff", label:"Company" },
+            { color:"#f97316", label:"BTC/ETH/SOL" },
           ].map(({ color, label }) => (
             <div key={label} style={{ display:"flex", alignItems:"center", gap:5 }}>
               <div style={{ width:7, height:7, borderRadius:"50%", background:color }} />
