@@ -227,13 +227,14 @@ export default function Home() {
       background: BG0, color: T1, fontFamily: F,
       height: "calc(100vh - 57px)", overflow: "hidden",
       display: "grid",
-      gridTemplateColumns: "280px 1fr 280px",
+      gridTemplateColumns: "1fr 1.6fr 1fr",
       gridTemplateRows: "1fr 1fr",
       gap: 1,
     }}>
 
       {/* ── TOP LEFT: Collision ── */}
-      <Panel to="/collision" color={levelColor} eyebrow="The Collision" title={`Alert: ${levelLabel}`}>
+      <div style={{ gridColumn:1, gridRow:1 }}>
+      <Panel to="/collision" color={levelColor} eyebrow="The Collision — Precursor" title={`Alert: ${levelLabel}`}>
         <CollisionLogo color={levelColor} />
         <div style={{ marginTop:"auto" }}>
           <Stat label="Debt / GDP"      value={`${C.debt}%`}   color="#ef4444" />
@@ -242,10 +243,11 @@ export default function Home() {
         </div>
         <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ Run the simulation</div>
       </Panel>
+      </div>
 
       {/* ── CENTRE: SPICE System (spans both rows) ── */}
       <div style={{
-        gridRow: "1 / 3", background: BG1,
+        gridColumn: 2, gridRow: "1 / 3", background: BG1,
         borderLeft:`1px solid ${BD}`, borderRight:`1px solid ${BD}`,
         display:"flex", flexDirection:"column",
         padding:"16px 12px 12px",
@@ -276,47 +278,53 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── TOP RIGHT: Mars ── */}
-      <Panel to="/mars" color="#3dffa0" eyebrow="Mars Colony" title="Mars Economy">
+      {/* ── TOP RIGHT: Mars Colony Economy ── */}
+      <div style={{ gridColumn:3, gridRow:1 }}>
+      <Panel to="/mars" color="#3dffa0" eyebrow="Mars Colony Economy" title="Mars Colony Economy">
         <div style={{ fontSize:9, color:T2, lineHeight:1.7 }}>
-          A simulation of the SPICE economic model operating at colony scale.
-          S and V tokens govern a population of fiscal citizens across 200 simulated years.
+          The SPICE economic model running at colony scale — 200 simulated years.
+          S and V tokens govern citizens, companies and the MCC treasury.
         </div>
         <div style={{ marginTop:"auto" }}>
-          <Stat label="Simulation Years"   value="200"      color="#3dffa0" />
-          <Stat label="Economic Model"     value="ZPC/SPICE" color="#3dffa0" />
-          <Stat label="Token Types"        value="S + V"    color={GOLD} />
+          <Stat label="Simulation Years" value="200"       color="#3dffa0" />
+          <Stat label="Economic Model"   value="ZPC/SPICE" color="#3dffa0" />
+          <Stat label="Token Types"      value="S + V"     color={GOLD} />
         </div>
         <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ View colony dashboard</div>
       </Panel>
+      </div>
 
-      {/* ── BOTTOM LEFT: Earth ── */}
-      <Panel to="/earth" color="#4488ff" eyebrow="Earth Economy" title="ZPC on Earth">
+      {/* ── BOTTOM LEFT: Earth Colony Economy ── */}
+      <div style={{ gridColumn:1, gridRow:2 }}>
+      <Panel to="/earth" color="#4488ff" eyebrow="Earth Colony Economy" title="Earth Colony Economy">
         <div style={{ fontSize:9, color:T2, lineHeight:1.7 }}>
-          The real-world deployment thesis. How S and V tokens function
-          within national economies under fiscal stress and AI displacement.
+          Real-world deployment of the SPICE model within national economies
+          under fiscal stress, AI displacement and crypto capital flight.
         </div>
         <div style={{ marginTop:"auto" }}>
-          <Stat label="Ergon Threshold"  value="≥ 30%"     color="#4488ff" />
-          <Stat label="Fiscal Response"  value="Robot UBI" color="#3dffa0" />
-          <Stat label="Monetary Policy"  value="QE"        color="#eab308" />
+          <Stat label="Ergon Threshold" value="≥ 30%"     color="#4488ff" />
+          <Stat label="Fiscal Policy"   value="Robot UBI" color="#3dffa0" />
+          <Stat label="Monetary Policy" value="QE"        color="#eab308" />
         </div>
         <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ Read the deployment model</div>
       </Panel>
+      </div>
 
       {/* ── BOTTOM RIGHT: Coin ── */}
-      <Panel to="/coin" color={GOLD} eyebrow="ZPC Token" title="SPICE Coin">
+      <div style={{ gridColumn:3, gridRow:2 }}>
+      <Panel to="/coin" color={GOLD} eyebrow="ZPC Token" title="COIN">
         <div style={{ fontSize:9, color:T2, lineHeight:1.7 }}>
-          The live protocol on Base Sepolia testnet. Connect a wallet to
-          interact with the SPICE vault and track on-chain positions.
+          The live ZPC protocol on Base Sepolia testnet.
+          Connect a wallet to interact with the SPICE vault.
         </div>
         <div style={{ marginTop:"auto" }}>
-          <Stat label="Network"     value="Base Sepolia" color={GOLD} />
-          <Stat label="Phase"       value="Testnet"      color="#4a5878" />
-          <Stat label="Token"       value="ZPC"          color={GOLD} />
+          <Stat label="Network" value="Base Sepolia" color={GOLD} />
+          <Stat label="Phase"   value="Testnet"      color={T3} />
+          <Stat label="Token"   value="ZPC"          color={GOLD} />
         </div>
         <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ Connect wallet</div>
       </Panel>
+      </div>
 
     </div>
   );
