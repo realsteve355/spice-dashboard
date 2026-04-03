@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from "react";
 
+// Dark palette
+const BG0  = "#0a0e1a";
+const BG1  = "#080c16";
+const BG2  = "#0f1520";
+const BD   = "#1e2a42";
+const T1   = "#e8eaf0";
+const T2   = "#8899bb";
+const T3   = "#4a5878";
+const GOLD = "#c8a96e";
+
 // ─── Level metadata ────────────────────────────────────────────────────────────
 const LEVEL_META = [
-  { id: 0, label: "GREEN",  color: "#16a34a", bg: "#f0fdf4", range: "0–9"   },
-  { id: 1, label: "BLUE",   color: "#3b82f6", bg: "#eff6ff", range: "10–19" },
-  { id: 2, label: "YELLOW", color: "#ca8a04", bg: "#fefce8", range: "20–29" },
-  { id: 3, label: "ORANGE", color: "#ea580c", bg: "#fff7ed", range: "30–38" },
-  { id: 4, label: "RED",    color: "#dc2626", bg: "#fef2f2", range: "39–56" },
+  { id: 0, label: "GREEN",  color: "#16a34a", bg: "rgba(22,163,74,0.08)",   range: "0–9"   },
+  { id: 1, label: "BLUE",   color: "#3b82f6", bg: "rgba(59,130,246,0.08)",  range: "10–19" },
+  { id: 2, label: "YELLOW", color: "#ca8a04", bg: "rgba(202,138,4,0.08)",   range: "20–29" },
+  { id: 3, label: "ORANGE", color: "#ea580c", bg: "rgba(234,88,12,0.08)",   range: "30–38" },
+  { id: 4, label: "RED",    color: "#dc2626", bg: "rgba(220,38,38,0.08)",   range: "39–56" },
 ];
 
 const COMPOSITE_DESC = [
@@ -45,7 +55,7 @@ const CATEGORIES = [
   { id: "debt",         label: "DEBT",         color: "#ef4444", desc: "Sovereign stress · credit markets · yield dynamics" },
   { id: "unemployment", label: "UNEMPLOYMENT",  color: "#8b5cf6", desc: "Labour market displacement · AI structural job loss" },
   { id: "inflation",    label: "INFLATION",     color: "#3b82f6", desc: "Monetary debasement · purchasing power erosion" },
-  { id: "crypto",       label: "CRYPTO",        color: "#B8860B", desc: "Non-sovereign asset adoption · fiat exit signal" },
+  { id: "crypto",       label: "CRYPTO",        color: GOLD, desc: "Non-sovereign asset adoption · fiat exit signal" },
 ];
 
 // ─── Indicator definitions ─────────────────────────────────────────────────────
@@ -497,7 +507,7 @@ const SC = {
     alignItems: "baseline",
     gap: 16,
     paddingBottom: 8,
-    borderBottom: "1px solid #e2e2e2",
+    borderBottom: `1px solid ${BD}`,
     marginBottom: 4,
     marginTop: 24,
   },
@@ -508,7 +518,7 @@ const SC = {
   },
   catDesc: {
     fontSize: 10,
-    color: "#aaa",
+    color: T3,
     letterSpacing: "0.04em",
   },
 };
@@ -519,7 +529,7 @@ function IndicatorCard({ ind, state }) {
   const lm = score !== null ? LEVEL_META[score] : null;
 
   return (
-    <div style={{ ...S.card, borderTop: `3px solid ${lm ? lm.color : "#e2e2e2"}` }}>
+    <div style={{ ...S.card, borderTop: `3px solid ${lm ? lm.color : BD}` }}>
       {/* Header row */}
       <div style={S.cardHead}>
         <div>
@@ -548,14 +558,14 @@ function IndicatorCard({ ind, state }) {
 
       {/* Value */}
       <div style={S.cardValue}>
-        {status === "loading" && <span style={{ color: "#ddd" }}>—</span>}
+        {status === "loading" && <span style={{ color: T3 }}>—</span>}
         {status === "error"   && (
           <span style={{ fontSize: 13, color: "#ef4444" }} title={error}>
             data unavailable
           </span>
         )}
         {status === "ok" && (
-          <span style={{ color: lm?.color || "#111" }}>{display}</span>
+          <span style={{ color: lm?.color || T1 }}>{display}</span>
         )}
       </div>
 
@@ -573,7 +583,7 @@ function IndicatorCard({ ind, state }) {
             style={{
               flex: 1,
               height: 6,
-              background: i === score ? l.color : "#e8e8e8",
+              background: i === score ? l.color : BD,
               borderRadius:
                 i === 0 ? "3px 0 0 3px" : i === 4 ? "0 3px 3px 0" : 0,
             }}
@@ -585,7 +595,7 @@ function IndicatorCard({ ind, state }) {
       {score !== null ? (
         <div style={S.threshText}>{ind.thresholds[score]?.range}</div>
       ) : (
-        <div style={{ ...S.threshText, color: "#ddd" }}>—</div>
+        <div style={{ ...S.threshText, color: T3 }}>—</div>
       )}
 
       {/* Description */}
@@ -691,7 +701,7 @@ export default function ApocalypseIndicator() {
                 style={{
                   height: 10,
                   flex: 1,
-                  background: i <= cl ? l.color : "#e2e2e2",
+                  background: i <= cl ? l.color : BD,
                   opacity: i === cl ? 1 : i < cl ? 0.55 : 0.25,
                   borderRadius:
                     i === 0 ? "3px 0 0 3px" : i === 4 ? "0 3px 3px 0" : 0,
@@ -705,7 +715,7 @@ export default function ApocalypseIndicator() {
                 key={l.id}
                 style={{
                   ...S.progressLabel,
-                  color: cl === l.id ? l.color : "#bbb",
+                  color: cl === l.id ? l.color : T3,
                   fontWeight: cl === l.id ? 700 : 400,
                 }}
               >
@@ -765,28 +775,30 @@ const S = {
     margin: "0 auto",
     padding: "48px 40px 80px",
     fontFamily: "'IBM Plex Mono', monospace",
+    background: BG0,
+    color: T1,
   },
   pageHeader: {
-    borderBottom: "1px solid #e2e2e2",
+    borderBottom: `1px solid ${BD}`,
     paddingBottom: 32,
     marginBottom: 40,
   },
   eyebrow: {
     fontSize: 10,
-    color: "#B8860B",
+    color: GOLD,
     letterSpacing: "0.15em",
     marginBottom: 10,
   },
   title: {
     fontSize: 30,
     fontWeight: 700,
-    color: "#111",
+    color: T1,
     margin: "0 0 14px",
     letterSpacing: "-0.01em",
   },
   subtitle: {
     fontSize: 12,
-    color: "#555",
+    color: T2,
     lineHeight: 1.75,
     maxWidth: 700,
     margin: 0,
@@ -804,7 +816,7 @@ const S = {
   bannerLeft: { flex: 1 },
   bannerEyebrow: {
     fontSize: 10,
-    color: "#999",
+    color: T3,
     letterSpacing: "0.15em",
     marginBottom: 8,
   },
@@ -816,7 +828,7 @@ const S = {
   },
   bannerDesc: {
     fontSize: 12,
-    color: "#444",
+    color: T2,
     lineHeight: 1.7,
     maxWidth: 480,
   },
@@ -831,11 +843,11 @@ const S = {
   },
   scoreMax: {
     fontSize: 22,
-    color: "#aaa",
+    color: T3,
   },
   scoreSub: {
     fontSize: 10,
-    color: "#aaa",
+    color: T3,
     letterSpacing: "0.06em",
     marginBottom: 18,
   },
@@ -860,9 +872,9 @@ const S = {
   },
   // Cards
   card: {
-    border: "1px solid #e2e2e2",
+    border: `1px solid ${BD}`,
     padding: "20px 22px 16px",
-    background: "#fff",
+    background: BG2,
   },
   cardHead: {
     display: "flex",
@@ -873,12 +885,12 @@ const S = {
   cardName: {
     fontSize: 13,
     fontWeight: 700,
-    color: "#111",
+    color: T1,
     marginBottom: 3,
   },
   cardAbbr: {
     fontSize: 9,
-    color: "#aaa",
+    color: T3,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
@@ -892,7 +904,7 @@ const S = {
   },
   badgeLoading: {
     fontSize: 9,
-    color: "#ccc",
+    color: T3,
     letterSpacing: "0.1em",
   },
   badgeError: {
@@ -910,7 +922,7 @@ const S = {
   },
   scorePill: {
     fontSize: 10,
-    color: "#999",
+    color: T3,
     marginBottom: 10,
   },
   threshBar: {
@@ -920,34 +932,34 @@ const S = {
   },
   threshText: {
     fontSize: 10,
-    color: "#666",
+    color: T2,
     marginBottom: 14,
     minHeight: 16,
   },
   cardDesc: {
     fontSize: 11,
-    color: "#555",
+    color: T2,
     lineHeight: 1.65,
     marginBottom: 14,
   },
   cardFoot: {
     fontSize: 9,
-    color: "#bbb",
+    color: T3,
     letterSpacing: "0.04em",
     display: "flex",
     gap: 6,
     flexWrap: "wrap",
     paddingTop: 10,
-    borderTop: "1px solid #f0f0f0",
+    borderTop: `1px solid ${BD}`,
   },
   // Method note
   methodNote: {
     marginTop: 40,
     padding: "18px 22px",
-    background: "#fafafa",
-    border: "1px solid #e2e2e2",
+    background: BG2,
+    border: `1px solid ${BD}`,
     fontSize: 11,
-    color: "#555",
+    color: T2,
     lineHeight: 1.75,
   },
   // No key warning
@@ -955,12 +967,12 @@ const S = {
     maxWidth: 560,
     margin: "60px auto",
     padding: 36,
-    border: "1px solid #e2e2e2",
+    border: `1px solid ${BD}`,
   },
   noKeyTitle: {
     fontSize: 14,
     fontWeight: 700,
-    color: "#111",
+    color: T1,
     letterSpacing: "0.1em",
     marginBottom: 16,
   },
@@ -968,9 +980,9 @@ const S = {
   footer: {
     marginTop: 32,
     paddingTop: 24,
-    borderTop: "1px solid #e2e2e2",
+    borderTop: `1px solid ${BD}`,
     fontSize: 10,
-    color: "#aaa",
+    color: T3,
     lineHeight: 2,
     letterSpacing: "0.04em",
   },
