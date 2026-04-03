@@ -873,7 +873,7 @@ export default function Chart3Simulation() {
               {collisionStatus === "COLLISION" && crisisRow && (
                 <div style={{ marginTop:10 }}>
                   <Link
-                    to={`/crisis?collisionYear=${crisisRow.year}&crisisType=3&debt=${Math.round(crisisRow.debtGDP)}&unemp=${crisisRow.unemp.toFixed(1)}&infl=${crisisRow.infl.toFixed(1)}&yields=${crisisRow.yld.toFixed(2)}&crypto=${collisionCrypto}&gini=${(0.48 + ((crisisRow.capShare - 25) + (60 - crisisRow.labShare)) * 0.008).toFixed(2)}&ai=${Math.round(displaced * 100)}&fiscalPolicy=${fiscalId}&monetaryPolicy=${monetaryId}&cryptoPolicy=${cryptoPolicy}&collisionStatus=COLLISION`}
+                    to={`/collision/crisis?collisionYear=${crisisRow.year}&crisisType=3&debt=${Math.round(crisisRow.debtGDP)}&unemp=${crisisRow.unemp.toFixed(1)}&infl=${crisisRow.infl.toFixed(1)}&yields=${crisisRow.yld.toFixed(2)}&crypto=${collisionCrypto}&gini=${(0.48 + ((crisisRow.capShare - 25) + (60 - crisisRow.labShare)) * 0.008).toFixed(2)}&ai=${Math.round(displaced * 100)}&fiscalPolicy=${fiscalId}&monetaryPolicy=${monetaryId}&cryptoPolicy=${cryptoPolicy}&collisionStatus=COLLISION`}
                     style={{ display:"inline-block", background:"#dc2626", color:"#fff",
                       padding:"6px 14px", fontSize:9, fontWeight:700, fontFamily:"'IBM Plex Mono',monospace",
                       textDecoration:"none", letterSpacing:"0.08em" }}>
