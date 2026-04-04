@@ -102,12 +102,23 @@ function CollisionLogo({ color, label }) {
 
 function ImagePanel({ to, src, eyebrow, title, color }) {
   return (
-    <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden" }}>
-      <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:color, zIndex:2 }} />
-      <img src={src} alt={title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+    <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden", borderRadius:4 }}>
+      <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:color, zIndex:3 }} />
+      <img src={src} alt={title} style={{
+        width:"100%", height:"100%", objectFit:"cover", display:"block",
+        // 67 — soften all edges with a mask vignette
+        WebkitMaskImage:"radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%)",
+        maskImage:"radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%)",
+      }} />
+      {/* dark overlay for text legibility */}
       <div style={{
         position:"absolute", inset:0,
-        background:"linear-gradient(to top, rgba(8,12,22,0.92) 0%, rgba(8,12,22,0.2) 55%, transparent 100%)",
+        background:[
+          "linear-gradient(to top,  rgba(8,12,22,0.92) 0%, transparent 45%)",
+          "linear-gradient(to bottom, rgba(8,12,22,0.55) 0%, transparent 30%)",
+          "linear-gradient(to right,  rgba(8,12,22,0.4)  0%, transparent 25%)",
+          "linear-gradient(to left,   rgba(8,12,22,0.4)  0%, transparent 25%)",
+        ].join(", "),
         display:"flex", flexDirection:"column", justifyContent:"flex-end",
         padding:"16px 18px",
       }}>
@@ -135,7 +146,7 @@ function Stat({ label, value, color }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const CIRCLE_D = 190; // diameter of centre circle
+const CIRCLE_D = 162; // diameter of centre circle
 
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
@@ -196,7 +207,7 @@ export default function Home() {
         {/* TOP RIGHT: Mars Colony */}
         <ImagePanel
           to="/mars"
-          src="/mars-dome.png"
+          src="/MarsColonyWithoutLabels.png"
           eyebrow="Mars Colony Economy"
           title="Mars Colony"
           color="#3dffa0"
@@ -263,8 +274,8 @@ export default function Home() {
         <div style={{
           width:CIRCLE_D, height:CIRCLE_D, borderRadius:"50%",
           border:`2px solid ${GOLD}`,
-          background:`radial-gradient(circle at 38% 32%, rgba(200,169,110,0.22) 0%, ${BG1} 65%)`,
-          boxShadow:`0 0 0 6px ${BG0}, 0 0 48px rgba(200,169,110,0.18)`,
+          background:`linear-gradient(145deg, #13100a 0%, ${BG1} 60%)`,
+          boxShadow:`0 0 0 8px ${BG0}, 0 0 0 9px #c8a96e33, 0 0 40px rgba(200,169,110,0.18)`,
           display:"flex", flexDirection:"column",
           alignItems:"center", justifyContent:"center",
         }}>
