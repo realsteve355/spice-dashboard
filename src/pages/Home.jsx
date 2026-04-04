@@ -104,7 +104,7 @@ function CollisionLogo({ color, label }) {
 function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
   const atTop = textPos === "top";
   return (
-    <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden", borderRadius:4 }}>
+    <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden", borderRadius:6 }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:color, zIndex:3 }} />
       <img src={src} alt={title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
       {/* vignette overlays from all edges — softens image into dark background */}
@@ -137,17 +137,6 @@ function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
   );
 }
 
-// ─── Stat row ─────────────────────────────────────────────────────────────────
-
-function Stat({ label, value, color }) {
-  return (
-    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline",
-      borderBottom:`1px solid ${BD}`, paddingBottom:5 }}>
-      <span style={{ fontSize:8, color:T3, textTransform:"uppercase", letterSpacing:"0.08em" }}>{label}</span>
-      <span style={{ fontSize:14, fontWeight:700, color: color || T1, fontFamily:F }}>{value}</span>
-    </div>
-  );
-}
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -174,38 +163,35 @@ export default function Home() {
       height: "calc(100vh - 57px)", overflow: "hidden",
     }}>
 
-      {/* ── 2×2 grid ── */}
+      {/* ── 2×2 grid — 8px gap for breathing space ── */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gridTemplateRows: "1fr 1fr",
-        gap: 1,
+        gap: 8,
+        padding: 8,
+        boxSizing: "border-box",
         height: "100%",
       }}>
 
         {/* TOP LEFT: The Collision */}
-        <Link to="/collision" style={{ display:"block", height:"100%", textDecoration:"none", overflow:"hidden" }}>
+        <Link to="/collision" style={{ display:"block", height:"100%", textDecoration:"none", borderRadius:6, overflow:"hidden" }}>
           <div style={{
-            height:"100%", background:BG2, border:`1px solid ${BD}`,
-            borderTop:`3px solid ${levelColor}`, padding:"14px 18px",
+            height:"100%", background:BG2, borderRadius:6,
+            borderTop:`3px solid ${levelColor}`, padding:"20px 22px",
             display:"flex", flexDirection:"column", boxSizing:"border-box",
           }}>
-            <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:2 }}>
+            <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
               The Collision — Precursor
             </div>
-            <div style={{ fontSize:13, fontWeight:700, color:levelColor, letterSpacing:"0.06em", marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:levelColor, letterSpacing:"0.06em", marginBottom:14 }}>
               Alert: {levelLabel}
             </div>
             <CrisisTimeline level={level} levelColor={levelColor} />
             <div style={{ flex:1, minHeight:0, overflow:"hidden" }}>
               <CollisionLogo color={levelColor} label={levelLabel} />
             </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <Stat label="Debt / GDP"     value={`${C.debt}%`}   color="#ef4444" />
-              <Stat label="AI Penetration" value={`${C.ai}%`}     color="#8b5cf6" />
-              <Stat label="Crypto Flight"  value={`${C.crypto}%`} color={levelColor} />
-            </div>
-            <div style={{ fontSize:8, color:T3, marginTop:8 }}>→ Run the simulation</div>
+            <div style={{ fontSize:8, color:T3, marginTop:12 }}>→ Explore the simulation</div>
           </div>
         </Link>
 
@@ -229,10 +215,10 @@ export default function Home() {
         />
 
         {/* BOTTOM RIGHT: Coin */}
-        <Link to="/coin" style={{ display:"block", height:"100%", textDecoration:"none" }}>
+        <Link to="/coin" style={{ display:"block", height:"100%", textDecoration:"none", borderRadius:6, overflow:"hidden" }}>
           <div style={{
-            height:"100%", background:BG2, border:`1px solid ${BD}`,
-            borderTop:`3px solid ${GOLD}`, padding:"16px 18px",
+            height:"100%", background:BG2, borderRadius:6,
+            borderTop:`3px solid ${GOLD}`, padding:"20px 22px",
             display:"flex", flexDirection:"column", boxSizing:"border-box",
           }}>
             <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
@@ -281,7 +267,7 @@ export default function Home() {
           width:CIRCLE_D, height:CIRCLE_D, borderRadius:"50%",
           border:`2px solid ${GOLD}`,
           background:`linear-gradient(145deg, #13100a 0%, ${BG1} 60%)`,
-          boxShadow:`0 0 0 8px ${BG0}, 0 0 0 9px #c8a96e33, 0 0 40px rgba(200,169,110,0.18)`,
+          boxShadow:`0 0 0 4px ${BG0}, 0 0 30px rgba(200,169,110,0.22)`,
           display:"flex", flexDirection:"column",
           alignItems:"center", justifyContent:"center",
         }}>
