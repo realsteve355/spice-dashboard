@@ -26,33 +26,48 @@ const TL = [
   { color:"#991b1b", year:"2032" },
 ];
 
-function CrisisTimeline() {
+// level 0-4 → index in TL (which segment "today" sits on)
+const LEVEL_TO_TL = [0, 1, 2, 3, 5];
+
+function CrisisTimeline({ level, levelColor }) {
+  const tlIdx = LEVEL_TO_TL[level] ?? 0;
+  const todayPct = ((tlIdx + 0.5) / TL.length) * 100;
+
   return (
-    <div style={{ position:"relative", marginBottom:10 }}>
+    <div style={{ position:"relative", marginBottom:18, paddingBottom:18 }}>
+      {/* label */}
+      <div style={{ fontSize:7, color:T3, letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:5 }}>
+        Collision Status Today
+      </div>
       {/* colour bar */}
       <div style={{ display:"flex", height:8, borderRadius:2, overflow:"hidden" }}>
         {TL.map(s => <div key={s.year} style={{ flex:1, background:s.color }} />)}
       </div>
       {/* year labels */}
-      <div style={{ display:"flex", marginTop:3 }}>
+      <div style={{ display:"flex" }}>
         {TL.map(s => (
-          <div key={s.year} style={{ flex:1, fontSize:6, color:T3, fontFamily:F, textAlign:"center" }}>
+          <div key={s.year} style={{ flex:1, fontSize:6, color:T3, fontFamily:F, textAlign:"center", marginTop:2 }}>
             {s.year}
           </div>
         ))}
       </div>
-      {/* today marker — at left edge (early 2026) */}
+      {/* today marker — positioned at current SPICE level */}
       <div style={{
-        position:"absolute", top:-4, left:2,
-        width:10, height:10, borderRadius:"50%",
-        background:"#fff", border:"2px solid #0a0e1a",
-      }} />
+        position:"absolute", bottom:4,
+        left:`${todayPct}%`, transform:"translateX(-50%)",
+        display:"flex", flexDirection:"column", alignItems:"center", gap:2,
+      }}>
+        <div style={{
+          width:10, height:10, borderRadius:"50%",
+          background:"#fff", border:`2px solid ${levelColor}`,
+        }} />
+        <div style={{ fontSize:6.5, color:levelColor, fontFamily:F, fontWeight:700, whiteSpace:"nowrap" }}>
+          today
+        </div>
+      </div>
+      {/* crisis window label */}
       <div style={{
-        position:"absolute", top:12, left:0,
-        fontSize:6.5, color:T1, fontFamily:F, fontWeight:700,
-      }}>today</div>
-      <div style={{
-        position:"absolute", top:12, right:0,
+        position:"absolute", bottom:4, right:0,
         fontSize:6, color:"#dc2626", fontFamily:F, letterSpacing:"0.08em",
       }}>⚠ 2029–2032</div>
     </div>
@@ -92,7 +107,7 @@ function ImagePanel({ to, src, eyebrow, title, color }) {
       <img src={src} alt={title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
       <div style={{
         position:"absolute", inset:0,
-        background:"linear-gradient(to top, rgba(8,12,22,0.92) 0%, rgba(8,12,22,0.25) 55%, transparent 100%)",
+        background:"linear-gradient(to top, rgba(8,12,22,0.92) 0%, rgba(8,12,22,0.2) 55%, transparent 100%)",
         display:"flex", flexDirection:"column", justifyContent:"flex-end",
         padding:"16px 18px",
       }}>
@@ -120,6 +135,8 @@ function Stat({ label, value, color }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const CIRCLE_D = 190; // diameter of centre circle
+
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
 
@@ -132,41 +149,41 @@ export default function Home() {
 
   const level      = cachedLevel ?? M.currentLevel;
   const levelColor = LEVEL_COLORS[level];
-  const levelLabel = LEVEL_LABELS[level];  // 57 — single source of truth for label + colour
+  const levelLabel = LEVEL_LABELS[level];
 
   return (
     <div style={{
+      position:"relative",
       background: BG0, color: T1, fontFamily: F,
       height: "calc(100vh - 57px)", overflow: "hidden",
-      display: "grid",
-      gridTemplateColumns: "1fr 1.4fr 1fr",
-      gridTemplateRows: "1fr 1fr",
-      gap: 1,
     }}>
 
-      {/* ── TOP LEFT: The Collision ── */}
-      <div style={{ gridColumn:1, gridRow:1, overflow:"hidden" }}>
-        <Link to="/collision" style={{ display:"block", height:"100%", textDecoration:"none" }}>
+      {/* ── 2×2 grid ── */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gridTemplateRows: "1fr 1fr",
+        gap: 1,
+        height: "100%",
+      }}>
+
+        {/* TOP LEFT: The Collision */}
+        <Link to="/collision" style={{ display:"block", height:"100%", textDecoration:"none", overflow:"hidden" }}>
           <div style={{
             height:"100%", background:BG2, border:`1px solid ${BD}`,
-            borderTop:`3px solid ${levelColor}`, padding:"12px 16px",
+            borderTop:`3px solid ${levelColor}`, padding:"14px 18px",
             display:"flex", flexDirection:"column", boxSizing:"border-box",
           }}>
             <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:2 }}>
               The Collision — Precursor
             </div>
-            <div style={{ fontSize:13, fontWeight:700, color:levelColor, letterSpacing:"0.06em", marginBottom:8 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:levelColor, letterSpacing:"0.06em", marginBottom:10 }}>
               Alert: {levelLabel}
             </div>
-
-            {/* 58 — crisis timeline */}
-            <CrisisTimeline />
-
-            {/* logo */}
+            <CrisisTimeline level={level} levelColor={levelColor} />
             <div style={{ flex:1, minHeight:0, overflow:"hidden" }}>
               <CollisionLogo color={levelColor} label={levelLabel} />
             </div>
-
             <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
               <Stat label="Debt / GDP"     value={`${C.debt}%`}   color="#ef4444" />
               <Stat label="AI Penetration" value={`${C.ai}%`}     color="#8b5cf6" />
@@ -175,48 +192,8 @@ export default function Home() {
             <div style={{ fontSize:8, color:T3, marginTop:8 }}>→ Run the simulation</div>
           </div>
         </Link>
-      </div>
 
-      {/* ── CENTRE: SPICE System circle (59 — spans both rows) ── */}
-      <div style={{
-        gridColumn:2, gridRow:"1 / 3",
-        background:BG1,
-        borderLeft:`1px solid ${BD}`, borderRight:`1px solid ${BD}`,
-        display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center",
-        gap:0,
-      }}>
-        <Link to="/spice-system" style={{ textDecoration:"none", display:"flex", flexDirection:"column", alignItems:"center" }}>
-          {/* circle */}
-          <div style={{
-            width:210, height:210, borderRadius:"50%",
-            border:`2px solid ${GOLD}`,
-            background:`radial-gradient(circle at 38% 32%, rgba(200,169,110,0.2) 0%, rgba(8,12,22,0.7) 65%)`,
-            boxShadow:`0 0 48px rgba(200,169,110,0.14), 0 0 96px rgba(200,169,110,0.06)`,
-            display:"flex", flexDirection:"column",
-            alignItems:"center", justifyContent:"center",
-            marginBottom:24,
-          }}>
-            <div style={{ fontSize:38, color:GOLD, lineHeight:1 }}>◈</div>
-            <div style={{ fontSize:11, fontWeight:700, color:T1, letterSpacing:"0.18em", marginTop:10 }}>SPICE</div>
-            <div style={{ fontSize:8,  color:T2, letterSpacing:"0.12em", marginTop:3 }}>ECONOMIC</div>
-            <div style={{ fontSize:8,  color:T2, letterSpacing:"0.12em" }}>SYSTEM</div>
-          </div>
-
-          <div style={{ fontSize:10, color:GOLD, letterSpacing:"0.1em", textAlign:"center", marginBottom:8 }}>
-            Post-Collision Colony Economy
-          </div>
-          <div style={{ fontSize:9, color:T2, textAlign:"center", lineHeight:1.7, maxWidth:220 }}>
-            S-token · V-token · The Fisc · MCC
-          </div>
-          <div style={{ fontSize:8, color:T3, marginTop:16, letterSpacing:"0.08em" }}>
-            → View system diagram
-          </div>
-        </Link>
-      </div>
-
-      {/* ── TOP RIGHT: Mars Colony (60 — image) ── */}
-      <div style={{ gridColumn:3, gridRow:1 }}>
+        {/* TOP RIGHT: Mars Colony */}
         <ImagePanel
           to="/mars"
           src="/mars-dome.png"
@@ -224,10 +201,8 @@ export default function Home() {
           title="Mars Colony"
           color="#3dffa0"
         />
-      </div>
 
-      {/* ── BOTTOM LEFT: Earth Colony (61 — image) ── */}
-      <div style={{ gridColumn:1, gridRow:2 }}>
+        {/* BOTTOM LEFT: Earth Colony */}
         <ImagePanel
           to="/earth"
           src="/spice-town.png"
@@ -235,10 +210,8 @@ export default function Home() {
           title="Earth Colony"
           color="#4488ff"
         />
-      </div>
 
-      {/* ── BOTTOM RIGHT: Coin (62 — 4 token symbols) ── */}
-      <div style={{ gridColumn:3, gridRow:2 }}>
+        {/* BOTTOM RIGHT: Coin */}
         <Link to="/coin" style={{ display:"block", height:"100%", textDecoration:"none" }}>
           <div style={{
             height:"100%", background:BG2, border:`1px solid ${BD}`,
@@ -251,8 +224,6 @@ export default function Home() {
             <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:14 }}>
               COIN
             </div>
-
-            {/* 4 tokens */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, flex:1 }}>
               {[
                 { sym:"S", name:"Spice",  color:"#ef4444", sub:"everyday currency" },
@@ -272,14 +243,37 @@ export default function Home() {
                 </div>
               ))}
             </div>
-
             <div style={{ fontSize:9, color:T2, marginTop:10, lineHeight:1.5 }}>
               Token framework — in development
             </div>
             <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ Connect wallet</div>
           </div>
         </Link>
+
       </div>
+
+      {/* ── SPICE circle — overlaid at grid intersection (64) ── */}
+      <Link to="/spice-system" style={{
+        position:"absolute",
+        top:"50%", left:"50%",
+        transform:"translate(-50%, -50%)",
+        textDecoration:"none",
+        zIndex:10,
+      }}>
+        <div style={{
+          width:CIRCLE_D, height:CIRCLE_D, borderRadius:"50%",
+          border:`2px solid ${GOLD}`,
+          background:`radial-gradient(circle at 38% 32%, rgba(200,169,110,0.22) 0%, ${BG1} 65%)`,
+          boxShadow:`0 0 0 6px ${BG0}, 0 0 48px rgba(200,169,110,0.18)`,
+          display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center",
+        }}>
+          <div style={{ fontSize:32, color:GOLD, lineHeight:1 }}>◈</div>
+          <div style={{ fontSize:10, fontWeight:700, color:T1, letterSpacing:"0.18em", marginTop:8 }}>SPICE</div>
+          <div style={{ fontSize:7.5, color:T2, letterSpacing:"0.1em", marginTop:3 }}>ECONOMIC</div>
+          <div style={{ fontSize:7.5, color:T2, letterSpacing:"0.1em" }}>SYSTEM</div>
+        </div>
+      </Link>
 
     </div>
   );
