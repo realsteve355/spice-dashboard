@@ -191,7 +191,6 @@ export default function Home() {
             <div style={{ flex:1, minHeight:0, overflow:"hidden" }}>
               <CollisionLogo color={levelColor} label={levelLabel} />
             </div>
-            <div style={{ fontSize:8, color:T3, marginTop:12 }}>→ Explore the simulation</div>
           </div>
         </Link>
 
