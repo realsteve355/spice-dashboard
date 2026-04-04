@@ -100,26 +100,31 @@ function CollisionLogo({ color, label }) {
 
 // ─── Image panel (Mars / Earth) ───────────────────────────────────────────────
 
-function ImagePanel({ to, src, eyebrow, title, color }) {
+// textAlign: "top" puts label in outer corner for panels where bottom is near the circle (Mars)
+function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
+  const atTop = textPos === "top";
   return (
     <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden", borderRadius:4 }}>
       <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:color, zIndex:3 }} />
-      <img src={src} alt={title} style={{
-        width:"100%", height:"100%", objectFit:"cover", display:"block",
-        // 67 — soften all edges with a mask vignette
-        WebkitMaskImage:"radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%)",
-        maskImage:"radial-gradient(ellipse 90% 90% at 50% 50%, black 40%, transparent 100%)",
+      <img src={src} alt={title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+      {/* vignette overlays from all edges — softens image into dark background */}
+      <div style={{
+        position:"absolute", inset:0, pointerEvents:"none",
+        background:[
+          "linear-gradient(to right,  rgba(8,12,22,0.55) 0%, transparent 30%)",
+          "linear-gradient(to left,   rgba(8,12,22,0.55) 0%, transparent 30%)",
+          "linear-gradient(to bottom, rgba(8,12,22,0.55) 0%, transparent 30%)",
+          "linear-gradient(to top,    rgba(8,12,22,0.55) 0%, transparent 30%)",
+        ].join(", "),
       }} />
-      {/* dark overlay for text legibility */}
+      {/* text overlay — positioned at outer corner away from circle */}
       <div style={{
         position:"absolute", inset:0,
-        background:[
-          "linear-gradient(to top,  rgba(8,12,22,0.92) 0%, transparent 45%)",
-          "linear-gradient(to bottom, rgba(8,12,22,0.55) 0%, transparent 30%)",
-          "linear-gradient(to right,  rgba(8,12,22,0.4)  0%, transparent 25%)",
-          "linear-gradient(to left,   rgba(8,12,22,0.4)  0%, transparent 25%)",
-        ].join(", "),
-        display:"flex", flexDirection:"column", justifyContent:"flex-end",
+        background: atTop
+          ? "linear-gradient(to bottom, rgba(8,12,22,0.85) 0%, transparent 50%)"
+          : "linear-gradient(to top,    rgba(8,12,22,0.85) 0%, transparent 50%)",
+        display:"flex", flexDirection:"column",
+        justifyContent: atTop ? "flex-start" : "flex-end",
         padding:"16px 18px",
       }}>
         <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
@@ -211,6 +216,7 @@ export default function Home() {
           eyebrow="Mars Colony Economy"
           title="Mars Colony"
           color="#3dffa0"
+          textPos="top"
         />
 
         {/* BOTTOM LEFT: Earth Colony */}
