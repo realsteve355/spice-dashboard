@@ -75,7 +75,7 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={175} stroke="#ef444480" strokeDasharray="3 4" label={{ value:"175%", fill:"#ef444480", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
               <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -106,7 +106,7 @@ function UnempChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={20} stroke="#8b5cf670" strokeDasharray="3 4" label={{ value:"20% depression", fill:"#8b5cf670", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
               <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -137,7 +137,7 @@ function InflChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={-8} stroke="#3b82f6aa" strokeDasharray="3 4" label={{ value:"−8% Fisher", fill:"#3b82f6aa", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
               <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -168,7 +168,7 @@ function YieldChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={6} stroke="#eab30880" strokeDasharray="3 4" label={{ value:"6% stress", fill:"#eab30880", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
               <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -244,7 +244,7 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
             }} />
             {fogYear ? (
               <ReferenceArea yAxisId="idx" x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine yAxisId="idx" x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}
@@ -307,7 +307,7 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
             <ReferenceLine y={25} stroke="#ef444430" strokeDasharray="3 4" label={{ value:"Capital 2026", fill:"#ef444450", fontSize:7, position:"insideTopRight" }} />
             {fogYear ? (
               <ReferenceArea x1={fogYear} x2={fogYear + 1} fill="url(#hatchPattern)" fillOpacity={1}
-                label={{ value:"SPECULATIVE", position:"insideTopLeft", fontSize:7, fill:"#ccc", fontStyle:"italic", fontFamily:"'IBM Plex Mono',monospace" }} />
+              />
             ) : firstRedYear && (
               <ReferenceLine x={firstRedYear} stroke="#dc262655" strokeWidth={1.5} strokeDasharray="4 3" />
             )}

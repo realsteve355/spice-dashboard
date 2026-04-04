@@ -188,7 +188,7 @@ export default function Home() {
               Alert: {levelLabel}
             </div>
             <CrisisTimeline level={level} levelColor={levelColor} />
-            <div style={{ flex:1, minHeight:0, overflow:"hidden" }}>
+            <div style={{ flex:1, minHeight:0, overflow:"visible" }}>
               <CollisionLogo color={levelColor} label={levelLabel} />
             </div>
           </div>
