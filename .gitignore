@@ -27,3 +27,8 @@ dist-ssr
 .env*.local
 
 deployment-steps.txt
+
+# Large local files
+docs/colony.db
+deploy.zip
+spice-claude-code-v2.zip
