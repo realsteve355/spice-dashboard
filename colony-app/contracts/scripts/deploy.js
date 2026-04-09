@@ -7,11 +7,17 @@ async function main() {
   console.log("Deploying with:", deployer.address);
   console.log("Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // Colony already deployed — attach to existing address
-  const colonyAddr = "0x7190c7A1B8E6F63e92269351e4a7457A1A3B252b";
-  console.log("\nAttaching to Colony:", colonyAddr);
+  // Deploy Dave's Colony
+  console.log("\nDeploying Colony: Dave's Colony...");
   const Colony = await hre.ethers.getContractFactory("Colony");
-  const colony = Colony.attach(colonyAddr);
+  const colony = await Colony.deploy("Dave's Colony");
+  await colony.waitForDeployment();
+  const colonyAddr = await colony.getAddress();
+  console.log("Colony deployed to:", colonyAddr);
+
+  // Wait for confirmations before reading state
+  console.log("Waiting for confirmations...");
+  await colony.deploymentTransaction().wait(3);
 
   // Read sub-contract addresses
   const gTokenAddr  = await colony.gToken();

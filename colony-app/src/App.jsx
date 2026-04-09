@@ -17,7 +17,7 @@ import Guardian        from './pages/Guardian'
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
 
-const BASE_CHAIN_ID = 8453  // Base mainnet
+const BASE_CHAIN_ID = 84532  // Base Sepolia testnet
 
 // Minimal ABIs for token reads and colony interaction
 const ERC20_ABI = [
@@ -57,7 +57,7 @@ export default function App() {
       try {
         await window.ethereum.request({
           method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x2105' }],  // Base mainnet
+          params: [{ chainId: '0x14A34' }],  // Base Sepolia
         })
       } catch {
         alert('Please switch MetaMask to the Base network.')
