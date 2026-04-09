@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { createContext, useContext, useState } from 'react'
-import { MOCK_WALLET, MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { ethers } from 'ethers'
+import CONTRACTS from './data/contracts.json'
+import { MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
 import Directory       from './pages/Directory'
 import ColonyPage      from './pages/ColonyPage'
 import CreateColony    from './pages/CreateColony'
@@ -15,17 +17,139 @@ import Guardian        from './pages/Guardian'
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
 
+const BASE_CHAIN_ID = 8453  // Base mainnet
+
+// Minimal ABIs for token reads and colony interaction
+const ERC20_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+]
+const ERC721_ABI = [
+  "function tokenOf(address) view returns (uint256)",
+]
+const COLONY_ABI = [
+  "function isCitizen(address) view returns (bool)",
+  "function join() external",
+  "function claimUbi() external",
+  "function saveToV(uint256) external",
+  "function redeemV(uint256) external",
+  "function send(address, uint256, string) external",
+]
+
 export default function App() {
-  const [address, setAddress] = useState(null)
+  const [address,   setAddress]   = useState(null)
+  const [provider,  setProvider]  = useState(null)
+  const [signer,    setSigner]    = useState(null)
+  const [chainId,   setChainId]   = useState(null)
+  const [onChain,   setOnChain]   = useState({})  // { [colonyId]: { sBalance, vBalance, gTokenId, isCitizen } }
+
+  // Connect MetaMask
+  const connect = useCallback(async () => {
+    if (!window.ethereum) {
+      alert('MetaMask not found. Please install it.')
+      return
+    }
+    const prov = new ethers.BrowserProvider(window.ethereum)
+    const network = await prov.getNetwork()
+    setChainId(Number(network.chainId))
+
+    if (Number(network.chainId) !== BASE_CHAIN_ID) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }],  // Base mainnet
+        })
+      } catch {
+        alert('Please switch MetaMask to the Base network.')
+        return
+      }
+    }
+
+    const accounts = await prov.send('eth_requestAccounts', [])
+    const addr = accounts[0]
+    const sign = await prov.getSigner()
+    setProvider(prov)
+    setSigner(sign)
+    setAddress(addr)
+    await loadOnChainData(addr, prov)
+  }, [])
+
+  const disconnect = useCallback(() => {
+    setAddress(null)
+    setProvider(null)
+    setSigner(null)
+    setOnChain({})
+  }, [])
+
+  // Read S, V, G balances + citizen status for all known colonies
+  const loadOnChainData = useCallback(async (addr, prov) => {
+    if (!addr || !prov) return
+    const result = {}
+    for (const [colonyId, cfg] of Object.entries(CONTRACTS.colonies)) {
+      try {
+        const sToken  = new ethers.Contract(cfg.sToken,  ERC20_ABI,  prov)
+        const vToken  = new ethers.Contract(cfg.vToken,  ERC20_ABI,  prov)
+        const gToken  = new ethers.Contract(cfg.gToken,  ERC721_ABI, prov)
+        const colony  = new ethers.Contract(cfg.colony,  COLONY_ABI, prov)
+
+        const [sRaw, vRaw, gId, citizen] = await Promise.all([
+          sToken.balanceOf(addr),
+          vToken.balanceOf(addr),
+          gToken.tokenOf(addr),
+          colony.isCitizen(addr),
+        ])
+
+        result[colonyId] = {
+          sBalance:  Math.floor(Number(ethers.formatEther(sRaw))),
+          vBalance:  Math.floor(Number(ethers.formatEther(vRaw))),
+          gTokenId:  Number(gId),
+          isCitizen: citizen,
+        }
+      } catch (e) {
+        console.warn('Failed to load on-chain data for', colonyId, e)
+      }
+    }
+    setOnChain(result)
+  }, [])
+
+  // Refresh on-chain data
+  const refresh = useCallback(() => {
+    if (address && provider) loadOnChainData(address, provider)
+  }, [address, provider, loadOnChainData])
+
+  // Listen for account changes
+  useEffect(() => {
+    if (!window.ethereum) return
+    const handler = () => disconnect()
+    window.ethereum.on('accountsChanged', handler)
+    return () => window.ethereum.removeListener('accountsChanged', handler)
+  }, [disconnect])
+
+  const isCitizenOf = (id) => {
+    // On-chain check if available, else fall back to mock
+    if (onChain[id]) return onChain[id].isCitizen
+    return !!address && MOCK_CITIZEN_COLONIES.includes(id)
+  }
 
   const ctx = {
     address,
+    provider,
+    signer,
+    chainId,
     isConnected: !!address,
-    connect:      () => setAddress(MOCK_WALLET),
-    disconnect:   () => setAddress(null),
-    isCitizenOf:  (id) => !!address && MOCK_CITIZEN_COLONIES.includes(id),
+    connect,
+    disconnect,
+    onChain,
+    refresh,
+    isCitizenOf,
     isMccOf:      (id) => !!address && MOCK_MCC_COLONIES.includes(id),
-    citizenColonies: address ? MOCK_CITIZEN_COLONIES : [],
+    citizenColonies: address
+      ? [...new Set([
+          ...Object.entries(onChain).filter(([,v]) => v.isCitizen).map(([k]) => k),
+          ...MOCK_CITIZEN_COLONIES,
+        ])]
+      : [],
+    contracts: CONTRACTS,
   }
 
   return (

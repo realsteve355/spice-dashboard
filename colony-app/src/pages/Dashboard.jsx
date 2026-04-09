@@ -21,12 +21,21 @@ const C = {
 export default function Dashboard() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect } = useWallet()
+  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, refresh } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
-  const data      = MOCK_CITIZEN_DATA[slug]
+  const mockData  = MOCK_CITIZEN_DATA[slug]
+  const chain     = onChain?.[slug]
   const isCitizen = isCitizenOf(slug)
   const isMcc     = isMccOf(slug)
+
+  // Use on-chain balances when available, else mock
+  const data = mockData ? {
+    ...mockData,
+    sBalance: chain ? chain.sBalance : mockData.sBalance,
+    vBalance: chain ? chain.vBalance : mockData.vBalance,
+    gTokenId: chain?.gTokenId > 0 ? chain.gTokenId : mockData.gTokenId,
+  } : null
 
   const [saving, setSaving]     = useState(false)
   const [saveAmt, setSaveAmt]   = useState('')
