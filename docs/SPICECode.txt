@@ -1,0 +1,518 @@
+// ==================== MockWBTC.sol ====================
+[code]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title MockWBTC
+ * @notice Testnet proxy for Wrapped Bitcoin (WBTC).
+ *
+ * In production, WBTC is an ERC-20 on Base backed 1:1 by real Bitcoin,
+ * custodied by BitGo. This mock allows anyone to mint testnet WBTC for
+ * free so deposits into the SPICE vault can be simulated without real funds.
+ *
+ * WBTC has 8 decimal places to mirror Bitcoin's satoshi precision.
+ * This is unlike most ERC-20s which use 18 decimals.
+ *
+ * DEPLOY THIS FIRST. Its address is passed into the SPICEVault constructor.
+ */
+contract MockWBTC is ERC20, Ownable {
+    // ─── Constructor ────────────────────────────────────────────────────────────
+
+    constructor() ERC20("Mock Wrapped Bitcoin", "WBTC") Ownable(msg.sender) {}
+
+    // ─── Decimals Override ───────────────────────────────────────────────────────
+
+    /**
+     * @notice Returns 8 decimals, matching real WBTC and Bitcoin's satoshi unit.
+     * 1 WBTC = 100_000_000 base units (satoshis).
+     */
+    function decimals() public pure override returns (uint8) {
+        return 8;
+    }
+
+    // ─── Testnet Faucet ──────────────────────────────────────────────────────────
+
+    /**
+     * @notice Mint free testnet WBTC to any address.
+     * @dev Unrestricted on testnet. In production WBTC this function does not
+     *      exist — minting requires a multi-sig process with BitGo as custodian.
+     * @param to      The recipient address.
+     * @param amount  Amount in satoshi units (1 BTC = 1e8).
+     */
+    function faucet(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
+    /**
+     * @notice Convenience: mint exactly 1 WBTC to the caller.
+     */
+    function faucetOne() external {
+        _mint(msg.sender, 1e8); // 1 BTC in satoshis
+    }
+}
+
+// ==================== IRONToken.sol ====================
+[code]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+/**
+ * @title IRONToken
+ * @notice The Phase 1 vault token for the SPICE [ZPC] protocol.
+ *
+ * IRON is the ERC-20 that investors receive when they deposit WBTC into the
+ * SPICEVault. Each IRON token represents a proportional claim on the vault's
+ * net asset value (NAV). The relationship is:
+ *
+ *   IRON received = (WBTC deposited / vault NAV) × IRON total supply
+ *
+ * IRON has two special properties compared to a standard ERC-20:
+ *
+ * 1. MINT-ONLY-BY-VAULT: New IRON can only be created by the SPICEVault
+ *    contract. This ensures the total supply always reflects deposited assets.
+ *
+ * 2. BURN-ON-REDEMPTION: When an investor redeems, the vault calls burn()
+ *    on their IRON before returning the underlying WBTC. This keeps IRON
+ *    anchored to NAV — no surplus tokens can float freely.
+ *
+ * IRON does NOT trade at a premium or discount to NAV. If it did, arbitrage
+ * via the vault's mint/burn mechanism would eliminate the discrepancy.
+ *
+ * In Phase 2, IRON is compulsorily converted to SPICE [ZPC] tokens at a
+ * defined ratio. This contract will be frozen at that point.
+ *
+ * NOTE: This contract does not implement the switchover logic itself.
+ * That is handled by a future SPICEMigration contract.
+ */
+contract IRONToken is ERC20, Ownable {
+    // ─── State ───────────────────────────────────────────────────────────────────
+
+    /// @notice The vault contract authorised to mint and burn IRON.
+    address public vault;
+
+    // ─── Events ──────────────────────────────────────────────────────────────────
+
+    event VaultSet(address indexed previousVault, address indexed newVault);
+
+    // ─── Errors ──────────────────────────────────────────────────────────────────
+
+    error OnlyVault();
+    error VaultAlreadySet();
+    error ZeroAddress();
+
+    // ─── Constructor ────────────────────────────────────────────────────────────
+
+    /**
+     * @param initialOwner The deployer / project founder address.
+     *        The owner can set the vault address once, then has no special
+     *        powers over the token supply — that is controlled by the vault.
+     */
+    constructor(address initialOwner)
+        ERC20("IRON - SPICE Phase 1 Token", "IRON")
+        Ownable(initialOwner)
+    {}
+
+    // ─── Vault Management ────────────────────────────────────────────────────────
+
+    /**
+     * @notice Set the vault address that is permitted to mint and burn IRON.
+     * @dev Can only be called once. Immutable after setting.
+     *      This prevents the owner from swapping the vault to a malicious contract.
+     * @param _vault The deployed SPICEVault contract address.
+     */
+    function setVault(address _vault) external onlyOwner {
+        if (vault != address(0)) revert VaultAlreadySet();
+        if (_vault == address(0)) revert ZeroAddress();
+        emit VaultSet(vault, _vault);
+        vault = _vault;
+    }
+
+    // ─── Mint / Burn (Vault Only) ────────────────────────────────────────────────
+
+    /**
+     * @notice Mint IRON tokens to an investor on deposit.
+     * @dev Called by SPICEVault.deposit() after receiving WBTC.
+     * @param to     The investor's wallet address.
+     * @param amount The IRON amount to mint (18 decimals).
+     */
+    function mint(address to, uint256 amount) external {
+        if (msg.sender != vault) revert OnlyVault();
+        _mint(to, amount);
+    }
+
+    /**
+     * @notice Burn IRON tokens from an investor on redemption.
+     * @dev Called by SPICEVault.redeem() before returning WBTC.
+     *      The vault must have approval or use transferFrom before calling this,
+     *      OR the investor calls redeem() directly which burns their own tokens.
+     * @param from   The investor's wallet address.
+     * @param amount The IRON amount to burn (18 decimals).
+     */
+    function burn(address from, uint256 amount) external {
+        if (msg.sender != vault) revert OnlyVault();
+        _burn(from, amount);
+    }
+}
+
+// ==================== SPICEVaultV2.sol ====================
+[code]
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+import "IRONToken.sol";
+
+/**
+ * @title AggregatorV3Interface
+ * @notice Chainlink price feed interface.
+ * We define it inline here so we don't need a separate import.
+ */
+interface AggregatorV3Interface {
+    function latestRoundData() external view returns (
+        uint80 roundId,
+        int256 answer,
+        uint256 startedAt,
+        uint256 updatedAt,
+        uint80 answeredInRound
+    );
+
+    function decimals() external view returns (uint8);
+}
+contract SPICEVaultV2 is ReentrancyGuard, Ownable, Pausable {
+    using SafeERC20 for IERC20;
+
+    // ─── Chainlink Price Feeds ───────────────────────────────────────────────────
+    
+    // Each feed is a reference to a Chainlink contract at a specific address.
+    // Calling latestRoundData() on each gives us the current market price.
+    AggregatorV3Interface private btcFeed;   // BTC/USD price
+    AggregatorV3Interface private ethFeed;   // ETH/USD price (proxy for gold on testnet)
+
+    // ─── Portfolio Positions ─────────────────────────────────────────────────────
+
+    // Mock position sizes — in production these would be real Synthetix positions.
+    // For the prototype they are numbers we set manually to simulate the portfolio.
+    uint256 public goldPositionUSD;      // Gold position value in USD (8 decimals)
+    uint256 public bondShortPositionUSD; // Bond short position value in USD (8 decimals)
+    uint256 public aiInfraPositionUSD;   // AI infrastructure position value in USD (8 decimals)
+
+    // ─── Core State (same as V1) ─────────────────────────────────────────────────
+
+    IERC20 public immutable wbtc;
+    IRONToken public immutable iron;
+    address public feeRecipient;
+    uint256 public lastFeeAccrual;
+    uint256 public pendingFees;
+    mapping(address => bool) public isManager;
+    uint256 public managerCount;
+
+    // ─── Constants (same as V1) ──────────────────────────────────────────────────
+
+    uint256 public constant ANNUAL_FEE_BPS   = 150;
+    uint256 public constant BPS_DENOMINATOR  = 10_000;
+    uint256 public constant SECONDS_PER_YEAR = 365 days + 6 hours;
+    uint256 public constant MIN_DEPOSIT      = 100_000;
+// ─── Events ──────────────────────────────────────────────────────────────────
+
+    event Deposited(address indexed investor, uint256 wbtcAmount, uint256 ironMinted, uint256 navPerIron);
+    event Redeemed(address indexed investor, uint256 ironBurned, uint256 wbtcReturned, uint256 navPerIron);
+    event FeeAccrued(uint256 feeAmount, uint256 timestamp);
+    event PositionUpdated(string position, uint256 newValueUSD);
+
+    // ─── Errors ──────────────────────────────────────────────────────────────────
+
+    error BelowMinDeposit();
+    error ZeroRedemption();
+    error InsufficientIRONBalance();
+    error NotManager();
+    error ZeroAddress();
+    error NoFeesToClaim();
+    error StalePrice();
+
+    // ─── Modifiers ───────────────────────────────────────────────────────────────
+
+    modifier onlyManager() {
+        if (!isManager[msg.sender]) revert NotManager();
+        _;
+    }
+
+    // ─── Constructor ─────────────────────────────────────────────────────────────
+
+    /**
+     * @param _wbtc         Address of WBTC token
+     * @param _iron         Address of IRON token
+     * @param _feeRecipient Address that receives management fees
+     * @param _manager      Initial manager address
+     * @param _btcFeed      Chainlink BTC/USD price feed address
+     * @param _ethFeed      Chainlink ETH/USD price feed address (proxy for gold)
+     */
+    constructor(
+        address _wbtc,
+        address _iron,
+        address _feeRecipient,
+        address _manager,
+        address _btcFeed,
+        address _ethFeed
+    ) Ownable(msg.sender) {
+        if (_wbtc == address(0) || _iron == address(0) || 
+            _feeRecipient == address(0) || _manager == address(0))
+            revert ZeroAddress();
+
+        wbtc         = IERC20(_wbtc);
+        iron         = IRONToken(_iron);
+        feeRecipient = _feeRecipient;
+
+        // Initialise the two Chainlink feed references.
+        // This is where we point each variable at its specific contract address.
+        btcFeed = AggregatorV3Interface(_btcFeed);
+        ethFeed = AggregatorV3Interface(_ethFeed);
+
+        isManager[_manager] = true;
+        managerCount = 1;
+        lastFeeAccrual = block.timestamp;
+
+        // Initialise mock positions with realistic starting values (in USD, 8 decimals)
+        // $500,000 in gold, $250,000 bond short, $150,000 AI infrastructure
+        goldPositionUSD      = 500_000 * 1e8;
+        bondShortPositionUSD = 250_000 * 1e8;
+        aiInfraPositionUSD   = 150_000 * 1e8;
+    }
+    // ─── Chainlink Price Helpers ─────────────────────────────────────────────────
+
+    /**
+     * @notice Get the current BTC price in USD from Chainlink.
+     * @dev Chainlink prices have 8 decimal places. $50,000 = 5_000_000_000_000
+     * We also check the price was updated recently to guard against stale data.
+     */
+    function getBTCPrice() public view returns (uint256) {
+        (
+            ,
+            int256 price,
+            ,
+            uint256 updatedAt,
+        ) = btcFeed.latestRoundData();
+        
+        // Guard against stale price — must be updated within 24 hours
+        if (block.timestamp - updatedAt > 24 hours) revert StalePrice();
+        
+        return uint256(price); // Cast from int256 to uint256 — price can't be negative
+    }
+
+    /**
+     * @notice Get ETH price — used as a proxy for gold on testnet.
+     * In production this would be a real XAU/USD Chainlink feed.
+     */
+    function getGoldProxyPrice() public view returns (uint256) {
+        (
+            ,
+            int256 price,
+            ,
+            uint256 updatedAt,
+        ) = ethFeed.latestRoundData();
+        
+        if (block.timestamp - updatedAt > 24 hours) revert StalePrice();
+        
+        return uint256(price);
+    }
+
+    // ─── NAV Calculation ─────────────────────────────────────────────────────────
+
+    /**
+     * @notice Calculate the total portfolio value in USD (8 decimals).
+     *
+     * This is the key Phase 2 addition. NAV now reflects:
+     *   1. WBTC held in vault, priced at current BTC/USD rate
+     *   2. Gold position (mock) — value fluctuates with ETH/USD proxy price
+     *   3. Bond short position (mock) — fixed value for now, Phase 3 makes it dynamic
+     *   4. AI infrastructure position (mock) — fixed value for now
+     */
+    function totalPortfolioValueUSD() public view returns (uint256) {
+        // 1. Value of WBTC in vault
+        // WBTC has 8 decimals, BTC price has 8 decimals
+        // wbtcBalance (satoshis) * btcPrice (USD per BTC, 8 decimals) / 1e8
+        uint256 wbtcBalance  = wbtc.balanceOf(address(this));
+        uint256 btcPrice     = getBTCPrice();
+        uint256 wbtcValueUSD = (wbtcBalance * btcPrice) / 1e8;
+
+        // 2. Gold position value — scaled by gold proxy price movement
+        // If ETH price rises 10%, we treat gold as also rising 10%
+        // This is a simplification for testnet — real version uses XAU/USD feed
+        uint256 goldValueUSD = goldPositionUSD;
+
+        // 3. Bond short and AI infra — fixed mock values for now
+        // Phase 3 makes these dynamic based on yield indicators
+        uint256 bondValueUSD = bondShortPositionUSD;
+        uint256 aiValueUSD   = aiInfraPositionUSD;
+
+        return wbtcValueUSD + goldValueUSD + bondValueUSD + aiValueUSD;
+    }
+
+    /**
+     * @notice Net portfolio value after deducting pending fees, in USD.
+     */
+    function netPortfolioValueUSD() public view returns (uint256) {
+        uint256 totalUSD    = totalPortfolioValueUSD();
+        uint256 btcPrice    = getBTCPrice();
+        
+        // Convert pending fees from WBTC satoshis to USD for consistent comparison
+        uint256 allPending  = pendingFees + accruedFeesSinceLastCheckpoint();
+        uint256 feesUSD     = (allPending * btcPrice) / 1e8;
+        
+        return totalUSD > feesUSD ? totalUSD - feesUSD : 0;
+    }
+
+    /**
+     * @notice NAV per IRON token in USD (8 decimals).
+     * Phase 1 NAV was in WBTC satoshis. Phase 2 NAV is in USD.
+     * This makes it more intuitive for investors.
+     */
+    function navPerIron() public view returns (uint256) {
+        uint256 ironSupply = iron.totalSupply();
+        if (ironSupply == 0) return 1e8; // Initial price: $1 per IRON
+        return (netPortfolioValueUSD() * 1e18) / ironSupply;
+    }
+
+    /**
+     * @notice Fee accrual — identical to V1, based on WBTC balance.
+     */
+    function accruedFeesSinceLastCheckpoint() public view returns (uint256) {
+        uint256 elapsed     = block.timestamp - lastFeeAccrual;
+        uint256 vaultAssets = wbtc.balanceOf(address(this));
+        return (vaultAssets * ANNUAL_FEE_BPS * elapsed) / (BPS_DENOMINATOR * SECONDS_PER_YEAR);
+    }
+
+// ─── Deposit ─────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Deposit WBTC and receive IRON tokens at current NAV.
+     * @param wbtcAmount Amount of WBTC in satoshis (8 decimals).
+     */
+    function deposit(uint256 wbtcAmount) external nonReentrant whenNotPaused {
+        if (wbtcAmount < MIN_DEPOSIT) revert BelowMinDeposit();
+
+        _accrueFeesCheckpoint();
+
+        // Get current NAV before deposit changes the balance
+        uint256 currentNav = navPerIron();
+        uint256 btcPrice   = getBTCPrice();
+
+        // Convert WBTC deposit to USD value
+        uint256 depositUSD = (wbtcAmount * btcPrice) / 1e8;
+
+        // Calculate IRON to mint based on USD value of deposit vs NAV
+        uint256 ironToMint = (depositUSD * 1e18) / currentNav;
+
+        wbtc.safeTransferFrom(msg.sender, address(this), wbtcAmount);
+        iron.mint(msg.sender, ironToMint);
+
+        emit Deposited(msg.sender, wbtcAmount, ironToMint, currentNav);
+    }
+
+    // ─── Redemption ──────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Redeem IRON tokens and receive WBTC at current NAV.
+     * @param ironAmount Amount of IRON to redeem (18 decimals).
+     */
+    function redeem(uint256 ironAmount) external nonReentrant whenNotPaused {
+        if (ironAmount == 0) revert ZeroRedemption();
+        if (iron.balanceOf(msg.sender) < ironAmount) revert InsufficientIRONBalance();
+
+        _accrueFeesCheckpoint();
+
+        uint256 currentNav  = navPerIron();
+        uint256 btcPrice    = getBTCPrice();
+
+        // Calculate USD value of IRON being redeemed
+        uint256 redeemUSD   = (ironAmount * currentNav) / 1e18;
+
+        // Convert USD value back to WBTC satoshis
+        uint256 wbtcToReturn = (redeemUSD * 1e8) / btcPrice;
+
+        iron.burn(msg.sender, ironAmount);
+        wbtc.safeTransfer(msg.sender, wbtcToReturn);
+
+        emit Redeemed(msg.sender, ironAmount, wbtcToReturn, currentNav);
+    }
+
+    // ─── Fee Management ──────────────────────────────────────────────────────────
+
+    /**
+     * @notice Claim pending fees to fee recipient.
+     */
+    function claimFees() external nonReentrant {
+        _accrueFeesCheckpoint();
+        if (pendingFees == 0) revert NoFeesToClaim();
+        uint256 toClaim = pendingFees;
+        pendingFees = 0;
+        wbtc.safeTransfer(feeRecipient, toClaim);
+    }
+
+    // ─── Manager: Position Updates ───────────────────────────────────────────────
+
+    /**
+     * @notice Update the mock gold position value.
+     * @dev In production this would be replaced by a real Synthetix/dYdX position.
+     * @param newValueUSD New position value in USD (8 decimals).
+     */
+    function setGoldPosition(uint256 newValueUSD) external onlyManager {
+        goldPositionUSD = newValueUSD;
+        emit PositionUpdated("gold", newValueUSD);
+    }
+
+    /**
+     * @notice Update the mock bond short position value.
+     * @param newValueUSD New position value in USD (8 decimals).
+     */
+    function setBondShortPosition(uint256 newValueUSD) external onlyManager {
+        bondShortPositionUSD = newValueUSD;
+        emit PositionUpdated("bondShort", newValueUSD);
+    }
+
+    /**
+     * @notice Update the mock AI infrastructure position value.
+     * @param newValueUSD New position value in USD (8 decimals).
+     */
+    function setAIInfraPosition(uint256 newValueUSD) external onlyManager {
+        aiInfraPositionUSD = newValueUSD;
+        emit PositionUpdated("aiInfra", newValueUSD);
+    }
+
+    // ─── Manager: Role Management ────────────────────────────────────────────────
+
+    function addManager(address manager) external onlyOwner {
+        if (manager == address(0)) revert ZeroAddress();
+        if (!isManager[manager]) {
+            isManager[manager] = true;
+            managerCount++;
+        }
+    }
+
+    // ─── Emergency Controls ──────────────────────────────────────────────────────
+
+    function pause() external onlyOwner { _pause(); }
+    function unpause() external onlyOwner { _unpause(); }
+
+    // ─── Internal ────────────────────────────────────────────────────────────────
+
+    function _accrueFeesCheckpoint() internal {
+        uint256 newFees = accruedFeesSinceLastCheckpoint();
+        if (newFees > 0) {
+            pendingFees   += newFees;
+            emit FeeAccrued(newFees, block.timestamp);
+        }
+        lastFeeAccrual = block.timestamp;
+    }
+}
+

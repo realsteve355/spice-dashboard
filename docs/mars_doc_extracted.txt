@@ -1,0 +1,296 @@
+MARS COLONY ECONOMY
+Token & Governance System
+A complete reference for the S-token and V-token economy, the roles of citizens, companies, MCC, and the Fisc, and the rules of property ownership.
+Founding Philosophy
+The post-scarcity premise
+Due to enormous advances in AI, automation, and robotics, the Mars Colony exists in a
+post-scarcity world where basic human needs can be met at extremely low cost.
+Every citizen is provided with a universal income sufficient to pay for all services
+they use, with enough left over to lead a minimally fulfilling life.
+"Money" is still needed to drive efficiency, to manage the consumption of scarce
+resources, and to incentivise enterprise and endeavour.
+The floor of basic social support is guaranteed for all,
+and the opportunity ceiling is infinite.
+Part 1 — The Token System
+1.1  S-Tokens — The Spending Currency
+S-tokens are the colony's medium of exchange. They are issued monthly by the Fisc to every citizen as Universal Basic Income and expire at the end of each month.
+Property
+Detail
+Issued by
+The Fisc — automatically, on the 1st of each month
+Amount
+1,000 S-tokens per adult citizen per month (fixed)
+Expiry
+Midnight on the last day of the month — unused S-tokens are destroyed
+Purpose
+Medium of exchange — pay MCC bills, buy goods and services, purchase company shares, convert to V-tokens
+Inflation
+None — the monthly hard reset destroys any unspent supply, preventing accumulation
+Anti-hoarding
+S-tokens cannot be carried forward. Spending or converting is the only rational choice
+Children
+Receive full UBI from birth, managed by a registered guardian
+The monthly expiry is the system's anti-inflation mechanism. Because the total S-token supply resets to zero each month regardless of what was spent, there is no mechanism by which unspent money can chase a fixed supply of goods. The "circuit breaker" makes inflation structurally impossible in S-tokens.
+1.2  V-Tokens — Permanent Savings
+V-tokens are the colony's store of value. They never expire, accumulate over a lifetime, and are the primary mechanism by which citizens build lasting wealth above their UBI baseline.
+Property
+Detail
+Created by
+Converting S-tokens (citizens and companies) — the Fisc never issues V-tokens directly
+Citizen cap
+Up to 200 S-tokens per month may be converted to V-tokens (20% of UBI)
+Company cap
+Up to 20% of net monthly S-token earnings may be converted to V-tokens
+Expiry
+Never — V-tokens are permanent
+Redemption
+Can be redeemed back to S-tokens at any time at full face value
+Uses
+Redeem to S-tokens, purchase company shares, purchase physical assets, pay for services
+Dividends
+V-tokens received as equity dividends are uncapped and never expire
+Inheritance
+Transferred automatically to registered next of kin by the Fisc on death
+Seizure
+Cannot be seized by any colonial authority under any circumstances
+1.3  The Monthly Token Flow
+Every citizen's month follows the same sequence. The diagram below shows all the ways S-tokens can move.
+UBI issued
+1,000 S
+→
+MCC bill
+~200 S avg
+→
+Goods & svcs
+companies
+→
+V-token save
+up to 200 S
+→
+Expires
+month end
+S-tokens may also be used to purchase company shares directly from existing shareholders — paid to the seller in S-tokens. This is not shown above for clarity but is equally valid.
+1.4  Is the System Inflationary?
+The system is non-inflationary in S-tokens by design. It is conditionally non-inflationary in V-tokens.
+S-tokens: total supply resets to zero every month. There is no mechanism for inflation.
+V-tokens: the total pool grows over time as citizens and companies save. If productive capacity grows at the same rate as the V-token pool, purchasing power is stable.
+If V-tokens accumulate faster than colony output grows, V-token purchasing power falls. This is the system's only inflation risk — and it is mitigated by the 20% monthly conversion cap.
+The simulation monitors V-token concentration (top holder as % of pool) as the primary early warning indicator.
+Part 2 — The Four Entities
+The colony economy has exactly four types of entity. Every participant is one of these.
+Entity
+Role
+Earns
+Governed by
+Citizen
+Receives UBI, spends S-tokens, saves V-tokens, holds MCC share, may found or join companies
+UBI (S) · equity dividends (V) · service income (S)
+Founding constitution · annual MCC election
+Company
+Provides goods or services for S-tokens, converts surplus to V-tokens, pays dividends to equity holders
+S-tokens from sales → V-token dividends to equity holders
+Market competition · equity holders · no licence required beyond Fisc registration
+MCC
+Provides colony infrastructure — dome, life support, power, water, security, justice. A company owned equally by all citizens
+S-tokens from itemised citizen bills and company infrastructure levies
+Annual citizen election · glass-box blockchain transparency · automatic recall trigger
+The Fisc
+Fully automated financial institution. Issues tokens, maintains blockchain registry, enforces all monetary rules
+None — the Fisc has no profit motive. It is a constitutional utility
+Founding constitution — cannot be placed under MCC or company control
+Part 3 — The Citizen
+3.1  Rights
+1,000 S-tokens issued unconditionally on the 1st of each month, for life — cannot be withheld, reduced, or means-tested
+One non-transferable MCC share — one vote in MCC governance, issued on adulthood, retired on death
+Full property rights — the right to own S-tokens, V-tokens, company equity, physical assets, and land rights, all recorded and enforced by the Fisc
+3.2  Obligations
+Pay the monthly MCC bill from UBI — itemised, variable, based on actual consumption of metered services
+No other obligations — no tax, no mandatory contribution, no minimum activity
+3.3  Compensation — Two Mechanisms
+Citizens earn in two ways, which are fundamentally different in character:
+Mechanism
+S-token payment vs V-token dividend
+S-token payment
+Payment for a specific service or task — received immediately, expires at month end if unspent
+V-token dividend
+Monthly share of company profits — permanent savings, does not expire, effectively wages for ongoing contribution
+Who receives S
+Any citizen providing a one-off service to another citizen or company
+Who receives V
+Equity holders in a company, in proportion to their shareholding, paid monthly
+Example (S)
+A plumber fixes a seal — paid 150 S-tokens on the day
+Example (V)
+An equity holder receives 340 V-tokens at month end from the Engineering Guild
+The V-token dividend is the system's equivalent of wages for ongoing work. The difference from a traditional wage is that the recipient is also an owner — they share in the company's risk and reward, not just its labour cost. In a post-AI economy where robots do the capital-intensive work, human contribution is intellectual and directorial, and equity reflects that.
+Part 4 — The Company
+4.1  Formation
+Any citizen may found a company by registering it with the Fisc
+Registration is administrative — it is required for access to the payment system, not a licence to operate
+No exclusive territories, no state protection from competition
+Two or more founding citizens share equity at formation — each receives a percentage stake registered on the blockchain
+A company that cannot cover its costs fails — there is no subsidy or bailout
+4.2  Monthly Token Rules
+During the month
+Earns S-tokens from citizens and other companies in exchange for goods and services
+Pays for materials and services from other companies in S-tokens
+S-tokens accumulate in the company's Fisc-registered wallet throughout the month
+At month end
+Up to 20% of net monthly S-tokens convert to V-tokens via the Fisc
+Converted V-tokens are distributed immediately as dividends to equity holders in proportion to shareholding
+All remaining S-tokens expire — the company starts each month from zero
+The company retains no S-token balance between months
+4.3  Equity and Shares
+Shares represent fractional ownership of a company's future earnings, registered on the blockchain
+May be bought and sold between any parties at freely agreed prices in S-tokens or V-tokens
+Share transfers are atomic — payment and ownership change simultaneously on chain
+May be inherited — transferred to registered next of kin on the owner's death
+May be granted by a founder to a contributor in lieu of or alongside S-token payment
+May not be pledged as collateral — the system does not support debt instruments
+All shareholdings are publicly visible on the blockchain — no anonymous ownership
+Part 5 — The Mars Colony Company (MCC)
+5.1  What MCC Is
+MCC is a company — governed by the same financial rules as every other company — with one difference: every adult citizen owns exactly one equal non-transferable share. It exists to provide the essential infrastructure that cannot safely be left to market competition.
+MCC core facts
+Type:           Company — same token rules as all other companies
+Owner:          Every adult citizen holds one equal, non-transferable share
+Board:          Elected annually by citizen shareholders
+Revenue:        Itemised metered bills (citizens) + infrastructure levies (companies)
+Pricing:        Set by the board as a commercial decision — not by citizen vote
+Profit share:   Determined by the board, disclosed on blockchain, judged at election
+Mandate:        Fixed in the founding constitution — changeable only by 80% referendum
+Constraint:     May not compete commercially with cottage industries
+5.2  What MCC Provides and Bills For
+Every MCC service is metered where technically possible. Bills are itemised and variable — based on actual consumption. The target average is ~200 S-tokens per citizen per month (20% of UBI).
+Service
+Billing basis
+Atmospheric processing
+Flat rate per month — everyone consumes air equally
+Water
+Per litre consumed, net of recycled return
+Power
+Per kWh consumed — × citizen power usage profile
+Habitat
+Per m² of pressurised volume occupied — × habitat size
+AI diagnostics
+Flat monthly subscription per citizen
+Internal communications
+Flat monthly fee per registered wallet
+Waste processing
+Per kg processed
+Security and justice
+Funded from MCC general revenue — no individual line item
+Company levies
+Infrastructure access fee for companies using dome, power, water, comms
+5.3  The Board
+The board manages MCC with full commercial discretion — setting prices, managing costs, determining its own profit share. It is accountable for all three through a single annual election.
+Board role
+Responsible for
+Chief Executive
+Overall management, strategy, constitutional compliance
+Operations Director
+Dome integrity, life support, atmospheric processing, water, power, waste
+Finance Director
+Billing, MCC accounts, Fisc liaison, capital reserve management
+Security Director
+Physical safety, property rights enforcement, justice administration
+Medical Director
+AI diagnostics infrastructure, health emergency response
+Citizen Representative
+Voice of non-entrepreneurial citizens — no operational portfolio
+The board sets its own profit share. This sounds alarming until you understand the accountability mechanism: every revenue, cost, and board earnings figure is published in real time on the blockchain. Any citizen can inspect MCC's complete financial position at any moment. If costs spike without justification, the Fisc triggers an automatic recall vote.
+Part 6 — The Fisc
+6.1  What the Fisc Is
+The Fisc is the colony's fully automated financial institution. It is not a company and it is not part of MCC. It is a constitutional utility — created by the founding charter, governed by rules not by people, operated entirely by software. No board, no employees, no profit motive.
+The Fisc cannot be lobbied, bribed, pressured, or voted out. It executes monetary rules with perfect consistency — the same rule for every citizen and every company, every time.
+6.2  What the Fisc Does
+Issues 1,000 S-tokens to every citizen wallet on the 1st of each month
+Generates and delivers itemised MCC bills from metered usage data
+Processes all S-to-V token conversions for citizens and companies
+Enforces month-end S-token expiry across all wallets simultaneously
+Operates the colonial blockchain — the authoritative record of all ownership
+Processes inheritance transfers automatically on registered death
+Registers new companies and issues company wallet addresses
+Records all share transfers, asset registrations, and property right assignments
+Publishes all transaction data publicly — the blockchain is readable by any citizen
+Locks board V-token conversions during declared emergencies
+6.3  Why the Fisc Must Be Separate from MCC
+This is a foundational design principle. If the Fisc were part of MCC, the board that sets its own profit share would also control the institution that issues currency and enforces monetary rules. That creates an unacceptable conflict of interest.
+The Fisc serves all participants equally — citizens, companies, and MCC
+Constitutional protection #10: the Fisc may not be placed under MCC or company control
+No elected body, no board, no company has authority over the Fisc's operation
+Changes to Fisc rules require a blockchain referendum of 80% of all registered citizens
+Part 7 — Property Rights
+7.1  The Blockchain as Legal Reality
+All significant ownership in the colony is recorded on the Fisc's blockchain. Ownership is not enforced primarily by physical force — it is enforced by cryptographic certainty. If it is not on the blockchain, it is not legally owned.
+A robot whose registered owner differs from the person attempting to operate it will not respond. A share transfer that does not appear on chain has not occurred. A surface land claim without a blockchain entry has no legal standing.
+7.2  The Four Registries
+The Fisc maintains four registries that together constitute the complete record of ownership in the colony.
+Registry
+Records
+Wallets
+S-token balance, V-token balance, full transaction history for every citizen and company
+Shares
+Fractional company ownership, transfer history, monthly dividend history per equity holder
+Assets
+Physical asset ownership, type, description, acquisition date, transfer history
+Rights
+Habitat rights, surface land Harberger claims, licence rights, expiry dates where applicable
+7.3  Physical Asset Ownership
+Registration threshold: any asset valued above 500 S-tokens, above 50kg, or possessing autonomous AI capability
+Below threshold: personal items — possession implies ownership, no registration required
+Registered to a citizen ID or company ID — both parties sign any transfer on chain
+Unregistered assets above threshold: no legal protection and no Fisc recovery if stolen or disputed
+MCC infrastructure — dome, life support, power, water plant — is owned by MCC collectively and cannot be privatised
+7.4  Surface Land — Harberger Stewardship
+Surface land on Mars is finite. The Harberger model ensures land is always held by the party with the most productive use for it, preventing speculative hoarding.
+How Harberger stewardship works
+1.  Every surface land claim is registered with the Fisc at a declared V-token value
+set by the owner.
+2.  The owner pays a monthly stewardship fee to MCC — a percentage of their
+declared value. This funds MCC's cost of maintaining access rights.
+3.  Anyone may purchase the land at the declared value at any time.
+The owner cannot refuse. The transaction is atomic and on chain.
+4.  The self-correcting incentive:
+— Price too high: monthly fee is expensive. Idle land costs you.
+— Price too low: someone buys it immediately.
+— Price honestly: you pay a fair fee and keep the land unless
+someone genuinely has better use for it.
+5.  Harberger applies to surface land only. Habitat space inside the dome
+is managed by MCC via habitation charges — not Harberger.
+Part 8 — Constitutional Protections
+The following rules require a blockchain referendum of 80% of all registered citizens to amend. They exist to protect the system from being dismantled by temporary majorities.
+Protection
+What it guarantees
+1. UBI floor
+UBI may not fall below 1,000 S-tokens per adult per month
+2. UBI universality
+UBI may not be conditional, means-tested, or withheld for any reason
+3. MCC equal shareholding
+Every citizen holds exactly one MCC share — no citizen holds more or fewer
+4. MCC share non-transferability
+MCC shares cannot be bought, sold, or inherited
+5. MCC mandate
+MCC may not compete commercially with cottage industries
+6. V-token protection
+No authority may confiscate V-tokens under any circumstances, including declared emergencies
+7. Blockchain transparency
+All ownership is publicly visible on the blockchain at all times
+8. MCC asset protection
+MCC infrastructure may not be privatised under any circumstances
+9. Company freedom
+No licence required to operate a company beyond Fisc registration
+10. Fisc autonomy
+The Fisc may not be placed under MCC or company control
+Part 9 — Open Questions
+The following design questions remain undecided as of Version 6.
+The Harberger stewardship fee percentage — what % of declared value per month?
+Exact definition of the physical asset registration threshold — 500 S / 50kg is a working assumption
+First registration of unclaimed surface land — first come first served, or MCC-allocated?
+Whether V-tokens may be used to pay MCC bills directly, or only S-tokens accepted
+Minimum share unit — 0.01% is proposed
+The automatic recall trigger — what cost spike threshold triggers a recall vote?
+Board term length — annual election proposed, but should there be a minimum term?
+The formal viability equation — the mathematical relationship between colony output, MCC costs, UBI level, and system stability — to be derived once the simulation is proven stable
+V-token expiry over very long periods — whether dynastic concentration justifies eventual expiry
+Mars Colony Economy  ·  Token & Governance System  ·  Working Document

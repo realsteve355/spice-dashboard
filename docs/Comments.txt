@@ -1,0 +1,212 @@
+
+
+
+
+70) new screenshot in docs to show that the bottom of the collision indicator diagram is being clipped off
+71) on the collision page we have six graphs, eac of them has "SPECULATIVE" on top of some other text which it is being rendered on top of
+
+
+68) Still in the upper left hand box the collision indicator has text below that cannot be read due to the central circle. What I would suggest in fact is to remove all of this text and restore indicator Picture, Because lines of text Duplicate the information.
+69) I am not sure we are at 8% AI, where does this data come from?
+
+
+65) there is picture in the public directory called Mars colony without labels. This is the same as the existing Mars colony, but without the labels on it so it looks simply on the home page.
+66) this homepage is much better, but the central circle is superimposed over important parts of the underlying four quartile areas. furthermore underneath the central circle I can see the underlying pictures. This doesn't look great.
+67) overall it looks really good, but could it be more modern? The colony pictures are slightly overwhelming and could potentially have softened edges
+
+63) Getting closer, but on the collision indicator, the bar now shows green while the indicator is blue. Also this box needs a to say "Collision STatus Today" or similar
+64) the text below the central circle isn't required. And the central circle should be an integral part of the 4 quartiles, with the line separating the upper two boxes coming at the 12 ocolock position on the circle, the line between left upper and lower hitting the circle a 9 oclock etc
+
+57) The collision indicator on the home page shows the indicator as blue but uses the word orange
+58) on the previous homepage there was a collision indicator showing Green-Red across the page with a year and a bubble showing where we are today. we shuld have retained that .
+59) rather than have that large diagram in the centre of the homepage there should be a circle saying "SPICE Economic System" that leads off to the SYstem Page
+60) the Mars Colony quartile of the home page should have a shrunk version of the Mars colony picture, leading off to the Mars Colony Page
+61) the Earth Colony quartile should be similar and have a new pic I have created and put in the docs folder called SPiceTownImage
+62) I reckon the 4 Spice coins might be Spice, Value, Asset and Vote. We will refine this.But in the 4th quartile we can have symbols for these 4 tokens.
+
+
+
+
+
+
+
+54) I am starting to think that you really don't understand this, despite helping me develop it. do you need me to provide the document that explains?
+
+the spice diagram needs to be at the centre, not at the left hand side. Each of the four external areas need to be the same size.
+the spice diagram needs to cover the elements that I specified, the collision is something completely different, it is the precursor to the need for the Spice economy
+
+55) let's call top right box Mars Colony economy and the bottom left box Earth colony Economy
+
+56) The bottom right box Can simply say COIN for now . we need to envision exactly how that works.
+
+
+
+
+
+
+52) the home page is the page to attack next. Let's get that really good. First, it is much too long (downwards) . humans will not scroll. I wonder if there is a 4+1 picture format:
+Top left collision indicator (which has lost its central colour BTW)
+Top right Mars Economy
+Bottom Left Earth Economy
+Bottom Right Coin (leading off to the SPice currency page)
+Centre The Spice Economic System
+
+53) some benefits of the SPICE system
+
+the spice economic system only contains the items that I have specified. It does not contain portfolios bond yields or anything like that
+
+we need to explain the spice economic system in one simple diagram, Plus the benefits  I've shown below and any more we can think of
+
+Diagram
+
+at the centre is the fisk effectively the bank
+The Fisk gives 1000 S tokens to each citizen per month
+At the end of the month Any S tokens leftover disappear
+20% of S tokens can be saved as V tokens
+Et cetera. we discussed he rules in detail but I have a doc in the claude.ai project if you don't have it
+
+Benefits
+
+Security : Full universal basic income throughout life, enough to cover all basic needs - housing, food, medical, waste etc. The target is to provide public services at 20% of basic income
+No tax
+No inflation : No money printing, No fractional reserve banking
+Responsibility : No such thing as a free lunch - you pay for all the services you use, incentivising efficient use of resources
+Entrepreneurship : accumulated wealth and commercial ventures provides incentive to save, strive and prosper. 
+
+Further diagrams can explain the approach to property ownership
+
+
+49) on the colour scheme, the "white" is often not white enough. The contrast is not good enough for the human eye. When I look on the mars colony dashboard, the word restaurant has the correct tone of white To be easily seen. Can the entire website use this tone of white for its basic white colour. Otherwise it almost unreadable by humans on a normal screen in normal light
+50) the simulation page, with the graphics is white. Is it possible have these graphics in the same style as the Mars dashboard graphics but maintaining exactly the same level of Information
+51) I tried to have Gemini create a simple image similar to Mars colony picture, but describing spice system, S tokens being created and disappearing, V tokens persisting, the MCC, the fisc citizens and companies. this is an informational graphic that shows in one diagram how they spice economic system works. since gemma and I failed Could Claude give this a try?
+
+
+47) Can we harmonise the colour scheme of the website to the dark colours of the mars simulation.
+48) Can we change the menu at the top to be "HOME    COLLISION      MARS      EARTH      COIN      METHODOLOGY", placing  the Impct, crisis, indicators and portfolio pages under collision.
+
+
+
+42) The logo diagram could still be perhaps 2cm further up the page.
+43) The "now" bubble has a strange backwards arrow next to it - unnecessary. Can we just change this label to "today"?
+44) the Now bubbles says we are in 2030 and we are orange status. This is not correct!
+45) I wonder how the calculation logic is factored across the spice website. On the collision page, we are doing calculations based on parameters to vreate graphs and make predictions. Is this same calculation logic factored out so it can be used with different parameters on the Home page?
+46) What are our "spice" base criteria? I think it is Debt/GDP according to reality today. I think AI is 40%, capital flight to crypto is moderate , I think the gov will try Fiscal = Robot tax and Monetary = QE. I think crypto policy will be "tax and regulate" . We need to make sure our Home page reflects this and articulates it too.
+
+
+
+38) Starting to look great. We need to try to get the timeline and the diagram visible when the page becomes visible. To do this , we can remove the text "Based on SPICE thesis parameters and current trajectory. Crisis window 2029–2032.
+
+" , we can put the "accelerates if" box under the text describing the spice protocol.
+39) I don't think the large bold "SPICE PROTOCOL" text is needed
+40) there is no blue on the timeline and the marker is in the green zone
+41) The Marker could simply be a black circlet with a white interior
+
+
+
+34) Not quite - on the ellipses, what I was hoping for was an arc of an ellipse, with a touchpoint at the end of the horizontal line.
+35) can we change "AI jobs lost" to "AI Penetration" or similar
+36) can we have the crisis timeline  above the logo diagram? At the top?
+37) you've put the "Model assumptions — Fiscal: No intervention · Monetary: No intervention · Crypto: Tax & regulate" in very small text below the explanatory text. Can we have it directly under the diagram, perhaps using similar coloured banners to those on the other pages?
+
+
+30) an indicator of the different HSAS colours , perhaps towards the top right, with each colour shown and the current colour highlighted. This places the colours in context
+31) in fact if we moved the "projected crisis timeline" to the top, this may be able to solve a dual purpose of showing the timeline and explaining the colour scale.
+
+32) other assumptions that the model - fiscal response, monetary response, and crypto policy - should be stated somewhere. near the logo diagram.
+
+33) The boxes around the text out the text in the right place, but I wonder if it would look better aesthetically if an ac from an ellipse was used instead
+
+
+25) we don't need "THE COLLISION IS COMING"in caps. Text be "Sovereign debt and AI driven deflation are on a epoch-defining collision course. For the first time in history, traditional tools that governments have to manage crises are rendered impotent by capital flight to cryptocurrency. SPICE models these scenarios and generates an AI-marshalled portfolio to weather the storm."
+
+26) DO we really have crypto flight at 12% at present?
+
+27) the blue box saying "SPICE LEVEL - BLUE£ isn't required.
+
+28) the horizontal lines emanating from the logo to left and right are aligned with the left and right text. I wonder whether in fact the lo should be extended to have a box left right and below, so Text is properly and clearly aligned
+
+
+29) the Estimated Crisis Progression indicator is good , but lets call it "Projected Crisis Timeline", and it does not have any years as a scale under it.
+
+
+
+
+
+
+
+
+
+24) Is it possible to have the slider and buttons settings of snapshot and impact carry over from one page to the other?
+
+
+
+22) The addition of the Human Impact boxes is great , but there are a couple of human usability readability problems that make it very difficult. First, it is difficult to see the change as you modify the snapshots year slider, because you have to scroll down the page significantly. So what I would suggest is creating a new web page between "the collision" and "indicators" called "Impact". This page could be ostensibly the same as the debt collision simulation page, with the graphs being replaced by the impact boxes.
+
+23) the text in the impact boxes is very dense and difficult for a human to read. Bullet points covering various topic areas would be easier to read. If this were a different page called Impact, there would be more for useful text.
+
+
+
+19) Text - "Displacement by 2030
+What fraction of knowledge workers will be substantially displaced by AI?"
+Can be replaced with : "What fraction of knowledge workers will be substantially displaced by AI BY 2030?" (BY 2030 Bold)
+
+20) You have created two ways to view the crisis colour level, the badges, and a ribbon underneath. We don't need both ; I suggest we keep the badges but the apostrophes are not needed. We could add for example "2Q24" if we have data to that granular level
+
+21) The text "SPICE Thesis — Chart 3 Debt Collision Simulation" can be replaced with "Debt Collision Simulation"
+
+
+
+18) On the simulation page, we have "break" and "ghost" but I think what we are really trying to simulate is the spice crisis colours - i.e. given the content of the graphs, when do green, yellow, blue etc kick in. I wonder how this might best be displayed.
+
+
+
+15) On the portfolio page the blue box gives a score of 9-16, this is unnecessary, we can leave this out
+16) On the portfolio page the box under the BLUE crisis levl box can go completely, it adds no value, it can be replaced with the notional valuation box at the bottom
+17) The HOME page can be updated to reflect the new pages in the site
+
+
+
+
+
+
+1) Lets have the "Dashboard" page renamed to COIN and moved to the right of "PORTFOLIO" in the top ribbon
+2) The Indicators page still has a URL of Apocalypse; we should change that
+
+3) On the portfolio page we should have a clear indicator of the current SPICE status (green blue yellow red etc ) And the portfolio stage we are in should be highlighted somehow.
+
+4) There should probably be an indication on the portfolio page of the total market cap (in BTc/usd) and the actual allocations also valued in btc/usd.
+
+5) we are still not managing Create a conceptual Flow through the site Pages.  let's consider 4 categories. Debt, Unemployment, Inflation, crypto. we can use these categories to categorise items on both the collision page and the indicators page.
+
+what we will find, is that we do not have any indicators on the indicators page under for example unemployment. I am not sure if an indicator on inflation.
+
+6) is the market cap missing from the Portfolio page? We also discussed that on the portfolio page, there will be a clear indicator of which spice stage we are in , green yellow etc
+
+7) The spice stage indicator (lets call it crisis level indicator) on the portfolio page should be driven by the indicator on the indicators page
+
+8) The contents of the current portfolio defined by the crisis level indicator is wrong - includes silver rather than the items in the green box
+
+9) there should be a spice crisis level indictor one the HOME page also
+
+10)  On the portfolio page the box containing the percentages etc for the current crisis level should be highlighted
+
+
+
+
+11) A second unemployment indicator would be useful -  a predictor of future unemployment? Vacancy levels?
+
+12) On the crypto indicators, we have bitcoin dominance of the crypto market, but bitcoin or crypto market cap might also be a good idea
+
+13) How is the crisis level calculated? Green, Yellow etc. Need to agree on the formula for this.
+
+
+14) Instead of 1 bitcoin invested, lets have $10,000. That's a more realistic individual investment. Actualy, this is the box I'd like to have for total  AUM in place of the "live asset prices" box
+
+
+
+
+
+
+
+
+

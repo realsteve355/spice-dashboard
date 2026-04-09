@@ -1,0 +1,23 @@
+
+
+
+this is my attempt to explain the vision for the spice website - let's call it the Spice protocol
+
+there is a natural, conceptual flow between the pages of the website
+
+Page zero explains spice, conceptually and also the website
+
+page one explains“the collision” and the high level macro indicators and graphs that show how across a number of years Collision between AI driven deflation Government borrowing driven inflation, Come pause extreme economic difficulty. This exists and is pretty good. it may be advantageous for us to more clearly name and label the indicator.
+
+page two is the indicator page -  that elaborates on this with some detailed indicators, this has come a long way. but it is currently not clear how high level indicators on age one relate to the specific detailed indicators on page two. furthermore, there are some indicators, such as unemployment, that are not represented at all on page two. as is correctly shown at present, page 2 has the green blue yellow orange red Indicator at the top. This is critical driving the contents for page three
+
+page 3 does not exist yet, shows the " investable universe " potential investment portfolios Spice will target for each HSAS colour. These potential investments are described in the AI Q&A doc (as I recall)
+
+This might show a column showing GREEN and underneath, 80% PAXG gold, 20% bitcoin
+Then at YELLOW there might be 20% PAXG, 30% gold, 
+By the time we get to RED there might be short bonds and short currencies, along with some bitcoin, some gold and other crisis type investments. We need a way to configure these investments. for now this may be via a webpage  ideally we would have AI agents voting on the investments and proportions in the portfolio.
+
+page 4 shows the portfolio since inception, tracking the changes that have been made, and showing the values
+
+page 5 is the page that allows purchase of SPICE coins (or however we decide to structure the crypto product) plus the individual SPICE owner's current internal portfolio
+

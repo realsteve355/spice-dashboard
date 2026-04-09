@@ -1,0 +1,68 @@
+To give **Claude Code** the precise instructions it needs to refactor the repository, I have broken the request into **Context**, **Technical Requirements**, and **Execution Steps**. 
+
+Claude Code works best when it has a clear "mental model" of the new economics. Use the following block as your initialization prompt.
+
+---
+
+# Technical Specification for Claude Code: Project "Spice OS" Refactor
+
+## 1. Project Context & Vision
+The website is transitioning from a "Crypto Portfolio" site to a **Socio-Economic Operating System** thesis. 
+* **The Thesis:** The "Great Collision" between Fiat currency collapse (tracked by our **Collapse Clock**) and the rise of infinite robotic productivity.
+* **The Solution:** The **Spice Economy**, grounded in a new unit of account: the **Ergon ($\mathcal{E}$)**.
+* **The Model:** Using a **Mars Colony** as a closed-loop laboratory to prove that a UBI-based, post-scarcity economy is mathematically feasible when automated output exceeds survival costs.
+
+## 2. Structural Requirements
+
+### A. Homepage Refactor (`/pages/index.tsx` or equivalent)
+* **The Collapse Clock:** Retain the existing component but wrap it in a new "Narrative Container." 
+* **Narrative Flow:**
+    1.  **Hero:** "The Great Collision." Contrast Fiat decay vs. AI abundance.
+    2.  **The Ergon Definition:** Introduce the concept of value backed by machine work capacity, not debt.
+    3.  **The Mars Sandbox:** A section explaining the Mars Colony as the "beta test" for Earth-based autonomous towns.
+* **Call to Action:** Direct all traffic to the "Theory & Simulator" section.
+
+### B. The Theory Module (`/pages/theory` or `/docs`)
+Create a high-authority documentation section explaining the economic methodology.
+* **Math Rendering:** Use KaTeX/LaTeX to render the **Breakeven Point**:
+    $$\eta \cdot P_{ai} > C_{min}$$
+    *Where $\eta$ is machine efficiency, $P_{ai}$ is potential Ergon capacity, and $C_{min}$ is community survival cost.*
+* **The Ergon Standard:** Define $1 \mathcal{E}$ as the standardized unit of autonomous work (energy + intelligence).
+
+### C. Simulator Logic Update (`/components/Simulator`)
+Refactor the simulation engine to allow "Colony-level" inputs:
+* **Input Parameters:** Add sliders for "Automation Level (%)" and "Energy Independence."
+* **Output Metrics:** Instead of just "Profit/Loss," show the **"Autonomy Ratio"**—the percentage of community needs met by local Ergon production.
+* **Visuals:** Add a "Breakeven" indicator on the chart showing the date the colony becomes self-sufficient.
+
+## 3. Implementation Instructions for Claude Code
+
+**Task 1: Content Scaffolding**
+> "Analyze the current homepage. Rewrite the copy to reflect a shift from 'Investment Portfolio' to 'Economic Operating System.' Integrate the **Ergon** unit of account into the hero section and link the **Collapse Clock** directly to the simulation of the Spice model."
+
+**Task 2: Mathematical Validation Page**
+> "Create a new route `/theory`. Build a clean, academic-style page that documents the equations for the Spice model. Use the logic that UBI is feasible when automated output ($\mathcal{E}$) exceeds the caloric and resource needs of a 2,000-person population. Ensure all formulas are rendered in LaTeX."
+
+**Task 3: UI/UX Aesthetic**
+> "Update the Tailwind config or CSS to reflect a 'Martian Industrial' aesthetic: Dark mode, high-contrast amber or 'spice' accents, and technical data visualizations (monospaced fonts for data points)."
+
+---
+
+## 4. Specific "Ergon" Logic for the Codebase
+Ensure Claude adds this logic to your utility folder (`/utils/spiceMath.ts`):
+```typescript
+// The fundamental Spice Economic Constant
+export const ERGON_THRESHOLD_METRIC = (autoOutput, popSize, survivalCost) => {
+  const totalCapacity = autoOutput.joules * autoOutput.efficiency;
+  const communityNeeds = popSize * survivalCost;
+  return totalCapacity / communityNeeds; // If > 1, the Spice Model is viable.
+};
+```
+
+---
+
+### How to execute this:
+1.  Open your terminal in the project root.
+2.  Start Claude Code.
+3.  Paste the **"Project Context & Vision"** and **"Implementation Instructions"** sections above. 
+4.  **One Warning:** Since Claude will be modifying your homepage, make sure to tell it to "keep the existing Collapse Clock component logic but change the surrounding layout."

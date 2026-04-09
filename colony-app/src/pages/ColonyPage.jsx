@@ -1,0 +1,259 @@
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import Layout from '../components/Layout'
+import { MOCK_COLONIES } from '../data/mock'
+import { useWallet } from '../App'
+
+const C = {
+  gold:   '#B8860B',
+  border: '#e2e2e2',
+  white:  '#ffffff',
+  text:   '#111',
+  sub:    '#555',
+  faint:  '#aaa',
+  green:  '#16a34a',
+  red:    '#ef4444',
+  bg:     '#f5f5f5',
+}
+
+const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
+
+1. UBI FLOOR
+   Every registered citizen receives 1,000 S-tokens on the 1st of each month, unconditionally, for life.
+
+2. UBI UNIVERSALITY
+   The UBI may not be conditional, means-tested, or withheld for any reason.
+
+3. G-TOKEN UNIVERSALITY
+   Every adult citizen (18+) holds exactly one G-token, issued on registration.
+
+4. G-TOKEN NON-TRANSFERABILITY
+   G-tokens cannot be bought, sold, inherited, or transferred.
+
+5. MCC MANDATE
+   The MCC may not compete commercially with private companies within the colony.
+
+6. CITIZEN V-TOKEN PROTECTION
+   No authority may confiscate citizen V-tokens.
+
+7. BLOCKCHAIN TRANSPARENCY
+   All ownership — wallets, shares, assets — is publicly visible at all times.
+
+8. MCC ASSET PROTECTION
+   MCC infrastructure may not be privatised.
+
+9. COMPANY FREEDOM
+   No licence is required to operate a company beyond Fisc registration.
+
+10. FISC AUTONOMY
+    The Fisc may not be placed under MCC or company control.
+
+These protections may only be amended by a blockchain referendum of 80% of all registered citizens.`
+
+export default function ColonyPage() {
+  const { slug } = useParams()
+  const navigate  = useNavigate()
+  const { isConnected, isCitizenOf, isMccOf, connect } = useWallet()
+
+  const colony    = MOCK_COLONIES.find(c => c.id === slug)
+  const isCitizen = isCitizenOf(slug)
+  const isMcc     = isMccOf(slug)
+
+  const [showConstitution, setShowConstitution] = useState(false)
+  const [joining, setJoining] = useState(false)         // show join confirmation
+  const [accepted, setAccepted] = useState(false)       // constitution checkbox
+  const [joined, setJoined]     = useState(false)       // post-join success
+
+  if (!colony) return (
+    <Layout title="Not Found" back="/">
+      <div style={{ padding: 32, textAlign: 'center', color: C.faint }}>Colony not found.</div>
+    </Layout>
+  )
+
+  function handleJoin() {
+    if (!isConnected) { connect(); return }
+    setJoining(true)
+  }
+
+  function handleSign() {
+    // Mock: simulate signing constitution on-chain
+    setJoining(false)
+    setJoined(true)
+  }
+
+  return (
+    <Layout title={colony.name} back="/" colonySlug={isCitizen ? slug : null}>
+      <div style={{ padding: '20px 16px 0' }}>
+
+        {/* Colony header */}
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 18, fontWeight: 500, color: C.text, marginBottom: 4 }}>{colony.name}</div>
+          <div style={{ fontSize: 11, color: C.faint, marginBottom: 12 }}>
+            Est. {fmtDate(colony.founded)} · MCC: {colony.mcc.name} · Base Sepolia
+          </div>
+          <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 16 }}>
+            {colony.description}
+          </div>
+
+          {/* Citizen count badge */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Chip label={`${colony.citizenCount} citizens`} />
+            <Chip label="Active" color={C.green} />
+            {isCitizen && <Chip label="You are a citizen" color={C.gold} />}
+            {isMcc    && <Chip label="You are MCC board" color="#8b5cf6" />}
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        {joined ? (
+          <div style={{
+            background: '#f0fdf4', border: `1px solid ${C.green}`,
+            borderRadius: 8, padding: 16, marginBottom: 12, textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 14, color: C.green, fontWeight: 500, marginBottom: 4 }}>Welcome to {colony.name}</div>
+            <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
+              G-token issued. Your first 1,000 S-tokens arrive 1 May 2026.
+            </div>
+            <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={btn(C.green)}>
+              Go to Dashboard →
+            </button>
+          </div>
+        ) : isCitizen ? (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={{ ...btn(C.gold), flex: 1 }}>
+              Dashboard →
+            </button>
+            {isMcc && (
+              <button onClick={() => navigate(`/colony/${slug}/admin`)} style={{ ...btn('#8b5cf6'), flex: 1 }}>
+                MCC Admin →
+              </button>
+            )}
+          </div>
+        ) : (
+          <button onClick={handleJoin} style={{ ...btn(C.gold), width: '100%', marginBottom: 12 }}>
+            {isConnected ? 'Join this Colony' : 'Connect Wallet to Join'}
+          </button>
+        )}
+
+        {/* Join confirmation sheet */}
+        {joining && (
+          <div style={{
+            background: C.white, border: `1px solid ${C.border}`,
+            borderRadius: 8, padding: 16, marginBottom: 12,
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 8 }}>
+              Read and accept the founding constitution
+            </div>
+            <div style={{
+              fontSize: 11, color: C.sub, lineHeight: 1.7,
+              maxHeight: 180, overflowY: 'auto',
+              background: C.bg, borderRadius: 6, padding: 12, marginBottom: 12,
+              whiteSpace: 'pre-wrap',
+            }}>
+              {CONSTITUTION_TEXT}
+            </div>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={e => setAccepted(e.target.checked)}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: C.gold }}
+              />
+              <span style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
+                I have read and accept the founding constitution of {colony.name}
+              </span>
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setJoining(false)} style={{ ...btn(C.faint, '#fff', C.faint), flex: 1 }}>
+                Cancel
+              </button>
+              <button
+                onClick={handleSign}
+                disabled={!accepted}
+                style={{ ...btn(accepted ? C.gold : C.faint), flex: 2, opacity: accepted ? 1 : 0.5 }}
+              >
+                Sign & Join →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MCC Services */}
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+            MCC SERVICES
+          </div>
+          {colony.services.map((s, i) => (
+            <div key={i} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+              paddingBottom: i < colony.services.length - 1 ? 10 : 0,
+              marginBottom: i < colony.services.length - 1 ? 10 : 0,
+              borderBottom: i < colony.services.length - 1 ? `1px solid ${C.border}` : 'none',
+            }}>
+              <div>
+                <div style={{ fontSize: 12, color: C.text, marginBottom: 2 }}>{s.name}</div>
+                <div style={{ fontSize: 11, color: C.faint }}>{s.billing}</div>
+              </div>
+              <div style={{ fontSize: 12, color: C.gold, fontWeight: 500, textAlign: 'right' }}>
+                {s.price}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Constitution accordion */}
+        <div
+          style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 20 }}
+        >
+          <button
+            onClick={() => setShowConstitution(v => !v)}
+            style={{
+              width: '100%', background: 'none', border: 'none',
+              padding: '14px 16px', display: 'flex', justifyContent: 'space-between',
+              alignItems: 'center', cursor: 'pointer',
+            }}
+          >
+            <span style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>FOUNDING CONSTITUTION</span>
+            <span style={{ fontSize: 14, color: C.faint }}>{showConstitution ? '↑' : '↓'}</span>
+          </button>
+          {showConstitution && (
+            <div style={{
+              padding: '0 16px 16px',
+              fontSize: 11, color: C.sub, lineHeight: 1.8,
+              whiteSpace: 'pre-wrap', borderTop: `1px solid ${C.border}`,
+              paddingTop: 12,
+            }}>
+              {CONSTITUTION_TEXT}
+            </div>
+          )}
+        </div>
+
+      </div>
+    </Layout>
+  )
+}
+
+function Chip({ label, color }) {
+  const col = color || '#888'
+  return (
+    <span style={{
+      fontSize: 10, color: col, border: `1px solid ${col}`,
+      borderRadius: 10, padding: '2px 8px', letterSpacing: '0.06em',
+    }}>
+      {label}
+    </span>
+  )
+}
+
+function btn(bg, color = '#fff', border) {
+  return {
+    padding: '12px 16px', background: bg, color,
+    border: border ? `1px solid ${border}` : 'none',
+    borderRadius: 8, fontSize: 12, cursor: 'pointer',
+    letterSpacing: '0.04em', fontWeight: 500,
+  }
+}
+
+function fmtDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+}
