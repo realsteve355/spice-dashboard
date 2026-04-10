@@ -1,8 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES, MOCK_ADMIN_DATA } from '../data/mock'
 import { useWallet } from '../App'
+
+const MCC_SERVICES_ABI = [
+  "function getServices() view returns (uint256[], string[], string[], string[])",
+  "function addService(string, string, string) external returns (uint256)",
+  "function editService(uint256, string, string, string) external",
+  "function removeService(uint256) external",
+]
 
 const C = {
   gold:   '#B8860B',
@@ -20,19 +28,46 @@ const C = {
 export default function Admin() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isMccOf, connect } = useWallet()
+  const { isConnected, isMccOf, connect, provider, signer, contracts } = useWallet()
 
   const colony  = MOCK_COLONIES.find(c => c.id === slug)
   const data    = MOCK_ADMIN_DATA[slug]
   const isMcc   = isMccOf(slug)
+  const mccServicesAddr = contracts?.colonies?.[slug]?.mccServices
 
   const [tab, setTab]               = useState('overview')
   const [addingService, setAdding]  = useState(false)
-  const [services, setServices]     = useState(colony?.services || [])
+  const [services, setServices]     = useState([])
+  const [svcLoading, setSvcLoading] = useState(false)
+  const [svcPending, setSvcPending] = useState(false)
+  const [svcError, setSvcError]     = useState(null)
   const [newSvc, setNewSvc]         = useState({ name: '', billing: '', price: '' })
   const [editingIdx, setEditIdx]    = useState(null)
   const [editSvc, setEditSvc]       = useState({})
   const [removingIdx, setRemoveIdx] = useState(null)
+
+  async function loadServices() {
+    if (!mccServicesAddr || !provider) {
+      setServices(colony?.services?.map((s, i) => ({ ...s, id: i })) || [])
+      return
+    }
+    setSvcLoading(true)
+    try {
+      const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, provider)
+      const [ids, names, billings, prices] = await contract.getServices()
+      setServices(ids.map((id, i) => ({
+        id: Number(id),
+        name: names[i],
+        billing: billings[i],
+        price: prices[i],
+      })))
+    } catch (e) {
+      console.warn('Failed to load services', e)
+    }
+    setSvcLoading(false)
+  }
+
+  useEffect(() => { if (tab === 'services') loadServices() }, [tab, mccServicesAddr, provider])
 
   if (!isConnected) return (
     <Layout title="MCC Admin" back={`/colony/${slug}`}>
@@ -54,11 +89,24 @@ export default function Admin() {
   const recallPct = Math.round((data.currentAvgBill / data.recallThreshold) * 100)
   const recallSafe = data.currentAvgBill < data.recallThreshold
 
-  function addService() {
+  async function addService() {
     if (!newSvc.name.trim()) return
-    setServices(s => [...s, { ...newSvc, revenueMTD: 0 }])
-    setNewSvc({ name: '', billing: '', price: '' })
-    setAdding(false)
+    setSvcPending(true); setSvcError(null)
+    try {
+      if (mccServicesAddr && signer) {
+        const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
+        const tx = await contract.addService(newSvc.name.trim(), newSvc.billing.trim(), newSvc.price.trim())
+        await tx.wait()
+        await loadServices()
+      } else {
+        setServices(s => [...s, { ...newSvc, id: s.length }])
+      }
+      setNewSvc({ name: '', billing: '', price: '' })
+      setAdding(false)
+    } catch (e) {
+      setSvcError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setSvcPending(false)
   }
 
   function startEdit(i) {
@@ -67,14 +115,42 @@ export default function Admin() {
     setRemoveIdx(null)
   }
 
-  function saveEdit() {
-    setServices(s => s.map((x, i) => i === editingIdx ? { ...x, ...editSvc } : x))
-    setEditIdx(null)
+  async function saveEdit() {
+    setSvcPending(true); setSvcError(null)
+    const svc = services[editingIdx]
+    try {
+      if (mccServicesAddr && signer) {
+        const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
+        const tx = await contract.editService(svc.id, editSvc.name.trim(), editSvc.billing.trim(), editSvc.price.trim())
+        await tx.wait()
+        await loadServices()
+      } else {
+        setServices(s => s.map((x, i) => i === editingIdx ? { ...x, ...editSvc } : x))
+      }
+      setEditIdx(null)
+    } catch (e) {
+      setSvcError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setSvcPending(false)
   }
 
-  function removeService(i) {
-    setServices(s => s.filter((_, idx) => idx !== i))
-    setRemoveIdx(null)
+  async function removeService(i) {
+    setSvcPending(true); setSvcError(null)
+    const svc = services[i]
+    try {
+      if (mccServicesAddr && signer) {
+        const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
+        const tx = await contract.removeService(svc.id)
+        await tx.wait()
+        await loadServices()
+      } else {
+        setServices(s => s.filter((_, idx) => idx !== i))
+      }
+      setRemoveIdx(null)
+    } catch (e) {
+      setSvcError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setSvcPending(false)
   }
 
   return (
@@ -166,7 +242,9 @@ export default function Admin() {
         {/* ── Services tab ── */}
         {tab === 'services' && (
           <div>
-            {services.map((s, i) => (
+            {svcError && <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{svcError}</div>}
+            {svcLoading && <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 20 }}>Loading services...</div>}
+            {!svcLoading && services.map((s, i) => (
               <div key={i} style={{ ...card, borderColor: editingIdx === i ? C.gold : removingIdx === i ? C.red : C.border }}>
 
                 {/* Editing inline */}
@@ -178,7 +256,7 @@ export default function Admin() {
                     <SvcInput placeholder="Price"          value={editSvc.price}   onChange={v => setEditSvc(e => ({ ...e, price: v }))}   />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <button onClick={() => setEditIdx(null)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
-                      <button onClick={saveEdit}              style={{ ...smallBtn(C.gold), flex: 2 }}>Save changes</button>
+                      <button onClick={saveEdit} disabled={svcPending} style={{ ...smallBtn(C.gold), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Save changes'}</button>
                     </div>
                   </div>
 
@@ -190,7 +268,7 @@ export default function Admin() {
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => setRemoveIdx(null)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
-                      <button onClick={() => removeService(i)}   style={{ ...smallBtn(C.red), flex: 2 }}>Remove service</button>
+                      <button onClick={() => removeService(i)} disabled={svcPending} style={{ ...smallBtn(C.red), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Remove service'}</button>
                     </div>
                   </div>
 
@@ -201,9 +279,8 @@ export default function Admin() {
                       <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{s.name}</div>
                       <div style={{ fontSize: 12, color: C.gold, fontWeight: 500 }}>{s.price}</div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: C.faint, marginBottom: 10 }}>
-                      <span>{s.billing}</span>
-                      <span>Revenue MTD: {s.revenueMTD} S</span>
+                    <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>
+                      {s.billing}
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => startEdit(i)}     style={{ ...smallBtn(C.sub, '#fff', C.border), flex: 1 }}>Edit</button>
@@ -237,7 +314,7 @@ export default function Admin() {
                 />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setAdding(false)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
-                  <button onClick={addService} style={{ ...smallBtn(C.gold), flex: 2 }}>Add Service</button>
+                  <button onClick={addService} disabled={svcPending} style={{ ...smallBtn(C.gold), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Add Service'}</button>
                 </div>
               </div>
             ) : (

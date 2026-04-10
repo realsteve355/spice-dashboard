@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
-import { MOCK_VOTES, MOCK_COLONIES } from '../data/mock'
+import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
 const C = {
@@ -19,84 +20,204 @@ const C = {
 }
 
 const TYPE_META = {
-  election: { label: 'ELECTION',   color: C.purple },
-  dividend: { label: 'DIVIDEND',   color: C.gold   },
-  recall:   { label: 'RECALL',     color: C.red    },
-  amendment:{ label: 'AMENDMENT',  color: C.blue   },
+  ELECTION:  { label: 'ELECTION',  color: C.purple },
+  DIVIDEND:  { label: 'DIVIDEND',  color: C.gold   },
+  RECALL:    { label: 'RECALL',    color: C.red     },
+  AMENDMENT: { label: 'AMENDMENT', color: C.blue    },
 }
+
+const GOV_ABI = [
+  "function proposalCount() view returns (uint256)",
+  "function getProposal(uint256) view returns (string, string, uint256, bool)",
+  "function getOptions(uint256) view returns (string[])",
+  "function getVoteCounts(uint256) view returns (uint256[])",
+  "function hasVoted(uint256, address) view returns (bool)",
+  "function vote(uint256, uint256) external",
+  "function createProposal(string, string, string[], uint256) external returns (uint256)",
+]
 
 export default function Votes() {
   const { slug }  = useParams()
-  const { isCitizenOf } = useWallet()
+  const { isCitizenOf, provider, signer, address, contracts } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const isCitizen = isCitizenOf(slug)
 
-  const [votes, setVotes]       = useState(MOCK_VOTES[slug] || [])
-  const [expanded, setExpanded] = useState(null)
+  const [proposals, setProposals] = useState([])
+  const [expanded,  setExpanded]  = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [voting,    setVoting]    = useState(null)   // proposalId being voted on
+  const [voteError, setVoteError] = useState(null)
+  const [creating,  setCreating]  = useState(false)
+  const [newP, setNewP] = useState({ type: 'ELECTION', description: '', options: ['', ''], days: 7 })
+  const [createPending, setCreatePending] = useState(false)
 
-  const open   = votes.filter(v => v.status === 'open')
-  const closed = votes.filter(v => v.status === 'closed')
+  const govAddress = contracts?.colonies?.[slug]?.governance
 
-  function castVote(voteId, optionId) {
-    setVotes(vs => vs.map(v =>
-      v.id === voteId
-        ? {
-            ...v,
-            yourVote: optionId,
-            totalVoted: v.yourVote === null ? v.totalVoted + 1 : v.totalVoted,
-            options: v.options.map(o =>
-              o.id === optionId ? { ...o, votes: o.votes + 1 } : o
-            ),
-          }
-        : v
-    ))
+  async function loadProposals() {
+    if (!govAddress || !provider) { setLoading(false); return }
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, provider)
+      const count = Number(await gov.proposalCount())
+      const loaded = []
+      for (let i = 0; i < count; i++) {
+        const [proposalType, description, deadline, isOpen] = await gov.getProposal(i)
+        const options    = await gov.getOptions(i)
+        const voteCounts = await gov.getVoteCounts(i)
+        const myVoted    = address ? await gov.hasVoted(i, address) : false
+        loaded.push({
+          id: i,
+          proposalType,
+          description,
+          deadline: Number(deadline),
+          isOpen,
+          options,
+          voteCounts: voteCounts.map(Number),
+          myVoted,
+        })
+      }
+      setProposals(loaded.reverse()) // newest first
+    } catch (e) {
+      console.warn('Failed to load proposals', e)
+    }
+    setLoading(false)
   }
+
+  useEffect(() => { loadProposals() }, [govAddress, provider, address])
+
+  async function castVote(proposalId, optionIndex) {
+    if (!signer || !govAddress) return
+    setVoting(proposalId); setVoteError(null)
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const tx = await gov.vote(proposalId, optionIndex)
+      await tx.wait()
+      await loadProposals()
+    } catch (e) {
+      setVoteError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setVoting(null)
+  }
+
+  async function createProposal() {
+    if (!signer || !govAddress) return
+    setCreatePending(true)
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const opts = newP.options.filter(o => o.trim())
+      const tx = await gov.createProposal(newP.type, newP.description, opts, newP.days)
+      await tx.wait()
+      setCreating(false)
+      setNewP({ type: 'ELECTION', description: '', options: ['', ''], days: 7 })
+      await loadProposals()
+    } catch (e) {
+      console.error(e)
+    }
+    setCreatePending(false)
+  }
+
+  const open   = proposals.filter(p => p.isOpen)
+  const closed = proposals.filter(p => !p.isOpen)
 
   return (
     <Layout title="Governance" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
       <div style={{ padding: '16px 16px 0' }}>
 
-        {/* Colony header */}
-        <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 16 }}>
-          {colony?.name} · {votes.length} vote{votes.length !== 1 ? 's' : ''}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
+            {colony?.name} · {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+          </div>
+          {isCitizen && (
+            <button
+              onClick={() => setCreating(v => !v)}
+              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+            >
+              + Propose
+            </button>
+          )}
         </div>
 
-        {votes.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>
-            No votes yet. The first MCC election is scheduled for January 2027.
+        {/* Create proposal form */}
+        {creating && (
+          <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW PROPOSAL</div>
+            <select
+              value={newP.type}
+              onChange={e => setNewP(p => ({ ...p, type: e.target.value }))}
+              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, background: C.white }}
+            >
+              {['ELECTION','DIVIDEND','RECALL','AMENDMENT'].map(t => <option key={t}>{t}</option>)}
+            </select>
+            <input
+              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, outline: 'none' }}
+              placeholder="Description"
+              value={newP.description}
+              onChange={e => setNewP(p => ({ ...p, description: e.target.value }))}
+            />
+            {newP.options.map((opt, i) => (
+              <input
+                key={i}
+                style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, outline: 'none' }}
+                placeholder={`Option ${i + 1}`}
+                value={opt}
+                onChange={e => setNewP(p => ({ ...p, options: p.options.map((o, idx) => idx === i ? e.target.value : o) }))}
+              />
+            ))}
+            <button onClick={() => setNewP(p => ({ ...p, options: [...p.options, ''] }))} style={{ fontSize: 11, color: C.faint, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8 }}>
+              + Add option
+            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setCreating(false)} style={smallBtn(C.faint, '#fff', C.border)}>Cancel</button>
+              <button onClick={createProposal} disabled={createPending} style={{ ...smallBtn(C.gold), flex: 1 }}>
+                {createPending ? 'Submitting...' : 'Create Proposal →'}
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Open votes */}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>Loading proposals...</div>
+        )}
+
+        {!loading && proposals.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>
+            No proposals yet. The first MCC election is scheduled for January 2027.
+          </div>
+        )}
+
+        {voteError && (
+          <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{voteError}</div>
+        )}
+
         {open.length > 0 && (
           <>
             <SectionLabel label="OPEN" color={C.green} />
-            {open.map(vote => (
-              <VoteCard
-                key={vote.id}
-                vote={vote}
-                expanded={expanded === vote.id}
-                onToggle={() => setExpanded(e => e === vote.id ? null : vote.id)}
-                onVote={(optId) => castVote(vote.id, optId)}
+            {open.map(p => (
+              <ProposalCard
+                key={p.id}
+                proposal={p}
+                expanded={expanded === p.id}
+                onToggle={() => setExpanded(e => e === p.id ? null : p.id)}
+                onVote={(optIdx) => castVote(p.id, optIdx)}
                 isCitizen={isCitizen}
+                isPending={voting === p.id}
               />
             ))}
           </>
         )}
 
-        {/* Closed votes */}
         {closed.length > 0 && (
           <>
             <SectionLabel label="CLOSED" color={C.faint} />
-            {closed.map(vote => (
-              <VoteCard
-                key={vote.id}
-                vote={vote}
-                expanded={expanded === vote.id}
-                onToggle={() => setExpanded(e => e === vote.id ? null : vote.id)}
+            {closed.map(p => (
+              <ProposalCard
+                key={p.id}
+                proposal={p}
+                expanded={expanded === p.id}
+                onToggle={() => setExpanded(e => e === p.id ? null : p.id)}
                 onVote={null}
                 isCitizen={isCitizen}
+                isPending={false}
               />
             ))}
           </>
@@ -107,135 +228,85 @@ export default function Votes() {
   )
 }
 
-function VoteCard({ vote, expanded, onToggle, onVote, isCitizen }) {
-  const meta    = TYPE_META[vote.type] || TYPE_META.election
-  const hasVoted = vote.yourVote !== null
-  const totalV   = vote.totalVoted
-  const winner   = vote.status === 'closed'
-    ? [...vote.options].sort((a, b) => b.votes - a.votes)[0]
-    : null
+function ProposalCard({ proposal, expanded, onToggle, onVote, isCitizen, isPending }) {
+  const meta      = TYPE_META[proposal.proposalType] || TYPE_META.ELECTION
+  const totalVotes = proposal.voteCounts.reduce((s, v) => s + v, 0)
+  const deadline   = new Date(proposal.deadline * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
   return (
-    <div style={{
-      background: C.white,
-      border: `1px solid ${expanded ? C.gold : C.border}`,
-      borderRadius: 8, marginBottom: 10, overflow: 'hidden',
-    }}>
-      {/* Card header — always visible */}
-      <div
-        onClick={onToggle}
-        style={{ padding: '14px 16px', cursor: 'pointer' }}
-      >
+    <div style={{ background: C.white, border: `1px solid ${expanded ? C.gold : C.border}`, borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
+      <div onClick={onToggle} style={{ padding: '14px 16px', cursor: 'pointer' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: 9, color: meta.color, border: `1px solid ${meta.color}`,
-                borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em', flexShrink: 0,
-              }}>
+              <span style={{ fontSize: 9, color: meta.color, border: `1px solid ${meta.color}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
                 {meta.label}
               </span>
-              {hasVoted && (
-                <span style={{ fontSize: 9, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
-                  VOTED
-                </span>
+              {proposal.myVoted && (
+                <span style={{ fontSize: 9, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>VOTED</span>
               )}
-              {vote.status === 'closed' && (
-                <span style={{ fontSize: 9, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
-                  CLOSED
-                </span>
+              {!proposal.isOpen && (
+                <span style={{ fontSize: 9, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>CLOSED</span>
               )}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{vote.title}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{proposal.description}</div>
             <div style={{ fontSize: 11, color: C.faint, marginTop: 3 }}>
-              {vote.status === 'open' ? `Closes ${vote.deadline}` : `Closed ${vote.deadline}`}
-              {' · '}{totalV} of {vote.totalEligible} voted
+              {proposal.isOpen ? `Closes ${deadline}` : `Closed ${deadline}`} · {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
             </div>
           </div>
-          <span style={{ color: C.faint, fontSize: 14, flexShrink: 0, marginTop: 2 }}>
-            {expanded ? '↑' : '↓'}
-          </span>
+          <span style={{ color: C.faint, fontSize: 14, flexShrink: 0 }}>{expanded ? '↑' : '↓'}</span>
         </div>
-
-        {/* Mini progress bar (always visible) */}
+        {/* Mini bar */}
         <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#f0f0f0' }}>
-          {vote.options.map((opt, i) => {
-            const pct = totalV > 0 ? (opt.votes / vote.totalEligible) * 100 : 0
-            return <div key={opt.id} style={{ width: `${pct}%`, background: optColor(i) }} />
-          })}
+          {proposal.voteCounts.map((v, i) => (
+            <div key={i} style={{ width: totalVotes > 0 ? `${(v / totalVotes) * 100}%` : 0, background: optColor(i) }} />
+          ))}
         </div>
       </div>
 
-      {/* Expanded detail */}
       {expanded && (
         <div style={{ borderTop: `1px solid ${C.border}`, padding: '14px 16px' }}>
-          <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 14 }}>
-            {vote.description}
-          </div>
-
-          {/* Options */}
-          {vote.options.map((opt, i) => {
-            const pct      = totalV > 0 ? Math.round((opt.votes / totalV) * 100) : 0
-            const isYours  = vote.yourVote === opt.id
-            const isWinner = winner?.id === opt.id
-
+          {proposal.options.map((opt, i) => {
+            const pct = totalVotes > 0 ? Math.round((proposal.voteCounts[i] / totalVotes) * 100) : 0
             return (
-              <div key={opt.id} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12, color: isYours ? C.gold : C.text, fontWeight: isYours ? 600 : 400 }}>
-                      {opt.label}
-                    </span>
-                    {isYours  && <span style={{ fontSize: 9, color: C.gold }}>YOUR VOTE</span>}
-                    {isWinner && vote.status === 'closed' && <span style={{ fontSize: 9, color: C.green }}>PASSED</span>}
-                  </div>
-                  <span style={{ fontSize: 12, color: C.faint }}>{opt.votes} ({pct}%)</span>
+              <div key={i} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: C.text }}>{opt}</span>
+                  <span style={{ fontSize: 12, color: C.faint }}>{proposal.voteCounts[i]} ({pct}%)</span>
                 </div>
                 <div style={{ background: '#f0f0f0', borderRadius: 3, height: 6, overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: isYours ? C.gold : optColor(i) }} />
+                  <div style={{ width: `${pct}%`, height: '100%', background: optColor(i) }} />
                 </div>
               </div>
             )
           })}
 
-          {/* Quorum info */}
           <div style={{ fontSize: 11, color: C.faint, marginTop: 8, marginBottom: 12 }}>
-            {totalV} of {vote.totalEligible} G-tokens cast · {Math.round((totalV / vote.totalEligible) * 100)}% participation
+            {totalVotes} vote{totalVotes !== 1 ? 's' : ''} cast
           </div>
 
-          {/* Vote buttons (open votes, not yet voted, is citizen) */}
-          {vote.status === 'open' && !hasVoted && isCitizen && (
+          {proposal.isOpen && !proposal.myVoted && isCitizen && (
             <div>
               <div style={{ fontSize: 11, color: C.faint, marginBottom: 8 }}>Cast your vote:</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {vote.options.map((opt, i) => (
+                {proposal.options.map((opt, i) => (
                   <button
-                    key={opt.id}
-                    onClick={() => onVote(opt.id)}
-                    style={{
-                      padding: '9px 16px',
-                      background: optColor(i), color: '#fff',
-                      border: 'none', borderRadius: 6,
-                      fontSize: 12, cursor: 'pointer', fontWeight: 500,
-                    }}
+                    key={i}
+                    onClick={() => onVote(i)}
+                    disabled={isPending}
+                    style={{ padding: '9px 16px', background: optColor(i), color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 500, opacity: isPending ? 0.5 : 1 }}
                   >
-                    {opt.label}
+                    {isPending ? '...' : opt}
                   </button>
                 ))}
               </div>
             </div>
           )}
-
-          {vote.status === 'open' && hasVoted && (
-            <div style={{ fontSize: 12, color: C.green }}>
-              ✓ Vote recorded on-chain
-            </div>
+          {proposal.isOpen && proposal.myVoted && (
+            <div style={{ fontSize: 12, color: C.green }}>✓ Vote recorded on-chain</div>
           )}
-
-          {vote.status === 'open' && !isCitizen && (
-            <div style={{ fontSize: 12, color: C.faint }}>
-              Join the colony to participate in governance.
-            </div>
+          {proposal.isOpen && !isCitizen && (
+            <div style={{ fontSize: 12, color: C.faint }}>Join the colony to participate in governance.</div>
           )}
         </div>
       )}
@@ -244,13 +315,13 @@ function VoteCard({ vote, expanded, onToggle, onVote, isCitizen }) {
 }
 
 function SectionLabel({ label, color }) {
-  return (
-    <div style={{ fontSize: 10, color, letterSpacing: '0.12em', marginBottom: 8, marginTop: 4 }}>
-      {label}
-    </div>
-  )
+  return <div style={{ fontSize: 10, color, letterSpacing: '0.12em', marginBottom: 8, marginTop: 4 }}>{label}</div>
 }
 
 function optColor(i) {
   return ['#B8860B', '#16a34a', '#8b5cf6', '#3b82f6', '#ef4444'][i % 5]
+}
+
+function smallBtn(bg, color = '#fff', border) {
+  return { padding: '9px 14px', background: bg, color, border: border ? `1px solid ${border}` : 'none', borderRadius: 6, fontSize: 11, cursor: 'pointer' }
 }

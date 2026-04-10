@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
+
+const REGISTRY_ABI = [
+  "function register(string, address[], uint256[]) external returns (uint256)",
+]
 
 const C = {
   gold:   '#B8860B',
@@ -18,12 +23,14 @@ const C = {
 export default function RegisterCompany() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { address } = useWallet()
+  const { address, signer, contracts } = useWallet()
 
   const [name, setName]         = useState('')
   const [holders, setHolders]   = useState([{ wallet: address || '', pct: 100 }])
   const [deploying, setDeploy]  = useState(false)
   const [done, setDone]         = useState(false)
+  const [txError, setTxError]   = useState(null)
+  const [companyId, setCompanyId] = useState(null)
 
   const totalPct  = holders.reduce((s, h) => s + Number(h.pct || 0), 0)
   const pctValid  = totalPct === 100
@@ -42,12 +49,37 @@ export default function RegisterCompany() {
     setHolders(h => h.filter((_, idx) => idx !== i))
   }
 
-  function handleRegister() {
-    setDeploy(true)
-    setTimeout(() => { setDeploy(false); setDone(true) }, 1500)
+  async function handleRegister() {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg || !signer) {
+      // No contract configured — mock fallback
+      setDeploy(true)
+      setTimeout(() => { setDeploy(false); setDone(true) }, 1500)
+      return
+    }
+    setDeploy(true); setTxError(null)
+    try {
+      const registry = new ethers.Contract(cfg.companyRegistry, REGISTRY_ABI, signer)
+      const wallets = holders.map((h, i) => i === 0 ? address : h.wallet)
+      const stakes  = holders.map(h => Math.round(Number(h.pct) * 100))  // bps
+      const tx = await registry.register(name.trim(), wallets, stakes)
+      const receipt = await tx.wait()
+      // Extract companyId from CompanyRegistered event
+      const iface = new ethers.Interface(["event CompanyRegistered(uint256 indexed id, string name, address indexed founder)"])
+      for (const log of receipt.logs) {
+        try {
+          const parsed = iface.parseLog(log)
+          if (parsed) { setCompanyId(Number(parsed.args.id)); break }
+        } catch {}
+      }
+      setDone(true)
+    } catch (e) {
+      setTxError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setDeploy(false)
   }
 
-  const slugId = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const slugId = companyId !== null ? String(companyId) : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
   if (done) return (
     <Layout title="Company Registered" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
@@ -171,6 +203,10 @@ export default function RegisterCompany() {
           <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: C.faint }}>
             Writing to Fisc blockchain...
           </div>
+        )}
+
+        {txError && (
+          <div style={{ marginTop: 10, fontSize: 12, color: C.red }}>{txError}</div>
         )}
       </div>
     </Layout>

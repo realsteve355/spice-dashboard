@@ -4,10 +4,13 @@
   "colonies": {
     "daves-colony": {
       "name": "Dave's Colony",
-      "colony": "0x039fDB4F4Ea2aD92A86404538a0DB82d292e632A",
-      "gToken": "0xD26C4B8e5b6263565d7156b4d5125E0298A98536",
-      "sToken": "0xAFA3Cbf636B68c4684d66e50514EE85673EF8F68",
-      "vToken": "0x16A5a5bDd7ACd23D0137454F005d10897D05b455"
+      "colony": "0x5517dc693F5EbB226c1594b7bb441A10DBE95738",
+      "gToken": "0x222707CB09F9bDF860E4539D502d807077dcBba3",
+      "sToken": "0xD3aBA269caadDcB4503Bc1c3a4E3d07D105C1512",
+      "vToken": "0x5c9E9782716c36d42aFeEdDd5dfae3d07cbAfE0b",
+      "governance": "0xF7c8fa17e40c80fDfCD0b03b6E4Dc879c0Fb102F",
+      "companyRegistry": "0xf9c691994b60cbd6eb8c1fEDf869931e8CBf028d",
+      "mccServices": "0xEbc9ddA59159A806e94204e5Fedb424d7C1Bfa10"
     }
   }
 }

@@ -7,6 +7,7 @@ import { MOCK_COLONIES, MOCK_CITIZEN_DATA, MOCK_MY_EQUITY, DAYS_TO_RESET, RESET_
 import { useWallet } from '../App'
 
 const COLONY_ABI = [
+  "function claimUbi() external",
   "function saveToV(uint256) external",
   "function redeemV(uint256) external",
   "function send(address, uint256, string) external",
@@ -44,6 +45,10 @@ export default function Dashboard() {
     gTokenId: chain?.gTokenId > 0 ? chain.gTokenId : mockData.gTokenId,
   } : null
 
+  const [claimPending, setClaimPending] = useState(false)
+  const [claimError, setClaimError] = useState(null)
+  const [claimDone, setClaimDone]   = useState(false)
+
   const [saving, setSaving]       = useState(false)
   const [saveAmt, setSaveAmt]     = useState('')
   const [savePending, setSavePending] = useState(false)
@@ -55,6 +60,21 @@ export default function Dashboard() {
   const [redeemError, setRedeemError] = useState(null)
 
   const [sending, setSending]     = useState(false)
+
+  async function handleClaimUbi() {
+    const contract = colonyContract()
+    if (!contract) return
+    setClaimPending(true); setClaimError(null); setClaimDone(false)
+    try {
+      const tx = await contract.claimUbi()
+      await tx.wait()
+      setClaimDone(true)
+      refresh()
+    } catch (e) {
+      setClaimError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setClaimPending(false)
+  }
 
   function colonyContract() {
     const cfg = contracts?.colonies?.[slug]
@@ -181,6 +201,16 @@ export default function Dashboard() {
             <LegendDot color={C.gold}  label={`${remaining} S remaining`} />
           </div>
 
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <button
+              onClick={handleClaimUbi}
+              disabled={claimPending}
+              style={{ ...smallBtn(C.green), flex: 1, opacity: claimPending ? 0.5 : 1 }}
+            >
+              {claimPending ? '...' : claimDone ? '✓ Claimed' : 'Claim Monthly UBI'}
+            </button>
+          </div>
+          {claimError && <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{claimError}</div>}
           <button
             onClick={() => setSending(v => !v)}
             style={{ ...smallBtn(C.gold), width: '100%' }}
