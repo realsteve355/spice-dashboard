@@ -59,7 +59,7 @@ These protections may only be amended by a blockchain referendum of 80% of all r
 export default function ColonyPage() {
   const { slug } = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, connect, signer, contracts, refresh } = useWallet()
+  const { isConnected, onChainLoading, isCitizenOf, isMccOf, connect, signer, contracts, refresh } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const isCitizen = isCitizenOf(slug)
@@ -155,6 +155,10 @@ export default function ColonyPage() {
                 MCC Admin →
               </button>
             )}
+          </div>
+        ) : onChainLoading ? (
+          <div style={{ textAlign: 'center', padding: '14px 0', fontSize: 12, color: C.faint, marginBottom: 12 }}>
+            Checking citizenship...
           </div>
         ) : (
           <button onClick={handleJoin} style={{ ...btn(C.gold), width: '100%', marginBottom: 12 }}>

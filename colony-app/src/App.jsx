@@ -42,6 +42,7 @@ export default function App() {
   const [signer,    setSigner]    = useState(null)
   const [chainId,   setChainId]   = useState(null)
   const [onChain,   setOnChain]   = useState({})  // { [colonyId]: { sBalance, vBalance, gTokenId, isCitizen } }
+  const [onChainLoading, setOnChainLoading] = useState(false)
 
   // Connect MetaMask
   const connect = useCallback(async () => {
@@ -84,6 +85,7 @@ export default function App() {
   // Read S, V, G balances + citizen status for all known colonies
   const loadOnChainData = useCallback(async (addr, prov) => {
     if (!addr || !prov) return
+    setOnChainLoading(true)
     const result = {}
     for (const [colonyId, cfg] of Object.entries(CONTRACTS.colonies)) {
       try {
@@ -110,6 +112,7 @@ export default function App() {
       }
     }
     setOnChain(result)
+    setOnChainLoading(false)
   }, [])
 
   // Refresh on-chain data
@@ -138,6 +141,7 @@ export default function App() {
     signer,
     chainId,
     isConnected: !!address,
+    onChainLoading,
     connect,
     disconnect,
     onChain,
