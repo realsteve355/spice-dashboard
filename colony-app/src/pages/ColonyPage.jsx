@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
+
+const COLONY_ABI = [
+  "function join() external",
+  "function isCitizen(address) view returns (bool)",
+]
 
 const C = {
   gold:   '#B8860B',
@@ -53,16 +59,18 @@ These protections may only be amended by a blockchain referendum of 80% of all r
 export default function ColonyPage() {
   const { slug } = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, connect } = useWallet()
+  const { isConnected, isCitizenOf, isMccOf, connect, signer, contracts, refresh } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const isCitizen = isCitizenOf(slug)
   const isMcc     = isMccOf(slug)
 
   const [showConstitution, setShowConstitution] = useState(false)
-  const [joining, setJoining] = useState(false)         // show join confirmation
-  const [accepted, setAccepted] = useState(false)       // constitution checkbox
-  const [joined, setJoined]     = useState(false)       // post-join success
+  const [joining, setJoining] = useState(false)
+  const [accepted, setAccepted] = useState(false)
+  const [joined, setJoined]     = useState(false)
+  const [txPending, setTxPending] = useState(false)
+  const [txError, setTxError]     = useState(null)
 
   if (!colony) return (
     <Layout title="Not Found" back="/">
@@ -75,10 +83,29 @@ export default function ColonyPage() {
     setJoining(true)
   }
 
-  function handleSign() {
-    // Mock: simulate signing constitution on-chain
-    setJoining(false)
-    setJoined(true)
+  async function handleSign() {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg || !signer) {
+      // Fallback to mock if no contract configured
+      setJoining(false)
+      setJoined(true)
+      return
+    }
+    setTxPending(true)
+    setTxError(null)
+    try {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.join()
+      await tx.wait()
+      setJoining(false)
+      setJoined(true)
+      refresh()  // reload on-chain balances
+    } catch (e) {
+      console.error(e)
+      setTxError(e?.reason || e?.message || 'Transaction failed')
+    } finally {
+      setTxPending(false)
+    }
   }
 
   return (
@@ -163,16 +190,19 @@ export default function ColonyPage() {
                 I have read and accept the founding constitution of {colony.name}
               </span>
             </label>
+            {txError && (
+              <div style={{ fontSize: 11, color: C.red, marginBottom: 10 }}>{txError}</div>
+            )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setJoining(false)} style={{ ...btn(C.faint, '#fff', C.faint), flex: 1 }}>
+              <button onClick={() => setJoining(false)} disabled={txPending} style={{ ...btn(C.faint, '#fff', C.faint), flex: 1 }}>
                 Cancel
               </button>
               <button
                 onClick={handleSign}
-                disabled={!accepted}
-                style={{ ...btn(accepted ? C.gold : C.faint), flex: 2, opacity: accepted ? 1 : 0.5 }}
+                disabled={!accepted || txPending}
+                style={{ ...btn(accepted ? C.gold : C.faint), flex: 2, opacity: accepted && !txPending ? 1 : 0.5 }}
               >
-                Sign & Join →
+                {txPending ? 'Waiting for confirmation...' : 'Sign & Join →'}
               </button>
             </div>
           </div>
