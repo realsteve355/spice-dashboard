@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { MOCK_COMPANIES, MOCK_CONTRACTS, MOCK_WALLET } from '../data/mock'
 import { useWallet } from '../App'
+
+const COLONY_ABI = [
+  "function send(address, uint256, string) external",
+]
 
 const C = {
   gold:   '#B8860B',
@@ -21,7 +26,7 @@ const C = {
 export default function Company() {
   const { slug, companyId } = useParams()
   const navigate = useNavigate()
-  const { address } = useWallet()
+  const { address, signer, contracts: deployedContracts, refresh } = useWallet()
 
   const companies = MOCK_COMPANIES[slug] || []
   const company   = companies.find(c => c.id === companyId)
@@ -33,6 +38,20 @@ export default function Company() {
   const [dividending, setDiv]   = useState(false)
   const [divAmt, setDivAmt]     = useState('')
   const [sending, setSending]   = useState(false)
+
+  async function handleSend(amt, recipient, note) {
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg || !signer) { setSending(false); return }
+    try {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.send(recipient, ethers.parseEther(String(amt)), note)
+      await tx.wait()
+      refresh()
+    } catch (e) {
+      console.error(e)
+    }
+    setSending(false)
+  }
 
   if (!company) return (
     <Layout title="Company" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
@@ -138,7 +157,7 @@ export default function Company() {
                       maxAmount={company.sBalance}
                       label="Pay company or citizen"
                       onClose={() => setSending(false)}
-                      onConfirm={(amt, recipient, note) => setSending(false)}
+                      onConfirm={handleSend}
                     />
                   </div>
                 )}

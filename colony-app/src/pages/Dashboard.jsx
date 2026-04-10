@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { MOCK_COLONIES, MOCK_CITIZEN_DATA, MOCK_MY_EQUITY, DAYS_TO_RESET, RESET_DATE, CURRENT_MONTH } from '../data/mock'
 import { useWallet } from '../App'
+
+const COLONY_ABI = [
+  "function saveToV(uint256) external",
+  "function redeemV(uint256) external",
+  "function send(address, uint256, string) external",
+]
 
 const C = {
   gold:   '#B8860B',
@@ -21,7 +28,7 @@ const C = {
 export default function Dashboard() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, refresh } = useWallet()
+  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, refresh, signer, contracts } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const mockData  = MOCK_CITIZEN_DATA[slug]
@@ -37,11 +44,62 @@ export default function Dashboard() {
     gTokenId: chain?.gTokenId > 0 ? chain.gTokenId : mockData.gTokenId,
   } : null
 
-  const [saving, setSaving]     = useState(false)
-  const [saveAmt, setSaveAmt]   = useState('')
-  const [redeeming, setRedeem]  = useState(false)
+  const [saving, setSaving]       = useState(false)
+  const [saveAmt, setSaveAmt]     = useState('')
+  const [savePending, setSavePending] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  const [redeeming, setRedeem]    = useState(false)
   const [redeemAmt, setRedeemAmt] = useState('')
-  const [sending, setSending]   = useState(false)
+  const [redeemPending, setRedeemPending] = useState(false)
+  const [redeemError, setRedeemError] = useState(null)
+
+  const [sending, setSending]     = useState(false)
+
+  function colonyContract() {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg || !signer) return null
+    return new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+  }
+
+  async function handleSave() {
+    const contract = colonyContract()
+    if (!contract) return
+    setSavePending(true); setSaveError(null)
+    try {
+      const tx = await contract.saveToV(ethers.parseEther(String(saveAmt)))
+      await tx.wait()
+      setSaveAmt(''); setSaving(false); refresh()
+    } catch (e) {
+      setSaveError(e?.reason || e?.shortMessage || 'Transaction failed')
+    } finally { setSavePending(false) }
+  }
+
+  async function handleRedeem() {
+    const contract = colonyContract()
+    if (!contract) return
+    setRedeemPending(true); setRedeemError(null)
+    try {
+      const tx = await contract.redeemV(ethers.parseEther(String(redeemAmt)))
+      await tx.wait()
+      setRedeemAmt(''); setRedeem(false); refresh()
+    } catch (e) {
+      setRedeemError(e?.reason || e?.shortMessage || 'Transaction failed')
+    } finally { setRedeemPending(false) }
+  }
+
+  async function handleSend(amt, recipient, note) {
+    const contract = colonyContract()
+    if (!contract) { setSending(false); return }
+    try {
+      const tx = await contract.send(recipient, ethers.parseEther(String(amt)), note)
+      await tx.wait()
+      refresh()
+    } catch (e) {
+      console.error(e)
+    }
+    setSending(false)
+  }
 
   if (!isConnected) return (
     <Layout title="Dashboard" back={`/colony/${slug}`}>
@@ -136,7 +194,7 @@ export default function Dashboard() {
                 maxAmount={remaining}
                 label="Send S-tokens"
                 onClose={() => setSending(false)}
-                onConfirm={(amt, recipient, note) => setSending(false)}
+                onConfirm={handleSend}
               />
             </div>
           )}
@@ -167,27 +225,45 @@ export default function Dashboard() {
           </div>
 
           {saving && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <input
-                style={{ ...inlineInput, flex: 1 }}
-                placeholder={`max ${data.vMaxMonthly - data.vSavedThisMonth} S this month`}
-                value={saveAmt}
-                onChange={e => setSaveAmt(e.target.value)}
-                type="number"
-              />
-              <button onClick={() => setSaving(false)} style={smallBtn(C.green)}>Confirm</button>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  style={{ ...inlineInput, flex: 1 }}
+                  placeholder={`max ${data.vMaxMonthly - data.vSavedThisMonth} S this month`}
+                  value={saveAmt}
+                  onChange={e => setSaveAmt(e.target.value)}
+                  type="number"
+                />
+                <button
+                  onClick={handleSave}
+                  disabled={savePending || !saveAmt}
+                  style={{ ...smallBtn(C.green), opacity: savePending ? 0.5 : 1 }}
+                >
+                  {savePending ? '...' : 'Confirm'}
+                </button>
+              </div>
+              {saveError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{saveError}</div>}
             </div>
           )}
           {redeeming && (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <input
-                style={{ ...inlineInput, flex: 1 }}
-                placeholder={`max ${data.vBalance} V`}
-                value={redeemAmt}
-                onChange={e => setRedeemAmt(e.target.value)}
-                type="number"
-              />
-              <button onClick={() => setRedeem(false)} style={smallBtn(C.sub, '#fff', C.border)}>Confirm</button>
+            <div style={{ marginTop: 12 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  style={{ ...inlineInput, flex: 1 }}
+                  placeholder={`max ${data.vBalance} V`}
+                  value={redeemAmt}
+                  onChange={e => setRedeemAmt(e.target.value)}
+                  type="number"
+                />
+                <button
+                  onClick={handleRedeem}
+                  disabled={redeemPending || !redeemAmt}
+                  style={{ ...smallBtn(C.sub, '#fff', C.border), opacity: redeemPending ? 0.5 : 1 }}
+                >
+                  {redeemPending ? '...' : 'Confirm'}
+                </button>
+              </div>
+              {redeemError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{redeemError}</div>}
             </div>
           )}
         </div>
