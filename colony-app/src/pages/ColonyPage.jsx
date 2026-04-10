@@ -139,7 +139,7 @@ export default function ColonyPage() {
           }}>
             <div style={{ fontSize: 14, color: C.green, fontWeight: 500, marginBottom: 4 }}>Welcome to {colony.name}</div>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
-              G-token issued. Your first 1,000 S-tokens arrive 1 May 2026.
+              G-token issued. 1,000 S-tokens have been credited to your wallet.
             </div>
             <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={btn(C.green)}>
               Go to Dashboard →
