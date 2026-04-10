@@ -126,8 +126,9 @@ export default function App() {
   }, [disconnect])
 
   const isCitizenOf = (id) => {
-    // On-chain check if available, else fall back to mock
-    if (onChain[id]) return onChain[id].isCitizen
+    // If colony has a real contract, always use on-chain data
+    if (CONTRACTS.colonies[id]) return onChain[id]?.isCitizen === true
+    // No contract — fall back to mock
     return !!address && MOCK_CITIZEN_COLONIES.includes(id)
   }
 
@@ -146,7 +147,7 @@ export default function App() {
     citizenColonies: address
       ? [...new Set([
           ...Object.entries(onChain).filter(([,v]) => v.isCitizen).map(([k]) => k),
-          ...MOCK_CITIZEN_COLONIES,
+          ...MOCK_CITIZEN_COLONIES.filter(id => !CONTRACTS.colonies[id]),
         ])]
       : [],
     contracts: CONTRACTS,
