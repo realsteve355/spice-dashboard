@@ -30,17 +30,17 @@ export default function RequestPayment() {
   const [generated, setGen]     = useState(false)
   const [copied, setCopied]     = useState(false)
 
+  const DAPP_HOST = 'app.zpc.finance'
+  const payPath  = `/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
+  // MetaMask deep link — scanning this with iPhone camera opens MetaMask app directly
+  const payUrl   = `https://metamask.app.link/dapp/${DAPP_HOST}${payPath}`
+
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(payUrl).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
   }, [payUrl])
-
-  const DAPP_HOST = 'app.zpc.finance'
-  const payPath  = `/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
-  // MetaMask deep link — scanning this with iPhone camera opens MetaMask app directly
-  const payUrl   = `https://metamask.app.link/dapp/${DAPP_HOST}${payPath}`
 
   const canGenerate = amount && Number(amount) > 0 && fromAddr
 
