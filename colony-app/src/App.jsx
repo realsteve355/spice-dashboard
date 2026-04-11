@@ -31,7 +31,8 @@ const ERC721_ABI = [
 ]
 const COLONY_ABI = [
   "function isCitizen(address) view returns (bool)",
-  "function join() external",
+  "function citizenName(address) view returns (string)",
+  "function join(string) external",
   "function claimUbi() external",
   "function saveToV(uint256) external",
   "function redeemV(uint256) external",
@@ -103,11 +104,14 @@ export default function App() {
           colony.isCitizen(addr),
         ])
 
+        const name = citizen ? await colony.citizenName(addr) : ''
+
         result[colonyId] = {
-          sBalance:  Math.floor(Number(ethers.formatEther(sRaw))),
-          vBalance:  Math.floor(Number(ethers.formatEther(vRaw))),
-          gTokenId:  Number(gId),
-          isCitizen: citizen,
+          sBalance:    Math.floor(Number(ethers.formatEther(sRaw))),
+          vBalance:    Math.floor(Number(ethers.formatEther(vRaw))),
+          gTokenId:    Number(gId),
+          isCitizen:   citizen,
+          citizenName: name,
         }
       } catch (e) {
         console.warn('Failed to load on-chain data for', colonyId, e)
@@ -122,6 +126,14 @@ export default function App() {
     if (!address || !provider) return
     setTimeout(() => loadOnChainData(address, provider), delayMs)
   }, [address, provider, loadOnChainData])
+
+  // Auto-connect if MetaMask already has this site authorised
+  useEffect(() => {
+    if (!window.ethereum) return
+    window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+      if (accounts.length > 0) connect()
+    }).catch(() => {})
+  }, [connect])
 
   // Listen for account changes
   useEffect(() => {
