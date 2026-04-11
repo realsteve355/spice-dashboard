@@ -30,7 +30,7 @@ const C = {
 export default function Dashboard() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, refresh, signer, contracts } = useWallet()
+  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const mockData  = MOCK_CITIZEN_DATA[slug]
@@ -227,6 +227,13 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>S-TOKEN BALANCE</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                onClick={() => refresh(0)}
+                title="Refresh balances"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: onChainLoading ? C.gold : C.faint, padding: 0, lineHeight: 1 }}
+              >
+                {onChainLoading ? '↻' : '↻'}
+              </button>
               <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
               {contracts?.colonies?.[slug]?.sToken && (
                 <button

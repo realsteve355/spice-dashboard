@@ -117,9 +117,10 @@ export default function App() {
     setOnChainLoading(false)
   }, [])
 
-  // Refresh on-chain data
-  const refresh = useCallback(() => {
-    if (address && provider) loadOnChainData(address, provider)
+  // Refresh on-chain data — small delay lets the RPC node index the new block
+  const refresh = useCallback((delayMs = 1500) => {
+    if (!address || !provider) return
+    setTimeout(() => loadOnChainData(address, provider), delayMs)
   }, [address, provider, loadOnChainData])
 
   // Listen for account changes
