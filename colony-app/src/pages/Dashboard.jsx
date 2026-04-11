@@ -71,8 +71,8 @@ export default function Dashboard() {
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
     if (!cfg || !address) return
-    const provider = new ethers.JsonRpcProvider('https://sepolia.base.org')
-    const contract = new ethers.Contract(cfg.colony, COLONY_ABI, provider)
+    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const contract = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
     async function loadTx() {
       try {
         const [sentFrom, sentTo, ubis, saves, redeems] = await Promise.all([
@@ -82,38 +82,40 @@ export default function Dashboard() {
           contract.queryFilter(contract.filters.Saved(address)),
           contract.queryFilter(contract.filters.Redeemed(address)),
         ])
+        const allEvents = [...sentFrom, ...sentTo, ...ubis, ...saves, ...redeems]
+        // Batch-fetch all unique block timestamps in parallel
+        const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
+        const blockMap = {}
+        await Promise.all(uniqueBlocks.map(async n => {
+          const b = await rpc.getBlock(n)
+          if (b) blockMap[n] = b.timestamp
+        }))
+        const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
         const rows = []
         for (const e of sentFrom) {
           const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
           const to  = e.args.to
-          const note = e.args.note || 'Payment'
-          const blk = await provider.getBlock(e.blockNumber)
-          rows.push({ type: 'sent', label: note || `To ${to.slice(0,6)}…${to.slice(-4)}`, amount: -amt, date: blk?.timestamp, addr: to })
+          rows.push({ type: 'sent',     label: e.args.note || `To ${to.slice(0,6)}…${to.slice(-4)}`,     amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of sentTo) {
           const amt  = Math.floor(Number(ethers.formatEther(e.args.amount)))
           const from = e.args.from
-          const note = e.args.note || 'Payment received'
-          const blk  = await provider.getBlock(e.blockNumber)
-          rows.push({ type: 'received', label: note || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: blk?.timestamp, addr: from })
+          rows.push({ type: 'received', label: e.args.note || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of ubis) {
           const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          const blk = await provider.getBlock(e.blockNumber)
-          rows.push({ type: 'ubi', label: 'UBI allocation', amount: +amt, date: blk?.timestamp })
+          rows.push({ type: 'ubi',    label: 'UBI allocation',          amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of saves) {
           const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          const blk = await provider.getBlock(e.blockNumber)
-          rows.push({ type: 'save', label: 'Saved to V-tokens', amount: -amt, date: blk?.timestamp })
+          rows.push({ type: 'save',   label: 'Saved to V-tokens',       amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of redeems) {
           const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          const blk = await provider.getBlock(e.blockNumber)
-          rows.push({ type: 'redeem', label: 'Redeemed from V-tokens', amount: +amt, date: blk?.timestamp })
+          rows.push({ type: 'redeem', label: 'Redeemed from V-tokens',  amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
-        rows.sort((a, b) => (b.date || 0) - (a.date || 0))
-        setTxHistory(rows.map(r => ({ ...r, date: r.date ? new Date(r.date * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '' })))
+        rows.sort((a, b) => b.blockNumber - a.blockNumber)
+        setTxHistory(rows)
       } catch (e) {
         console.warn('tx history load failed', e)
         setTxHistory([])
@@ -384,6 +386,12 @@ export default function Dashboard() {
           >
             Request Payment (show QR) →
           </button>
+          <button
+            onClick={() => document.getElementById('tx-history').scrollIntoView({ behavior: 'smooth' })}
+            style={{ ...smallBtn(C.faint, '#fff', C.border), width: '100%', marginTop: 8 }}
+          >
+            View Transactions ↓
+          </button>
         </div>
 
         {/* V-token balance */}
@@ -599,7 +607,7 @@ export default function Dashboard() {
         })()}
 
         {/* Transactions */}
-        <div style={{ ...card, marginBottom: 8 }}>
+        <div id="tx-history" style={{ ...card, marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>RECENT TRANSACTIONS</div>
           {txHistory === null ? (
             <div style={{ fontSize: 11, color: C.faint, textAlign: 'center', padding: '8px 0' }}>Loading...</div>
