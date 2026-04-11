@@ -12,6 +12,10 @@ const COLONY_ABI = [
   "function redeemV(uint256) external",
   "function send(address, uint256, string) external",
   "function founder() view returns (address)",
+  "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
+  "event UbiClaimed(address indexed citizen, uint256 amount, uint256 epoch)",
+  "event Saved(address indexed citizen, uint256 amount)",
+  "event Redeemed(address indexed citizen, uint256 amount)",
 ]
 
 const C = {
@@ -61,6 +65,62 @@ export default function Dashboard() {
     const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
     colony.founder().then(setFounderAddr).catch(() => {})
   }, [contracts, slug, signer])
+
+  const [txHistory, setTxHistory] = useState(null)  // null = not loaded yet
+
+  useEffect(() => {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg || !address) return
+    const provider = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const contract = new ethers.Contract(cfg.colony, COLONY_ABI, provider)
+    async function loadTx() {
+      try {
+        const [sentFrom, sentTo, ubis, saves, redeems] = await Promise.all([
+          contract.queryFilter(contract.filters.Sent(address, null)),
+          contract.queryFilter(contract.filters.Sent(null, address)),
+          contract.queryFilter(contract.filters.UbiClaimed(address)),
+          contract.queryFilter(contract.filters.Saved(address)),
+          contract.queryFilter(contract.filters.Redeemed(address)),
+        ])
+        const rows = []
+        for (const e of sentFrom) {
+          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
+          const to  = e.args.to
+          const note = e.args.note || 'Payment'
+          const blk = await provider.getBlock(e.blockNumber)
+          rows.push({ type: 'sent', label: note || `To ${to.slice(0,6)}…${to.slice(-4)}`, amount: -amt, date: blk?.timestamp, addr: to })
+        }
+        for (const e of sentTo) {
+          const amt  = Math.floor(Number(ethers.formatEther(e.args.amount)))
+          const from = e.args.from
+          const note = e.args.note || 'Payment received'
+          const blk  = await provider.getBlock(e.blockNumber)
+          rows.push({ type: 'received', label: note || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: blk?.timestamp, addr: from })
+        }
+        for (const e of ubis) {
+          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
+          const blk = await provider.getBlock(e.blockNumber)
+          rows.push({ type: 'ubi', label: 'UBI allocation', amount: +amt, date: blk?.timestamp })
+        }
+        for (const e of saves) {
+          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
+          const blk = await provider.getBlock(e.blockNumber)
+          rows.push({ type: 'save', label: 'Saved to V-tokens', amount: -amt, date: blk?.timestamp })
+        }
+        for (const e of redeems) {
+          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
+          const blk = await provider.getBlock(e.blockNumber)
+          rows.push({ type: 'redeem', label: 'Redeemed from V-tokens', amount: +amt, date: blk?.timestamp })
+        }
+        rows.sort((a, b) => (b.date || 0) - (a.date || 0))
+        setTxHistory(rows.map(r => ({ ...r, date: r.date ? new Date(r.date * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '' })))
+      } catch (e) {
+        console.warn('tx history load failed', e)
+        setTxHistory([])
+      }
+    }
+    loadTx()
+  }, [contracts, slug, address])
 
   const [saving, setSaving]       = useState(false)
   const [saveAmt, setSaveAmt]     = useState('')
@@ -541,21 +601,22 @@ export default function Dashboard() {
         {/* Transactions */}
         <div style={{ ...card, marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>RECENT TRANSACTIONS</div>
-          {data.transactions.map((tx, i) => (
+          {txHistory === null ? (
+            <div style={{ fontSize: 11, color: C.faint, textAlign: 'center', padding: '8px 0' }}>Loading...</div>
+          ) : txHistory.length === 0 ? (
+            <div style={{ fontSize: 11, color: C.faint, textAlign: 'center', padding: '8px 0' }}>No transactions yet</div>
+          ) : txHistory.map((tx, i) => (
             <div key={i} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              paddingBottom: i < data.transactions.length - 1 ? 10 : 0,
-              marginBottom: i < data.transactions.length - 1 ? 10 : 0,
-              borderBottom: i < data.transactions.length - 1 ? `1px solid ${C.border}` : 'none',
+              paddingBottom: i < txHistory.length - 1 ? 10 : 0,
+              marginBottom: i < txHistory.length - 1 ? 10 : 0,
+              borderBottom: i < txHistory.length - 1 ? `1px solid ${C.border}` : 'none',
             }}>
               <div>
                 <div style={{ fontSize: 12, color: C.text }}>{tx.label}</div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{tx.date}</div>
               </div>
-              <div style={{
-                fontSize: 13, fontWeight: 500,
-                color: tx.amount > 0 ? C.green : C.red,
-              }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: tx.amount > 0 ? C.green : C.red }}>
                 {tx.amount > 0 ? '+' : ''}{tx.amount} {txUnit(tx.type)}
               </div>
             </div>
