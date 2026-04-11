@@ -7,16 +7,14 @@ async function main() {
   console.log("Deploying with:", deployer.address);
   console.log("Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // ── Already deployed ─────────────────────────────────────────────────────
-  const colonyAddr         = "0x5517dc693F5EbB226c1594b7bb441A10DBE95738";
-  const gTokenAddr         = "0x222707CB09F9bDF860E4539D502d807077dcBba3";
-  const sTokenAddr         = "0xD3aBA269caadDcB4503Bc1c3a4E3d07D105C1512";
-  const vTokenAddr         = "0x5c9E9782716c36d42aFeEdDd5dfae3d07cbAfE0b";
-  const governanceAddr     = "0xF7c8fa17e40c80fDfCD0b03b6E4Dc879c0Fb102F";
-  const companyRegistryAddr = "0xf9c691994b60cbd6eb8c1fEDf869931e8CBf028d";
-  console.log("Colony (existing):          ", colonyAddr);
-  console.log("Governance (existing):      ", governanceAddr);
-  console.log("CompanyRegistry (existing): ", companyRegistryAddr);
+  // ── Already deployed ──────────────────────────────────────────────────────
+  const colonyAddr          = "0xAf94f5Da9c9c6Fa8F6509ad9CA11620fC357107D";
+  const gTokenAddr          = "0x763f35CEC6102158d62d08CF5f79Fa878661033e";
+  const sTokenAddr          = "0xa22cEe9037c7d44C05D7d813fcac3354ED03E4F0";
+  const vTokenAddr          = "0x7Dd96B966C70305325aD1EF033b392C4e65D4901";
+  const governanceAddr      = "0x5c25Ce397ff22Cbb1E65F518Fe1Af849B6b0a242";
+  const companyRegistryAddr = "0x96B3fF20277D0E7c4cd3B22153072C29B9256602";
+  console.log("All previous contracts confirmed.");
 
   // ── MCCServices ──────────────────────────────────────────────────────────
   console.log("\nDeploying MCCServices...");
@@ -24,7 +22,7 @@ async function main() {
   const mccServices = await MCCServices.deploy(colonyAddr);
   await mccServices.waitForDeployment();
   const mccServicesAddr = await mccServices.getAddress();
-  console.log("MCCServices:     ", mccServicesAddr);
+  console.log("MCCServices:", mccServicesAddr);
 
   // ── Write addresses ───────────────────────────────────────────────────────
   const addresses = {
@@ -46,7 +44,7 @@ async function main() {
 
   const outPath = path.join(__dirname, "../../src/data/contracts.json");
   fs.writeFileSync(outPath, JSON.stringify(addresses, null, 2));
-  console.log("\nAddresses written to src/data/contracts.json");
+  console.log("\n✓ Addresses written to src/data/contracts.json");
   console.log(JSON.stringify(addresses, null, 2));
 }
 

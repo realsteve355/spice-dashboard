@@ -36,7 +36,7 @@ contract Colony {
         colonyName = _name;
         founder = msg.sender;
 
-        gToken = new GToken();
+        gToken = new GToken(_name);
         sToken = new SToken();
         vToken = new VToken();
     }
