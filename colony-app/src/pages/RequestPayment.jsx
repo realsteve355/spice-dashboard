@@ -37,8 +37,10 @@ export default function RequestPayment() {
     })
   }, [payUrl])
 
-  const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://app.zpc.finance'
-  const payUrl = `${BASE}/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
+  const DAPP_HOST = 'app.zpc.finance'
+  const payPath  = `/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
+  // MetaMask deep link — scanning this with iPhone camera opens MetaMask app directly
+  const payUrl   = `https://metamask.app.link/dapp/${DAPP_HOST}${payPath}`
 
   const canGenerate = amount && Number(amount) > 0 && fromAddr
 
@@ -82,17 +84,20 @@ export default function RequestPayment() {
         <div style={{ fontSize: 11, color: C.faint, marginBottom: 4, textAlign: 'center' }}>
           {fromLabel ? fromLabel : `${fromAddr.slice(0, 8)}...${fromAddr.slice(-6)}`}
         </div>
-        <div style={{ fontSize: 10, color: C.faint, marginBottom: 20, textAlign: 'center' }}>
-          Scan QR, or share the link to open in MetaMask browser
+        <div style={{ fontSize: 10, color: C.faint, marginBottom: 8, textAlign: 'center' }}>
+          Customer scans with iPhone camera — opens MetaMask automatically
+        </div>
+        <div style={{ fontSize: 10, color: C.faint, marginBottom: 24, textAlign: 'center' }}>
+          MetaMask must be installed on customer's phone
         </div>
 
-        <button onClick={copyLink} style={{ ...primaryBtn, marginBottom: 10 }}>
-          {copied ? 'Copied!' : 'Copy Payment Link'}
+        <button onClick={copyLink} style={{ ...primaryBtn, background: C.sub, marginBottom: 10 }}>
+          {copied ? 'Copied!' : 'Copy link (fallback)'}
         </button>
 
         <button
           onClick={() => { setGen(false); setAmount(''); setNote('') }}
-          style={{ ...primaryBtn, background: C.sub }}
+          style={{ ...primaryBtn, background: '#888' }}
         >
           New Request
         </button>
