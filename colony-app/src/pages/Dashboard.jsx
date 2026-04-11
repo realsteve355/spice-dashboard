@@ -30,7 +30,7 @@ const C = {
 export default function Dashboard() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
+  const { address, isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
 
   const colony    = MOCK_COLONIES.find(c => c.id === slug)
   const mockData  = MOCK_CITIZEN_DATA[slug]
@@ -196,6 +196,30 @@ export default function Dashboard() {
   return (
     <Layout title={colony.name} back={`/colony/${slug}`} colonySlug={slug}>
       <div style={{ padding: '16px 16px 0' }}>
+
+        {/* Wallet identity bar */}
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          background: C.white, border: `1px solid ${C.border}`,
+          borderRadius: 8, padding: '10px 14px', marginBottom: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
+              {chain?.citizenName || '—'}
+            </div>
+            <div style={{ fontSize: 10, color: C.faint, marginTop: 2, letterSpacing: '0.04em' }}>
+              {chain?.citizenName ? 'citizen · ' : ''}{colony.name}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>
+              {chain?.gTokenId > 0 ? `G#${String(chain.gTokenId).padStart(4,'0')}` : ''}
+            </div>
+            <div style={{ fontSize: 9, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
+              {address ? `${address.slice(0,6)}…${address.slice(-4)}` : ''}
+            </div>
+          </div>
+        </div>
 
         {/* Colony switcher (if citizen of multiple) */}
         {citizenColonies.length > 1 && (
@@ -443,12 +467,6 @@ export default function Dashboard() {
             <span style={{ fontSize: 12, color: C.sub }}>G-token</span>
             <span style={{ fontSize: 12, color: C.purple }}>#{String(data.gTokenId).padStart(4, '0')}</span>
           </div>
-          {chain?.citizenName && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: C.sub }}>Citizen name</span>
-              <span style={{ fontSize: 12, color: C.text }}>{chain.citizenName}</span>
-            </div>
-          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 12, color: C.sub }}>Open votes</span>
             <span
