@@ -61,6 +61,25 @@ export default function Dashboard() {
 
   const [sending, setSending]     = useState(false)
 
+  async function addToMetaMask(type, address, symbol, decimals, tokenId) {
+    if (!window.ethereum) return
+    try {
+      if (type === 'ERC20') {
+        await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: { type: 'ERC20', options: { address, symbol, decimals } },
+        })
+      } else if (type === 'ERC721') {
+        await window.ethereum.request({
+          method: 'wallet_watchAsset',
+          params: { type: 'ERC721', options: { address, tokenId: String(tokenId) } },
+        })
+      }
+    } catch (e) {
+      console.warn('wallet_watchAsset failed', e)
+    }
+  }
+
   async function handleClaimUbi() {
     const contract = colonyContract()
     if (!contract) return
@@ -179,7 +198,18 @@ export default function Dashboard() {
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>S-TOKEN BALANCE</div>
-            <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
+              {contracts?.colonies?.[slug]?.sToken && (
+                <button
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, 'SSPICE', 18)}
+                  style={mmBtn}
+                  title="Add S-token to MetaMask"
+                >
+                  + MetaMask
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ fontSize: 40, fontWeight: 500, color: C.gold, marginBottom: 2, letterSpacing: '-0.02em' }}>
@@ -234,7 +264,18 @@ export default function Dashboard() {
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>V-TOKEN BALANCE</div>
-            <div style={{ fontSize: 11, color: C.green }}>never expires</div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: C.green }}>never expires</div>
+              {contracts?.colonies?.[slug]?.vToken && (
+                <button
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].vToken, 'VSPICE', 18)}
+                  style={mmBtn}
+                  title="Add V-token to MetaMask"
+                >
+                  + MetaMask
+                </button>
+              )}
+            </div>
           </div>
           <div style={{ fontSize: 32, fontWeight: 500, color: C.green, marginBottom: 12, letterSpacing: '-0.02em' }}>
             {data.vBalance.toLocaleString()} <span style={{ fontSize: 16, color: C.faint }}>V</span>
@@ -326,12 +367,23 @@ export default function Dashboard() {
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>GOVERNANCE</div>
-            <button
-              onClick={() => navigate(`/colony/${slug}/profile`)}
-              style={{ fontSize: 11, color: C.faint, background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
-            >
-              My Profile
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {contracts?.colonies?.[slug]?.gToken && data.gTokenId > 0 && (
+                <button
+                  onClick={() => addToMetaMask('ERC721', contracts.colonies[slug].gToken, 'GSPICE', 0, data.gTokenId)}
+                  style={mmBtn}
+                  title="Add G-token NFT to MetaMask"
+                >
+                  + MetaMask
+                </button>
+              )}
+              <button
+                onClick={() => navigate(`/colony/${slug}/profile`)}
+                style={{ fontSize: 11, color: C.faint, background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+              >
+                My Profile
+              </button>
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: C.sub }}>G-token</span>
@@ -474,4 +526,11 @@ function smallBtn(bg, color = '#fff', border) {
 const inlineInput = {
   padding: '9px 10px', border: '1px solid #e2e2e2',
   borderRadius: 6, fontSize: 12, color: '#111', background: '#fff', outline: 'none',
+}
+
+const mmBtn = {
+  fontSize: 10, color: '#e2761b', background: 'none',
+  border: '1px solid #e2761b', borderRadius: 10,
+  padding: '2px 7px', cursor: 'pointer', letterSpacing: '0.04em',
+  fontFamily: "'IBM Plex Mono', monospace",
 }
