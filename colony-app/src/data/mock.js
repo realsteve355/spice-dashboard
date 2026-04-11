@@ -3,10 +3,10 @@
 export const MOCK_WALLET = '0xf39F...2266'
 
 // Colonies this wallet is a citizen of
-export const MOCK_CITIZEN_COLONIES = ['turing-campus', 'daves-colony']
+export const MOCK_CITIZEN_COLONIES = ['turing-campus']
 
 // Colonies this wallet is MCC board of
-export const MOCK_MCC_COLONIES = ['daves-colony']
+export const MOCK_MCC_COLONIES = []
 
 export const MOCK_COLONIES = [
   {
