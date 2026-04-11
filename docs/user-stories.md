@@ -35,6 +35,8 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-11 | As a citizen, I want to see how many days remain until the monthly reset | P1 | ✓ |
 | C-12 | As a citizen, I want to see a breakdown of my spending this month (MCC bill + discretionary) | P1 | ✓ |
 | C-13 | As a citizen, I want to pay a company for goods or services in S-tokens | P1 | ✓ |
+| C-13a | As a citizen, I want to scan a merchant's QR code and confirm payment in one tap | P1 | ✓ |
+| C-13b | As a citizen, I want to pay my MCC bill on-chain from the dashboard | P1 | ✓ |
 | C-14 | As a citizen, I want to see my full transaction history with dates and labels | P1 | ✓ |
 | C-15 | As a citizen, I want to see my projected MCC bill for the current month | P1 | ~ |
 | C-16 | As a citizen, I want to receive a warning if my S-token balance will not cover my projected MCC bill | P2 | — |
@@ -89,6 +91,8 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-05 | As a company owner, I want to see my company's current S-token balance | P1 | ✓ |
 | F-06 | As a company owner, I want to see my company's V-token reserve | P1 | ✓ |
 | F-07 | As a company owner, I want to see all inbound and outbound S-token transactions this month | P1 | ✓ |
+| F-07a | As a company owner, I want to see on-chain payment history (Sent events from Colony contract) | P1 | ✓ |
+| F-07b | As a company owner, I want to generate a QR code so a customer can pay me instantly | P1 | ✓ |
 | F-08 | As a company owner, I want the Fisc to automatically convert all net S-tokens to V-tokens at month end | P1 | ~ |
 | F-09 | As a company owner, I want to manually redeem V-tokens → S-tokens to fund operations | P1 | ✓ |
 | F-10 | As a company owner, I want to pay another company or citizen in S-tokens | P1 | ✓ |
@@ -223,16 +227,17 @@ A citizen who deploys a new colony. Becomes the first citizen and founding MCC b
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done | 51 | 64% |
-| ~ Partial | 12 | 15% |
-| — Not built | 17 | 21% |
-| **Total** | **80** | |
+| ✓ Done | 56 | 67% |
+| ~ Partial | 12 | 14% |
+| — Not built | 17 | 20% |
+| **Total** | **85** | |
 
 ### Remaining P1 gaps (must-have before release)
 
 | # | Story |
 |---|-------|
 | M-07 | Auto-deduct MCC bills at month end — smart contract concern, not UI |
+| C-15 | MCC bill projection (shows MTD actual, not forward estimate) |
 
 ### Remaining P2 gaps (important but not blocking)
 

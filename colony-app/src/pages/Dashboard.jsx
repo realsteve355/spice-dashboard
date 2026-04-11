@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
@@ -11,6 +11,7 @@ const COLONY_ABI = [
   "function saveToV(uint256) external",
   "function redeemV(uint256) external",
   "function send(address, uint256, string) external",
+  "function founder() view returns (address)",
 ]
 
 const C = {
@@ -49,6 +50,18 @@ export default function Dashboard() {
   const [claimError, setClaimError] = useState(null)
   const [claimDone, setClaimDone]   = useState(false)
 
+  const [founderAddr, setFounderAddr] = useState(null)
+  const [billPending, setBillPending] = useState(false)
+  const [billError,   setBillError]   = useState(null)
+  const [billDone,    setBillDone]    = useState(false)
+
+  useEffect(() => {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg || !signer) return
+    const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+    colony.founder().then(setFounderAddr).catch(() => {})
+  }, [contracts, slug, signer])
+
   const [saving, setSaving]       = useState(false)
   const [saveAmt, setSaveAmt]     = useState('')
   const [savePending, setSavePending] = useState(false)
@@ -60,6 +73,21 @@ export default function Dashboard() {
   const [redeemError, setRedeemError] = useState(null)
 
   const [sending, setSending]     = useState(false)
+
+  async function handlePayBill() {
+    const contract = colonyContract()
+    if (!contract || !founderAddr || !data.mccBill.total) return
+    setBillPending(true); setBillError(null); setBillDone(false)
+    try {
+      const tx = await contract.send(founderAddr, ethers.parseEther(String(data.mccBill.total)), 'MCC services bill')
+      await tx.wait()
+      setBillDone(true)
+      refresh()
+    } catch (e) {
+      setBillError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setBillPending(false)
+  }
 
   async function addToMetaMask(type, address, symbol, decimals, tokenId) {
     if (!window.ethereum) return
@@ -258,6 +286,13 @@ export default function Dashboard() {
               />
             </div>
           )}
+
+          <button
+            onClick={() => navigate(`/colony/${slug}/request`)}
+            style={{ ...smallBtn(C.sub, '#fff', C.border), width: '100%', marginTop: 8 }}
+          >
+            Request Payment (show QR) →
+          </button>
         </div>
 
         {/* V-token balance */}
@@ -360,6 +395,18 @@ export default function Dashboard() {
                 <span style={{ color: C.red }}>{b.amount} S</span>
               </div>
             ))
+          )}
+          {data.mccBill.total > 0 && founderAddr && (
+            <div style={{ marginTop: 12 }}>
+              {billError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{billError}</div>}
+              <button
+                onClick={handlePayBill}
+                disabled={billPending || billDone}
+                style={{ ...smallBtn(billDone ? C.green : C.red), width: '100%', opacity: billPending ? 0.5 : 1 }}
+              >
+                {billPending ? '...' : billDone ? '✓ Bill paid' : `Pay ${data.mccBill.total} S to MCC →`}
+              </button>
+            </div>
           )}
         </div>
 

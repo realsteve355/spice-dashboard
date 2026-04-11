@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
@@ -8,6 +8,10 @@ import { useWallet } from '../App'
 
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
+]
+
+const COLONY_EVENTS_ABI = [
+  "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
 ]
 
 const C = {
@@ -26,7 +30,7 @@ const C = {
 export default function Company() {
   const { slug, companyId } = useParams()
   const navigate = useNavigate()
-  const { address, signer, contracts: deployedContracts, refresh } = useWallet()
+  const { address, signer, provider, contracts: deployedContracts, refresh } = useWallet()
 
   const companies = MOCK_COMPANIES[slug] || []
   const company   = companies.find(c => c.id === companyId)
@@ -34,6 +38,44 @@ export default function Company() {
   const [tab, setTab]           = useState('overview')
   const contracts = MOCK_CONTRACTS[companyId] || []
   const [redeeming, setRedeem]  = useState(false)
+
+  // On-chain received payments
+  const [onChainTxs, setOnChainTxs] = useState([])
+  const [txLoading,  setTxLoading]  = useState(false)
+
+  useEffect(() => {
+    if (tab !== 'transactions') return
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg || !provider || !address) return
+    setTxLoading(true)
+    const colonyContract = new ethers.Contract(cfg.colony, COLONY_EVENTS_ABI, provider)
+    // Query Sent events where to == address (received) or from == address (sent)
+    Promise.all([
+      colonyContract.queryFilter(colonyContract.filters.Sent(null, address)),
+      colonyContract.queryFilter(colonyContract.filters.Sent(address, null)),
+    ]).then(([received, sent]) => {
+      const all = [
+        ...received.map(e => ({
+          hash: e.transactionHash,
+          from: e.args.from,
+          to: e.args.to,
+          amount: Math.floor(Number(ethers.formatEther(e.args.amount))),
+          note: e.args.note,
+          direction: 'in',
+        })),
+        ...sent.map(e => ({
+          hash: e.transactionHash,
+          from: e.args.from,
+          to: e.args.to,
+          amount: Math.floor(Number(ethers.formatEther(e.args.amount))),
+          note: e.args.note,
+          direction: 'out',
+        })),
+      ].sort((a, b) => a.hash < b.hash ? 1 : -1)
+      setOnChainTxs(all)
+    }).catch(e => console.warn('Failed to load on-chain txs', e))
+      .finally(() => setTxLoading(false))
+  }, [tab, deployedContracts, slug, provider, address])
   const [redeemAmt, setRedeemAmt] = useState('')
   const [dividending, setDiv]   = useState(false)
   const [divAmt, setDivAmt]     = useState('')
@@ -148,7 +190,14 @@ export default function Company() {
                   </div>
                 )}
 
-                <button onClick={() => setSending(v => !v)} style={{ ...actionBtn(C.gold), width: '100%', marginBottom: 8 }}>
+                <button
+                  onClick={() => navigate(`/colony/${slug}/request?from=${address}&label=${encodeURIComponent(company.name)}`)}
+                  style={{ ...actionBtn(C.gold), width: '100%', marginBottom: 8 }}
+                >
+                  Request Payment (show QR) →
+                </button>
+
+                <button onClick={() => setSending(v => !v)} style={{ ...actionBtn(C.sub, '#fff'), width: '100%', marginBottom: 8, border: `1px solid ${C.border}` }}>
                   Send S-tokens →
                 </button>
                 {sending && (
@@ -275,8 +324,39 @@ export default function Company() {
         {/* ── Transactions ── */}
         {tab === 'transactions' && (
           <div style={card}>
-            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>TRANSACTIONS</div>
-            {company.transactions.map((tx, i) => (
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              {onChainTxs.length > 0 ? 'ON-CHAIN TRANSACTIONS' : 'TRANSACTIONS'}
+            </div>
+
+            {txLoading && (
+              <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 20 }}>Loading...</div>
+            )}
+
+            {!txLoading && onChainTxs.length > 0 && onChainTxs.map((tx, i) => (
+              <div key={tx.hash + i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                paddingBottom: i < onChainTxs.length - 1 ? 10 : 0,
+                marginBottom: i < onChainTxs.length - 1 ? 10 : 0,
+                borderBottom: i < onChainTxs.length - 1 ? `1px solid ${C.border}` : 'none',
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, color: C.text }}>
+                    {tx.note || (tx.direction === 'in' ? 'Payment received' : 'Payment sent')}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
+                    {tx.direction === 'in'
+                      ? `from ${tx.from.slice(0,8)}...${tx.from.slice(-4)}`
+                      : `to ${tx.to.slice(0,8)}...${tx.to.slice(-4)}`
+                    }
+                  </div>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: tx.direction === 'in' ? C.green : C.red }}>
+                  {tx.direction === 'in' ? '+' : '-'}{tx.amount} S
+                </div>
+              </div>
+            ))}
+
+            {!txLoading && onChainTxs.length === 0 && company.transactions.map((tx, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 paddingBottom: i < company.transactions.length - 1 ? 10 : 0,
@@ -292,6 +372,10 @@ export default function Company() {
                 </div>
               </div>
             ))}
+
+            {!txLoading && onChainTxs.length === 0 && company.transactions.length === 0 && (
+              <div style={{ fontSize: 12, color: C.faint }}>No transactions yet.</div>
+            )}
           </div>
         )}
 

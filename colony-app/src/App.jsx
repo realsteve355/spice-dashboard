@@ -9,10 +9,12 @@ import CreateColony    from './pages/CreateColony'
 import Dashboard       from './pages/Dashboard'
 import Admin           from './pages/Admin'
 import Company         from './pages/Company'
-import RegisterCompany from './pages/RegisterCompany'
-import Votes           from './pages/Votes'
-import Profile         from './pages/Profile'
-import Guardian        from './pages/Guardian'
+import RegisterCompany  from './pages/RegisterCompany'
+import Votes            from './pages/Votes'
+import Profile          from './pages/Profile'
+import Guardian         from './pages/Guardian'
+import RequestPayment   from './pages/RequestPayment'
+import PaymentConfirm   from './pages/PaymentConfirm'
 
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
@@ -170,6 +172,8 @@ export default function App() {
           <Route path="/colony/:slug/votes"               element={<Votes />}           />
           <Route path="/colony/:slug/profile"            element={<Profile />}         />
           <Route path="/colony/:slug/guardian"           element={<Guardian />}        />
+          <Route path="/colony/:slug/request"            element={<RequestPayment />}  />
+          <Route path="/colony/:slug/pay"                element={<PaymentConfirm />}  />
           <Route path="/create"                          element={<CreateColony />}    />
         </Routes>
       </BrowserRouter>

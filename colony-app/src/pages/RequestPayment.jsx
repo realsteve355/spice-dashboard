@@ -1,0 +1,158 @@
+import { useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
+import Layout from '../components/Layout'
+import { useWallet } from '../App'
+
+const C = {
+  gold:   '#B8860B',
+  border: '#e2e2e2',
+  white:  '#ffffff',
+  text:   '#111',
+  sub:    '#555',
+  faint:  '#aaa',
+  bg:     '#f5f5f5',
+  green:  '#16a34a',
+  red:    '#ef4444',
+}
+
+export default function RequestPayment() {
+  const { slug }         = useParams()
+  const [searchParams]   = useSearchParams()
+  const { address, isConnected, connect } = useWallet()
+
+  // Optional: company can pre-fill its own address via ?from=0x...
+  const fromAddr = searchParams.get('from') || address || ''
+  const fromLabel = searchParams.get('label') || null
+
+  const [amount, setAmount]     = useState('')
+  const [note,   setNote]       = useState('')
+  const [generated, setGen]     = useState(false)
+
+  const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://app.zpc.finance'
+  const payUrl = `${BASE}/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
+
+  const canGenerate = amount && Number(amount) > 0 && fromAddr
+
+  if (!isConnected && !fromAddr) return (
+    <Layout title="Request Payment" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
+      <div style={{ padding: 32, textAlign: 'center' }}>
+        <div style={{ fontSize: 13, color: C.sub, marginBottom: 20 }}>Connect your wallet to request payment.</div>
+        <button onClick={connect} style={primaryBtn}>Connect Wallet</button>
+      </div>
+    </Layout>
+  )
+
+  if (generated) return (
+    <Layout title="Awaiting Payment" back={null} colonySlug={slug}>
+      <div style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+        {/* Amount display */}
+        <div style={{ marginBottom: 4, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>AMOUNT DUE</div>
+        <div style={{ fontSize: 48, fontWeight: 500, color: C.gold, letterSpacing: '-0.02em', marginBottom: 4 }}>
+          {amount} <span style={{ fontSize: 22, color: C.faint }}>S</span>
+        </div>
+        {note && (
+          <div style={{ fontSize: 13, color: C.sub, marginBottom: 20, textAlign: 'center' }}>{note}</div>
+        )}
+        {!note && <div style={{ marginBottom: 20 }} />}
+
+        {/* QR code */}
+        <div style={{
+          background: C.white, border: `2px solid ${C.gold}`,
+          borderRadius: 12, padding: 20, marginBottom: 20,
+        }}>
+          <QRCodeSVG
+            value={payUrl}
+            size={220}
+            fgColor={C.text}
+            bgColor={C.white}
+            level="M"
+          />
+        </div>
+
+        <div style={{ fontSize: 11, color: C.faint, marginBottom: 4, textAlign: 'center' }}>
+          {fromLabel ? fromLabel : `${fromAddr.slice(0, 8)}...${fromAddr.slice(-6)}`}
+        </div>
+        <div style={{ fontSize: 10, color: C.faint, marginBottom: 28, textAlign: 'center' }}>
+          Buyer scans this QR within the colony app
+        </div>
+
+        <button
+          onClick={() => { setGen(false); setAmount(''); setNote('') }}
+          style={{ ...primaryBtn, background: C.sub }}
+        >
+          New Request
+        </button>
+      </div>
+    </Layout>
+  )
+
+  return (
+    <Layout title="Request Payment" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
+      <div style={{ padding: '20px 16px 0' }}>
+
+        <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 20 }}>
+          Enter the amount and an optional note. The buyer scans the QR code to pay instantly.
+        </div>
+
+        {fromLabel && (
+          <div style={{ fontSize: 11, color: C.gold, marginBottom: 16, letterSpacing: '0.06em' }}>
+            RECEIVING AS: {fromLabel}
+          </div>
+        )}
+
+        {/* Amount */}
+        <div style={fieldGroup}>
+          <label style={fieldLabel}>AMOUNT (S-TOKENS)</label>
+          <div style={{ position: 'relative' }}>
+            <input
+              style={{ ...inputStyle, paddingRight: 28 }}
+              type="number"
+              min="1"
+              placeholder="0"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              autoFocus
+            />
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: C.faint }}>S</span>
+          </div>
+        </div>
+
+        {/* Note */}
+        <div style={fieldGroup}>
+          <label style={fieldLabel}>NOTE (optional)</label>
+          <input
+            style={inputStyle}
+            placeholder="e.g. Coffee and cake"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            maxLength={80}
+          />
+        </div>
+
+        <button
+          onClick={() => setGen(true)}
+          disabled={!canGenerate}
+          style={{ ...primaryBtn, opacity: canGenerate ? 1 : 0.4 }}
+        >
+          Generate QR Code →
+        </button>
+      </div>
+    </Layout>
+  )
+}
+
+const fieldGroup  = { marginBottom: 20 }
+const fieldLabel  = { display: 'block', fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }
+const inputStyle  = {
+  width: '100%', padding: '12px 12px',
+  border: `1px solid ${C.border}`, borderRadius: 6,
+  fontSize: 16, color: C.text, background: C.white, outline: 'none',
+}
+const primaryBtn  = {
+  width: '100%', padding: '14px',
+  background: C.gold, color: '#fff',
+  border: 'none', borderRadius: 8, fontSize: 13,
+  cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
+}
