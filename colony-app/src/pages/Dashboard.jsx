@@ -73,14 +73,15 @@ export default function Dashboard() {
     if (!cfg || !address) return
     const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
     const contract = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
+    const fromBlock = cfg.deployBlock || 0
     async function loadTx() {
       try {
         const [sentFrom, sentTo, ubis, saves, redeems] = await Promise.all([
-          contract.queryFilter(contract.filters.Sent(address, null)),
-          contract.queryFilter(contract.filters.Sent(null, address)),
-          contract.queryFilter(contract.filters.UbiClaimed(address)),
-          contract.queryFilter(contract.filters.Saved(address)),
-          contract.queryFilter(contract.filters.Redeemed(address)),
+          contract.queryFilter(contract.filters.Sent(address, null),    fromBlock),
+          contract.queryFilter(contract.filters.Sent(null, address),    fromBlock),
+          contract.queryFilter(contract.filters.UbiClaimed(address),    fromBlock),
+          contract.queryFilter(contract.filters.Saved(address),         fromBlock),
+          contract.queryFilter(contract.filters.Redeemed(address),      fromBlock),
         ])
         const allEvents = [...sentFrom, ...sentTo, ...ubis, ...saves, ...redeems]
         // Batch-fetch all unique block timestamps in parallel
