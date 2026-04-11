@@ -6,7 +6,7 @@ import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
 const COLONY_ABI = [
-  "function join() external",
+  "function join(string) external",
   "function isCitizen(address) view returns (bool)",
 ]
 
@@ -66,9 +66,10 @@ export default function ColonyPage() {
   const isMcc     = isMccOf(slug)
 
   const [showConstitution, setShowConstitution] = useState(false)
-  const [joining, setJoining] = useState(false)
-  const [accepted, setAccepted] = useState(false)
-  const [joined, setJoined]     = useState(false)
+  const [joining, setJoining]     = useState(false)
+  const [citizenName, setName]    = useState('')
+  const [accepted, setAccepted]   = useState(false)
+  const [joined, setJoined]       = useState(false)
   const [txPending, setTxPending] = useState(false)
   const [txError, setTxError]     = useState(null)
 
@@ -86,7 +87,6 @@ export default function ColonyPage() {
   async function handleSign() {
     const cfg = contracts?.colonies?.[slug]
     if (!cfg || !signer) {
-      // Fallback to mock if no contract configured
       setJoining(false)
       setJoined(true)
       return
@@ -95,11 +95,11 @@ export default function ColonyPage() {
     setTxError(null)
     try {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
-      const tx = await colony.join()
+      const tx = await colony.join(citizenName.trim())
       await tx.wait()
       setJoining(false)
       setJoined(true)
-      refresh()  // reload on-chain balances
+      refresh()
     } catch (e) {
       console.error(e)
       setTxError(e?.reason || e?.message || 'Transaction failed')
@@ -183,6 +183,25 @@ export default function ColonyPage() {
             }}>
               {CONSTITUTION_TEXT}
             </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 11, color: C.sub, marginBottom: 6 }}>
+                Your citizen name (stored on-chain)
+              </label>
+              <input
+                type="text"
+                value={citizenName}
+                onChange={e => setName(e.target.value)}
+                placeholder="e.g. Alice Smith"
+                maxLength={64}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '10px 12px', fontSize: 12,
+                  border: `1px solid ${C.border}`, borderRadius: 6,
+                  fontFamily: 'inherit', color: C.text, background: C.bg,
+                  outline: 'none',
+                }}
+              />
+            </div>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
               <input
                 type="checkbox"
@@ -203,8 +222,8 @@ export default function ColonyPage() {
               </button>
               <button
                 onClick={handleSign}
-                disabled={!accepted || txPending}
-                style={{ ...btn(accepted ? C.gold : C.faint), flex: 2, opacity: accepted && !txPending ? 1 : 0.5 }}
+                disabled={!accepted || txPending || !citizenName.trim()}
+                style={{ ...btn(accepted && citizenName.trim() ? C.gold : C.faint), flex: 2, opacity: accepted && citizenName.trim() && !txPending ? 1 : 0.5 }}
               >
                 {txPending ? 'Waiting for confirmation...' : 'Sign & Join →'}
               </button>

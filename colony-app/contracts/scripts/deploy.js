@@ -8,13 +8,19 @@ async function main() {
   console.log("Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
   // ── Already deployed ──────────────────────────────────────────────────────
-  const colonyAddr          = "0xAf94f5Da9c9c6Fa8F6509ad9CA11620fC357107D";
-  const gTokenAddr          = "0x763f35CEC6102158d62d08CF5f79Fa878661033e";
-  const sTokenAddr          = "0xa22cEe9037c7d44C05D7d813fcac3354ED03E4F0";
-  const vTokenAddr          = "0x7Dd96B966C70305325aD1EF033b392C4e65D4901";
-  const governanceAddr      = "0x5c25Ce397ff22Cbb1E65F518Fe1Af849B6b0a242";
-  const companyRegistryAddr = "0x96B3fF20277D0E7c4cd3B22153072C29B9256602";
-  console.log("All previous contracts confirmed.");
+  const colonyAddr          = "0x112240357669CC163011C729F0fE219A799838B5";
+  const gTokenAddr          = "0x50568a432E91a85161FFDdE8dA9dFe333Ed73a5f";
+  const sTokenAddr          = "0xbEb225D184dD27Df728EE2871a8207F91ead32e4";
+  const vTokenAddr          = "0xcdf651d4EE8f0FFD6f8cb857bFB8bF4FC721DEF1";
+  const governanceAddr      = "0xC60c72dc36Fe422E747C5A76ac76164fE3beB705";
+  const companyRegistryAddr = "0x92d8F29F07889434559c9D9ab9EBc9444365FC94";
+
+  console.log("Colony:          ", colonyAddr);
+  console.log("GToken:          ", gTokenAddr);
+  console.log("SToken:          ", sTokenAddr);
+  console.log("VToken:          ", vTokenAddr);
+  console.log("Governance:      ", governanceAddr);
+  console.log("CompanyRegistry: ", companyRegistryAddr);
 
   // ── MCCServices ──────────────────────────────────────────────────────────
   console.log("\nDeploying MCCServices...");

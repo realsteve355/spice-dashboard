@@ -4,13 +4,13 @@
   "colonies": {
     "daves-colony": {
       "name": "Dave's Colony",
-      "colony": "0xAf94f5Da9c9c6Fa8F6509ad9CA11620fC357107D",
-      "gToken": "0x763f35CEC6102158d62d08CF5f79Fa878661033e",
-      "sToken": "0xa22cEe9037c7d44C05D7d813fcac3354ED03E4F0",
-      "vToken": "0x7Dd96B966C70305325aD1EF033b392C4e65D4901",
-      "governance": "0x5c25Ce397ff22Cbb1E65F518Fe1Af849B6b0a242",
-      "companyRegistry": "0x96B3fF20277D0E7c4cd3B22153072C29B9256602",
-      "mccServices": "0x9bAb5Cd12901d1E7641613BC812478c1890b320b"
+      "colony": "0x112240357669CC163011C729F0fE219A799838B5",
+      "gToken": "0x50568a432E91a85161FFDdE8dA9dFe333Ed73a5f",
+      "sToken": "0xbEb225D184dD27Df728EE2871a8207F91ead32e4",
+      "vToken": "0xcdf651d4EE8f0FFD6f8cb857bFB8bF4FC721DEF1",
+      "governance": "0xC60c72dc36Fe422E747C5A76ac76164fE3beB705",
+      "companyRegistry": "0x92d8F29F07889434559c9D9ab9EBc9444365FC94",
+      "mccServices": "0x1d7Abc42621729807d2Dfb6Fc6a60D50B79A45c4"
     }
   }
 }

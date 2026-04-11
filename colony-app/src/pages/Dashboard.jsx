@@ -443,6 +443,12 @@ export default function Dashboard() {
             <span style={{ fontSize: 12, color: C.sub }}>G-token</span>
             <span style={{ fontSize: 12, color: C.purple }}>#{String(data.gTokenId).padStart(4, '0')}</span>
           </div>
+          {chain?.citizenName && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ fontSize: 12, color: C.sub }}>Citizen name</span>
+              <span style={{ fontSize: 12, color: C.text }}>{chain.citizenName}</span>
+            </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 12, color: C.sub }}>Open votes</span>
             <span
