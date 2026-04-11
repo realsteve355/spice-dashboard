@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import Layout from '../components/Layout'
@@ -28,6 +28,14 @@ export default function RequestPayment() {
   const [amount, setAmount]     = useState('')
   const [note,   setNote]       = useState('')
   const [generated, setGen]     = useState(false)
+  const [copied, setCopied]     = useState(false)
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(payUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [payUrl])
 
   const BASE = typeof window !== 'undefined' ? window.location.origin : 'https://app.zpc.finance'
   const payUrl = `${BASE}/colony/${slug}/pay?to=${fromAddr}&amount=${encodeURIComponent(amount)}&note=${encodeURIComponent(note)}`
@@ -74,9 +82,13 @@ export default function RequestPayment() {
         <div style={{ fontSize: 11, color: C.faint, marginBottom: 4, textAlign: 'center' }}>
           {fromLabel ? fromLabel : `${fromAddr.slice(0, 8)}...${fromAddr.slice(-6)}`}
         </div>
-        <div style={{ fontSize: 10, color: C.faint, marginBottom: 28, textAlign: 'center' }}>
-          Buyer scans this QR within the colony app
+        <div style={{ fontSize: 10, color: C.faint, marginBottom: 20, textAlign: 'center' }}>
+          Scan QR, or share the link to open in MetaMask browser
         </div>
+
+        <button onClick={copyLink} style={{ ...primaryBtn, marginBottom: 10 }}>
+          {copied ? 'Copied!' : 'Copy Payment Link'}
+        </button>
 
         <button
           onClick={() => { setGen(false); setAmount(''); setNote('') }}
