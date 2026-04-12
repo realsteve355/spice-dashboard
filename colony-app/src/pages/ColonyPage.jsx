@@ -61,6 +61,10 @@ export default function ColonyPage() {
   const isCitizen  = isCitizenOf(slug)
   const isMcc      = isMccOf(slug)
 
+  // Fall back to localStorage if URL param is absent (e.g. after in-app navigation)
+  const storedAddr = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]?.address
+  const resolvedAddr = addressParam || storedAddr
+
   const [showConstitution, setShowConstitution] = useState(false)
   const [joining, setJoining]     = useState(false)
   const [citizenName, setName]    = useState('')
@@ -71,15 +75,15 @@ export default function ColonyPage() {
   const [chainColony, setChainColony] = useState(null)
   const [chainLoading, setChainLoading] = useState(false)
 
-  // If not in mock list but we have an address param, load from chain
+  // If not in mock list but we have an address, load from chain
   useEffect(() => {
-    if (mockColony || !addressParam) return
+    if (mockColony || !resolvedAddr) return
     setChainLoading(true)
     const prov = new ethers.JsonRpcProvider(RPC)
-    const c = new ethers.Contract(addressParam, COLONY_ABI, prov)
+    const c = new ethers.Contract(resolvedAddr, COLONY_ABI, prov)
     Promise.all([c.colonyName(), c.citizenCount()])
       .then(([name, count]) => {
-        setChainColony({
+        const info = {
           id: slug,
           name,
           description: '',
@@ -87,12 +91,17 @@ export default function ColonyPage() {
           citizenCount: Number(count),
           mcc: { name: 'Not yet configured', board: [] },
           services: [],
-          address: addressParam,
-        })
+          address: resolvedAddr,
+        }
+        setChainColony(info)
+        // Persist so other pages can find this colony without the URL param
+        const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+        stored[slug] = { address: resolvedAddr, name }
+        localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
       })
       .catch(() => setChainColony(null))
       .finally(() => setChainLoading(false))
-  }, [slug, addressParam, mockColony])
+  }, [slug, resolvedAddr, mockColony])
 
   const colony = mockColony || chainColony
 
@@ -114,7 +123,7 @@ export default function ColonyPage() {
   }
 
   async function handleSign() {
-    const contractAddress = contracts?.colonies?.[slug]?.colony || addressParam
+    const contractAddress = contracts?.colonies?.[slug]?.colony || resolvedAddr
     if (!contractAddress || !signer) {
       setJoining(false)
       setJoined(true)

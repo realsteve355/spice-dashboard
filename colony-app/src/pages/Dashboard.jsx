@@ -25,18 +25,38 @@ export default function Dashboard() {
   const navigate  = useNavigate()
   const { address, isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
 
-  const colony    = MOCK_COLONIES.find(c => c.id === slug)
-  const mockData  = MOCK_CITIZEN_DATA[slug]
   const chain     = onChain?.[slug]
   const isCitizen = isCitizenOf(slug)
   const isMcc     = isMccOf(slug)
 
-  // Use on-chain balances when available, else mock
+  const mockColony = MOCK_COLONIES.find(c => c.id === slug)
+  // Synthesize a minimal colony object from chain data for user-deployed colonies
+  const colony = mockColony || (chain ? {
+    id: slug,
+    name: chain.colonyName || slug,
+    description: '',
+    founded: new Date().toISOString().slice(0, 10),
+    citizenCount: 1,
+    mcc: { name: 'Not yet configured', board: [] },
+    services: [],
+  } : null)
+
+  const mockData  = MOCK_CITIZEN_DATA[slug]
+  // Use on-chain balances when available, else mock; synthesize from chain for new colonies
   const data = mockData ? {
     ...mockData,
     sBalance: chain ? chain.sBalance : mockData.sBalance,
     vBalance: chain ? chain.vBalance : mockData.vBalance,
     gTokenId: chain?.gTokenId > 0 ? chain.gTokenId : mockData.gTokenId,
+  } : chain ? {
+    sBalance:        chain.sBalance,
+    vBalance:        chain.vBalance,
+    gTokenId:        chain.gTokenId,
+    vSavedThisMonth: 0,
+    vMaxMonthly:     200,
+    ubiAmount:       1000,
+    mccBill:         { total: 0, breakdown: [] },
+    transactions:    [],
   } : null
 
   const [claimPending, setClaimPending] = useState(false)

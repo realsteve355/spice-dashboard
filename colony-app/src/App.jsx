@@ -32,6 +32,10 @@ const ERC721_ABI = [
 const COLONY_ABI = [
   "function isCitizen(address) view returns (bool)",
   "function citizenName(address) view returns (string)",
+  "function colonyName() view returns (string)",
+  "function sToken() view returns (address)",
+  "function vToken() view returns (address)",
+  "function gToken() view returns (address)",
   "function join(string) external",
   "function claimUbi() external",
   "function saveToV(uint256) external",
@@ -90,6 +94,8 @@ export default function App() {
     if (!addr || !prov) return
     setOnChainLoading(true)
     const result = {}
+
+    // Known colonies from contracts.json
     for (const [colonyId, cfg] of Object.entries(CONTRACTS.colonies)) {
       try {
         const sToken  = new ethers.Contract(cfg.sToken,  ERC20_ABI,  prov)
@@ -117,6 +123,43 @@ export default function App() {
         console.warn('Failed to load on-chain data for', colonyId, e)
       }
     }
+
+    // User-deployed colonies saved in localStorage
+    const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+    for (const [colonyId, info] of Object.entries(userColonies)) {
+      if (CONTRACTS.colonies[colonyId]) continue  // already loaded above
+      try {
+        const colonyContract = new ethers.Contract(info.address, COLONY_ABI, prov)
+        const [sAddr, vAddr, gAddr, citizen, colonyName] = await Promise.all([
+          colonyContract.sToken(),
+          colonyContract.vToken(),
+          colonyContract.gToken(),
+          colonyContract.isCitizen(addr),
+          colonyContract.colonyName(),
+        ])
+        const sToken = new ethers.Contract(sAddr, ERC20_ABI,  prov)
+        const vToken = new ethers.Contract(vAddr, ERC20_ABI,  prov)
+        const gToken = new ethers.Contract(gAddr, ERC721_ABI, prov)
+        const [sRaw, vRaw, gId] = await Promise.all([
+          sToken.balanceOf(addr),
+          vToken.balanceOf(addr),
+          gToken.tokenOf(addr),
+        ])
+        const citizenName = citizen ? await colonyContract.citizenName(addr) : ''
+        result[colonyId] = {
+          sBalance:     Math.floor(Number(ethers.formatEther(sRaw))),
+          vBalance:     Math.floor(Number(ethers.formatEther(vRaw))),
+          gTokenId:     Number(gId),
+          isCitizen:    citizen,
+          citizenName,
+          colonyName,
+          colonyAddress: info.address,
+        }
+      } catch (e) {
+        console.warn('Failed to load user colony data for', colonyId, e)
+      }
+    }
+
     setOnChain(result)
     setOnChainLoading(false)
   }, [])
@@ -144,10 +187,23 @@ export default function App() {
   }, [disconnect])
 
   const isCitizenOf = (id) => {
-    // If colony has a real contract, always use on-chain data
-    if (CONTRACTS.colonies[id]) return onChain[id]?.isCitizen === true
+    // If colony has a real contract (contracts.json or localStorage), always use on-chain data
+    const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+    if (CONTRACTS.colonies[id] || userColonies[id]) return onChain[id]?.isCitizen === true
     // No contract — fall back to mock
     return !!address && MOCK_CITIZEN_COLONIES.includes(id)
+  }
+
+  // Augment CONTRACTS with user-deployed colonies so pages can look up colony addresses
+  const userColoniesStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+  const augmentedContracts = {
+    ...CONTRACTS,
+    colonies: {
+      ...CONTRACTS.colonies,
+      ...Object.fromEntries(
+        Object.entries(userColoniesStored).map(([id, info]) => [id, { colony: info.address }])
+      ),
+    },
   }
 
   const ctx = {
@@ -169,7 +225,7 @@ export default function App() {
           ...MOCK_CITIZEN_COLONIES.filter(id => !CONTRACTS.colonies[id]),
         ])]
       : [],
-    contracts: CONTRACTS,
+    contracts: augmentedContracts,
   }
 
   return (
