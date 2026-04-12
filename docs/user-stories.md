@@ -268,10 +268,22 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| P-01 | As the protocol, I want a single on-chain registry that records every deployed colony (address, name, slug, founder, timestamp) so the directory is always accurate | P1 | ~ |
-| P-02 | As the protocol, I want to update the fee-per-transaction rate at any time without redeploying any colony contract | P1 | ~ |
-| P-03 | As the protocol, I want to update the protocol treasury address without touching any colony contract | P1 | ~ |
-| P-04 | As the protocol, I want only the registry owner to be able to change fee rates and treasury address | P1 | ~ |
+| P-01 | As the protocol, I want a single on-chain registry that records every deployed colony (address, name, slug, founder, timestamp) so the directory is always accurate | P1 | ✓ |
+| P-02 | As the protocol, I want to update the fee-per-transaction rate at any time without redeploying any colony contract | P1 | ✓ |
+| P-03 | As the protocol, I want to update the protocol treasury address without touching any colony contract | P1 | ✓ |
+| P-04 | As the protocol, I want only the registry owner to be able to change fee rates and treasury address | P1 | ✓ |
+
+### Protocol Admin Panel (spice.zpc.finance)
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| P-11 | As the protocol owner, I want a dedicated admin panel at spice.zpc.finance to manage the ColonyRegistry without writing scripts | P1 | ✓ |
+| P-12 | As the protocol owner, I want to see all registered colonies, their citizen counts, and their pending protocol fees in one view | P1 | ✓ |
+| P-13 | As the protocol owner, I want to update the protocol treasury address from the admin panel | P1 | ✓ |
+| P-14 | As the protocol owner, I want to update the fee-per-transaction rate from the admin panel | P1 | ✓ |
+| P-15 | As the protocol owner, I want to transfer registry ownership to a new address with an on-screen confirmation warning | P1 | ✓ |
+| P-16 | As any visitor, I want to view registry stats (colony count, fee rate, total pending fees) without connecting a wallet | P1 | ✓ |
+| P-17 | As the protocol owner, I want to click a colony and see its full detail (address, founder, citizens, pending fee) with a link to its admin panel to trigger settlement | P1 | ✓ |
 
 ### Infrastructure Fee
 
@@ -284,8 +296,9 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | P-09 | As the protocol, I want fee settlements to be recorded as on-chain events (ProtocolFeeSettled) for auditability | P1 | ✓ |
 | P-10 | As the protocol, I want colonies deployed before the registry existed (no registry address) to skip fee accrual gracefully | P1 | ✓ |
 
-*P-01–P-04: ColonyRegistry.sol deployed once by protocol owner. Not yet live on Base Sepolia — COLONY_REGISTRY_ADDRESS placeholder in CreateColony.jsx.*
+*P-01–P-04: ColonyRegistry.sol deployed at 0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417 on Base Sepolia.*
 *P-05–P-10: Colony.send() increments pendingProtocolFee += registry.feePerTx() (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
+*P-11–P-17: spice.zpc.finance — standalone HTML, no build step, ethers.js CDN. Separate Vercel project pointed at spice-admin/ folder. Loads read-only on page open; owner actions require wallet connect. Colony list sorted by pending fee descending.*
 *Fee model rationale: ETH-denominated (real-world value), monthly billing via MCC (not per-tx skim), MCC is accountable for payment — citizens see it as an infrastructure bill, not a tax on every send.*
 
 ---
@@ -342,10 +355,10 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 56 | 45% |
-| ~ Partial / UI mock | 29 | 23% |
-| — Not built | 39 | 32% |
-| **Total** | **124** | |
+| ✓ Done (on-chain) | 67 | 49% |
+| ~ Partial / UI mock | 27 | 20% |
+| — Not built | 43 | 31% |
+| **Total** | **137** | |
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 

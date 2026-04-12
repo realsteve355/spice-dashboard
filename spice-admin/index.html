@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPICE Protocol Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: #0a0e1a;
+  color: #e8eaf0;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 52px;
+  border-bottom: 1px solid #1e2a42;
+  position: sticky; top: 0; background: #0a0e1a; z-index: 10;
+}
+.topbar-title { font-size: 11px; color: #c8a96e; letter-spacing: 0.18em; font-weight: 700; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.wrap { max-width: 900px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* ── Cards ── */
+.card {
+  background: #0f1520; border: 1px solid #1e2a42;
+  border-radius: 6px; padding: 18px 20px; margin-bottom: 16px;
+}
+.card-title {
+  font-size: 9px; color: #4a5878; letter-spacing: 0.2em;
+  text-transform: uppercase; margin-bottom: 14px;
+}
+
+/* ── Stats grid ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stat-card {
+  background: #0f1520; border: 1px solid #1e2a42;
+  border-radius: 6px; padding: 14px 16px;
+}
+.stat-label { font-size: 9px; color: #4a5878; letter-spacing: 0.16em; margin-bottom: 6px; }
+.stat-value { font-size: 22px; font-weight: 700; }
+.stat-sub { font-size: 9px; color: #4a5878; margin-top: 4px; }
+
+/* ── Colony list ── */
+.colony-row {
+  display: flex; align-items: center; gap: 12px;
+  background: #0f1520; border: 1px solid #1e2a42;
+  border-radius: 6px; padding: 12px 16px; margin-bottom: 8px;
+  cursor: pointer; transition: border-color 0.15s;
+}
+.colony-row:hover { border-color: #c8a96e40; }
+.colony-row.has-fee { border-left: 3px solid #c8a96e; }
+.colony-name { font-size: 13px; color: #e8eaf0; font-weight: 500; flex: 1; }
+.colony-slug { font-size: 10px; color: #4a5878; margin-top: 2px; }
+.colony-meta { font-size: 10px; color: #8899bb; }
+.fee-badge {
+  font-size: 10px; padding: 3px 8px; border-radius: 10px;
+  background: #c8a96e20; color: #c8a96e; border: 1px solid #c8a96e40;
+  white-space: nowrap; flex-shrink: 0;
+}
+.fee-badge.zero { background: #1e2a4240; color: #4a5878; border-color: #1e2a42; }
+
+/* ── Forms ── */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 9px; color: #4a5878; letter-spacing: 0.14em; margin-bottom: 6px; }
+.field input {
+  width: 100%; padding: 9px 12px;
+  background: #060910; border: 1px solid #1e2a42;
+  border-radius: 5px; font-size: 12px; color: #e8eaf0;
+  font-family: 'IBM Plex Mono', monospace; outline: none;
+}
+.field input:focus { border-color: #c8a96e60; }
+.field .current { font-size: 10px; color: #8899bb; margin-top: 4px; font-family: monospace; }
+
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  padding: 8px 16px; border-radius: 5px; font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace; cursor: pointer;
+  letter-spacing: 0.06em; font-weight: 600; border: none;
+  transition: opacity 0.1s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn-gold  { background: #c8a96e; color: #0a0e1a; }
+.btn-ghost { background: none; color: #c8a96e; border: 1px solid #c8a96e60; }
+.btn-red   { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
+.btn-connect { background: none; color: #c8a96e; border: 1px solid #c8a96e; border-radius: 20px; padding: 5px 14px; font-size: 11px; cursor: pointer; font-family: inherit; letter-spacing: 0.06em; }
+.btn-addr { background: none; border: 1px solid #1e2a42; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #8899bb; font-family: monospace; }
+
+/* ── Badges ── */
+.badge-owner  { font-size: 9px; padding: 3px 8px; border-radius: 10px; background: #16a34a20; color: #16a34a; border: 1px solid #16a34a40; letter-spacing: 0.08em; }
+.badge-ro     { font-size: 9px; padding: 3px 8px; border-radius: 10px; background: #4a587820; color: #4a5878; border: 1px solid #4a587840; letter-spacing: 0.08em; }
+.badge-net    { font-size: 9px; padding: 3px 8px; border-radius: 10px; background: #3b82f620; color: #3b82f6; border: 1px solid #3b82f640; letter-spacing: 0.08em; }
+
+/* ── Misc ── */
+.section-title { font-size: 9px; color: #4a5878; letter-spacing: 0.18em; margin-bottom: 10px; }
+.divider { border: none; border-top: 1px solid #1e2a42; margin: 18px 0; }
+.error { font-size: 11px; color: #ef4444; margin-top: 8px; padding: 8px 10px; border: 1px solid #ef444430; border-radius: 5px; }
+.success { font-size: 11px; color: #16a34a; margin-top: 8px; padding: 8px 10px; border: 1px solid #16a34a30; border-radius: 5px; }
+.loading { font-size: 11px; color: #4a5878; padding: 24px 0; text-align: center; }
+a.ext { color: #8899bb; text-decoration: none; font-size: 10px; }
+a.ext:hover { color: #c8a96e; }
+
+/* ── Detail panel ── */
+.detail-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 360px;
+  background: #0d1220; border-left: 1px solid #1e2a42;
+  overflow-y: auto; padding: 20px;
+  transform: translateX(100%); transition: transform 0.2s ease;
+  z-index: 100;
+}
+.detail-panel.open { transform: translateX(0); }
+.detail-close { float: right; background: none; border: none; color: #4a5878; font-size: 18px; cursor: pointer; line-height: 1; padding: 2px 6px; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-title">SPICE PROTOCOL ADMIN</div>
+  <div class="topbar-right">
+    <span id="net-badge" class="badge-net" style="display:none">Base Sepolia</span>
+    <span id="role-badge" style="display:none"></span>
+    <button id="btn-connect" class="btn-connect" onclick="connectWallet()">Connect Wallet</button>
+    <span id="addr-chip" class="btn-addr" style="display:none"></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Hero -->
+  <div style="margin-bottom:28px">
+    <div style="font-size:9px;color:#4a5878;letter-spacing:0.2em;margin-bottom:6px">PROTOCOL ADMINISTRATION</div>
+    <div style="font-size:20px;font-weight:700;color:#c8a96e;margin-bottom:6px">Colony Registry</div>
+    <div style="font-size:11px;color:#8899bb;line-height:1.6">
+      Manage the ColonyRegistry contract, protocol treasury, and infrastructure fee settings.
+      Owner-only actions require the registry deployer wallet to be connected.
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats">
+    <div class="stat-card">
+      <div class="stat-label">COLONIES</div>
+      <div class="stat-value" id="stat-colonies" style="color:#c8a96e">—</div>
+      <div class="stat-sub">registered</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">FEE PER TX</div>
+      <div class="stat-value" id="stat-fee" style="color:#e8eaf0;font-size:16px">—</div>
+      <div class="stat-sub">ETH per send()</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TOTAL PENDING</div>
+      <div class="stat-value" id="stat-pending" style="color:#eab308;font-size:16px">—</div>
+      <div class="stat-sub">ETH across all colonies</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">TREASURY</div>
+      <div class="stat-value" id="stat-treasury" style="color:#8899bb;font-size:11px;margin-top:8px;font-weight:400;word-break:break-all">—</div>
+    </div>
+  </div>
+
+  <!-- Settings (owner only) -->
+  <div class="card" id="settings-panel" style="display:none">
+    <div class="card-title">PROTOCOL SETTINGS — OWNER ONLY</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <!-- Set treasury -->
+      <div>
+        <div class="field">
+          <label>PROTOCOL TREASURY ADDRESS</label>
+          <input id="inp-treasury" placeholder="0x…" />
+          <div class="current" id="cur-treasury"></div>
+        </div>
+        <div id="err-treasury" class="error" style="display:none"></div>
+        <div id="ok-treasury" class="success" style="display:none">Treasury updated ✓</div>
+        <button class="btn btn-gold" onclick="setTreasury()">Update treasury →</button>
+      </div>
+
+      <!-- Set fee -->
+      <div>
+        <div class="field">
+          <label>FEE PER TX (ETH)</label>
+          <input id="inp-fee" placeholder="e.g. 0.000001" type="number" step="0.000001" />
+          <div class="current" id="cur-fee"></div>
+        </div>
+        <div id="err-fee" class="error" style="display:none"></div>
+        <div id="ok-fee" class="success" style="display:none">Fee updated ✓</div>
+        <button class="btn btn-gold" onclick="setFee()">Update fee →</button>
+      </div>
+
+    </div>
+
+    <hr class="divider">
+
+    <!-- Transfer ownership -->
+    <div style="display:flex;align-items:flex-end;gap:10px">
+      <div class="field" style="flex:1;margin-bottom:0">
+        <label>TRANSFER REGISTRY OWNERSHIP</label>
+        <input id="inp-owner" placeholder="New owner 0x…" />
+      </div>
+      <button class="btn btn-red" onclick="transferOwnership()">Transfer ownership</button>
+    </div>
+    <div id="err-owner" class="error" style="display:none"></div>
+    <div id="ok-owner" class="success" style="display:none">Ownership transferred ✓</div>
+    <div style="font-size:9px;color:#4a5878;margin-top:6px">Warning: this is irreversible. You will lose admin access to this panel.</div>
+  </div>
+
+  <!-- Colony list -->
+  <div>
+    <div class="section-title">REGISTERED COLONIES</div>
+    <div id="colony-list"><div class="loading">Connect wallet to load colonies…</div></div>
+  </div>
+
+</div>
+
+<!-- Colony detail panel -->
+<div class="detail-panel" id="detail-panel">
+  <button class="detail-close" onclick="closeDetail()">×</button>
+  <div id="detail-content"></div>
+</div>
+
+<script>
+const REGISTRY_ADDRESS  = "0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417";
+const BASE_SEPOLIA_ID   = 84532;
+const BASE_SEPOLIA_HEX  = "0x14A34";
+const RPC               = "https://sepolia.base.org";
+const EXPLORER          = "https://sepolia.basescan.org";
+const APP_HOST          = "https://app.zpc.finance";
+
+const REGISTRY_ABI = [
+  "function owner() view returns (address)",
+  "function protocolTreasury() view returns (address)",
+  "function feePerTx() view returns (uint256)",
+  "function count() view returns (uint256)",
+  "function getAll() view returns (address[])",
+  "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
+  "function setTreasury(address) external",
+  "function setFeePerTx(uint256) external",
+  "function transferOwnership(address) external",
+];
+
+const COLONY_ABI = [
+  "function pendingProtocolFee() view returns (uint256)",
+  "function citizenCount() view returns (uint256)",
+  "function colonyName() view returns (string)",
+  "function registry() view returns (address)",
+];
+
+// ── State ────────────────────────────────────────────────────────────────────
+let provider     = null;
+let signer       = null;
+let wallet       = null;
+let isOwner      = false;
+let registryRO   = null;    // read-only registry contract
+let regData      = {};      // { owner, treasury, feePerTx }
+let colonies     = [];      // enriched colony list
+
+// ── Wallet ────────────────────────────────────────────────────────────────────
+async function connectWallet() {
+  if (!window.ethereum) { alert("MetaMask not detected."); return; }
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+    const chainId  = parseInt(await window.ethereum.request({ method: "eth_chainId" }), 16);
+    if (chainId !== BASE_SEPOLIA_ID) {
+      try {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: BASE_SEPOLIA_HEX }] });
+      } catch {
+        alert("Please switch MetaMask to Base Sepolia (chain 84532).");
+        return;
+      }
+    }
+    wallet   = accounts[0];
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer   = await provider.getSigner();
+    registryRO = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider);
+    onWalletConnected();
+  } catch (e) { console.error(e); }
+}
+
+async function onWalletConnected() {
+  // UI: show address, hide connect button
+  document.getElementById("btn-connect").style.display = "none";
+  document.getElementById("addr-chip").style.display   = "inline";
+  document.getElementById("addr-chip").textContent     = wallet.slice(0,8) + "…" + wallet.slice(-6);
+  document.getElementById("net-badge").style.display   = "inline";
+
+  // Check if owner
+  const ownerAddr = await registryRO.owner().catch(() => null);
+  isOwner = ownerAddr && ownerAddr.toLowerCase() === wallet.toLowerCase();
+
+  const badge = document.getElementById("role-badge");
+  badge.style.display = "inline";
+  badge.className = isOwner ? "badge-owner" : "badge-ro";
+  badge.textContent = isOwner ? "OWNER" : "READ ONLY";
+
+  if (isOwner) document.getElementById("settings-panel").style.display = "block";
+
+  await loadAll();
+}
+
+// ── Load everything ────────────────────────────────────────────────────────────
+async function loadAll() {
+  const prov = provider || new ethers.JsonRpcProvider(RPC);
+  const reg  = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, prov);
+
+  try {
+    const [ownerAddr, treasury, feeWei, allAddrs] = await Promise.all([
+      reg.owner(),
+      reg.protocolTreasury(),
+      reg.feePerTx(),
+      reg.getAll(),
+    ]);
+
+    regData = { owner: ownerAddr, treasury, feeWei };
+
+    // Stats
+    document.getElementById("stat-colonies").textContent = allAddrs.length;
+    document.getElementById("stat-fee").textContent      = ethers.formatEther(feeWei) + " ETH";
+    document.getElementById("stat-treasury").textContent = treasury.slice(0,10) + "…" + treasury.slice(-8);
+
+    // Settings inputs
+    document.getElementById("cur-treasury").textContent = "current: " + treasury;
+    document.getElementById("cur-fee").textContent      = "current: " + ethers.formatEther(feeWei) + " ETH";
+
+    // Load each colony
+    document.getElementById("colony-list").innerHTML = '<div class="loading">Loading colonies…</div>';
+    if (allAddrs.length === 0) {
+      document.getElementById("colony-list").innerHTML = '<div class="loading">No colonies registered yet.</div>';
+      document.getElementById("stat-pending").textContent = "0 ETH";
+      return;
+    }
+
+    const [entries, colonyData] = await Promise.all([
+      Promise.all(allAddrs.map(a => reg.entries(a))),
+      Promise.all(allAddrs.map(a => loadColonyData(a, prov))),
+    ]);
+
+    colonies = allAddrs.map((addr, i) => ({
+      address:      addr,
+      name:         entries[i].name,
+      slug:         entries[i].slug,
+      founder:      entries[i].founder,
+      registeredAt: Number(entries[i].registeredAt),
+      ...colonyData[i],
+    }));
+
+    // Total pending
+    const totalPending = colonies.reduce((sum, c) => sum + (c.pendingFeeWei || 0n), 0n);
+    document.getElementById("stat-pending").textContent =
+      parseFloat(ethers.formatEther(totalPending)).toFixed(6) + " ETH";
+
+    renderColonies();
+  } catch (e) {
+    console.error(e);
+    document.getElementById("colony-list").innerHTML =
+      '<div class="loading" style="color:#ef4444">Failed to load registry: ' + e.message?.slice(0,80) + '</div>';
+  }
+}
+
+async function loadColonyData(addr, prov) {
+  try {
+    const c = new ethers.Contract(addr, COLONY_ABI, prov);
+    const [feeWei, count] = await Promise.all([
+      c.pendingProtocolFee().catch(() => 0n),
+      c.citizenCount().catch(() => 0n),
+    ]);
+    return { pendingFeeWei: feeWei, citizenCount: Number(count) };
+  } catch {
+    return { pendingFeeWei: 0n, citizenCount: 0 };
+  }
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function renderColonies() {
+  const list = document.getElementById("colony-list");
+  if (!colonies.length) {
+    list.innerHTML = '<div class="loading">No colonies registered yet.</div>';
+    return;
+  }
+  // Sort: colonies with pending fee first
+  const sorted = [...colonies].sort((a, b) =>
+    (b.pendingFeeWei > a.pendingFeeWei ? 1 : b.pendingFeeWei < a.pendingFeeWei ? -1 : 0)
+  );
+  list.innerHTML = sorted.map((c, i) => {
+    const fee     = parseFloat(ethers.formatEther(c.pendingFeeWei || 0n));
+    const hasFee  = fee > 0;
+    const feeStr  = hasFee ? fee.toFixed(6) + " ETH" : "0 ETH";
+    const date    = c.registeredAt ? new Date(c.registeredAt * 1000).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }) : "—";
+    return `
+      <div class="colony-row ${hasFee ? "has-fee" : ""}" onclick="openDetail(${i})">
+        <div style="flex:1;min-width:0">
+          <div class="colony-name">${esc(c.name)}</div>
+          <div class="colony-slug">${esc(c.slug)} · ${c.citizenCount} citizen${c.citizenCount !== 1 ? "s" : ""} · registered ${date}</div>
+        </div>
+        <div class="colony-meta" style="text-align:right;flex-shrink:0">
+          <div style="font-family:monospace;font-size:10px;color:#4a5878">${c.founder.slice(0,8)}…${c.founder.slice(-6)}</div>
+          <div style="margin-top:4px"><span class="fee-badge ${hasFee ? "" : "zero"}">${feeStr} pending</span></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ── Detail panel ──────────────────────────────────────────────────────────────
+function openDetail(idx) {
+  const sorted = [...colonies].sort((a, b) =>
+    (b.pendingFeeWei > a.pendingFeeWei ? 1 : b.pendingFeeWei < a.pendingFeeWei ? -1 : 0)
+  );
+  const c   = sorted[idx];
+  const fee = parseFloat(ethers.formatEther(c.pendingFeeWei || 0n));
+  const date = c.registeredAt ? new Date(c.registeredAt * 1000).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "—";
+
+  document.getElementById("detail-content").innerHTML = `
+    <div style="margin-top:8px;margin-bottom:20px">
+      <div style="font-size:9px;color:#4a5878;letter-spacing:0.16em;margin-bottom:6px">COLONY DETAIL</div>
+      <div style="font-size:17px;font-weight:700;color:#c8a96e">${esc(c.name)}</div>
+      <div style="font-size:10px;color:#4a5878;margin-top:4px">${esc(c.slug)}</div>
+    </div>
+
+    ${row("Colony address", addr(c.address), true)}
+    ${row("Founder",        addr(c.founder), true)}
+    ${row("Citizens",       c.citizenCount)}
+    ${row("Registered",     date)}
+    ${row("Pending fee",    fee > 0 ? fee.toFixed(6) + " ETH" : "0 ETH (none accrued)")}
+
+    <hr class="divider">
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="${APP_HOST}/colony/${esc(c.slug)}" target="_blank" class="btn btn-ghost" style="text-align:center;text-decoration:none;display:block">
+        View colony →
+      </a>
+      <a href="${APP_HOST}/colony/${esc(c.slug)}/admin" target="_blank" class="btn btn-ghost" style="text-align:center;text-decoration:none;display:block;font-size:10px">
+        Colony admin (settle fee) →
+      </a>
+      <a href="${EXPLORER}/address/${c.address}" target="_blank" style="text-align:center;font-size:10px;color:#4a5878;text-decoration:none;margin-top:4px">
+        View on Basescan ↗
+      </a>
+    </div>
+
+    <div style="margin-top:16px;padding:10px 12px;background:#060910;border-radius:5px;border:1px solid #1e2a42;font-size:9px;color:#4a5878;line-height:1.7">
+      Note: infrastructure fees are settled by the colony's MCC Fisc from the colony Admin panel.
+      This panel shows accumulated amounts only — settlement is triggered from the colony side.
+    </div>
+  `;
+  document.getElementById("detail-panel").classList.add("open");
+}
+
+function closeDetail() {
+  document.getElementById("detail-panel").classList.remove("open");
+}
+
+// ── Owner actions ──────────────────────────────────────────────────────────────
+async function setTreasury() {
+  clearMsg("treasury");
+  const val = document.getElementById("inp-treasury").value.trim();
+  if (!ethers.isAddress(val)) { showErr("treasury", "Invalid address"); return; }
+  try {
+    const reg = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
+    const tx  = await reg.setTreasury(val);
+    showMsg("treasury", "Confirming…");
+    await tx.wait();
+    showOk("treasury");
+    document.getElementById("cur-treasury").textContent = "current: " + val;
+    document.getElementById("stat-treasury").textContent = val.slice(0,10) + "…" + val.slice(-8);
+    document.getElementById("inp-treasury").value = "";
+  } catch (e) { showErr("treasury", e?.reason || e?.shortMessage || "Transaction failed"); }
+}
+
+async function setFee() {
+  clearMsg("fee");
+  const val = document.getElementById("inp-fee").value.trim();
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) { showErr("fee", "Invalid amount"); return; }
+  try {
+    const feeWei = ethers.parseEther(val);
+    const reg    = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
+    const tx     = await reg.setFeePerTx(feeWei);
+    showMsg("fee", "Confirming…");
+    await tx.wait();
+    showOk("fee");
+    document.getElementById("cur-fee").textContent = "current: " + val + " ETH";
+    document.getElementById("stat-fee").textContent = val + " ETH";
+    document.getElementById("inp-fee").value = "";
+  } catch (e) { showErr("fee", e?.reason || e?.shortMessage || "Transaction failed"); }
+}
+
+async function transferOwnership() {
+  clearMsg("owner");
+  const val = document.getElementById("inp-owner").value.trim();
+  if (!ethers.isAddress(val)) { showErr("owner", "Invalid address"); return; }
+  if (!confirm("Transfer registry ownership to " + val + "?\nYou will lose admin access to this panel. This cannot be undone.")) return;
+  try {
+    const reg = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
+    const tx  = await reg.transferOwnership(val);
+    showMsg("owner", "Confirming…");
+    await tx.wait();
+    showOk("owner");
+    isOwner = false;
+    document.getElementById("settings-panel").style.display = "none";
+    document.getElementById("role-badge").className = "badge-ro";
+    document.getElementById("role-badge").textContent = "READ ONLY";
+  } catch (e) { showErr("owner", e?.reason || e?.shortMessage || "Transaction failed"); }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function row(label, value, mono) {
+  return `<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+    <span style="font-size:10px;color:#4a5878">${label}</span>
+    <span style="font-size:${mono ? 10 : 11}px;color:#e8eaf0;${mono ? "font-family:monospace" : ""};max-width:60%;text-align:right;word-break:break-all">${value}</span>
+  </div>`;
+}
+
+function addr(a) {
+  return `<a href="${EXPLORER}/address/${a}" target="_blank" style="color:#8899bb;text-decoration:none">${a.slice(0,10)}…${a.slice(-8)}</a>`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById("err-" + id);
+  el.textContent = msg; el.style.display = "block";
+  document.getElementById("ok-" + id).style.display = "none";
+}
+function showOk(id) {
+  document.getElementById("err-" + id).style.display = "none";
+  document.getElementById("ok-" + id).style.display = "block";
+}
+function showMsg(id, msg) {
+  const el = document.getElementById("err-" + id);
+  el.textContent = msg; el.style.display = "block"; el.style.color = "#8899bb";
+}
+function clearMsg(id) {
+  document.getElementById("err-" + id).style.display = "none";
+  document.getElementById("ok-" + id).style.display = "none";
+}
+
+// Auto-load read-only on page open (no wallet needed for viewing)
+window.addEventListener("load", async () => {
+  registryRO = new ethers.JsonRpcProvider(RPC);
+  const reg  = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, new ethers.JsonRpcProvider(RPC));
+  try {
+    const [treasury, feeWei, allAddrs] = await Promise.all([
+      reg.protocolTreasury(),
+      reg.feePerTx(),
+      reg.getAll(),
+    ]);
+    document.getElementById("stat-colonies").textContent = allAddrs.length;
+    document.getElementById("stat-fee").textContent      = ethers.formatEther(feeWei) + " ETH";
+    document.getElementById("stat-treasury").textContent = treasury.slice(0,10) + "…" + treasury.slice(-8);
+    document.getElementById("cur-treasury").textContent  = "current: " + treasury;
+    document.getElementById("cur-fee").textContent       = "current: " + ethers.formatEther(feeWei) + " ETH";
+
+    if (allAddrs.length === 0) {
+      document.getElementById("colony-list").innerHTML = '<div class="loading">No colonies registered yet. Create a colony on zpc.finance to populate the registry.</div>';
+      document.getElementById("stat-pending").textContent = "0 ETH";
+      return;
+    }
+
+    document.getElementById("colony-list").innerHTML = '<div class="loading">Loading colony data…</div>';
+    const prov = new ethers.JsonRpcProvider(RPC);
+    const [entries, colonyData] = await Promise.all([
+      Promise.all(allAddrs.map(a => reg.entries(a))),
+      Promise.all(allAddrs.map(a => loadColonyData(a, prov))),
+    ]);
+    colonies = allAddrs.map((addr, i) => ({
+      address:      addr,
+      name:         entries[i].name,
+      slug:         entries[i].slug,
+      founder:      entries[i].founder,
+      registeredAt: Number(entries[i].registeredAt),
+      ...colonyData[i],
+    }));
+    const totalPending = colonies.reduce((sum, c) => sum + (c.pendingFeeWei || 0n), 0n);
+    document.getElementById("stat-pending").textContent =
+      parseFloat(ethers.formatEther(totalPending)).toFixed(6) + " ETH";
+    renderColonies();
+  } catch (e) {
+    document.getElementById("colony-list").innerHTML =
+      '<div class="loading">Connect wallet to load registry data.</div>';
+  }
+});
+
+// Listen for account/chain change
+if (window.ethereum) {
+  window.ethereum.on("accountsChanged", () => location.reload());
+  window.ethereum.on("chainChanged",    () => location.reload());
+}
+</script>
+
+</body>
+</html>
