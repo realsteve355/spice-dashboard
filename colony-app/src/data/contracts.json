@@ -11,7 +11,8 @@
       "governance": "0xC60c72dc36Fe422E747C5A76ac76164fE3beB705",
       "companyRegistry": "0x92d8F29F07889434559c9D9ab9EBc9444365FC94",
       "mccServices": "0x1d7Abc42621729807d2Dfb6Fc6a60D50B79A45c4",
-      "deployBlock": 40073500
+      "deployBlock": 40073500,
+      "mccBilling": "0x8B2dD9D2C35e59FDfED6071056AEE66AC11D19Cb"
     }
   }
 }

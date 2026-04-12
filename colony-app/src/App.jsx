@@ -34,6 +34,9 @@ const COLONY_ABI = [
   "function isCitizen(address) view returns (bool)",
   "function citizenName(address) view returns (string)",
   "function colonyName() view returns (string)",
+  "function founder() view returns (address)",
+  "function citizenCount() view returns (uint256)",
+  "function citizens(uint256) view returns (address)",
   "function sToken() view returns (address)",
   "function vToken() view returns (address)",
   "function gToken() view returns (address)",
@@ -104,11 +107,12 @@ export default function App() {
         const gToken  = new ethers.Contract(cfg.gToken,  ERC721_ABI, prov)
         const colony  = new ethers.Contract(cfg.colony,  COLONY_ABI, prov)
 
-        const [sRaw, vRaw, gId, citizen] = await Promise.all([
+        const [sRaw, vRaw, gId, citizen, founderAddr] = await Promise.all([
           sToken.balanceOf(addr),
           vToken.balanceOf(addr),
           gToken.tokenOf(addr),
           colony.isCitizen(addr),
+          colony.founder(),
         ])
 
         const name = citizen ? await colony.citizenName(addr) : ''
@@ -119,6 +123,8 @@ export default function App() {
           gTokenId:    Number(gId),
           isCitizen:   citizen,
           citizenName: name,
+          isFounder:   founderAddr.toLowerCase() === addr.toLowerCase(),
+          founderAddr,
         }
       } catch (e) {
         console.warn('Failed to load on-chain data for', colonyId, e)
@@ -149,6 +155,7 @@ export default function App() {
           vToken.symbol(),
         ])
         const citizenName = citizen ? await colonyContract.citizenName(addr) : ''
+        const founderAddr2 = await colonyContract.founder()
         result[colonyId] = {
           sBalance:     Math.floor(Number(ethers.formatEther(sRaw))),
           vBalance:     Math.floor(Number(ethers.formatEther(vRaw))),
@@ -162,6 +169,8 @@ export default function App() {
           gTokenAddr:   gAddr,
           sSymbol:      sSym,
           vSymbol:      vSym,
+          isFounder:    founderAddr2.toLowerCase() === addr.toLowerCase(),
+          founderAddr:  founderAddr2,
         }
         // Cache token addresses in localStorage so augmentedContracts has them on next render
         const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
@@ -237,7 +246,11 @@ export default function App() {
     onChain,
     refresh,
     isCitizenOf,
-    isMccOf:      (id) => !!address && MOCK_MCC_COLONIES.includes(id),
+    isMccOf:      (id) => {
+      // Use on-chain founder check if we have chain data for this colony
+      if (onChain[id] !== undefined) return onChain[id]?.isFounder === true
+      return !!address && MOCK_MCC_COLONIES.includes(id)
+    },
     citizenColonies: address
       ? [...new Set([
           ...Object.entries(onChain).filter(([,v]) => v.isCitizen).map(([k]) => k),

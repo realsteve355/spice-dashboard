@@ -18,6 +18,10 @@ const COLONY_ABI = [
   "event Redeemed(address indexed citizen, uint256 amount)",
 ]
 
+const MCC_BILLING_ABI = [
+  "function billOf(address) view returns (uint256)",
+]
+
 import { C } from '../theme'
 
 export default function Dashboard() {
@@ -67,13 +71,29 @@ export default function Dashboard() {
   const [billPending, setBillPending] = useState(false)
   const [billError,   setBillError]   = useState(null)
   const [billDone,    setBillDone]    = useState(false)
+  const [onChainBill, setOnChainBill] = useState(null)  // S whole tokens, or null if not loaded
+
+  const mccBillingAddr = contracts?.colonies?.[slug]?.mccBilling
 
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
-    if (!cfg || !signer) return
+    if (!cfg?.colony || !signer) return
     const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
     colony.founder().then(setFounderAddr).catch(() => {})
   }, [contracts, slug, signer])
+
+  // Use chain founderAddr if available (from App.jsx polling)
+  const resolvedFounder = founderAddr || chain?.founderAddr
+
+  // Read on-chain bill from MCCBilling
+  useEffect(() => {
+    if (!mccBillingAddr || !address) return
+    const prov = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const c = new ethers.Contract(mccBillingAddr, MCC_BILLING_ABI, prov)
+    c.billOf(address)
+      .then(wei => setOnChainBill(Math.floor(Number(ethers.formatEther(wei)))))
+      .catch(() => {})
+  }, [mccBillingAddr, address])
 
   const [txHistory, setTxHistory] = useState(null)  // null = not loaded yet
 
@@ -148,12 +168,14 @@ export default function Dashboard() {
 
   async function handlePayBill() {
     const contract = colonyContract()
-    if (!contract || !founderAddr || !data.mccBill.total) return
+    const billAmount = onChainBill ?? data.mccBill.total
+    if (!contract || !resolvedFounder || !billAmount) return
     setBillPending(true); setBillError(null); setBillDone(false)
     try {
-      const tx = await contract.send(founderAddr, ethers.parseEther(String(data.mccBill.total)), 'MCC services bill')
+      const tx = await contract.send(resolvedFounder, ethers.parseEther(String(billAmount)), 'MCC services bill')
       await tx.wait()
       setBillDone(true)
+      setOnChainBill(0)
       refresh()
     } catch (e) {
       setBillError(e?.reason || e?.shortMessage || 'Transaction failed')
@@ -487,25 +509,31 @@ export default function Dashboard() {
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC BILL — {CURRENT_MONTH}</div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: C.red }}>{data.mccBill.total} S</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: C.red }}>
+              {onChainBill !== null ? onChainBill : data.mccBill.total} S
+              {onChainBill !== null && <span style={{ fontSize: 9, color: C.green, marginLeft: 6 }}>live</span>}
+            </div>
           </div>
-          {data.mccBill.breakdown.length === 0 ? (
-            <div style={{ fontSize: 12, color: C.faint }}>No charges this month.</div>
-          ) : (
+          {/* On-chain bill takes precedence; show breakdown from mock if available */}
+          {onChainBill === null && data.mccBill.breakdown.length > 0 && (
             data.mccBill.breakdown.map((b, i) => (
               <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between',
-                fontSize: 12, color: C.sub,
+                display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.sub,
                 paddingBottom: i < data.mccBill.breakdown.length - 1 ? 8 : 0,
-                marginBottom: i < data.mccBill.breakdown.length - 1 ? 8 : 0,
-                borderBottom: i < data.mccBill.breakdown.length - 1 ? `1px solid ${C.border}` : 'none',
+                marginBottom:  i < data.mccBill.breakdown.length - 1 ? 8 : 0,
+                borderBottom:  i < data.mccBill.breakdown.length - 1 ? `1px solid ${C.border}` : 'none',
               }}>
-                <span>{b.service}</span>
-                <span style={{ color: C.red }}>{b.amount} S</span>
+                <span>{b.service}</span><span style={{ color: C.red }}>{b.amount} S</span>
               </div>
             ))
           )}
-          {data.mccBill.total > 0 && founderAddr && (
+          {onChainBill === 0 && (
+            <div style={{ fontSize: 12, color: C.faint }}>No bill outstanding this month.</div>
+          )}
+          {onChainBill === null && data.mccBill.breakdown.length === 0 && (
+            <div style={{ fontSize: 12, color: C.faint }}>No charges this month.</div>
+          )}
+          {((onChainBill ?? data.mccBill.total) > 0) && resolvedFounder && (
             <div style={{ marginTop: 12 }}>
               {billError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{billError}</div>}
               <button
@@ -513,7 +541,7 @@ export default function Dashboard() {
                 disabled={billPending || billDone}
                 style={{ ...smallBtn(billDone ? C.green : C.red), width: '100%', opacity: billPending ? 0.5 : 1 }}
               >
-                {billPending ? '...' : billDone ? '✓ Bill paid' : `Pay ${data.mccBill.total} S to MCC →`}
+                {billPending ? '...' : billDone ? '✓ Bill paid' : `Pay ${onChainBill ?? data.mccBill.total} S to MCC →`}
               </button>
             </div>
           )}
