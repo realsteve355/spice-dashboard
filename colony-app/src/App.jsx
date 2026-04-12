@@ -25,6 +25,7 @@ const BASE_CHAIN_ID = 84532  // Base Sepolia testnet
 const ERC20_ABI = [
   "function balanceOf(address) view returns (uint256)",
   "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)",
 ]
 const ERC721_ABI = [
   "function tokenOf(address) view returns (uint256)",
@@ -140,10 +141,12 @@ export default function App() {
         const sToken = new ethers.Contract(sAddr, ERC20_ABI,  prov)
         const vToken = new ethers.Contract(vAddr, ERC20_ABI,  prov)
         const gToken = new ethers.Contract(gAddr, ERC721_ABI, prov)
-        const [sRaw, vRaw, gId] = await Promise.all([
+        const [sRaw, vRaw, gId, sSym, vSym] = await Promise.all([
           sToken.balanceOf(addr),
           vToken.balanceOf(addr),
           gToken.tokenOf(addr),
+          sToken.symbol(),
+          vToken.symbol(),
         ])
         const citizenName = citizen ? await colonyContract.citizenName(addr) : ''
         result[colonyId] = {
@@ -154,6 +157,17 @@ export default function App() {
           citizenName,
           colonyName,
           colonyAddress: info.address,
+          sTokenAddr:   sAddr,
+          vTokenAddr:   vAddr,
+          gTokenAddr:   gAddr,
+          sSymbol:      sSym,
+          vSymbol:      vSym,
+        }
+        // Cache token addresses in localStorage so augmentedContracts has them on next render
+        const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+        if (stored[colonyId]) {
+          stored[colonyId] = { ...stored[colonyId], sToken: sAddr, vToken: vAddr, gToken: gAddr }
+          localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
         }
       } catch (e) {
         console.warn('Failed to load user colony data for', colonyId, e)
@@ -201,7 +215,12 @@ export default function App() {
     colonies: {
       ...CONTRACTS.colonies,
       ...Object.fromEntries(
-        Object.entries(userColoniesStored).map(([id, info]) => [id, { colony: info.address }])
+        Object.entries(userColoniesStored).map(([id, info]) => [id, {
+          colony: info.address,
+          sToken: info.sToken,
+          vToken: info.vToken,
+          gToken: info.gToken,
+        }])
       ),
     },
   }

@@ -333,7 +333,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
               {contracts?.colonies?.[slug]?.sToken && (
                 <button
-                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, 'SSPICE', 18)}
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, chain?.sSymbol || 'S-SPICE', 18)}
                   style={mmBtn}
                   title="Add S-token to MetaMask"
                 >
@@ -412,7 +412,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 11, color: C.green }}>never expires</div>
               {contracts?.colonies?.[slug]?.vToken && (
                 <button
-                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].vToken, 'VSPICE', 18)}
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].vToken, chain?.vSymbol || 'V-SPICE', 18)}
                   style={mmBtn}
                   title="Add V-token to MetaMask"
                 >
