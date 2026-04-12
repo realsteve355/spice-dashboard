@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
+import CONTRACTS from '../data/contracts.json'
 import { useWallet } from '../App'
 import { C } from '../theme'
 
@@ -8,11 +9,23 @@ export default function Directory() {
   const navigate = useNavigate()
   const { isConnected, isCitizenOf, onChain } = useWallet()
 
-  // Merge mock colonies with any user-deployed colonies from localStorage
-  const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-  const mockIds = new Set(MOCK_COLONIES.map(c => c.id))
-  const extraColonies = Object.entries(userColonies)
-    .filter(([id]) => !mockIds.has(id))
+  // Real colonies from contracts.json (on-chain addresses known)
+  const contractColonies = Object.entries(CONTRACTS.colonies).map(([id, cfg]) => {
+    const mock = MOCK_COLONIES.find(c => c.id === id)
+    return {
+      id,
+      name:         cfg.name || mock?.name || id,
+      description:  mock?.description || '',
+      founded:      mock?.founded || null,
+      citizenCount: mock?.citizenCount || null,
+      mcc:          mock?.mcc || { name: 'MCC' },
+    }
+  })
+
+  // User-deployed colonies from localStorage (not already in contracts.json)
+  const userStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+  const userColonies = Object.entries(userStored)
+    .filter(([id]) => !CONTRACTS.colonies[id])
     .map(([id, info]) => ({
       id,
       name:         info.name || id,
@@ -21,7 +34,8 @@ export default function Directory() {
       citizenCount: null,
       mcc:          { name: 'Not yet configured' },
     }))
-  const allColonies = [...MOCK_COLONIES, ...extraColonies]
+
+  const allColonies = [...contractColonies, ...userColonies]
 
   return (
     <Layout title="SPICE Colony">
