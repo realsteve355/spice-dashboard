@@ -225,10 +225,12 @@ export default function App() {
       ...CONTRACTS.colonies,
       ...Object.fromEntries(
         Object.entries(userColoniesStored).map(([id, info]) => [id, {
-          colony: info.address,
-          sToken: info.sToken,
-          vToken: info.vToken,
-          gToken: info.gToken,
+          colony:      info.address,
+          sToken:      info.sToken,
+          vToken:      info.vToken,
+          gToken:      info.gToken,
+          mccServices: info.mccServices,
+          mccBilling:  info.mccBilling,
         }])
       ),
     },
