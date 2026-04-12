@@ -228,9 +228,12 @@ A citizen deploying a new colony.
 | N-06 | As a colony founder, I want a shareable invite URL and QR code to recruit citizens | P1 | ~ |
 | N-07 | As a colony founder, I want to see my colony appear in the public directory immediately | P1 | ~ |
 | N-08 | As a colony founder, I want to set an optional colony description and logo | P2 | ~ |
+| N-09 | As a colony founder, I want to create my colony from zpc.finance (the platform layer) rather than from inside the colony app | P1 | ✓ |
 
+*N-04: Deploy wizard available on both zpc.finance/create-colony (primary) and app.zpc.finance/create (legacy, to be removed).*
 *N-06: Invite URL copyable; QR not yet generated.*
-*N-07: Directory is currently a static mock list; deployed colonies not yet auto-listed.*
+*N-07: Colony directory on zpc.finance reads live on-chain data (citizenCount, epoch) via JsonRpcProvider. Still requires manual colonies.js update after each new deploy — auto-listing requires a ColonyRegistry contract.*
+*N-09: zpc.finance/create-colony — name input, MetaMask connect, deploy, success screen with colony URL and colonies.js entry to add.*
 
 ---
 
@@ -286,16 +289,17 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 42 | 41% |
+| ✓ Done (on-chain) | 43 | 42% |
 | ~ Partial / UI mock | 28 | 27% |
 | — Not built | 32 | 31% |
-| **Total** | **102** | |
+| **Total** | **103** | |
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
 | Feature | Contract | Status |
 |---------|----------|--------|
 | Wallet connect + auto-connect | MetaMask / ethers.js | ✓ Live |
+| Create colony (zpc.finance) | ContractFactory.deploy() on zpc.finance | ✓ Live |
 | Join colony + citizen name | Colony.join(string) | ✓ Live |
 | G-token issuance (soulbound NFT, on-chain SVG) | GToken.mint() | ✓ Live |
 | S-token UBI issuance | SToken.issueUbi() | ✓ Live |
@@ -328,5 +332,5 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v4*
+*SPICE Colony · User Stories & Requirements Spec · v5*
 *Last updated: April 2026*
