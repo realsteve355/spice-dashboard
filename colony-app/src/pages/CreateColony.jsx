@@ -21,12 +21,29 @@ export default function CreateColony() {
 
   const [step, setStep]           = useState(1)
   const [name, setName]           = useState('')
+  const [ticker, setTicker]       = useState('')
+  const [tickerEdited, setTickerEdited] = useState(false)
   const [description, setDesc]    = useState('')
   const [boards, setBoards]       = useState([''])
   const [accepted, setAccepted]   = useState(false)
   const [deploying, setDeploying] = useState(false)
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
+  function handleNameChange(e) {
+    const v = e.target.value
+    setName(v)
+    if (!tickerEdited) {
+      const words = v.replace(/[^a-zA-Z\s]/g, '').split(/\s+/).filter(Boolean)
+      const derived = words.map(w => w[0]).join('').toUpperCase().slice(0, 5) || v.slice(0, 3).toUpperCase()
+      setTicker(derived)
+    }
+  }
+
+  function handleTickerChange(e) {
+    setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5))
+    setTickerEdited(true)
+  }
 
   function addBoard() { setBoards(b => [...b, '']) }
   function updateBoard(i, v) { setBoards(b => b.map((x, idx) => idx === i ? v : x)) }
@@ -79,12 +96,33 @@ export default function CreateColony() {
                 style={input}
                 placeholder="e.g. Turing Campus"
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={handleNameChange}
                 autoFocus
               />
               {slug && (
                 <div style={{ fontSize: 11, color: C.faint, marginTop: 6 }}>
                   URL: app.zpc.finance/colony/<span style={{ color: C.gold }}>{slug}</span>
+                </div>
+              )}
+            </div>
+
+            <div style={fieldGroup}>
+              <label style={fieldLabel}>Token ticker (1–5 letters)</label>
+              <input
+                style={input}
+                placeholder="e.g. TC"
+                value={ticker}
+                onChange={handleTickerChange}
+                maxLength={5}
+              />
+              {ticker && (
+                <div style={{ fontSize: 11, color: C.faint, marginTop: 6 }}>
+                  tokens:&nbsp;
+                  <span style={{ color: C.gold }}>S-{ticker}</span>
+                  &nbsp;·&nbsp;
+                  <span style={{ color: C.gold }}>V-{ticker}</span>
+                  &nbsp;·&nbsp;
+                  <span style={{ color: C.gold }}>G-{ticker}</span>
                 </div>
               )}
             </div>
@@ -101,8 +139,8 @@ export default function CreateColony() {
 
             <button
               onClick={() => setStep(2)}
-              disabled={!name.trim()}
-              style={{ ...primaryBtn, opacity: name.trim() ? 1 : 0.4 }}
+              disabled={!name.trim() || !ticker.trim()}
+              style={{ ...primaryBtn, opacity: name.trim() && ticker.trim() ? 1 : 0.4 }}
             >
               Next →
             </button>
@@ -187,6 +225,7 @@ export default function CreateColony() {
             {/* Summary */}
             <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
               <span style={{ color: C.gold }}>Colony:</span> {name}<br />
+              <span style={{ color: C.gold }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
               <span style={{ color: C.gold }}>URL:</span> app.zpc.finance/colony/{slug}<br />
               <span style={{ color: C.gold }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
               <span style={{ color: C.gold }}>Network:</span> Base Sepolia

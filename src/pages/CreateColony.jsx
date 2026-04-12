@@ -26,8 +26,16 @@ function toSlug(name) {
     .replace(/-+/g, "-");
 }
 
+function toTicker(name) {
+  const words = name.replace(/[^a-zA-Z\s]/g, "").split(/\s+/).filter(Boolean);
+  const initials = words.map(w => w[0]).join("").toUpperCase();
+  return initials.slice(0, 5) || name.slice(0, 3).toUpperCase();
+}
+
 export default function CreateColony() {
   const [name,          setName]          = useState("");
+  const [ticker,        setTicker]        = useState("");
+  const [tickerEdited,  setTickerEdited]  = useState(false);
   const [wallet,        setWallet]        = useState(null);   // connected address
   const [step,          setStep]          = useState("form"); // form | deploying | success
   const [txHash,        setTxHash]        = useState(null);
@@ -35,7 +43,19 @@ export default function CreateColony() {
   const [error,         setError]         = useState(null);
 
   const slug      = toSlug(name);
-  const canDeploy = name.trim().length >= 3 && wallet;
+  const canDeploy = name.trim().length >= 3 && ticker.trim().length >= 1 && wallet;
+
+  function handleNameChange(e) {
+    const v = e.target.value;
+    setName(v);
+    if (!tickerEdited) setTicker(toTicker(v));
+  }
+
+  function handleTickerChange(e) {
+    const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
+    setTicker(v);
+    setTickerEdited(true);
+  }
 
   async function connectWallet() {
     setError(null);
@@ -73,7 +93,7 @@ export default function CreateColony() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
       const factory  = new ethers.ContractFactory(COLONY_ABI, COLONY_BYTECODE, signer);
-      const contract = await factory.deploy(name.trim());
+      const contract = await factory.deploy(name.trim(), ticker.trim());
       setTxHash(contract.deploymentTransaction().hash);
       await contract.waitForDeployment();
       setColonyAddress(await contract.getAddress());
@@ -118,7 +138,7 @@ export default function CreateColony() {
               <input
                 style={{ ...S.input, opacity: step === "deploying" ? 0.5 : 1 }}
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="e.g. Turing Campus"
                 maxLength={64}
                 disabled={step === "deploying"}
@@ -128,6 +148,29 @@ export default function CreateColony() {
                   slug: <span style={{ color: T2 }}>{slug}</span>
                   &nbsp;·&nbsp;
                   url: <span style={{ color: T2 }}>app.zpc.finance/colony/{slug}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Ticker */}
+            <div style={S.section}>
+              <label style={S.label}>Token ticker (1–5 letters)</label>
+              <input
+                style={{ ...S.input, opacity: step === "deploying" ? 0.5 : 1 }}
+                value={ticker}
+                onChange={handleTickerChange}
+                placeholder="e.g. TC"
+                maxLength={5}
+                disabled={step === "deploying"}
+              />
+              {ticker.trim().length >= 1 && (
+                <div style={{ fontSize: 10, color: T3, marginTop: 6 }}>
+                  tokens:&nbsp;
+                  <span style={{ color: T2 }}>S-{ticker}</span>
+                  &nbsp;·&nbsp;
+                  <span style={{ color: T2 }}>V-{ticker}</span>
+                  &nbsp;·&nbsp;
+                  <span style={{ color: T2 }}>G-{ticker}</span>
                 </div>
               )}
             </div>
@@ -207,6 +250,8 @@ export default function CreateColony() {
             </div>
 
             <Row label="Colony name"    value={name} />
+            <Row label="Ticker"         value={ticker} />
+            <Row label="Tokens"         value={`S-${ticker} · V-${ticker} · G-${ticker}`} />
             <Row label="Slug"           value={slug} />
             <Row label="Contract"       value={`${colonyAddress?.slice(0,10)}…${colonyAddress?.slice(-8)}`} mono />
             <Row label="Network"        value="Base Sepolia" />
