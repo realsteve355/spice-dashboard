@@ -29,6 +29,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-08 | As a citizen, I want to update my inheritance designation at any time | P2 | ~ |
 | C-09 | As a citizen of multiple colonies, I want to switch between colony dashboards | P1 | ✓ |
 | C-30 | As a citizen, I want to see my name, G-token ID, and wallet address prominently on the dashboard so I know which account I am using | P1 | ✓ |
+| C-31 | As a citizen, I want to see all A-tokens and L-tokens registered to my wallet in one place | P2 | — |
 
 *C-06–C-08: Profile page UI exists; inheritance logic is display-only, not on-chain.*
 
@@ -130,16 +131,17 @@ to V-tokens at month end, and distributes dividends to equity holders.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-22 | As a company owner, I want to register a physical asset above the threshold | P2 | — |
-| F-23 | As a company owner, I want to file a Harberger surface land claim | P2 | — |
-| F-24 | As a company owner, I want to update my declared land value at any time | P2 | — |
-| F-25 | As a company owner, I want to see my monthly Harberger stewardship fee | P2 | — |
-| F-26 | As a company owner, I want a notification if someone initiates a forced land purchase | P3 | — |
+| F-22 | As a company owner, I want to register a physical asset above the threshold so it is on-chain verifiable | P2 | — |
+| F-23 | As a company owner, I want to file a Harberger surface land claim by declaring a V-token value and paying the first epoch's stewardship fee | P2 | — |
+| F-24 | As a company owner, I want to update my declared land value at any time to adjust the force-purchase price | P2 | — |
+| F-25 | As a company owner, I want to see my outstanding stewardship fee per land parcel so I can pay before falling into arrears | P2 | — |
+| F-26 | As a company owner, I want a notification when another citizen force-purchases one of my land parcels | P3 | — |
 
 *F-08: Auto-conversion is a smart contract concern; UI shows estimated projection only.*
 *F-11: Dividend distribution UI is display-only; on-chain distribution not yet wired.*
 *F-15: Share listing (sell side) built; buy side not yet implemented.*
 *F-17–F-21: Contracts tab UI is built; no on-chain contract; display-only mock.*
+*F-22–F-26: AssetRegistry.sol is written and ready to deploy; no UI built yet.*
 
 ---
 
@@ -232,14 +234,62 @@ A citizen deploying a new colony.
 
 ---
 
+## Role 7 — Asset Owner
+
+Any citizen or company wallet that has registered a physical asset (A-token) or
+claimed surface land (L-token) via the AssetRegistry contract. Both assets are
+ERC-721 tokens; A-tokens transfer freely between owners, L-tokens change hands
+only via force-purchase at the declared Harberger price.
+
+### Physical Assets (A-tokens)
+
+Registration is required when: declared S-equivalent value > 500 S, weight > 50 kg,
+or the asset has autonomous AI capability. Below those thresholds, possession
+implies ownership with no on-chain record needed.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| A-01 | As a citizen, I want to register a physical asset (robot, vehicle, AI hardware) on-chain so that ownership is verifiable by any party | P2 | — |
+| A-02 | As an asset owner, I want to transfer an A-token to another citizen or company wallet so that ownership changes are recorded on-chain | P2 | — |
+| A-03 | As any citizen, I want to browse the public asset registry and see all registered assets, their owners, declared values, and weight | P2 | — |
+| A-04 | As an asset owner, I want to see all A-tokens registered to my wallet with their details on a single page | P2 | — |
+
+*A-01: threshold check: valueSTokens > 500 × 10^18 OR weightKg > 50 OR hasAutonomousAI. Below threshold, no registration required.*
+*A-02: uses AssetRegistry.transferAsset(tokenId, to) — standard ERC-721 transferFrom is blocked.*
+*A-01–A-04: AssetRegistry.sol written; not yet deployed; no UI built.*
+
+### Harberger Land (L-tokens)
+
+Surface land operates under Harberger taxation. The owner always has a publicly
+declared price; anyone may force-purchase at that price at any time. The stewardship
+fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasury.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| A-05 | As a citizen, I want to claim an unclaimed surface parcel by declaring a V-token value and paying the first epoch's stewardship fee | P2 | — |
+| A-06 | As a land owner, I want to update my declared value at any time, which also updates the force-purchase price and future fee amount | P2 | — |
+| A-07 | As a land owner, I want to see my outstanding stewardship fees and pay them in V-tokens before accruing more epochs of arrears | P2 | — |
+| A-08 | As any citizen, I want to browse all land parcels with their declared values so I can identify land available for force-purchase | P2 | — |
+| A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the current owner cannot refuse | P2 | — |
+| A-10 | As a land owner, I want to see a warning on my dashboard when I have unpaid stewardship epochs outstanding | P2 | — |
+| A-11 | As a land owner, I want to see the ownership and valuation history of my parcel (LandPurchased, LandValueUpdated events) | P3 | — |
+
+*A-05: claimLand(name, description, declaredValueV, currentEpoch) — pulls first-epoch fee via ERC-20 transferFrom.*
+*A-06: updateLandValue — owner only; does not charge a fee at time of change.*
+*A-07: paystewardship(tokenId, currentEpoch) — fee = 0.5% × declaredValueV × epochsDue.*
+*A-09: purchaseLand(tokenId) — buyer pays declaredValueV in V-tokens; NFT transfers immediately.*
+*A-05–A-11: AssetRegistry.sol written; not yet deployed; no UI built.*
+
+---
+
 ## Status Summary
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 42 | 47% |
-| ~ Partial / UI mock | 28 | 31% |
-| — Not built | 20 | 22% |
-| **Total** | **90** | |
+| ✓ Done (on-chain) | 42 | 41% |
+| ~ Partial / UI mock | 28 | 27% |
+| — Not built | 32 | 31% |
+| **Total** | **102** | |
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -261,6 +311,8 @@ A citizen deploying a new colony.
 | MCC services CRUD | MCCServices contract | ✓ Live |
 | Governance proposals + voting | Governance contract | ✓ Live |
 | Company registration + equity | CompanyRegistry contract | ✓ Live |
+| Asset registration (A-tokens) | AssetRegistry.registerAsset() | Not deployed |
+| Harberger land claims (L-tokens) | AssetRegistry.claimLand() | Not deployed |
 | MCC revenue / citizen billing | — | Mock only |
 | Intra-month contracts | — | Mock only |
 | Guardian management | — | Mock only |
@@ -276,5 +328,5 @@ A citizen deploying a new colony.
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v3*
+*SPICE Colony · User Stories & Requirements Spec · v4*
 *Last updated: April 2026*

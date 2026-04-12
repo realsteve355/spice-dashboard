@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { ethers } from "ethers";
 import { SPICE_PARAMS, LEVEL_COLORS, LEVEL_LABELS } from "../data/spice-params";
+import { COLONIES, BASE_SEPOLIA_RPC, COLONY_APP_HOST } from "../data/colonies";
 
 const F    = "'IBM Plex Mono', monospace";
 const BG0  = "#0a0e1a";
@@ -144,12 +146,49 @@ const CIRCLE_D = 162; // diameter of centre circle
 
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
+  // colonyData: { [id]: { name, citizens, epoch } | null }
+  // undefined = still loading, null = failed
+  const [colonyData, setColonyData] = useState({});
 
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem("spice_level_cache"));
       if (s && Date.now() - s.timestamp < 24 * 60 * 60 * 1000) setCachedLevel(s.level);
     } catch {}
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const COLONY_ABI = [
+      "function colonyName() view returns (string)",
+      "function citizenCount() view returns (uint256)",
+      "function sToken() view returns (address)",
+    ];
+    const STOKEN_ABI = ["function currentEpoch() view returns (uint256)"];
+
+    async function load() {
+      const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
+      const results = await Promise.all(
+        COLONIES.map(async (c) => {
+          try {
+            const contract = new ethers.Contract(c.address, COLONY_ABI, provider);
+            const [name, count, sTokenAddr] = await Promise.all([
+              contract.colonyName(),
+              contract.citizenCount(),
+              contract.sToken(),
+            ]);
+            const sToken = new ethers.Contract(sTokenAddr, STOKEN_ABI, provider);
+            const epoch = await sToken.currentEpoch();
+            return [c.id, { name, citizens: Number(count), epoch: Number(epoch) }];
+          } catch {
+            return [c.id, null];
+          }
+        })
+      );
+      if (!cancelled) setColonyData(Object.fromEntries(results));
+    }
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   const level      = cachedLevel ?? M.currentLevel;
@@ -213,44 +252,61 @@ export default function Home() {
           color="#4488ff"
         />
 
-        {/* BOTTOM RIGHT: Coin */}
-        <Link to="/coin" style={{ display:"block", height:"100%", textDecoration:"none", borderRadius:6, overflow:"hidden" }}>
-          <div style={{
-            height:"100%", background:BG2, borderRadius:6,
-            borderTop:`3px solid ${GOLD}`, padding:"20px 22px",
-            display:"flex", flexDirection:"column", boxSizing:"border-box",
-          }}>
-            <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-              ZPC Token System
-            </div>
-            <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:14 }}>
-              COIN
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, flex:1 }}>
-              {[
-                { sym:"S", name:"Spice",  color:"#ef4444", sub:"everyday currency" },
-                { sym:"V", name:"Value",  color:GOLD,      sub:"permanent savings" },
-                { sym:"A", name:"Asset",  color:"#3dffa0", sub:"colony property"   },
-                { sym:"◈", name:"Vote",   color:"#4488ff", sub:"governance share"  },
-              ].map(t => (
-                <div key={t.name} style={{
-                  background:`${t.color}0e`,
-                  border:`1px solid ${t.color}40`,
-                  borderRadius:4, padding:"10px 6px",
-                  display:"flex", flexDirection:"column", alignItems:"center", gap:3,
-                }}>
-                  <div style={{ fontSize:22, fontWeight:700, color:t.color, fontFamily:F, lineHeight:1 }}>{t.sym}</div>
-                  <div style={{ fontSize:8, fontWeight:700, color:T1, letterSpacing:"0.1em" }}>{t.name.toUpperCase()}</div>
-                  <div style={{ fontSize:6.5, color:T3, textAlign:"center" }}>{t.sub}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ fontSize:9, color:T2, marginTop:10, lineHeight:1.5 }}>
-              Token framework — in development
-            </div>
-            <div style={{ fontSize:8, color:T3, marginTop:4 }}>→ Connect wallet</div>
+        {/* BOTTOM RIGHT: Colony Directory */}
+        <div style={{
+          height:"100%", background:BG2, borderRadius:6,
+          borderTop:`3px solid ${GOLD}`, padding:"20px 22px",
+          display:"flex", flexDirection:"column", boxSizing:"border-box",
+        }}>
+          <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
+            Colony Directory
           </div>
-        </Link>
+          <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:14 }}>
+            ZPC COLONIES
+          </div>
+          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, overflowY:"auto" }}>
+            {COLONIES.map(c => {
+              const d = colonyData[c.id];
+              return (
+                <a
+                  key={c.id}
+                  href={`${COLONY_APP_HOST}/colony/${c.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ textDecoration:"none" }}
+                >
+                  <div style={{
+                    background:`${GOLD}0e`,
+                    border:`1px solid ${GOLD}40`,
+                    borderRadius:4, padding:"12px 14px",
+                    cursor:"pointer",
+                  }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:T1, marginBottom:5 }}>
+                      {d ? d.name : c.slug}
+                    </div>
+                    <div style={{ fontSize:8, color:T2 }}>
+                      {d === undefined
+                        ? "loading…"
+                        : d === null
+                        ? "unavailable"
+                        : `${d.citizens} citizen${d.citizens !== 1 ? "s" : ""} · epoch ${d.epoch}`
+                      }
+                    </div>
+                    <div style={{ fontSize:8, color:T3, marginTop:6 }}>→ Enter colony</div>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+          <a
+            href={COLONY_APP_HOST}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize:8, color:T3, marginTop:12, textDecoration:"none" }}
+          >
+            app.zpc.finance ↗
+          </a>
+        </div>
 
       </div>
 
