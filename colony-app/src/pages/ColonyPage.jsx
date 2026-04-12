@@ -62,8 +62,18 @@ export default function ColonyPage() {
   const isMcc      = isMccOf(slug)
 
   // Fall back to localStorage if URL param is absent (e.g. after in-app navigation)
-  const storedAddr = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]?.address
+  const stored0     = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+  const storedEntry = stored0[slug]
+  const storedAddr  = storedEntry?.address
   const resolvedAddr = addressParam || storedAddr
+
+  // Extra addresses passed in URL from CreateColony
+  const mccBillingParam  = searchParams.get('mccBilling')
+  const mccServicesParam = searchParams.get('mccServices')
+
+  // Start in loading state if we have an address to fetch — avoids "not found" flash
+  const [chainColony, setChainColony] = useState(null)
+  const [chainLoading, setChainLoading] = useState(!mockColony && !!resolvedAddr)
 
   const [showConstitution, setShowConstitution] = useState(false)
   const [joining, setJoining]     = useState(false)
@@ -72,8 +82,6 @@ export default function ColonyPage() {
   const [joined, setJoined]       = useState(false)
   const [txPending, setTxPending] = useState(false)
   const [txError, setTxError]     = useState(null)
-  const [chainColony, setChainColony] = useState(null)
-  const [chainLoading, setChainLoading] = useState(false)
 
   // If not in mock list but we have an address, load from chain
   useEffect(() => {
@@ -94,10 +102,18 @@ export default function ColonyPage() {
           address: resolvedAddr,
         }
         setChainColony(info)
-        // Persist so other pages can find this colony without the URL param
+        // Persist to app.zpc.finance localStorage, including any extra addresses from URL
         const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-        stored[slug] = { address: resolvedAddr, name }
+        stored[slug] = {
+          ...(stored[slug] || {}),
+          address: resolvedAddr,
+          name,
+          ...(mccBillingParam  ? { mccBilling:  mccBillingParam  } : {}),
+          ...(mccServicesParam ? { mccServices: mccServicesParam } : {}),
+        }
         localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
+        // Trigger App.jsx to poll this colony immediately
+        refresh(0)
       })
       .catch(() => setChainColony(null))
       .finally(() => setChainLoading(false))

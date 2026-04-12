@@ -271,6 +271,16 @@ export default function Dashboard() {
     </Layout>
   )
 
+  // Show loading while on-chain data is being fetched for this colony
+  const isUserColony = !!JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]
+  if (onChainLoading || (isUserColony && !chain)) return (
+    <Layout title="Dashboard" back={`/colony/${slug}`}>
+      <div style={{ padding: 32, textAlign: 'center', color: C.faint, fontSize: 12 }}>
+        Loading colony data…
+      </div>
+    </Layout>
+  )
+
   if (!colony || !data || !isCitizen) return (
     <Layout title="Dashboard" back={`/colony/${slug}`}>
       <div style={{ padding: 32, textAlign: 'center', color: C.faint, fontSize: 12 }}>
