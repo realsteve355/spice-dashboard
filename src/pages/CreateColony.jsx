@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ethers } from "ethers";
 import {
   COLONY_ABI, COLONY_BYTECODE,
+  MCC_TREASURY_ABI, MCC_TREASURY_BYTECODE,
   MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE,
   MCC_BILLING_ABI, MCC_BILLING_BYTECODE,
 } from "../data/colony-artifact";
@@ -44,6 +45,7 @@ export default function CreateColony() {
   const [step,          setStep]          = useState("form"); // form | deploying | success
   const [txHash,           setTxHash]           = useState(null);
   const [colonyAddress,    setColonyAddress]    = useState(null);
+  const [mccTreasuryAddr,  setMccTreasuryAddr]  = useState(null);
   const [mccServicesAddr,  setMccServicesAddr]  = useState(null);
   const [mccBillingAddr,   setMccBillingAddr]   = useState(null);
   const [deployStatus,     setDeployStatus]     = useState("");
@@ -109,16 +111,24 @@ export default function CreateColony() {
       const colonyAddr = await colony.getAddress();
       setColonyAddress(colonyAddr);
 
-      // 2/3 MCCServices
-      setDeployStatus("Deploying MCCServices… (2/3)");
+      // 2/4 MCCTreasury
+      setDeployStatus("Deploying MCCTreasury… (2/4)");
+      const treasuryFactory = new ethers.ContractFactory(MCC_TREASURY_ABI, MCC_TREASURY_BYTECODE, signer);
+      const treasury = await treasuryFactory.deploy(colonyAddr);
+      await treasury.waitForDeployment();
+      const treasuryAddr = await treasury.getAddress();
+      setMccTreasuryAddr(treasuryAddr);
+
+      // 3/4 MCCServices
+      setDeployStatus("Deploying MCCServices… (3/4)");
       const servicesFactory = new ethers.ContractFactory(MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE, signer);
       const services = await servicesFactory.deploy(colonyAddr);
       await services.waitForDeployment();
       const servicesAddr = await services.getAddress();
       setMccServicesAddr(servicesAddr);
 
-      // 3/3 MCCBilling
-      setDeployStatus("Deploying MCCBilling… (3/3)");
+      // 4/4 MCCBilling
+      setDeployStatus("Deploying MCCBilling… (4/4)");
       const billingFactory = new ethers.ContractFactory(MCC_BILLING_ABI, MCC_BILLING_BYTECODE, signer);
       const billing = await billingFactory.deploy(colonyAddr);
       await billing.waitForDeployment();
@@ -130,6 +140,7 @@ export default function CreateColony() {
       stored[toSlug(name.trim())] = {
         ...(stored[toSlug(name.trim())] || {}),
         address:     colonyAddr,
+        mccTreasury: treasuryAddr,
         mccServices: servicesAddr,
         mccBilling:  billingAddr,
         name:        name.trim(),
@@ -293,6 +304,7 @@ export default function CreateColony() {
             <Row label="Tokens"         value={`S-${ticker} · V-${ticker} · G-${ticker}`} />
             <Row label="Slug"           value={slug} />
             <Row label="Colony"         value={`${colonyAddress?.slice(0,10)}…${colonyAddress?.slice(-8)}`} mono />
+            <Row label="MCCTreasury"    value={`${mccTreasuryAddr?.slice(0,10)}…${mccTreasuryAddr?.slice(-8)}`} mono />
             <Row label="MCCServices"    value={`${mccServicesAddr?.slice(0,10)}…${mccServicesAddr?.slice(-8)}`} mono />
             <Row label="MCCBilling"     value={`${mccBillingAddr?.slice(0,10)}…${mccBillingAddr?.slice(-8)}`} mono />
             <Row label="Network"        value="Base Sepolia" />
@@ -301,7 +313,7 @@ export default function CreateColony() {
             <div style={{ borderTop: `1px solid ${BD}`, margin: "16px 0" }} />
 
             <a
-              href={`${COLONY_APP_HOST}/colony/${slug}?address=${colonyAddress}&mccBilling=${mccBillingAddr}&mccServices=${mccServicesAddr}`}
+              href={`${COLONY_APP_HOST}/colony/${slug}?address=${colonyAddress}&mccTreasury=${mccTreasuryAddr}&mccBilling=${mccBillingAddr}&mccServices=${mccServicesAddr}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ ...S.primaryBtn, textDecoration: "none", display: "block", textAlign: "center" }}
@@ -329,7 +341,7 @@ export default function CreateColony() {
               fontSize: 10, color: T2, fontFamily: "monospace", lineHeight: 1.7,
               wordBreak: "break-all",
             }}>
-              {`{ id: "${slug}", slug: "${slug}", address: "${colonyAddress}", mccServices: "${mccServicesAddr}", mccBilling: "${mccBillingAddr}" }`}
+              {`{ id: "${slug}", slug: "${slug}", address: "${colonyAddress}", mccTreasury: "${mccTreasuryAddr}", mccServices: "${mccServicesAddr}", mccBilling: "${mccBillingAddr}" }`}
             </div>
             <div style={{ fontSize: 9, color: T3, marginTop: 6 }}>
               Add this entry to <span style={{ color: T2 }}>src/data/colonies.js</span> to appear in the homepage directory.
