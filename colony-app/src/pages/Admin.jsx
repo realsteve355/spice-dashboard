@@ -38,6 +38,9 @@ const COLONY_ABI_ADMIN = [
   "function citizens(uint256) view returns (address)",
   "function citizenName(address) view returns (string)",
   "function founder() view returns (address)",
+  "function pendingProtocolFee() view returns (uint256)",
+  "function settleProtocol() external payable",
+  "function registry() view returns (address)",
 ]
 
 const RPC = 'https://sepolia.base.org'
@@ -101,6 +104,12 @@ export default function Admin() {
   const [withdrawError,   setWithdrawError]   = useState(null)
   const [withdrawAmt,     setWithdrawAmt]     = useState('')
   const [withdrawTo,      setWithdrawTo]      = useState('')
+
+  // ── Protocol fee state ──
+  const [protocolFeeWei,  setProtocolFeeWei]  = useState(null)  // BigInt or null
+  const [settlePending,   setSettlePending]   = useState(false)
+  const [settleError,     setSettleError]     = useState(null)
+  const [settleDone,      setSettleDone]      = useState(false)
 
   // ── Overview state ──
   const [citizenCount, setCitizenCount] = useState(null)
@@ -174,6 +183,28 @@ export default function Admin() {
       setMccRoles(roles)
     } catch (e) { console.warn('Failed to load treasury', e) }
     setRolesLoading(false)
+
+    // Load protocol infrastructure fee from colony contract
+    if (colonyAddr) {
+      try {
+        const colony = new ethers.Contract(colonyAddr, COLONY_ABI_ADMIN, prov)
+        const feeWei = await colony.pendingProtocolFee()
+        setProtocolFeeWei(feeWei)
+      } catch { /* colony may be old and not have this method */ }
+    }
+  }
+
+  async function settleProtocol() {
+    if (!colonyAddr || !signer || protocolFeeWei === null) return
+    setSettlePending(true); setSettleError(null); setSettleDone(false)
+    try {
+      const colony = new ethers.Contract(colonyAddr, COLONY_ABI_ADMIN, signer)
+      const tx = await colony.settleProtocol({ value: protocolFeeWei })
+      await tx.wait()
+      setSettleDone(true)
+      setProtocolFeeWei(0n)
+    } catch (e) { setSettleError(e?.reason || e?.shortMessage || 'Transaction failed') }
+    setSettlePending(false)
   }
 
   useEffect(() => { if (tab === 'services') loadServices() }, [tab, mccServicesAddr, provider])
@@ -589,6 +620,33 @@ export default function Admin() {
                       </button>
                     </div>
                     {withdrawError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{withdrawError}</div>}
+                  </div>
+                )}
+
+                {/* Infrastructure fee */}
+                {protocolFeeWei !== null && (
+                  <div style={{ ...card, marginBottom: 10, borderColor: protocolFeeWei > 0n ? C.gold : C.border }}>
+                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>INFRASTRUCTURE FEE</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 500, color: protocolFeeWei > 0n ? C.gold : C.faint }}>
+                          {ethers.formatEther(protocolFeeWei)} <span style={{ fontSize: 11 }}>ETH</span>
+                        </div>
+                        <div style={{ fontSize: 9, color: C.faint, marginTop: 3 }}>
+                          accrued from send() transactions · paid monthly to SPICE Protocol
+                        </div>
+                      </div>
+                      {protocolFeeWei > 0n && (
+                        <button
+                          onClick={settleProtocol}
+                          disabled={settlePending || settleDone}
+                          style={{ ...smallBtn(C.gold), opacity: settlePending || settleDone ? 0.6 : 1, flexShrink: 0, marginLeft: 12 }}
+                        >
+                          {settlePending ? '…' : settleDone ? 'Settled ✓' : 'Settle →'}
+                        </button>
+                      )}
+                    </div>
+                    {settleError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{settleError}</div>}
                   </div>
                 )}
 

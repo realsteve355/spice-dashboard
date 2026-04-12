@@ -46,8 +46,8 @@ contract MCCTreasury {
     }
 
     constructor(address _colony) {
-        colony = Colony(_colony);
-        sToken = address(Colony(_colony).sToken());
+        colony = Colony(payable(_colony));
+        sToken = address(Colony(payable(_colony)).sToken());
     }
 
     // ── Role management ─────────────────────────────────────────────────────

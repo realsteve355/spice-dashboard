@@ -29,7 +29,7 @@ contract MCCBilling {
     event MonthReset();
 
     constructor(address colonyAddr) {
-        colony = Colony(colonyAddr);
+        colony = Colony(payable(colonyAddr));
     }
 
     modifier onlyFounder() {

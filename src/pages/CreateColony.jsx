@@ -5,7 +5,11 @@ import {
   MCC_TREASURY_ABI, MCC_TREASURY_BYTECODE,
   MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE,
   MCC_BILLING_ABI, MCC_BILLING_BYTECODE,
+  COLONY_REGISTRY_ABI,
 } from "../data/colony-artifact";
+
+// Deployed ColonyRegistry on Base Sepolia — address(0) = registry not yet deployed
+const COLONY_REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const F    = "'IBM Plex Mono', monospace";
 const BG0  = "#0a0e1a";
@@ -102,38 +106,52 @@ export default function CreateColony() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
 
-      // 1/3 Colony
-      setDeployStatus("Deploying Colony… (1/3)");
+      const hasRegistry = COLONY_REGISTRY_ADDRESS !== "0x0000000000000000000000000000000000000000";
+      const totalSteps  = hasRegistry ? 5 : 4;
+
+      // 1/N Colony
+      setDeployStatus(`Deploying Colony… (1/${totalSteps})`);
       const colonyFactory = new ethers.ContractFactory(COLONY_ABI, COLONY_BYTECODE, signer);
-      const colony = await colonyFactory.deploy(name.trim(), ticker.trim());
+      const colony = await colonyFactory.deploy(
+        name.trim(), ticker.trim(),
+        hasRegistry ? COLONY_REGISTRY_ADDRESS : ethers.ZeroAddress
+      );
       setTxHash(colony.deploymentTransaction().hash);
       await colony.waitForDeployment();
       const colonyAddr = await colony.getAddress();
       setColonyAddress(colonyAddr);
 
-      // 2/4 MCCTreasury
-      setDeployStatus("Deploying MCCTreasury… (2/4)");
+      // 2/N MCCTreasury
+      setDeployStatus(`Deploying MCCTreasury… (2/${totalSteps})`);
       const treasuryFactory = new ethers.ContractFactory(MCC_TREASURY_ABI, MCC_TREASURY_BYTECODE, signer);
       const treasury = await treasuryFactory.deploy(colonyAddr);
       await treasury.waitForDeployment();
       const treasuryAddr = await treasury.getAddress();
       setMccTreasuryAddr(treasuryAddr);
 
-      // 3/4 MCCServices
-      setDeployStatus("Deploying MCCServices… (3/4)");
+      // 3/N MCCServices
+      setDeployStatus(`Deploying MCCServices… (3/${totalSteps})`);
       const servicesFactory = new ethers.ContractFactory(MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE, signer);
       const services = await servicesFactory.deploy(colonyAddr);
       await services.waitForDeployment();
       const servicesAddr = await services.getAddress();
       setMccServicesAddr(servicesAddr);
 
-      // 4/4 MCCBilling
-      setDeployStatus("Deploying MCCBilling… (4/4)");
+      // 4/N MCCBilling
+      setDeployStatus(`Deploying MCCBilling… (4/${totalSteps})`);
       const billingFactory = new ethers.ContractFactory(MCC_BILLING_ABI, MCC_BILLING_BYTECODE, signer);
       const billing = await billingFactory.deploy(colonyAddr);
       await billing.waitForDeployment();
       const billingAddr = await billing.getAddress();
       setMccBillingAddr(billingAddr);
+
+      // 5/5 Register with ColonyRegistry (if deployed)
+      if (hasRegistry) {
+        setDeployStatus(`Registering with ColonyRegistry… (5/${totalSteps})`);
+        const registry = new ethers.Contract(COLONY_REGISTRY_ADDRESS, COLONY_REGISTRY_ABI, signer);
+        const tx = await registry.register(colonyAddr, name.trim(), toSlug(name.trim()));
+        await tx.wait();
+      }
 
       // Persist all addresses to localStorage
       const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}');

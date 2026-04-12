@@ -42,7 +42,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-12 | As a citizen, I want to see a breakdown of my spending this month | P1 | ✓ |
 | C-13 | As a citizen, I want to send S-tokens to any address with an optional note | P1 | ✓ |
 | C-13a | As a citizen (payer), I want to scan a merchant's QR code — which opens MetaMask directly — and confirm payment in one tap | P1 | ✓ |
-| C-13b | As a citizen, I want to pay my MCC services bill on-chain from the dashboard | P1 | ✓ |
+| C-13b | As a citizen, I want to pay my MCC services bill on-chain from the dashboard, with payment going to the MCC treasury (not the founder's personal wallet) | P1 | ✓ |
 | C-14 | As a citizen, I want to see my full on-chain transaction history (payments sent/received, UBI, savings, redeems) with dates and labels | P1 | ✓ |
 | C-15 | As a citizen, I want to see my projected MCC bill for the current month | P1 | ~ |
 | C-16 | As a citizen, I want a warning if my S-token balance will not cover my projected MCC bill | P2 | — |
@@ -175,9 +175,9 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-01 | As an MCC board member, I want to add a new service with name, billing basis, and price | P1 | ✓ |
 | M-02 | As an MCC board member, I want to edit an existing service price | P1 | ✓ |
 | M-03 | As an MCC board member, I want to remove a service | P1 | ✓ |
-| M-04 | As an MCC board member, I want to see total MCC revenue for the current month | P1 | ~ |
+| M-04 | As an MCC board member, I want to see total MCC revenue confirmed for the current month | P1 | ✓ |
 | M-05 | As an MCC board member, I want to see revenue broken down by service | P1 | ~ |
-| M-06 | As an MCC board member, I want to see each citizen's current month bill | P1 | ~ |
+| M-06 | As an MCC board member, I want to set and see each citizen's current month bill | P1 | ✓ |
 | M-07 | As an MCC board member, I want the Fisc to auto-deduct MCC bills at month end | P1 | ~ |
 
 ### Governance & Accountability
@@ -191,8 +191,23 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-12 | As an MCC board member, I want to see MCC V-token reserve and profit | P2 | — |
 | M-13 | As an MCC board member, I want to add or remove a board member (subject to G-token vote) | P3 | — |
 
+### MCC Treasury & Roles
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| M-14 | As a colony founder, I want the MCC to have its own on-chain treasury wallet, separate from my personal wallet, so that colony funds and personal funds are never mixed | P1 | ✓ |
+| M-15 | As MCC Chair, I want to grant the FD (Financial Director) role to another wallet address so that treasury operations can be delegated without giving away founder access | P1 | ✓ |
+| M-16 | As MCC Chair, I want to revoke an MCC role from any address at any time | P1 | ✓ |
+| M-17 | As MCC FD or Chair, I want to withdraw S-tokens from the treasury to a specified address with a reason recorded on-chain | P1 | ✓ |
+| M-18 | As MCC Chair, I want to see all current MCC board role-holders in one panel | P1 | ✓ |
+| M-19 | As MCC Chair, I want the founder to retain emergency Chair powers even if no explicit role is granted, so the colony cannot be locked out | P1 | ✓ |
+| M-20 | As MCC Chair, I want to replace the MCC Chair role via a G-token governance referendum so the founder is not permanent | P2 | — |
+
 *M-01–M-03: Fully on-chain via MCCServices contract.*
-*M-04–M-08: UI built; revenue/billing data is currently mock.*
+*M-04: Revenue MTD tracked on-chain via MCCBilling.totalRevenueMTD(); increments when Chair/FD confirms payment.*
+*M-06: Bills set and read on-chain via MCCBilling.setBill() / getBills().*
+*M-14–M-19: MCCTreasury contract deployed as part of 4-contract colony creation. Bill payments route to treasury address, not founder wallet.*
+*M-20: Requires governance referendum → future work.*
 
 ---
 
@@ -223,17 +238,55 @@ A citizen deploying a new colony.
 | N-01 | As a colony founder, I want to name my colony and generate a unique URL slug | P1 | ✓ |
 | N-02 | As a colony founder, I want to designate founding MCC board wallet addresses | P1 | ✓ |
 | N-03 | As a colony founder, I want to review and accept the fixed founding constitution | P1 | ✓ |
-| N-04 | As a colony founder, I want to deploy the Fisc contracts to the blockchain in one transaction | P1 | ✓ |
+| N-04 | As a colony founder, I want to deploy all colony contracts (Colony, MCCTreasury, MCCServices, MCCBilling) in a single guided flow | P1 | ✓ |
 | N-05 | As a colony founder, I want to receive the first G-token and start receiving UBI from Month 1 | P1 | ✓ |
 | N-06 | As a colony founder, I want a shareable invite URL and QR code to recruit citizens | P1 | ~ |
 | N-07 | As a colony founder, I want to see my colony appear in the public directory immediately | P1 | ~ |
 | N-08 | As a colony founder, I want to set an optional colony description and logo | P2 | ~ |
 | N-09 | As a colony founder, I want to create my colony from zpc.finance (the platform layer) rather than from inside the colony app | P1 | ✓ |
 
-*N-04: Deploy wizard available on both zpc.finance/create-colony (primary) and app.zpc.finance/create (legacy, to be removed).*
+| N-10 | As a colony founder, I want my colony to appear automatically in the global directory for all users without any manual step by the protocol team | P1 | ~ |
+| N-11 | As a colony founder, I want the deploy flow to register my colony with the ColonyRegistry contract so it is publicly discoverable | P1 | ~ |
+
+*N-04: Deploy wizard on zpc.finance/create deploys Colony + MCCTreasury + MCCServices + MCCBilling (4 txs) then registers with ColonyRegistry (5th tx, once registry is deployed).*
 *N-06: Invite URL copyable; QR not yet generated.*
-*N-07: Colony directory on zpc.finance reads live on-chain data (citizenCount, epoch) via JsonRpcProvider. Still requires manual colonies.js update after each new deploy — auto-listing requires a ColonyRegistry contract.*
-*N-09: zpc.finance/create-colony — name input, MetaMask connect, deploy, success screen with colony URL and colonies.js entry to add.*
+*N-07: Directory reads from ColonyRegistry on-chain when deployed; falls back to contracts.json + localStorage.*
+*N-09: zpc.finance/create — name input, MetaMask connect, 4-contract deploy + registry register, success screen with colony URL.*
+*N-10: Requires ColonyRegistry to be deployed on Base Sepolia and address set in COLONY_REGISTRY_ADDRESS constant.*
+*N-11: CreateColony calls registry.register(colony, name, slug) as step 5 of 5 after all 4 contracts deploy successfully.*
+
+---
+
+## Role 6b — Protocol (SPICE Infrastructure)
+
+The SPICE Protocol is the deployer of the ColonyRegistry contract and recipient
+of infrastructure fees from all colonies. Fees are denominated in ETH, accumulate
+per colony, and are settled monthly by each MCC Fisc — appearing as a line item
+on the colony's monthly infrastructure bill rather than a visible per-transaction skim.
+
+### Colony Registry
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| P-01 | As the protocol, I want a single on-chain registry that records every deployed colony (address, name, slug, founder, timestamp) so the directory is always accurate | P1 | ~ |
+| P-02 | As the protocol, I want to update the fee-per-transaction rate at any time without redeploying any colony contract | P1 | ~ |
+| P-03 | As the protocol, I want to update the protocol treasury address without touching any colony contract | P1 | ~ |
+| P-04 | As the protocol, I want only the registry owner to be able to change fee rates and treasury address | P1 | ~ |
+
+### Infrastructure Fee
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| P-05 | As the protocol, I want each Colony.send() call to silently accrue a small ETH amount to pendingProtocolFee so the colony owes the protocol without any citizen seeing a per-transaction charge | P1 | ✓ |
+| P-06 | As the MCC Fisc, I want to see the accumulated infrastructure fee in the Admin billing panel as a line item, separate from citizen bills | P1 | ✓ |
+| P-07 | As the MCC Fisc, I want to settle the protocol fee on-chain in one click by sending ETH to the protocol treasury | P1 | ✓ |
+| P-08 | As the protocol, I want each colony to have an independent pendingProtocolFee counter, so large colonies pay more than small ones | P1 | ✓ |
+| P-09 | As the protocol, I want fee settlements to be recorded as on-chain events (ProtocolFeeSettled) for auditability | P1 | ✓ |
+| P-10 | As the protocol, I want colonies deployed before the registry existed (no registry address) to skip fee accrual gracefully | P1 | ✓ |
+
+*P-01–P-04: ColonyRegistry.sol deployed once by protocol owner. Not yet live on Base Sepolia — COLONY_REGISTRY_ADDRESS placeholder in CreateColony.jsx.*
+*P-05–P-10: Colony.send() increments pendingProtocolFee += registry.feePerTx() (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
+*Fee model rationale: ETH-denominated (real-world value), monthly billing via MCC (not per-tx skim), MCC is accountable for payment — citizens see it as an infrastructure bill, not a tax on every send.*
 
 ---
 
@@ -289,10 +342,10 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 43 | 42% |
-| ~ Partial / UI mock | 28 | 27% |
-| — Not built | 32 | 31% |
-| **Total** | **103** | |
+| ✓ Done (on-chain) | 56 | 45% |
+| ~ Partial / UI mock | 29 | 23% |
+| — Not built | 39 | 32% |
+| **Total** | **124** | |
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -308,16 +361,24 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | S → V conversion | Colony.saveToV() | ✓ Live |
 | V → S redemption | Colony.redeemV() | ✓ Live |
 | Send S-tokens (with note) | Colony.send() | ✓ Live |
-| Pay MCC bill | Colony.send() to founder | ✓ Live |
+| Pay MCC bill | Colony.send() to MCCTreasury | ✓ Live |
 | QR payment request (MetaMask deep link) | — (URL params) | ✓ Live |
 | Transaction history | Event log queries | ✓ Live |
 | Claim UBI | Colony.claimUbi() | ✓ Live |
 | MCC services CRUD | MCCServices contract | ✓ Live |
+| MCC Treasury (separate wallet) | MCCTreasury contract | ✓ Live |
+| MCC roles (FD / Chair) + withdrawal | MCCTreasury.setRole() / withdraw() | ✓ Live |
+| MCC billing — set & confirm bills | MCCBilling.setBill() / recordPayment() | ✓ Live |
+| MCC revenue MTD | MCCBilling.totalRevenueMTD() | ✓ Live |
 | Governance proposals + voting | Governance contract | ✓ Live |
 | Company registration + equity | CompanyRegistry contract | ✓ Live |
 | Asset registration (A-tokens) | AssetRegistry.registerAsset() | Not deployed |
 | Harberger land claims (L-tokens) | AssetRegistry.claimLand() | Not deployed |
-| MCC revenue / citizen billing | — | Mock only |
+| Protocol infrastructure fee accrual | Colony.pendingProtocolFee + send() | ✓ Live (contracts compiled; new colonies only) |
+| Protocol fee settlement | Colony.settleProtocol() payable | ✓ Live (contracts compiled; new colonies only) |
+| Colony auto-registration | ColonyRegistry.register() | ~ Contract written; not yet deployed |
+| Colony directory from registry | ColonyRegistry.getAll() | ~ Contract written; not yet deployed |
+| MCC revenue by service | — | Mock only |
 | Intra-month contracts | — | Mock only |
 | Guardian management | — | Mock only |
 | Share trading (buy side) | — | Not built |
@@ -327,10 +388,12 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | # | Story | Notes |
 |---|-------|-------|
 | C-15 | Forward MCC bill projection | Shows MTD actual; forward estimate needs usage-rate model |
-| N-07 | Auto-list deployed colonies in directory | Directory is static mock |
-| M-04–M-06 | MCC revenue and billing data | Needs on-chain billing aggregation |
+| M-05 | MCC revenue by service | MCCBilling tracks total only; per-service breakdown needs service-level billing |
+| M-07 | Auto-deduct MCC bills at month end | Manual confirm flow currently; needs epoch-triggered auto-collection |
+| M-20 | Replace MCC Chair via referendum | MCCTreasury roles currently founder-controlled; governance vote not yet wired |
+| N-07 / P-01 | Auto-list deployed colonies in directory | ColonyRegistry.sol written + compiled; deploy with `npx hardhat run scripts/deployRegistry.js --network baseSepolia`, then set COLONY_REGISTRY_ADDRESS in CreateColony.jsx and Directory.jsx |
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v5*
+*SPICE Colony · User Stories & Requirements Spec · v7*
 *Last updated: April 2026*

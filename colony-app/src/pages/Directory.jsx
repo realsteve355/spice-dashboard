@@ -1,41 +1,66 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
-import { MOCK_COLONIES } from '../data/mock'
 import CONTRACTS from '../data/contracts.json'
 import { useWallet } from '../App'
 import { C } from '../theme'
+
+// ColonyRegistry deployed on Base Sepolia
+// Set to address(0) until registry is deployed — falls back to localStorage + contracts.json
+const REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000"
+const REGISTRY_ABI = [
+  "function getAll() view returns (address[])",
+  "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
+  "function count() view returns (uint256)",
+]
+const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
+
+const REGISTRY_DEPLOYED = REGISTRY_ADDRESS !== "0x0000000000000000000000000000000000000000"
 
 export default function Directory() {
   const navigate = useNavigate()
   const { isConnected, isCitizenOf, onChain } = useWallet()
 
-  // Real colonies from contracts.json (on-chain addresses known)
-  const contractColonies = Object.entries(CONTRACTS.colonies).map(([id, cfg]) => {
-    const mock = MOCK_COLONIES.find(c => c.id === id)
-    return {
-      id,
-      name:         cfg.name || mock?.name || id,
-      description:  mock?.description || '',
-      founded:      mock?.founded || null,
-      citizenCount: mock?.citizenCount || null,
-      mcc:          mock?.mcc || { name: 'MCC' },
+  const [registryColonies, setRegistryColonies] = useState(null)  // null = loading, [] = loaded
+  const [registryError,    setRegistryError]    = useState(null)
+
+  // Read all colonies from ColonyRegistry if deployed
+  useEffect(() => {
+    if (!REGISTRY_DEPLOYED) {
+      setRegistryColonies([])
+      return
     }
-  })
+    const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC)
+    const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider)
+    registry.getAll()
+      .then(async (addresses) => {
+        const entries = await Promise.all(
+          addresses.map(addr => registry.entries(addr))
+        )
+        setRegistryColonies(entries.map(e => ({
+          id:          e.slug,
+          name:        e.name,
+          address:     e.colony,
+          founder:     e.founder,
+          description: '',
+          founded:     null,
+          citizenCount: null,
+          mcc:         { name: 'MCC' },
+          source:      'registry',
+        })))
+      })
+      .catch(err => {
+        console.warn('ColonyRegistry read failed:', err)
+        setRegistryError(true)
+        setRegistryColonies([])
+      })
+  }, [])
 
-  // User-deployed colonies from localStorage (not already in contracts.json)
-  const userStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-  const userColonies = Object.entries(userStored)
-    .filter(([id]) => !CONTRACTS.colonies[id])
-    .map(([id, info]) => ({
-      id,
-      name:         info.name || id,
-      description:  '',
-      founded:      null,
-      citizenCount: null,
-      mcc:          { name: 'Not yet configured' },
-    }))
+  // Build colony list: registry (if available) + contracts.json + localStorage fallback
+  const allColonies = buildColonyList(registryColonies)
 
-  const allColonies = [...contractColonies, ...userColonies]
+  const loading = REGISTRY_DEPLOYED && registryColonies === null
 
   return (
     <Layout title="SPICE Colony">
@@ -70,52 +95,64 @@ export default function Directory() {
         </button>
 
         {/* Colony list */}
-        <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
-          {allColonies.length} {allColonies.length === 1 ? 'COLONY' : 'COLONIES'}
-        </div>
-
-        {allColonies.map(colony => {
-          const isCitizen = isCitizenOf(colony.id)
-          const chain     = onChain?.[colony.id]
-          const count     = chain?.isCitizen !== undefined
-            ? null  // don't show mock count if we have chain data
-            : colony.citizenCount
-          return (
-            <div
-              key={colony.id}
-              onClick={() => navigate(`/colony/${colony.id}`)}
-              style={{
-                background: C.white, border: `1px solid ${isCitizen ? C.gold : C.border}`,
-                borderRadius: 8, padding: '16px', marginBottom: 10,
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{colony.name}</div>
-                {isCitizen && (
-                  <div style={{
-                    fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`,
-                    borderRadius: 10, padding: '2px 8px', letterSpacing: '0.06em', flexShrink: 0,
-                  }}>
-                    CITIZEN
-                  </div>
-                )}
-              </div>
-
-              <div style={{ fontSize: 11, color: C.faint, marginBottom: colony.description ? 8 : 0 }}>
-                {count !== null ? `${count} citizens · ` : ''}
-                {colony.founded ? `Est. ${fmtDate(colony.founded)} · ` : ''}
-                {colony.mcc.name}
-              </div>
-
-              {colony.description && (
-                <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5, marginTop: 8 }}>
-                  {colony.description}
-                </div>
+        {loading ? (
+          <div style={{ fontSize: 11, color: C.faint, textAlign: 'center', padding: '24px 0' }}>
+            Loading colonies…
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              {allColonies.length} {allColonies.length === 1 ? 'COLONY' : 'COLONIES'}
+              {REGISTRY_DEPLOYED && (
+                <span style={{ marginLeft: 8, color: C.faint }}>· from registry</span>
+              )}
+              {registryError && (
+                <span style={{ marginLeft: 8, color: '#ef4444' }}>· registry unavailable</span>
               )}
             </div>
-          )
-        })}
+
+            {allColonies.map(colony => {
+              const isCitizen = isCitizenOf(colony.id)
+              const chain     = onChain?.[colony.id]
+              const count     = chain?.isCitizen !== undefined ? null : colony.citizenCount
+              return (
+                <div
+                  key={colony.id}
+                  onClick={() => navigate(`/colony/${colony.id}`)}
+                  style={{
+                    background: C.white, border: `1px solid ${isCitizen ? C.gold : C.border}`,
+                    borderRadius: 8, padding: '16px', marginBottom: 10,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{colony.name}</div>
+                    {isCitizen && (
+                      <div style={{
+                        fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`,
+                        borderRadius: 10, padding: '2px 8px', letterSpacing: '0.06em', flexShrink: 0,
+                      }}>
+                        CITIZEN
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: 11, color: C.faint, marginBottom: colony.description ? 8 : 0 }}>
+                    {count !== null ? `${count} citizens · ` : ''}
+                    {colony.founded ? `Est. ${fmtDate(colony.founded)} · ` : ''}
+                    {colony.mcc.name}
+                  </div>
+
+                  {colony.description && (
+                    <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5, marginTop: 8 }}>
+                      {colony.description}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </>
+        )}
 
         <div style={{ textAlign: 'center', padding: '20px 0 8px', fontSize: 11, color: C.faint }}>
           app.zpc.finance · Base Sepolia testnet
@@ -123,6 +160,52 @@ export default function Directory() {
       </div>
     </Layout>
   )
+}
+
+/**
+ * Merge colony sources in priority order:
+ *   1. ColonyRegistry (on-chain, canonical — used when deployed)
+ *   2. contracts.json (manually curated — always shown)
+ *   3. localStorage spice_user_colonies (user-deployed, not yet in registry)
+ */
+function buildColonyList(registryColonies) {
+  const seen = new Set()
+
+  // Registry entries (most authoritative once deployed)
+  const fromRegistry = (registryColonies || [])
+  fromRegistry.forEach(c => seen.add(c.id))
+
+  // contracts.json entries not already covered by registry
+  const fromContracts = Object.entries(CONTRACTS.colonies)
+    .filter(([id]) => !seen.has(id))
+    .map(([id, cfg]) => {
+      seen.add(id)
+      return {
+        id,
+        name:        cfg.name || id,
+        description: '',
+        founded:     null,
+        citizenCount: null,
+        mcc:         { name: 'MCC' },
+        source:      'contracts',
+      }
+    })
+
+  // localStorage — user-deployed colonies not in registry or contracts.json
+  const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+  const fromStorage = Object.entries(stored)
+    .filter(([id]) => !seen.has(id))
+    .map(([id, info]) => ({
+      id,
+      name:        info.name || id,
+      description: '',
+      founded:     null,
+      citizenCount: null,
+      mcc:         { name: 'Not yet registered' },
+      source:      'local',
+    }))
+
+  return [...fromRegistry, ...fromContracts, ...fromStorage]
 }
 
 function fmtDate(dateStr) {
