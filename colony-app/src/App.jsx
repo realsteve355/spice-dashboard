@@ -209,6 +209,14 @@ export default function App() {
     return () => window.ethereum.removeListener('accountsChanged', handler)
   }, [disconnect])
 
+  // Listen for network changes — disconnect so user re-connects on correct chain
+  useEffect(() => {
+    if (!window.ethereum) return
+    const handler = () => disconnect()
+    window.ethereum.on('chainChanged', handler)
+    return () => window.ethereum.removeListener('chainChanged', handler)
+  }, [disconnect])
+
   const isCitizenOf = (id) => {
     // If colony has a real contract (contracts.json or localStorage), always use on-chain data
     const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')

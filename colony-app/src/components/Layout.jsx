@@ -5,7 +5,7 @@ import { C } from '../theme'
 export default function Layout({ children, title, back, colonySlug }) {
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { isConnected, address, connect, citizenColonies } = useWallet()
+  const { isConnected, address, connect, disconnect, citizenColonies } = useWallet()
 
   const path = location.pathname
 
@@ -44,11 +44,26 @@ export default function Layout({ children, title, back, colonySlug }) {
         </div>
 
         {isConnected ? (
-          <div style={{
-            fontSize: 11, color: C.gold, border: `1px solid ${C.gold}`,
-            borderRadius: 20, padding: '4px 10px', letterSpacing: '0.04em',
-          }}>
-            {address}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div style={{
+              fontSize: 11, color: C.gold, border: `1px solid ${C.gold}`,
+              borderRadius: 20, padding: '4px 10px', letterSpacing: '0.04em',
+            }}>
+              {address}
+            </div>
+            <button
+              onClick={disconnect}
+              title="Disconnect wallet"
+              style={{
+                background: 'none', border: `1px solid ${C.border}`,
+                borderRadius: '50%', width: 22, height: 22,
+                cursor: 'pointer', color: C.faint, fontSize: 12,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: 0, lineHeight: 1, flexShrink: 0,
+              }}
+            >
+              ×
+            </button>
           </div>
         ) : (
           <button

@@ -331,7 +331,8 @@ export default function Dashboard() {
         {citizenColonies.length > 1 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
             {citizenColonies.map(id => {
-              const c = MOCK_COLONIES.find(x => x.id === id)
+              const c    = MOCK_COLONIES.find(x => x.id === id)
+              const name = c?.name || onChain?.[id]?.colonyName || id
               return (
                 <button
                   key={id}
@@ -345,7 +346,7 @@ export default function Dashboard() {
                     fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
                   }}
                 >
-                  {c?.name || id}
+                  {name}
                 </button>
               )
             })}
@@ -583,7 +584,12 @@ export default function Dashboard() {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: C.sub }}>G-token</span>
-            <span style={{ fontSize: 12, color: C.purple }}>#{String(data.gTokenId).padStart(4, '0')}</span>
+            <span style={{ fontSize: 12, color: C.purple }}>
+              #{String(data.gTokenId).padStart(4, '0')}
+              {colony?.name && (
+                <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>· {colony.name}</span>
+              )}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
             <span style={{ fontSize: 12, color: C.sub }}>Open votes</span>
