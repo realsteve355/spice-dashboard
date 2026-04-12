@@ -9,8 +9,8 @@
  */
 const hre = require("hardhat");
 
-const REGISTRY_ADDRESS = "0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417";
-const NEW_TREASURY     = process.env.TREASURY || "0x0000000000000000000000000000000000000000";
+const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const NEW_TREASURY     = process.env.TREASURY || "0x15b22a3C4b321237fe53E350214A032b2289501B";
 
 const ABI = [
   "function setTreasury(address) external",
