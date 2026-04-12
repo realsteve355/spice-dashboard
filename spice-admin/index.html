@@ -328,8 +328,8 @@ async function loadAll() {
     document.getElementById("colony-list").innerHTML = '<div class="loading">Loading colony data…</div>';
     const [entriesArr, dereg, overrides, colonyData] = await Promise.all([
       Promise.all(allAddrs.map(a => reg.entries(a))),
-      Promise.all(allAddrs.map(a => reg.deregistered(a))),
-      Promise.all(allAddrs.map(a => reg.colonyFeeOverride(a))),
+      Promise.all(allAddrs.map(a => reg.deregistered(a).catch(() => false))),
+      Promise.all(allAddrs.map(a => reg.colonyFeeOverride(a).catch(() => 0n))),
       Promise.all(allAddrs.map(a => loadColonyData(a, prov))),
     ]);
 
