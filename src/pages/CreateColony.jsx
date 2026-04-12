@@ -9,7 +9,7 @@ import {
 } from "../data/colony-artifact";
 
 // Deployed ColonyRegistry on Base Sepolia — address(0) = registry not yet deployed
-const COLONY_REGISTRY_ADDRESS = "0x0000000000000000000000000000000000000000";
+const COLONY_REGISTRY_ADDRESS = "0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417";
 
 const F    = "'IBM Plex Mono', monospace";
 const BG0  = "#0a0e1a";
