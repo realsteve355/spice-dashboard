@@ -296,11 +296,23 @@ export default function Home() {
               );
             })}
           </div>
+          <Link
+            to="/create-colony"
+            style={{
+              display:"block", marginTop:12, padding:"9px 12px",
+              background:"none", border:`1px solid ${GOLD}`,
+              borderRadius:4, fontSize:9, color:GOLD,
+              textDecoration:"none", letterSpacing:"0.08em",
+              textAlign:"center",
+            }}
+          >
+            + Create new colony
+          </Link>
           <a
             href={COLONY_APP_HOST}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize:8, color:T3, marginTop:12, textDecoration:"none" }}
+            style={{ fontSize:8, color:T3, marginTop:8, textDecoration:"none", display:"block", textAlign:"right" }}
           >
             app.zpc.finance ↗
           </a>

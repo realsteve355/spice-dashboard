@@ -19,6 +19,7 @@ import MarsMCC       from './pages/mars/MarsMCC.jsx'
 import MarsHealth    from './pages/mars/MarsHealth.jsx'
 import CollisionLayout from './pages/CollisionLayout.jsx'
 import SpiceSystem from './pages/SpiceSystem.jsx'
+import CreateColony from './pages/CreateColony.jsx'
 
 function Nav() {
   return (
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/mars" element={<Mars />} />
           <Route path="/earth" element={<Earth />} />
           <Route path="/spice-system" element={<SpiceSystem />} />
+          <Route path="/create-colony" element={<CreateColony />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}
