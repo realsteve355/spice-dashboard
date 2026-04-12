@@ -406,13 +406,21 @@ export default function Admin() {
               </div>
             ) : (
               <>
-                {/* Revenue MTD */}
-                <div style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div>
+                {/* Revenue MTD + MCC S-balance */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <div style={{ ...card, flex: 1, marginBottom: 0 }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REVENUE MTD</div>
-                    <div style={{ fontSize: 24, fontWeight: 500, color: C.green, marginTop: 4 }}>
-                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 13, color: C.faint }}>S</span>
+                    <div style={{ fontSize: 22, fontWeight: 500, color: C.green, marginTop: 4 }}>
+                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
                     </div>
+                    <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>confirmed payments</div>
+                  </div>
+                  <div style={{ ...card, flex: 1, marginBottom: 0 }}>
+                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC WALLET</div>
+                    <div style={{ fontSize: 22, fontWeight: 500, color: C.gold, marginTop: 4 }}>
+                      {chain?.sBalance != null ? chain.sBalance.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
+                    </div>
+                    <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>your S-token balance</div>
                   </div>
                 </div>
 
@@ -425,9 +433,8 @@ export default function Admin() {
                 {/* Billing instructions */}
                 <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12, padding: '10px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 6 }}>
                   1. Set each citizen's bill (whole S-tokens)<br />
-                  2. Citizen pays via Dashboard → "Pay MCC bill"<br />
-                  3. You see their payment in transaction history<br />
-                  4. Click "Paid ✓" to confirm and record revenue
+                  2. Citizen pays via Dashboard → "Pay MCC bill" (S-tokens go to your MCC Wallet above)<br />
+                  3. When your MCC Wallet balance increases, click "Paid ✓" to confirm and record revenue
                 </div>
 
                 {citizens.map(ci => {
