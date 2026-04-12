@@ -260,7 +260,7 @@ export default function CreateColony() {
             <div style={{ borderTop: `1px solid ${BD}`, margin: "16px 0" }} />
 
             <a
-              href={`${COLONY_APP_HOST}/colony/${slug}`}
+              href={`${COLONY_APP_HOST}/colony/${slug}?address=${colonyAddress}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{ ...S.primaryBtn, textDecoration: "none", display: "block", textAlign: "center" }}

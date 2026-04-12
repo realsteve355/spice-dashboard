@@ -1,13 +1,17 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
+const RPC = 'https://sepolia.base.org'
+
 const COLONY_ABI = [
   "function join(string) external",
   "function isCitizen(address) view returns (bool)",
+  "function colonyName() view returns (string)",
+  "function citizenCount() view returns (uint256)",
 ]
 
 import { C } from '../theme'
@@ -47,13 +51,15 @@ const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
 These protections may only be amended by a blockchain referendum of 80% of all registered citizens.`
 
 export default function ColonyPage() {
-  const { slug } = useParams()
-  const navigate  = useNavigate()
+  const { slug }            = useParams()
+  const [searchParams]      = useSearchParams()
+  const addressParam        = searchParams.get('address')
+  const navigate            = useNavigate()
   const { isConnected, onChainLoading, isCitizenOf, isMccOf, connect, signer, contracts, refresh } = useWallet()
 
-  const colony    = MOCK_COLONIES.find(c => c.id === slug)
-  const isCitizen = isCitizenOf(slug)
-  const isMcc     = isMccOf(slug)
+  const mockColony = MOCK_COLONIES.find(c => c.id === slug)
+  const isCitizen  = isCitizenOf(slug)
+  const isMcc      = isMccOf(slug)
 
   const [showConstitution, setShowConstitution] = useState(false)
   const [joining, setJoining]     = useState(false)
@@ -62,6 +68,39 @@ export default function ColonyPage() {
   const [joined, setJoined]       = useState(false)
   const [txPending, setTxPending] = useState(false)
   const [txError, setTxError]     = useState(null)
+  const [chainColony, setChainColony] = useState(null)
+  const [chainLoading, setChainLoading] = useState(false)
+
+  // If not in mock list but we have an address param, load from chain
+  useEffect(() => {
+    if (mockColony || !addressParam) return
+    setChainLoading(true)
+    const prov = new ethers.JsonRpcProvider(RPC)
+    const c = new ethers.Contract(addressParam, COLONY_ABI, prov)
+    Promise.all([c.colonyName(), c.citizenCount()])
+      .then(([name, count]) => {
+        setChainColony({
+          id: slug,
+          name,
+          description: '',
+          founded: new Date().toISOString().slice(0, 10),
+          citizenCount: Number(count),
+          mcc: { name: 'Not yet configured', board: [] },
+          services: [],
+          address: addressParam,
+        })
+      })
+      .catch(() => setChainColony(null))
+      .finally(() => setChainLoading(false))
+  }, [slug, addressParam, mockColony])
+
+  const colony = mockColony || chainColony
+
+  if (!colony && chainLoading) return (
+    <Layout title="Loading…" back="/">
+      <div style={{ padding: 32, textAlign: 'center', color: C.faint, fontSize: 12 }}>Loading colony from chain…</div>
+    </Layout>
+  )
 
   if (!colony) return (
     <Layout title="Not Found" back="/">
@@ -75,8 +114,8 @@ export default function ColonyPage() {
   }
 
   async function handleSign() {
-    const cfg = contracts?.colonies?.[slug]
-    if (!cfg || !signer) {
+    const contractAddress = contracts?.colonies?.[slug]?.colony || addressParam
+    if (!contractAddress || !signer) {
       setJoining(false)
       setJoined(true)
       return
@@ -84,7 +123,7 @@ export default function ColonyPage() {
     setTxPending(true)
     setTxError(null)
     try {
-      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const colony = new ethers.Contract(contractAddress, COLONY_ABI, signer)
       const tx = await colony.join(citizenName.trim())
       await tx.wait()
       setJoining(false)
