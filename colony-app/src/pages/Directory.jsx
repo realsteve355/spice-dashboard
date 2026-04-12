@@ -6,7 +6,22 @@ import { C } from '../theme'
 
 export default function Directory() {
   const navigate = useNavigate()
-  const { isConnected, isCitizenOf } = useWallet()
+  const { isConnected, isCitizenOf, onChain } = useWallet()
+
+  // Merge mock colonies with any user-deployed colonies from localStorage
+  const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+  const mockIds = new Set(MOCK_COLONIES.map(c => c.id))
+  const extraColonies = Object.entries(userColonies)
+    .filter(([id]) => !mockIds.has(id))
+    .map(([id, info]) => ({
+      id,
+      name:         info.name || id,
+      description:  '',
+      founded:      null,
+      citizenCount: null,
+      mcc:          { name: 'Not yet configured' },
+    }))
+  const allColonies = [...MOCK_COLONIES, ...extraColonies]
 
   return (
     <Layout title="SPICE Colony">
@@ -42,17 +57,21 @@ export default function Directory() {
 
         {/* Colony list */}
         <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
-          {MOCK_COLONIES.length} COLONIES
+          {allColonies.length} {allColonies.length === 1 ? 'COLONY' : 'COLONIES'}
         </div>
 
-        {MOCK_COLONIES.map(colony => {
+        {allColonies.map(colony => {
           const isCitizen = isCitizenOf(colony.id)
+          const chain     = onChain?.[colony.id]
+          const count     = chain?.isCitizen !== undefined
+            ? null  // don't show mock count if we have chain data
+            : colony.citizenCount
           return (
             <div
               key={colony.id}
               onClick={() => navigate(`/colony/${colony.id}`)}
               style={{
-                background: C.white, border: `1px solid ${C.border}`,
+                background: C.white, border: `1px solid ${isCitizen ? C.gold : C.border}`,
                 borderRadius: 8, padding: '16px', marginBottom: 10,
                 cursor: 'pointer',
               }}
@@ -69,13 +88,17 @@ export default function Directory() {
                 )}
               </div>
 
-              <div style={{ fontSize: 11, color: C.faint, marginBottom: 8 }}>
-                {colony.citizenCount} citizens · Est. {fmtDate(colony.founded)} · {colony.mcc.name}
+              <div style={{ fontSize: 11, color: C.faint, marginBottom: colony.description ? 8 : 0 }}>
+                {count !== null ? `${count} citizens · ` : ''}
+                {colony.founded ? `Est. ${fmtDate(colony.founded)} · ` : ''}
+                {colony.mcc.name}
               </div>
 
-              <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
-                {colony.description}
-              </div>
+              {colony.description && (
+                <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5, marginTop: 8 }}>
+                  {colony.description}
+                </div>
+              )}
             </div>
           )
         })}
