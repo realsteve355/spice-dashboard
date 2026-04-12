@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { COLONY_ABI, COLONY_BYTECODE } from "../data/colony-artifact";
+import {
+  COLONY_ABI, COLONY_BYTECODE,
+  MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE,
+  MCC_BILLING_ABI, MCC_BILLING_BYTECODE,
+} from "../data/colony-artifact";
 
 const F    = "'IBM Plex Mono', monospace";
 const BG0  = "#0a0e1a";
@@ -38,9 +42,12 @@ export default function CreateColony() {
   const [tickerEdited,  setTickerEdited]  = useState(false);
   const [wallet,        setWallet]        = useState(null);   // connected address
   const [step,          setStep]          = useState("form"); // form | deploying | success
-  const [txHash,        setTxHash]        = useState(null);
-  const [colonyAddress, setColonyAddress] = useState(null);
-  const [error,         setError]         = useState(null);
+  const [txHash,           setTxHash]           = useState(null);
+  const [colonyAddress,    setColonyAddress]    = useState(null);
+  const [mccServicesAddr,  setMccServicesAddr]  = useState(null);
+  const [mccBillingAddr,   setMccBillingAddr]   = useState(null);
+  const [deployStatus,     setDeployStatus]     = useState("");
+  const [error,            setError]            = useState(null);
 
   const slug      = toSlug(name);
   const canDeploy = name.trim().length >= 3 && ticker.trim().length >= 1 && wallet;
@@ -92,11 +99,43 @@ export default function CreateColony() {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer   = await provider.getSigner();
-      const factory  = new ethers.ContractFactory(COLONY_ABI, COLONY_BYTECODE, signer);
-      const contract = await factory.deploy(name.trim(), ticker.trim());
-      setTxHash(contract.deploymentTransaction().hash);
-      await contract.waitForDeployment();
-      setColonyAddress(await contract.getAddress());
+
+      // 1/3 Colony
+      setDeployStatus("Deploying Colony… (1/3)");
+      const colonyFactory = new ethers.ContractFactory(COLONY_ABI, COLONY_BYTECODE, signer);
+      const colony = await colonyFactory.deploy(name.trim(), ticker.trim());
+      setTxHash(colony.deploymentTransaction().hash);
+      await colony.waitForDeployment();
+      const colonyAddr = await colony.getAddress();
+      setColonyAddress(colonyAddr);
+
+      // 2/3 MCCServices
+      setDeployStatus("Deploying MCCServices… (2/3)");
+      const servicesFactory = new ethers.ContractFactory(MCC_SERVICES_ABI, MCC_SERVICES_BYTECODE, signer);
+      const services = await servicesFactory.deploy(colonyAddr);
+      await services.waitForDeployment();
+      const servicesAddr = await services.getAddress();
+      setMccServicesAddr(servicesAddr);
+
+      // 3/3 MCCBilling
+      setDeployStatus("Deploying MCCBilling… (3/3)");
+      const billingFactory = new ethers.ContractFactory(MCC_BILLING_ABI, MCC_BILLING_BYTECODE, signer);
+      const billing = await billingFactory.deploy(colonyAddr);
+      await billing.waitForDeployment();
+      const billingAddr = await billing.getAddress();
+      setMccBillingAddr(billingAddr);
+
+      // Persist all addresses to localStorage
+      const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}');
+      stored[toSlug(name.trim())] = {
+        ...(stored[toSlug(name.trim())] || {}),
+        address:     colonyAddr,
+        mccServices: servicesAddr,
+        mccBilling:  billingAddr,
+        name:        name.trim(),
+      };
+      localStorage.setItem('spice_user_colonies', JSON.stringify(stored));
+
       setStep("success");
     } catch (e) {
       setError(e.message?.slice(0, 160) || "Deployment failed.");
@@ -219,7 +258,7 @@ export default function CreateColony() {
             {/* Deploy button */}
             {step === "deploying" ? (
               <div style={{ ...S.primaryBtn, opacity: 0.7, cursor: "default", textAlign: "center" }}>
-                Deploying… (confirm in MetaMask, then wait for block)
+                {deployStatus || "Deploying… (confirm in MetaMask, then wait for block)"}
               </div>
             ) : (
               <button
@@ -253,7 +292,9 @@ export default function CreateColony() {
             <Row label="Ticker"         value={ticker} />
             <Row label="Tokens"         value={`S-${ticker} · V-${ticker} · G-${ticker}`} />
             <Row label="Slug"           value={slug} />
-            <Row label="Contract"       value={`${colonyAddress?.slice(0,10)}…${colonyAddress?.slice(-8)}`} mono />
+            <Row label="Colony"         value={`${colonyAddress?.slice(0,10)}…${colonyAddress?.slice(-8)}`} mono />
+            <Row label="MCCServices"    value={`${mccServicesAddr?.slice(0,10)}…${mccServicesAddr?.slice(-8)}`} mono />
+            <Row label="MCCBilling"     value={`${mccBillingAddr?.slice(0,10)}…${mccBillingAddr?.slice(-8)}`} mono />
             <Row label="Network"        value="Base Sepolia" />
             <Row label="Founder"        value={`${wallet?.slice(0,10)}…${wallet?.slice(-8)}`} mono />
 
@@ -288,7 +329,7 @@ export default function CreateColony() {
               fontSize: 10, color: T2, fontFamily: "monospace", lineHeight: 1.7,
               wordBreak: "break-all",
             }}>
-              {`{ id: "${slug}", slug: "${slug}", address: "${colonyAddress}" }`}
+              {`{ id: "${slug}", slug: "${slug}", address: "${colonyAddress}", mccServices: "${mccServicesAddr}", mccBilling: "${mccBillingAddr}" }`}
             </div>
             <div style={{ fontSize: 9, color: T3, marginTop: 6 }}>
               Add this entry to <span style={{ color: T2 }}>src/data/colonies.js</span> to appear in the homepage directory.
