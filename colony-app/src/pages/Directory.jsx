@@ -8,7 +8,7 @@ import { C } from '../theme'
 
 // ColonyRegistry deployed on Base Sepolia
 // Set to address(0) until registry is deployed — falls back to localStorage + contracts.json
-const REGISTRY_ADDRESS = "0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417"
+const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d"
 const REGISTRY_ABI = [
   "function getAll() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
@@ -16,7 +16,7 @@ const REGISTRY_ABI = [
 ]
 const BASE_SEPOLIA_RPC = "https://sepolia.base.org"
 
-const REGISTRY_DEPLOYED = REGISTRY_ADDRESS !== "0x0000000000000000000000000000000000000000"
+const REGISTRY_DEPLOYED = REGISTRY_ADDRESS !== "0x6F0Cb784E977f45f9c5D6c99BE30A988F2EA807C"
 
 export default function Directory() {
   const navigate = useNavigate()
