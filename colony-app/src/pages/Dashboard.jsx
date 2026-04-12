@@ -73,7 +73,8 @@ export default function Dashboard() {
   const [billDone,    setBillDone]    = useState(false)
   const [onChainBill, setOnChainBill] = useState(null)  // S whole tokens, or null if not loaded
 
-  const mccBillingAddr = contracts?.colonies?.[slug]?.mccBilling
+  const mccBillingAddr  = contracts?.colonies?.[slug]?.mccBilling
+  const mccTreasuryAddr = contracts?.colonies?.[slug]?.mccTreasury
 
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
@@ -82,8 +83,9 @@ export default function Dashboard() {
     colony.founder().then(setFounderAddr).catch(() => {})
   }, [contracts, slug, signer])
 
-  // Use chain founderAddr if available (from App.jsx polling)
+  // Bill payments go to treasury if deployed, otherwise fall back to founder wallet
   const resolvedFounder = founderAddr || chain?.founderAddr
+  const billRecipient   = mccTreasuryAddr || resolvedFounder
 
   // Read on-chain bill from MCCBilling
   useEffect(() => {
@@ -169,10 +171,10 @@ export default function Dashboard() {
   async function handlePayBill() {
     const contract = colonyContract()
     const billAmount = onChainBill ?? data.mccBill.total
-    if (!contract || !resolvedFounder || !billAmount) return
+    if (!contract || !billRecipient || !billAmount) return
     setBillPending(true); setBillError(null); setBillDone(false)
     try {
-      const tx = await contract.send(resolvedFounder, ethers.parseEther(String(billAmount)), 'MCC services bill')
+      const tx = await contract.send(billRecipient, ethers.parseEther(String(billAmount)), 'MCC services bill')
       await tx.wait()
       setBillDone(true)
       setOnChainBill(0)
@@ -543,7 +545,7 @@ export default function Dashboard() {
           {onChainBill === null && data.mccBill.breakdown.length === 0 && (
             <div style={{ fontSize: 12, color: C.faint }}>No charges this month.</div>
           )}
-          {((onChainBill ?? data.mccBill.total) > 0) && resolvedFounder && (
+          {((onChainBill ?? data.mccBill.total) > 0) && billRecipient && (
             <div style={{ marginTop: 12 }}>
               {billError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{billError}</div>}
               <button

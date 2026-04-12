@@ -23,6 +23,16 @@ const MCC_BILLING_ABI = [
   "function resetMonth() external",
 ]
 
+const MCC_TREASURY_ABI = [
+  "function balance() view returns (uint256)",
+  "function roleOf(address) view returns (uint8)",
+  "function roleName(address) view returns (string)",
+  "function isFD(address) view returns (bool)",
+  "function setRole(address, uint8) external",
+  "function withdraw(address, uint256, string) external",
+  "function members() view returns (address[])",
+]
+
 const COLONY_ABI_ADMIN = [
   "function citizenCount() view returns (uint256)",
   "function citizens(uint256) view returns (address)",
@@ -50,6 +60,7 @@ export default function Admin() {
   const isMcc            = isMccOf(slug)
   const mccServicesAddr  = contracts?.colonies?.[slug]?.mccServices
   const mccBillingAddr   = contracts?.colonies?.[slug]?.mccBilling
+  const mccTreasuryAddr  = contracts?.colonies?.[slug]?.mccTreasury
   const colonyAddr       = contracts?.colonies?.[slug]?.colony
     || JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]?.address
 
@@ -77,6 +88,19 @@ export default function Admin() {
   const [billError, setBillError]   = useState(null)
   const [revenueMTD, setRevenueMTD] = useState(null)
   const [editBill, setEditBill]     = useState({})   // addr → draft value string
+
+  // ── Treasury state ──
+  const [treasuryBal,    setTreasuryBal]    = useState(null)
+  const [mccRoles,       setMccRoles]       = useState([])   // [{addr, role, name}]
+  const [rolesLoading,   setRolesLoading]   = useState(false)
+  const [rolesPending,   setRolesPending]   = useState(false)
+  const [rolesError,     setRolesError]     = useState(null)
+  const [newRoleAddr,    setNewRoleAddr]     = useState('')
+  const [newRoleVal,     setNewRoleVal]      = useState('1')  // 1=FD, 2=Chair
+  const [withdrawPending, setWithdrawPending] = useState(false)
+  const [withdrawError,   setWithdrawError]   = useState(null)
+  const [withdrawAmt,     setWithdrawAmt]     = useState('')
+  const [withdrawTo,      setWithdrawTo]      = useState('')
 
   // ── Overview state ──
   const [citizenCount, setCitizenCount] = useState(null)
@@ -130,6 +154,28 @@ export default function Admin() {
     setBillLoading(false)
   }
 
+  async function loadTreasury() {
+    if (!mccTreasuryAddr) return
+    const prov = provider || new ethers.JsonRpcProvider(RPC)
+    setRolesLoading(true)
+    try {
+      const c = new ethers.Contract(mccTreasuryAddr, MCC_TREASURY_ABI, prov)
+      const [bal, memberAddrs] = await Promise.all([c.balance(), c.members()])
+      setTreasuryBal(Math.floor(Number(ethers.formatEther(bal))))
+      // Also get founder
+      const founderAddr = chain?.founderAddr
+      const allAddrs = founderAddr
+        ? [...new Set([founderAddr, ...memberAddrs])]
+        : [...memberAddrs]
+      const roles = await Promise.all(allAddrs.map(async a => {
+        const rn = await c.roleName(a).catch(() => 'None')
+        return { addr: a, roleName: rn }
+      }))
+      setMccRoles(roles)
+    } catch (e) { console.warn('Failed to load treasury', e) }
+    setRolesLoading(false)
+  }
+
   useEffect(() => { if (tab === 'services') loadServices() }, [tab, mccServicesAddr, provider])
   useEffect(() => {
     if (tab === 'citizens' || tab === 'billing') loadCitizens()
@@ -137,6 +183,9 @@ export default function Admin() {
   useEffect(() => {
     if (tab === 'billing' && citizens.length) loadBills(citizens)
   }, [tab, citizens, mccBillingAddr, provider])
+  useEffect(() => {
+    if (tab === 'billing') loadTreasury()
+  }, [tab, mccTreasuryAddr, provider])
 
   // ── Service handlers ──
   async function addService() {
@@ -185,6 +234,42 @@ export default function Admin() {
       setRemoveIdx(null)
     } catch (e) { setSvcError(e?.reason || e?.shortMessage || 'Transaction failed') }
     setSvcPending(false)
+  }
+
+  // ── Treasury handlers ──
+  async function grantRole() {
+    if (!mccTreasuryAddr || !signer || !newRoleAddr.trim()) return
+    setRolesPending(true); setRolesError(null)
+    try {
+      const c = new ethers.Contract(mccTreasuryAddr, MCC_TREASURY_ABI, signer)
+      await (await c.setRole(newRoleAddr.trim(), parseInt(newRoleVal))).wait()
+      setNewRoleAddr('')
+      await loadTreasury()
+    } catch (e) { setRolesError(e?.reason || e?.shortMessage || 'Transaction failed') }
+    setRolesPending(false)
+  }
+
+  async function revokeRole(addr) {
+    if (!mccTreasuryAddr || !signer) return
+    setRolesPending(true); setRolesError(null)
+    try {
+      const c = new ethers.Contract(mccTreasuryAddr, MCC_TREASURY_ABI, signer)
+      await (await c.setRole(addr, 0)).wait()
+      await loadTreasury()
+    } catch (e) { setRolesError(e?.reason || e?.shortMessage || 'Transaction failed') }
+    setRolesPending(false)
+  }
+
+  async function doWithdraw() {
+    if (!mccTreasuryAddr || !signer || !withdrawAmt || !withdrawTo.trim()) return
+    setWithdrawPending(true); setWithdrawError(null)
+    try {
+      const c = new ethers.Contract(mccTreasuryAddr, MCC_TREASURY_ABI, signer)
+      await (await c.withdraw(withdrawTo.trim(), ethers.parseEther(String(withdrawAmt)), 'MCC withdrawal')).wait()
+      setWithdrawAmt(''); setWithdrawTo('')
+      await loadTreasury()
+    } catch (e) { setWithdrawError(e?.reason || e?.shortMessage || 'Transaction failed') }
+    setWithdrawPending(false)
   }
 
   // ── Billing handlers ──
@@ -406,7 +491,7 @@ export default function Admin() {
               </div>
             ) : (
               <>
-                {/* Revenue MTD + MCC S-balance */}
+                {/* Revenue MTD + Treasury balance */}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                   <div style={{ ...card, flex: 1, marginBottom: 0 }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REVENUE MTD</div>
@@ -415,14 +500,97 @@ export default function Admin() {
                     </div>
                     <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>confirmed payments</div>
                   </div>
-                  <div style={{ ...card, flex: 1, marginBottom: 0 }}>
-                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC WALLET</div>
+                  <div style={{ ...card, flex: 1, marginBottom: 0, borderColor: mccTreasuryAddr ? C.border : C.faint }}>
+                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC TREASURY</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.gold, marginTop: 4 }}>
-                      {chain?.sBalance != null ? chain.sBalance.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
+                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
                     </div>
-                    <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>your S-token balance</div>
+                    <div style={{ fontSize: 9, color: mccTreasuryAddr ? C.green : C.faint, marginTop: 4 }}>
+                      {mccTreasuryAddr ? 'on-chain treasury' : 'not deployed'}
+                    </div>
                   </div>
                 </div>
+
+                {/* MCC Roles panel */}
+                {mccTreasuryAddr && (
+                  <div style={{ ...card, marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>MCC BOARD ROLES</div>
+                    {rolesLoading ? (
+                      <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
+                    ) : (
+                      <>
+                        {mccRoles.map(m => (
+                          <div key={m.addr} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <div>
+                              <span style={{ fontSize: 10, color: C.text, fontFamily: 'monospace' }}>
+                                {m.addr.slice(0, 10)}…{m.addr.slice(-6)}
+                              </span>
+                              <span style={{ fontSize: 10, color: C.gold, marginLeft: 8, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '1px 6px' }}>
+                                {m.roleName}
+                              </span>
+                            </div>
+                            {m.roleName !== 'Founder' && (
+                              <button
+                                onClick={() => revokeRole(m.addr)}
+                                disabled={rolesPending}
+                                style={{ ...smallBtn(C.faint, '#fff', C.border), fontSize: 10, padding: '3px 8px', opacity: rolesPending ? 0.5 : 1 }}
+                              >
+                                Revoke
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {rolesError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{rolesError}</div>}
+                        {/* Grant role form */}
+                        <div style={{ display: 'flex', gap: 6, marginTop: 10, alignItems: 'center' }}>
+                          <input
+                            placeholder="0x address"
+                            value={newRoleAddr}
+                            onChange={e => setNewRoleAddr(e.target.value)}
+                            style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
+                          />
+                          <select
+                            value={newRoleVal}
+                            onChange={e => setNewRoleVal(e.target.value)}
+                            style={{ padding: '7px 8px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
+                          >
+                            <option value="1">FD</option>
+                            <option value="2">Chair</option>
+                          </select>
+                          <button onClick={grantRole} disabled={rolesPending || !newRoleAddr.trim()} style={{ ...smallBtn(C.gold), opacity: rolesPending || !newRoleAddr.trim() ? 0.5 : 1 }}>
+                            {rolesPending ? '…' : 'Grant'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Treasury withdraw */}
+                {mccTreasuryAddr && (
+                  <div style={{ ...card, marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>WITHDRAW FROM TREASURY</div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <input
+                        placeholder="To address (0x…)"
+                        value={withdrawTo}
+                        onChange={e => setWithdrawTo(e.target.value)}
+                        style={{ flex: 2, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
+                      />
+                      <input
+                        placeholder="S amount"
+                        type="number"
+                        value={withdrawAmt}
+                        onChange={e => setWithdrawAmt(e.target.value)}
+                        style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
+                      />
+                      <button onClick={doWithdraw} disabled={withdrawPending || !withdrawAmt || !withdrawTo.trim()} style={{ ...smallBtn(C.gold), opacity: withdrawPending || !withdrawAmt || !withdrawTo.trim() ? 0.5 : 1 }}>
+                        {withdrawPending ? '…' : 'Withdraw'}
+                      </button>
+                    </div>
+                    {withdrawError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{withdrawError}</div>}
+                  </div>
+                )}
 
                 {billError && <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{billError}</div>}
 
@@ -433,8 +601,8 @@ export default function Admin() {
                 {/* Billing instructions */}
                 <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12, padding: '10px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 6 }}>
                   1. Set each citizen's bill (whole S-tokens)<br />
-                  2. Citizen pays via Dashboard → "Pay MCC bill" (S-tokens go to your MCC Wallet above)<br />
-                  3. When your MCC Wallet balance increases, click "Paid ✓" to confirm and record revenue
+                  2. Citizen pays via Dashboard → "Pay MCC bill" (S-tokens go to MCC Treasury above)<br />
+                  3. When Treasury balance increases, click "Paid ✓" to confirm and record revenue
                 </div>
 
                 {citizens.map(ci => {

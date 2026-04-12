@@ -68,6 +68,7 @@ export default function ColonyPage() {
   const resolvedAddr = addressParam || storedAddr
 
   // Extra addresses passed in URL from CreateColony
+  const mccTreasuryParam = searchParams.get('mccTreasury')
   const mccBillingParam  = searchParams.get('mccBilling')
   const mccServicesParam = searchParams.get('mccServices')
 
@@ -108,6 +109,7 @@ export default function ColonyPage() {
           ...(stored[slug] || {}),
           address: resolvedAddr,
           name,
+          ...(mccTreasuryParam ? { mccTreasury: mccTreasuryParam } : {}),
           ...(mccBillingParam  ? { mccBilling:  mccBillingParam  } : {}),
           ...(mccServicesParam ? { mccServices: mccServicesParam } : {}),
         }
