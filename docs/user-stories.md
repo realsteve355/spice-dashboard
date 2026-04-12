@@ -278,12 +278,15 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | P-11 | As the protocol owner, I want a dedicated admin panel at spice.zpc.finance to manage the ColonyRegistry without writing scripts | P1 | ✓ |
-| P-12 | As the protocol owner, I want to see all registered colonies, their citizen counts, and their pending protocol fees in one view | P1 | ✓ |
-| P-13 | As the protocol owner, I want to update the protocol treasury address from the admin panel | P1 | ✓ |
-| P-14 | As the protocol owner, I want to update the fee-per-transaction rate from the admin panel | P1 | ✓ |
+| P-12 | As the protocol owner, I want to see all registered colonies sorted by pending fee so I can see who owes the most at a glance | P1 | ✓ |
+| P-13 | As the protocol owner, I want to update the global fee-per-transaction rate from the admin panel | P1 | ✓ |
+| P-14 | As the protocol owner, I want to register a new colony by address, name, and slug from the admin panel (for retroactive registration) | P1 | ✓ |
 | P-15 | As the protocol owner, I want to transfer registry ownership to a new address with an on-screen confirmation warning | P1 | ✓ |
-| P-16 | As any visitor, I want to view registry stats (colony count, fee rate, total pending fees) without connecting a wallet | P1 | ✓ |
-| P-17 | As the protocol owner, I want to click a colony and see its full detail (address, founder, citizens, pending fee) with a link to its admin panel to trigger settlement | P1 | ✓ |
+| P-16 | As any visitor, I want to view registry stats (colony count, global fee, total pending fees, revenue wallet) without connecting a wallet | P1 | ✓ |
+| P-17 | As the protocol owner, I want to click a colony and open a detail drawer showing address, founder, pending fee, and ProtocolFeeSettled payment history | P1 | ✓ |
+| P-18 | As the protocol owner, I want to set a per-colony fee override in the detail drawer so that different colonies can pay different rates | P1 | ✓ |
+| P-19 | As the protocol owner, I want to deregister a colony (soft-remove from directory) or re-register it from the detail drawer | P1 | ✓ |
+| P-20 | As the protocol owner, I want the protocol treasury address to be set via a deployment script only, not exposed in the web UI, to reduce attack surface | P1 | ✓ |
 
 ### Infrastructure Fee
 
@@ -296,9 +299,9 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | P-09 | As the protocol, I want fee settlements to be recorded as on-chain events (ProtocolFeeSettled) for auditability | P1 | ✓ |
 | P-10 | As the protocol, I want colonies deployed before the registry existed (no registry address) to skip fee accrual gracefully | P1 | ✓ |
 
-*P-01–P-04: ColonyRegistry.sol deployed at 0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417 on Base Sepolia.*
-*P-05–P-10: Colony.send() increments pendingProtocolFee += registry.feePerTx() (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
-*P-11–P-17: spice.zpc.finance — standalone HTML, no build step, ethers.js CDN. Separate Vercel project pointed at spice-admin/ folder. Loads read-only on page open; owner actions require wallet connect. Colony list sorted by pending fee descending.*
+*P-01–P-04: ColonyRegistry.sol — new version (with per-colony fee override + deregister/reregister) compiled; needs redeployment to replace 0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417 on Base Sepolia.*
+*P-05–P-10: Colony.send() increments pendingProtocolFee += registry.getFeeForColony(address(this)) (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
+*P-11–P-20: spice.zpc.finance — standalone HTML, no build step, ethers.js CDN. Separate Vercel project at spice-admin/. Stats load read-only on page open; owner actions require wallet connect. Colony list sorted by pending fee descending. Treasury address set only via scripts/setTreasury.js (not web UI). Per-colony fee override and deregister/reregister in colony detail drawer.*
 *Fee model rationale: ETH-denominated (real-world value), monthly billing via MCC (not per-tx skim), MCC is accountable for payment — citizens see it as an infrastructure bill, not a tax on every send.*
 
 ---
@@ -355,10 +358,10 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 67 | 49% |
-| ~ Partial / UI mock | 27 | 20% |
-| — Not built | 43 | 31% |
-| **Total** | **137** | |
+| ✓ Done (on-chain) | 70 | 49% |
+| ~ Partial / UI mock | 27 | 19% |
+| — Not built | 43 | 30% |
+| **Total** | **140** | |
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -408,5 +411,5 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v7*
+*SPICE Colony · User Stories & Requirements Spec · v8*
 *Last updated: April 2026*

@@ -6,8 +6,8 @@ import "./SToken.sol";
 import "./VToken.sol";
 
 interface IColonyRegistry {
-    function feePerTx()          external view returns (uint256);
-    function protocolTreasury()  external view returns (address);
+    function getFeeForColony(address colony) external view returns (uint256);
+    function protocolTreasury()             external view returns (address);
 }
 
 /**
@@ -140,7 +140,7 @@ contract Colony {
 
         // Accrue protocol infrastructure fee (no ETH taken here — tracked for monthly settlement)
         if (registry != address(0)) {
-            uint256 fee = IColonyRegistry(registry).feePerTx();
+            uint256 fee = IColonyRegistry(registry).getFeeForColony(address(this));
             if (fee > 0) pendingProtocolFee += fee;
         }
 
