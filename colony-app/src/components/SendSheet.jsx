@@ -1,16 +1,5 @@
 import { useState } from 'react'
-
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-}
+import { C } from '../theme'
 
 /**
  * SendSheet — inline payment form
@@ -37,7 +26,7 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
   }
 
   if (sent) return (
-    <div style={{ ...sheet, background: '#f0fdf4', borderColor: C.green }}>
+    <div style={{ ...sheet, background: `${C.green}18`, borderColor: C.green }}>
       <div style={{ fontSize: 13, color: C.green, fontWeight: 500, marginBottom: 4 }}>
         ✓ {amt} S sent
       </div>

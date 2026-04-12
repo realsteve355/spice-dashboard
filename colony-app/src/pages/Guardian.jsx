@@ -4,18 +4,7 @@ import Layout from '../components/Layout'
 import { MOCK_CHILDREN, MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-}
+import { C } from '../theme'
 
 function ageFrom(dob) {
   const diff = Date.now() - new Date(dob).getTime()
@@ -324,7 +313,7 @@ function Field({ label, value, onChange, placeholder, type }) {
   )
 }
 
-const card       = { background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 8, padding: 16, marginBottom: 10 }
-const primaryBtn = { padding: '11px 16px', background: C.gold, color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
-const ghostBtn   = { padding: '11px 14px', background: '#fff', color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em' }
+const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 10 }
+const primaryBtn = { padding: '11px 16px', background: C.gold, color: C.bg, border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
+const ghostBtn   = { padding: '11px 14px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em' }
 const inlineInput = { padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none' }

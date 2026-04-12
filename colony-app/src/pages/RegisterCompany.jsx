@@ -8,17 +8,7 @@ const REGISTRY_ABI = [
   "function register(string, address[], uint256[]) external returns (uint256)",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-}
+import { C } from '../theme'
 
 export default function RegisterCompany() {
   const { slug }  = useParams()
@@ -221,12 +211,12 @@ const inputStyle  = {
   fontSize: 13, color: C.text, background: C.white, outline: 'none',
 }
 const primaryBtn  = {
-  width: '100%', padding: '13px', background: C.gold, color: '#fff',
+  width: '100%', padding: '13px', background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 const ghostBtn    = {
-  padding: '10px 14px', background: '#fff', color: C.sub,
+  padding: '10px 14px', background: C.white, color: C.sub,
   border: `1px solid ${C.border}`, borderRadius: 6,
   fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
 }

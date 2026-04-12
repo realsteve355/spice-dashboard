@@ -3,16 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-}
+import { C } from '../theme'
 
 const FIXED_PARAMS = [
   { label: 'UBI per citizen',        value: '1,000 S-tokens / month' },
@@ -281,14 +272,14 @@ export default function CreateColony() {
 }
 
 const primaryBtn = {
-  padding: '13px 16px', background: C.gold, color: '#fff',
+  padding: '13px 16px', background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   width: '100%',
 }
 
 const ghostBtn = {
-  padding: '12px 16px', background: '#fff', color: C.sub,
+  padding: '12px 16px', background: C.white, color: C.sub,
   border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12,
   cursor: 'pointer', letterSpacing: '0.04em',
 }

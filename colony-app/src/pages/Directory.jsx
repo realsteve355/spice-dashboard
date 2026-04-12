@@ -2,15 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
-
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-}
+import { C } from '../theme'
 
 export default function Directory() {
   const navigate = useNavigate()
@@ -39,7 +31,7 @@ export default function Directory() {
           onClick={() => navigate('/create')}
           style={{
             width: '100%', padding: '13px', marginBottom: 24,
-            background: C.gold, color: '#fff',
+            background: C.gold, color: C.bg,
             border: 'none', borderRadius: 8,
             fontSize: 13, cursor: 'pointer', letterSpacing: '0.06em',
             fontWeight: 500,

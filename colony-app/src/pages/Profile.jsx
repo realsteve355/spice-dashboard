@@ -4,18 +4,7 @@ import Layout from '../components/Layout'
 import { MOCK_PROFILE, MOCK_COLONIES, MOCK_CITIZEN_DATA } from '../data/mock'
 import { useWallet } from '../App'
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-}
+import { C } from '../theme'
 
 export default function Profile() {
   const { slug }  = useParams()
@@ -227,10 +216,10 @@ export default function Profile() {
 function Row({ label, value, color, mono }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: 12, color: '#555' }}>{label}</span>
+      <span style={{ fontSize: 12, color: C.sub }}>{label}</span>
       <span style={{
         fontSize: mono ? 11 : 12,
-        color: color || '#111',
+        color: color || C.text,
         fontFamily: mono ? 'monospace' : 'inherit',
         maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         textAlign: 'right',
@@ -242,12 +231,12 @@ function Row({ label, value, color, mono }) {
 }
 
 function Div() {
-  return <div style={{ borderBottom: '1px solid #e2e2e2', margin: '8px 0' }} />
+  return <div style={{ borderBottom: `1px solid ${C.border}`, margin: '8px 0' }} />
 }
 
-const card       = { background: '#ffffff', border: '1px solid #e2e2e2', borderRadius: 8, padding: 16, marginBottom: 10 }
+const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 10 }
 const fieldGroup = { marginBottom: 14 }
 const fieldLabel = { display: 'block', fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }
 const inputStyle = { width: '100%', padding: '11px 12px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, color: C.text, background: C.white, outline: 'none' }
-const primaryBtn = { padding: '11px 16px', background: C.gold, color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
-const ghostBtn   = { padding: '10px 14px', background: '#fff', color: C.sub, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em' }
+const primaryBtn = { padding: '11px 16px', background: C.gold, color: C.bg, border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
+const ghostBtn   = { padding: '10px 14px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em' }

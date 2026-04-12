@@ -142,8 +142,6 @@ function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const CIRCLE_D = 162; // diameter of centre circle
-
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
   // colonyData: { [id]: { name, citizens, epoch } | null }
@@ -310,28 +308,6 @@ export default function Home() {
 
       </div>
 
-      {/* ── SPICE circle — overlaid at grid intersection (64) ── */}
-      <Link to="/spice-system" style={{
-        position:"absolute",
-        top:"50%", left:"50%",
-        transform:"translate(-50%, -50%)",
-        textDecoration:"none",
-        zIndex:10,
-      }}>
-        <div style={{
-          width:CIRCLE_D, height:CIRCLE_D, borderRadius:"50%",
-          border:`2px solid ${GOLD}`,
-          background:`linear-gradient(145deg, #13100a 0%, ${BG1} 60%)`,
-          boxShadow:`0 0 0 4px ${BG0}, 0 0 30px rgba(200,169,110,0.22)`,
-          display:"flex", flexDirection:"column",
-          alignItems:"center", justifyContent:"center",
-        }}>
-          <div style={{ fontSize:32, color:GOLD, lineHeight:1 }}>◈</div>
-          <div style={{ fontSize:10, fontWeight:700, color:T1, letterSpacing:"0.18em", marginTop:8 }}>SPICE</div>
-          <div style={{ fontSize:7.5, color:T2, letterSpacing:"0.1em", marginTop:3 }}>ECONOMIC</div>
-          <div style={{ fontSize:7.5, color:T2, letterSpacing:"0.1em" }}>SYSTEM</div>
-        </div>
-      </Link>
 
     </div>
   );

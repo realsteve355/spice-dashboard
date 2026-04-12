@@ -12,18 +12,7 @@ const MCC_SERVICES_ABI = [
   "function removeService(uint256) external",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-}
+import { C } from '../theme'
 
 export default function Admin() {
   const { slug }  = useParams()
@@ -356,7 +345,7 @@ export default function Admin() {
 function SvcInput({ placeholder, value, onChange }) {
   return (
     <input
-      style={{ width: '100%', padding: '9px 10px', border: '1px solid #e2e2e2', borderRadius: 6, fontSize: 12, color: '#111', background: '#fff', outline: 'none', marginBottom: 8 }}
+      style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none', marginBottom: 8 }}
       placeholder={placeholder}
       value={value}
       onChange={e => onChange(e.target.value)}
@@ -376,18 +365,18 @@ function StatCard({ label, value, unit, color }) {
 }
 
 const card = {
-  background: '#ffffff', border: '1px solid #e2e2e2',
+  background: C.white, border: `1px solid ${C.border}`,
   borderRadius: 8, padding: 16, marginBottom: 10,
 }
 
 const primaryBtn = {
-  padding: '13px 16px', background: C.gold, color: '#fff',
+  padding: '13px 16px', background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 
 const ghostBtn = {
-  padding: '12px 16px', background: '#fff', color: C.sub,
+  padding: '12px 16px', background: C.white, color: C.sub,
   border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12,
   cursor: 'pointer', letterSpacing: '0.04em', marginBottom: 10,
 }

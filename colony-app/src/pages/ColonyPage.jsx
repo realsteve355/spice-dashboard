@@ -10,17 +10,7 @@ const COLONY_ABI = [
   "function isCitizen(address) view returns (bool)",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  bg:     '#f5f5f5',
-}
+import { C } from '../theme'
 
 const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
 

@@ -5,19 +5,7 @@ import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-  blue:   '#3b82f6',
-}
+import { C } from '../theme'
 
 const TYPE_META = {
   ELECTION:  { label: 'ELECTION',  color: C.purple },

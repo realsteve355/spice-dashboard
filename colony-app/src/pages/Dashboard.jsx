@@ -18,18 +18,7 @@ const COLONY_ABI = [
   "event Redeemed(address indexed citizen, uint256 amount)",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-}
+import { C } from '../theme'
 
 export default function Dashboard() {
   const { slug }  = useParams()
@@ -555,7 +544,7 @@ export default function Dashboard() {
             {isMcc && (
               <button
                 onClick={() => navigate(`/colony/${slug}/admin`)}
-                style={{ ...smallBtn('#555', '#fff', C.border), flex: 1 }}
+                style={{ ...smallBtn(C.sub, '#fff', C.border), flex: 1 }}
               >
                 MCC Admin →
               </button>
@@ -653,17 +642,17 @@ function LegendDot({ color, label }) {
 }
 
 const card = {
-  background: '#ffffff', border: '1px solid #e2e2e2',
+  background: C.white, border: `1px solid ${C.border}`,
   borderRadius: 8, padding: 16, marginBottom: 10,
 }
 
 const primaryBtn = {
-  padding: '13px 16px', background: C.gold, color: '#fff',
+  padding: '13px 16px', background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 
-function smallBtn(bg, color = '#fff', border) {
+function smallBtn(bg, color = C.text, border) {
   return {
     padding: '9px 14px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',
@@ -672,8 +661,8 @@ function smallBtn(bg, color = '#fff', border) {
 }
 
 const inlineInput = {
-  padding: '9px 10px', border: '1px solid #e2e2e2',
-  borderRadius: 6, fontSize: 12, color: '#111', background: '#fff', outline: 'none',
+  padding: '9px 10px', border: `1px solid ${C.border}`,
+  borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
 }
 
 const mmBtn = {

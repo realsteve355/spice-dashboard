@@ -4,17 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-}
+import { C } from '../theme'
 
 export default function RequestPayment() {
   const { slug }         = useParams()
@@ -76,7 +66,7 @@ export default function RequestPayment() {
             value={payUrl}
             size={220}
             fgColor={C.text}
-            bgColor={C.white}
+            bgColor="#ffffff"
             level="M"
           />
         </div>
@@ -169,7 +159,7 @@ const inputStyle  = {
 }
 const primaryBtn  = {
   width: '100%', padding: '14px',
-  background: C.gold, color: '#fff',
+  background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }

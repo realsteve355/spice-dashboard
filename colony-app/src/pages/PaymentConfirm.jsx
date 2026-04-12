@@ -8,16 +8,7 @@ const COLONY_ABI = [
   "function send(address, uint256, string) external",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  green:  '#16a34a',
-  red:    '#ef4444',
-}
+import { C } from '../theme'
 
 export default function PaymentConfirm() {
   const { slug }       = useParams()
@@ -147,7 +138,7 @@ export default function PaymentConfirm() {
 
 const primaryBtn = {
   width: '100%', padding: '14px',
-  background: C.gold, color: '#fff',
+  background: C.gold, color: C.bg,
   border: 'none', borderRadius: 8, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   marginBottom: 0,

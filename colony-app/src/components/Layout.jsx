@@ -1,15 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '../App'
-
-const C = {
-  gold:    '#B8860B',
-  border:  '#e2e2e2',
-  faint:   '#aaa',
-  bg:      '#f5f5f5',
-  white:   '#ffffff',
-  text:    '#111',
-  sub:     '#555',
-}
+import { C } from '../theme'
 
 export default function Layout({ children, title, back, colonySlug }) {
   const navigate  = useNavigate()
@@ -63,7 +54,7 @@ export default function Layout({ children, title, back, colonySlug }) {
           <button
             onClick={connect}
             style={{
-              fontSize: 11, color: C.white, background: C.gold,
+              fontSize: 11, color: C.bg, background: C.gold,
               border: 'none', borderRadius: 20, padding: '5px 12px',
               cursor: 'pointer', letterSpacing: '0.04em',
             }}
@@ -118,7 +109,6 @@ export default function Layout({ children, title, back, colonySlug }) {
 }
 
 function NavTab({ label, icon, active, onClick, muted }) {
-  const C = { gold: '#B8860B', faint: '#bbb', text: '#555' }
   return (
     <button
       onClick={onClick}

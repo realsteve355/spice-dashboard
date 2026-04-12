@@ -14,18 +14,7 @@ const COLONY_EVENTS_ABI = [
   "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
 ]
 
-const C = {
-  gold:   '#B8860B',
-  border: '#e2e2e2',
-  white:  '#ffffff',
-  text:   '#111',
-  sub:    '#555',
-  faint:  '#aaa',
-  bg:     '#f5f5f5',
-  green:  '#16a34a',
-  red:    '#ef4444',
-  purple: '#8b5cf6',
-}
+import { C } from '../theme'
 
 export default function Company() {
   const { slug, companyId } = useParams()
@@ -449,7 +438,7 @@ function ContractsTab({ contracts, isOwner, companyId }) {
 
       {/* Create form */}
       {creating && (
-        <div style={{ ...card, borderColor: C.gold, background: '#fffbf0', marginBottom: 12 }}>
+        <div style={{ ...card, borderColor: C.gold, background: `${C.gold}10`, marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW CONTRACT</div>
 
           {/* Type selector */}
@@ -457,8 +446,8 @@ function ContractsTab({ contracts, isOwner, companyId }) {
             {['forward','escrow','revenue-share'].map(t => (
               <button key={t} onClick={() => setCType(t)} style={{
                 flex: 1, padding: '8px 4px',
-                background: cType === t ? C.gold : '#fff',
-                color: cType === t ? '#fff' : C.sub,
+                background: cType === t ? C.gold : C.white,
+                color: cType === t ? C.bg : C.sub,
                 border: `1px solid ${cType === t ? C.gold : C.border}`,
                 borderRadius: 6, fontSize: 10, cursor: 'pointer',
               }}>
@@ -658,7 +647,7 @@ function ShareTrading({ company, myStake, slug }) {
             Transfer is atomic on-chain. Shares may not be pledged as collateral.
           </div>
           {!listing ? (
-            <button onClick={() => setListing(true)} style={{ ...actionBtn(C.sub), border: `1px solid ${C.border}`, background: '#fff', color: C.sub }}>
+            <button onClick={() => setListing(true)} style={{ ...actionBtn(C.sub), border: `1px solid ${C.border}`, background: C.white, color: C.sub }}>
               List shares for sale
             </button>
           ) : (
@@ -717,22 +706,22 @@ function equityColor(i) {
 function Row({ label, value, color, bold }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: 12, color: '#555' }}>{label}</span>
-      <span style={{ fontSize: 12, color: color || '#111', fontWeight: bold ? 600 : 400 }}>{value}</span>
+      <span style={{ fontSize: 12, color: C.sub }}>{label}</span>
+      <span style={{ fontSize: 12, color: color || C.text, fontWeight: bold ? 600 : 400 }}>{value}</span>
     </div>
   )
 }
 
 function Divider() {
-  return <div style={{ borderBottom: '1px solid #e2e2e2', margin: '8px 0' }} />
+  return <div style={{ borderBottom: `1px solid ${C.border}`, margin: '8px 0' }} />
 }
 
 const card = {
-  background: '#ffffff', border: '1px solid #e2e2e2',
+  background: C.white, border: `1px solid ${C.border}`,
   borderRadius: 8, padding: 16, marginBottom: 10,
 }
 
-function actionBtn(bg, color = '#fff') {
+function actionBtn(bg, color = C.bg) {
   return {
     padding: '10px 14px', background: bg, color,
     border: 'none', borderRadius: 6, fontSize: 11,
@@ -741,6 +730,6 @@ function actionBtn(bg, color = '#fff') {
 }
 
 const inlineInput = {
-  padding: '9px 10px', border: '1px solid #e2e2e2',
-  borderRadius: 6, fontSize: 12, color: '#111', background: '#fff', outline: 'none',
+  padding: '9px 10px', border: `1px solid ${C.border}`,
+  borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
 }
