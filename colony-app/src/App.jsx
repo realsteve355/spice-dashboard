@@ -210,13 +210,16 @@ export default function App() {
     }).catch(() => {})
   }, [connect])
 
-  // Listen for account changes
+  // Listen for account changes — reconnect on switch, disconnect on lock
   useEffect(() => {
     if (!window.ethereum) return
-    const handler = () => disconnect()
+    const handler = (accounts) => {
+      if (accounts.length > 0) connect()
+      else disconnect()
+    }
     window.ethereum.on('accountsChanged', handler)
     return () => window.ethereum.removeListener('accountsChanged', handler)
-  }, [disconnect])
+  }, [connect, disconnect])
 
   // Listen for network changes — disconnect so user re-connects on correct chain
   useEffect(() => {
