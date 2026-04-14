@@ -592,6 +592,14 @@ async function transferOwnership() {
   clearMsg("owner");
   const val = document.getElementById("inp-owner").value.trim();
   if (!ethers.isAddress(val)) { showErr("owner", "Invalid address"); return; }
+  // Verify signer address matches owner before sending
+  const signerAddr = await signer.getAddress();
+  const reg0 = new ethers.Contract(REGISTRY, REGISTRY_ABI, provider);
+  const onChainOwner = await reg0.owner();
+  if (signerAddr.toLowerCase() !== onChainOwner.toLowerCase()) {
+    showErr("owner", "Wrong wallet connected. Need " + onChainOwner.slice(0,10) + "… but MetaMask is using " + signerAddr.slice(0,10) + "…");
+    return;
+  }
   if (!confirm("Change protocol wallet to " + val + "?\nThis wallet will own the registry and receive all fees.\nYou will lose admin access. Cannot be undone.")) return;
   try {
     const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
