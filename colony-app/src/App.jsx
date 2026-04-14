@@ -86,7 +86,16 @@ export default function App() {
     await loadOnChainData(addr, prov)
   }, [])
 
-  const disconnect = useCallback(() => {
+  const disconnect = useCallback(async () => {
+    // Revoke MetaMask permissions so the next "Connect Wallet" shows the account picker
+    if (window.ethereum) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_revokePermissions',
+          params: [{ eth_accounts: {} }],
+        })
+      } catch { /* older wallets may not support this — ignore */ }
+    }
     setAddress(null)
     setProvider(null)
     setSigner(null)
