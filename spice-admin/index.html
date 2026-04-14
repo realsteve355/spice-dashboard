@@ -138,7 +138,8 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
     <div style="font-size:20px;font-weight:700;color:#c8a96e;margin-bottom:4px">Colony Registry</div>
     <div style="font-size:11px;color:#8899bb;line-height:1.6">
       Manage registered colonies, per-colony fee rates, and protocol settings.
-      The revenue wallet is set via script only — see <code style="color:#4a5878">scripts/setTreasury.js</code>.
+      Connect the <strong style="color:#c8a96e">Registry Owner</strong> wallet to make changes.
+      The <strong style="color:#c8a96e">Revenue Wallet</strong> receives ETH fee settlements from colonies — set via <code style="color:#4a5878">scripts/setTreasury.js</code>.
     </div>
   </div>
 
@@ -155,14 +156,19 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
       <div class="stat-sub">default rate</div>
     </div>
     <div class="stat">
-      <div class="stat-label">TOTAL PENDING</div>
-      <div class="stat-value" id="stat-pending" style="color:#eab308;font-size:15px;margin-top:4px">—</div>
-      <div class="stat-sub">ETH across all colonies</div>
+      <div class="stat-label">REGISTRY OWNER</div>
+      <div id="stat-owner" style="font-size:10px;color:#8899bb;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
+      <div class="stat-sub" style="margin-top:4px">connect this wallet to make changes</div>
     </div>
     <div class="stat">
       <div class="stat-label">REVENUE WALLET</div>
       <div id="stat-treasury" style="font-size:10px;color:#8899bb;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
-      <div class="stat-sub" style="margin-top:4px">set via script only</div>
+      <div class="stat-sub" style="margin-top:4px">receives ETH fee settlements</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">TOTAL PENDING</div>
+      <div class="stat-value" id="stat-pending" style="color:#eab308;font-size:15px;margin-top:4px">—</div>
+      <div class="stat-sub">ETH owed across all colonies</div>
     </div>
   </div>
 
@@ -308,14 +314,16 @@ async function loadAll() {
   const prov = provider || new ethers.JsonRpcProvider(RPC);
   const reg  = new ethers.Contract(REGISTRY, REGISTRY_ABI, prov);
   try {
-    const [treasury, feeWei, allAddrs] = await Promise.all([
+    const [treasury, feeWei, ownerAddr, allAddrs] = await Promise.all([
       reg.protocolTreasury(),
       reg.feePerTx(),
+      reg.owner(),
       reg.getAll(),
     ]);
     globalFeeWei = feeWei;
     document.getElementById("stat-fee").textContent      = ethers.formatEther(feeWei) + " ETH";
     document.getElementById("stat-treasury").textContent = treasury.slice(0,10)+"…"+treasury.slice(-8);
+    document.getElementById("stat-owner").textContent    = ownerAddr.slice(0,10)+"…"+ownerAddr.slice(-8);
     document.getElementById("cur-fee").textContent       = "current: " + ethers.formatEther(feeWei) + " ETH";
 
     if (!allAddrs.length) {
