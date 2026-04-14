@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+<script src="config.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8eaf0; font-size: 13px; min-height: 100vh; }
@@ -126,7 +127,6 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
   <div class="topbar-right">
     <span id="net-badge" class="badge badge-net" style="display:none">Base Sepolia</span>
     <span id="role-badge" class="badge" style="display:none"></span>
-    <button id="btn-connect" class="btn-connect" onclick="connectWallet()" title="Connect the Registry Owner wallet shown in the stats below">Sign in as Registry Owner</button>
     <span id="addr-chip" class="addr-chip" style="display:none"></span>
   </div>
 </div>
@@ -175,21 +175,24 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
   <!-- Owner: global fee + register -->
   <div id="owner-panel">
   <div id="owner-lock" style="font-size:11px;color:#4a5878;padding:10px 16px;border:1px solid #1e2a42;border-radius:6px;margin-bottom:14px">
-    Owner actions locked — click <strong style="color:#c8a96e">Sign in as Registry Owner</strong> (top right) to enable.
-    Connect the wallet shown in the <strong style="color:#c8a96e">Registry Owner</strong> stat box.
+    Owner actions locked. Click any action button below to sign in with MetaMask.
+    Use the wallet shown in the <strong style="color:#c8a96e">Registry Owner</strong> stat box.
   </div>
     <div class="card">
-      <div class="card-title">GLOBAL SETTINGS — OWNER ONLY</div>
+      <div class="card-title">OWNER ACTIONS</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <!-- Global fee -->
         <div>
           <div class="field">
-            <label>DEFAULT FEE PER TX (ETH)</label>
+            <label>DEFAULT FEE PER TRANSACTION (ETH)</label>
             <div class="inp-row">
               <input class="inp" id="inp-global-fee" placeholder="e.g. 0.000001" type="number" step="0.0000001" />
               <button class="btn btn-gold owner-action" onclick="setGlobalFee()" disabled>Update →</button>
             </div>
             <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-fee"></div>
+          </div>
+          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+            Sets the ETH amount accrued by each colony per S-token send(). Applied to all colonies unless a per-colony override is set in the colony detail drawer below.
           </div>
           <div class="err" id="err-global-fee"></div>
           <div class="ok"  id="ok-global-fee">Global fee updated ✓</div>
@@ -197,33 +200,41 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
         <!-- Transfer ownership -->
         <div>
           <div class="field">
-            <label>TRANSFER REGISTRY OWNERSHIP</label>
+            <label>TRANSFER REGISTRY OWNERSHIP TO NEW WALLET</label>
             <div class="inp-row">
-              <input class="inp" id="inp-owner" placeholder="New owner 0x…" />
+              <input class="inp" id="inp-owner" placeholder="New owner wallet 0x…" />
               <button class="btn btn-red owner-action" onclick="transferOwnership()" disabled>Transfer</button>
             </div>
           </div>
+          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+            Hands full admin control of the ColonyRegistry to a different wallet. The current Registry Owner wallet loses all access. Irreversible without the new owner's cooperation.
+          </div>
           <div class="err" id="err-owner"></div>
           <div class="ok"  id="ok-owner">Ownership transferred ✓</div>
-          <div style="font-size:9px;color:#4a5878;margin-top:4px">Irreversible — you will lose admin access.</div>
         </div>
       </div>
     </div>
 
     <!-- Register a colony -->
     <div class="card">
-      <div class="card-title">REGISTER A COLONY</div>
+      <div class="card-title">MANUALLY REGISTER A COLONY</div>
+      <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:14px">
+        New colonies register themselves automatically when deployed via zpc.finance/create.
+        Use this only for colonies that were deployed before the registry existed, or deployed without going through the create flow.
+        You will need the colony's contract address (from the deployer's MetaMask activity or Basescan).
+        The slug is the URL identifier (e.g. <em>daves-colony</em>) — must be unique and lowercase with hyphens only.
+      </div>
       <div style="display:grid;grid-template-columns:2fr 1fr 2fr auto;gap:8px;align-items:flex-end">
         <div class="field" style="margin:0">
           <label>COLONY CONTRACT ADDRESS</label>
           <input class="inp" id="inp-reg-addr" placeholder="0x…" />
         </div>
         <div class="field" style="margin:0">
-          <label>SLUG</label>
+          <label>SLUG (URL ID)</label>
           <input class="inp" id="inp-reg-slug" placeholder="my-colony" />
         </div>
         <div class="field" style="margin:0">
-          <label>NAME</label>
+          <label>DISPLAY NAME</label>
           <input class="inp" id="inp-reg-name" placeholder="My Colony" />
         </div>
         <button class="btn btn-gold owner-action" style="margin-bottom:0" onclick="registerColony()" disabled>Register →</button>
@@ -248,20 +259,13 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
 </div>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-// REGISTRY     — the ColonyRegistry smart contract (not a wallet)
-//                update this if you redeploy the contract
-// Registry Owner wallet — whoever deployed REGISTRY; shown in the Registry Owner
-//                stat box; connect THIS wallet to make changes on this page
-// Revenue Wallet        — receives ETH fee settlements from colonies;
-//                set via: TREASURY=0x... npx hardhat run scripts/setTreasury.js
-// ─────────────────────────────────────────────────────────────────────────────
-const REGISTRY  = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d"; // ColonyRegistry contract
-const CHAIN_ID  = 84532;
-const CHAIN_HEX = "0x14A34";
-const RPC       = "https://sepolia.base.org";
-const EXPLORER  = "https://sepolia.basescan.org";
-const APP       = "https://app.zpc.finance";
+// All config lives in config.js — edit that file, not this one.
+const REGISTRY  = window.SPICE_CONFIG.registry;
+const CHAIN_ID  = window.SPICE_CONFIG.chainId;
+const CHAIN_HEX = window.SPICE_CONFIG.chainHex;
+const RPC       = window.SPICE_CONFIG.rpc;
+const EXPLORER  = window.SPICE_CONFIG.explorer;
+const APP       = window.SPICE_CONFIG.app;
 
 const REGISTRY_ABI = [
   "function owner() view returns (address)",
@@ -294,35 +298,50 @@ let globalFeeWei = 0n, colonies = [], drawerIdx = null;
 
 // ── Wallet ────────────────────────────────────────────────────────────────────
 async function connectWallet() {
-  if (!window.ethereum) { alert("MetaMask not found."); return; }
+  if (signer) return true; // already connected
+  if (!window.ethereum) { alert("MetaMask not found. Install it from metamask.io."); return false; }
   try {
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     const cid = parseInt(await window.ethereum.request({ method: "eth_chainId" }), 16);
     if (cid !== CHAIN_ID) {
       try { await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] }); }
-      catch { alert("Switch MetaMask to Base Sepolia (84532)."); return; }
+      catch { alert("Please switch MetaMask to Base Sepolia (chain ID 84532)."); return false; }
     }
     wallet   = accounts[0];
     provider = new ethers.BrowserProvider(window.ethereum);
     signer   = await provider.getSigner();
-    document.getElementById("btn-connect").style.display = "none";
-    document.getElementById("addr-chip").style.display   = "inline";
-    document.getElementById("addr-chip").textContent     = wallet.slice(0,8)+"…"+wallet.slice(-6);
-    document.getElementById("net-badge").style.display   = "inline";
+
+    document.getElementById("addr-chip").style.display = "inline";
+    document.getElementById("addr-chip").textContent   = wallet.slice(0,8)+"…"+wallet.slice(-6);
+    document.getElementById("net-badge").style.display = "inline";
+
     const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, provider);
     const ownerAddr = await reg.owner();
     isOwner = ownerAddr.toLowerCase() === wallet.toLowerCase();
+
     const rb = document.getElementById("role-badge");
     rb.style.display = "inline";
-    rb.className = "badge " + (isOwner ? "badge-owner" : "badge-ro");
+    rb.className  = "badge " + (isOwner ? "badge-owner" : "badge-ro");
     rb.textContent = isOwner ? "OWNER" : "READ ONLY";
+
     if (isOwner) {
       document.getElementById("owner-lock").style.display = "none";
-      document.getElementById("btn-connect").style.display = "none";
       document.querySelectorAll(".owner-action").forEach(b => b.disabled = false);
+    } else {
+      document.getElementById("owner-lock").textContent =
+        "Connected as " + wallet.slice(0,10) + "… — not the Registry Owner. No changes allowed.";
     }
     await loadAll();
-  } catch(e) { console.error(e); }
+    return isOwner;
+  } catch(e) { console.error(e); return false; }
+}
+
+// Ensure wallet is connected and is the owner before running an action
+async function requireOwner() {
+  if (isOwner) return true;
+  const ok = await connectWallet();
+  if (!ok) { alert("You must connect the Registry Owner wallet to make changes."); return false; }
+  return true;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -538,6 +557,7 @@ async function loadTxHistory(colonyAddr) {
 
 // ── Owner actions ─────────────────────────────────────────────────────────────
 async function setGlobalFee() {
+  if (!await requireOwner()) return;
   clearMsg("global-fee");
   const val = document.getElementById("inp-global-fee").value.trim();
   if (!val || isNaN(parseFloat(val))) { showErr("global-fee", "Invalid amount"); return; }
@@ -555,6 +575,7 @@ async function setGlobalFee() {
 }
 
 async function registerColony() {
+  if (!await requireOwner()) return;
   clearMsg("reg");
   const addr = document.getElementById("inp-reg-addr").value.trim();
   const slug = document.getElementById("inp-reg-slug").value.trim().toLowerCase().replace(/\s+/g,"-");
@@ -576,6 +597,7 @@ async function registerColony() {
 }
 
 async function transferOwnership() {
+  if (!await requireOwner()) return;
   clearMsg("owner");
   const val = document.getElementById("inp-owner").value.trim();
   if (!ethers.isAddress(val)) { showErr("owner", "Invalid address"); return; }
