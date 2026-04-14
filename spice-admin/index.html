@@ -187,7 +187,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
             <label>DEFAULT FEE PER TRANSACTION (ETH)</label>
             <div class="inp-row">
               <input class="inp" id="inp-global-fee" placeholder="e.g. 0.000001" type="number" step="0.0000001" />
-              <button class="btn btn-gold owner-action" onclick="setGlobalFee()" disabled>Update →</button>
+              <button class="btn btn-gold owner-action" onclick="setGlobalFee()">Update →</button>
             </div>
             <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-fee"></div>
           </div>
@@ -203,7 +203,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
             <label>TRANSFER REGISTRY OWNERSHIP TO NEW WALLET</label>
             <div class="inp-row">
               <input class="inp" id="inp-owner" placeholder="New owner wallet 0x…" />
-              <button class="btn btn-red owner-action" onclick="transferOwnership()" disabled>Transfer</button>
+              <button class="btn btn-red owner-action" onclick="transferOwnership()">Transfer</button>
             </div>
           </div>
           <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
@@ -218,7 +218,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
             <label>UPDATE REVENUE WALLET</label>
             <div class="inp-row">
               <input class="inp" id="inp-treasury" placeholder="New revenue wallet 0x…" />
-              <button class="btn btn-gold owner-action" onclick="setTreasury()" disabled>Update →</button>
+              <button class="btn btn-gold owner-action" onclick="setTreasury()">Update →</button>
             </div>
           </div>
           <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
@@ -252,7 +252,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
           <label>DISPLAY NAME</label>
           <input class="inp" id="inp-reg-name" placeholder="My Colony" />
         </div>
-        <button class="btn btn-gold owner-action" style="margin-bottom:0" onclick="registerColony()" disabled>Register →</button>
+        <button class="btn btn-gold owner-action" style="margin-bottom:0" onclick="registerColony()">Register →</button>
       </div>
       <div class="err" id="err-reg"></div>
       <div class="ok"  id="ok-reg">Colony registered ✓</div>
