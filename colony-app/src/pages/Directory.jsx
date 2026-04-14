@@ -118,7 +118,7 @@ export default function Directory() {
               return (
                 <div
                   key={colony.id}
-                  onClick={() => navigate(`/colony/${colony.id}`)}
+                  onClick={() => navigate(`/colony/${colony.id}${colony.address ? `?address=${colony.address}` : ''}`)}
                   style={{
                     background: C.white, border: `1px solid ${isCitizen ? C.gold : C.border}`,
                     borderRadius: 8, padding: '16px', marginBottom: 10,
