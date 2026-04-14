@@ -126,7 +126,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
   <div class="topbar-right">
     <span id="net-badge" class="badge badge-net" style="display:none">Base Sepolia</span>
     <span id="role-badge" class="badge" style="display:none"></span>
-    <button id="btn-connect" class="btn-connect" onclick="connectWallet()">Connect wallet</button>
+    <button id="btn-connect" class="btn-connect" onclick="connectWallet()" title="Connect the Registry Owner wallet shown in the stats below">Sign in as Registry Owner</button>
     <span id="addr-chip" class="addr-chip" style="display:none"></span>
   </div>
 </div>
@@ -173,7 +173,11 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
   </div>
 
   <!-- Owner: global fee + register -->
-  <div id="owner-panel" style="display:none">
+  <div id="owner-panel">
+  <div id="owner-lock" style="font-size:11px;color:#4a5878;padding:10px 16px;border:1px solid #1e2a42;border-radius:6px;margin-bottom:14px">
+    Owner actions locked — click <strong style="color:#c8a96e">Sign in as Registry Owner</strong> (top right) to enable.
+    Connect the wallet shown in the <strong style="color:#c8a96e">Registry Owner</strong> stat box.
+  </div>
     <div class="card">
       <div class="card-title">GLOBAL SETTINGS — OWNER ONLY</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
@@ -183,7 +187,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
             <label>DEFAULT FEE PER TX (ETH)</label>
             <div class="inp-row">
               <input class="inp" id="inp-global-fee" placeholder="e.g. 0.000001" type="number" step="0.0000001" />
-              <button class="btn btn-gold" onclick="setGlobalFee()">Update →</button>
+              <button class="btn btn-gold owner-action" onclick="setGlobalFee()" disabled>Update →</button>
             </div>
             <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-fee"></div>
           </div>
@@ -196,7 +200,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
             <label>TRANSFER REGISTRY OWNERSHIP</label>
             <div class="inp-row">
               <input class="inp" id="inp-owner" placeholder="New owner 0x…" />
-              <button class="btn btn-red" onclick="transferOwnership()">Transfer</button>
+              <button class="btn btn-red owner-action" onclick="transferOwnership()" disabled>Transfer</button>
             </div>
           </div>
           <div class="err" id="err-owner"></div>
@@ -222,7 +226,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
           <label>NAME</label>
           <input class="inp" id="inp-reg-name" placeholder="My Colony" />
         </div>
-        <button class="btn btn-gold" style="margin-bottom:0" onclick="registerColony()">Register →</button>
+        <button class="btn btn-gold owner-action" style="margin-bottom:0" onclick="registerColony()" disabled>Register →</button>
       </div>
       <div class="err" id="err-reg"></div>
       <div class="ok"  id="ok-reg">Colony registered ✓</div>
@@ -244,7 +248,15 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
 </div>
 
 <script>
-const REGISTRY  = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// REGISTRY     — the ColonyRegistry smart contract (not a wallet)
+//                update this if you redeploy the contract
+// Registry Owner wallet — whoever deployed REGISTRY; shown in the Registry Owner
+//                stat box; connect THIS wallet to make changes on this page
+// Revenue Wallet        — receives ETH fee settlements from colonies;
+//                set via: TREASURY=0x... npx hardhat run scripts/setTreasury.js
+// ─────────────────────────────────────────────────────────────────────────────
+const REGISTRY  = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d"; // ColonyRegistry contract
 const CHAIN_ID  = 84532;
 const CHAIN_HEX = "0x14A34";
 const RPC       = "https://sepolia.base.org";
@@ -304,7 +316,11 @@ async function connectWallet() {
     rb.style.display = "inline";
     rb.className = "badge " + (isOwner ? "badge-owner" : "badge-ro");
     rb.textContent = isOwner ? "OWNER" : "READ ONLY";
-    if (isOwner) document.getElementById("owner-panel").style.display = "block";
+    if (isOwner) {
+      document.getElementById("owner-lock").style.display = "none";
+      document.getElementById("btn-connect").style.display = "none";
+      document.querySelectorAll(".owner-action").forEach(b => b.disabled = false);
+    }
     await loadAll();
   } catch(e) { console.error(e); }
 }
