@@ -183,6 +183,7 @@ function buildColonyList(registryColonies) {
       return {
         id,
         name:        cfg.name || id,
+        address:     cfg.colony || null,
         description: '',
         founded:     null,
         citizenCount: null,
@@ -198,6 +199,7 @@ function buildColonyList(registryColonies) {
     .map(([id, info]) => ({
       id,
       name:        info.name || id,
+      address:     info.address || null,
       description: '',
       founded:     null,
       citizenCount: null,
