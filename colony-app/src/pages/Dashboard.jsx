@@ -27,7 +27,7 @@ import { C } from '../theme'
 export default function Dashboard() {
   const { slug }  = useParams()
   const navigate  = useNavigate()
-  const { address, isConnected, isCitizenOf, isMccOf, citizenColonies, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
+  const { address, isConnected, isCitizenOf, isMccOf, connect, onChain, onChainLoading, refresh, signer, contracts } = useWallet()
 
   const chain     = onChain?.[slug]
   const isCitizen = isCitizenOf(slug)
@@ -326,32 +326,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        {/* Colony switcher (if citizen of multiple) */}
-        {citizenColonies.length > 1 && (
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
-            {citizenColonies.map(id => {
-              const c    = MOCK_COLONIES.find(x => x.id === id)
-              const name = c?.name || onChain?.[id]?.colonyName || id
-              return (
-                <button
-                  key={id}
-                  onClick={() => navigate(`/colony/${id}/dashboard`)}
-                  style={{
-                    flexShrink: 0,
-                    padding: '5px 12px', borderRadius: 16,
-                    border: `1px solid ${id === slug ? C.gold : C.border}`,
-                    background: id === slug ? C.gold : C.white,
-                    color: id === slug ? '#fff' : C.sub,
-                    fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
-                  }}
-                >
-                  {name}
-                </button>
-              )
-            })}
-          </div>
-        )}
 
         {/* S-token balance */}
         <div style={card}>

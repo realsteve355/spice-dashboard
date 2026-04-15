@@ -3,7 +3,7 @@
 export const MOCK_WALLET = '0xf39F...2266'
 
 // Colonies this wallet is a citizen of
-export const MOCK_CITIZEN_COLONIES = ['turing-campus']
+export const MOCK_CITIZEN_COLONIES = []
 
 // Colonies this wallet is MCC board of
 export const MOCK_MCC_COLONIES = []
@@ -182,9 +182,6 @@ export const MOCK_MY_EQUITY = {
   'turing-campus': [
     { companyId: 'campus-coffee', name: 'Campus Coffee Co.', pct: 60, lastDividendV: 150 },
     { companyId: 'campus-print',  name: 'QuickPrint',         pct: 25, lastDividendV: 30  },
-  ],
-  'daves-colony': [
-    { companyId: 'daves-coffee', name: "Dave's Coffee", pct: 100, lastDividendV: 0 },
   ],
 }
 
