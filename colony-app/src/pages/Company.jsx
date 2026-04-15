@@ -114,28 +114,39 @@ export default function Company() {
     if (!queryAddr) return
     setTxLoading(true)
     const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
-    const colonyContract = new ethers.Contract(cfg.colony, COLONY_EVENTS_ABI, rpc)
 
     async function load() {
       try {
-        // Limit block range — public Base Sepolia RPC rejects getLogs over ~10k blocks.
-        // 500k blocks ≈ 11 days at 2s block time, covering all recent test activity.
+        // Use raw getLogs + Interface.parseLog instead of contract.queryFilter —
+        // queryFilter/contract.filters hits LavaMoat restrictions in some MetaMask builds.
+        const iface = new ethers.Interface(COLONY_EVENTS_ABI)
         const toBlock   = await rpc.getBlockNumber()
-        const fromBlock = Math.max(0, toBlock - 500000)
+        const fromBlock = Math.max(0, toBlock - 500000)  // ~11 days of Base Sepolia blocks
 
-        // safeQuery wraps both filter creation and the async call so any RPC error
-        // (range limit, missing event, etc.) returns [] rather than killing Promise.all.
-        const safeQuery = async (filterFn) => {
-          try {
-            return await colonyContract.queryFilter(filterFn(), fromBlock, toBlock)
-          } catch { return [] }
+        // Topic hashes
+        const T_SENT    = ethers.id('Sent(address,address,uint256,string)')
+        const T_SAVED   = ethers.id('Saved(address,uint256)')
+        const T_VDIV    = ethers.id('VDividendPaid(address,address,uint256)')
+        const pad = (addr) => ethers.zeroPadValue(addr, 32)
+
+        const safeLogs = async (filter) => {
+          try { return await rpc.getLogs(filter) }
+          catch (e) { console.warn('[Accounts] getLogs failed:', e?.message); return [] }
         }
-        const [received, sent, saves, dividends] = await Promise.all([
-          safeQuery(() => colonyContract.filters.Sent(undefined, queryAddr)),
-          safeQuery(() => colonyContract.filters.Sent(queryAddr, undefined)),
-          onChain ? safeQuery(() => colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
-          onChain ? safeQuery(() => colonyContract.filters.VDividendPaid(queryAddr, undefined)) : Promise.resolve([]),
+
+        const base = { address: cfg.colony, fromBlock, toBlock }
+        const [receivedLogs, sentLogs, savedLogs, dividendLogs] = await Promise.all([
+          safeLogs({ ...base, topics: [T_SENT,  null,          pad(queryAddr)] }),
+          safeLogs({ ...base, topics: [T_SENT,  pad(queryAddr), null]          }),
+          onChain ? safeLogs({ ...base, topics: [T_SAVED, pad(queryAddr)] }) : Promise.resolve([]),
+          onChain ? safeLogs({ ...base, topics: [T_VDIV,  pad(queryAddr), null] }) : Promise.resolve([]),
         ])
+
+        const decode = (log) => { try { return iface.parseLog(log) } catch { return null } }
+        const received  = receivedLogs.map(l  => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const sent      = sentLogs.map(l      => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const saves     = savedLogs.map(l     => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const dividends = dividendLogs.map(l  => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
 
         const allEvents = [...received, ...sent, ...saves, ...dividends]
         const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
@@ -153,19 +164,19 @@ export default function Company() {
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'revenue',
-            description: e.args.note || 'Payment received',
-            counterparty: e.args.from,
-            dr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Dr Cash (S)
+            description: e.parsed.args[3] || 'Payment received',   // note
+            counterparty: e.parsed.args[0],                         // from
+            dr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
             cr: null,
           })),
           ...sent.map(e => ({
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'expense',
-            description: e.args.note || 'Payment sent',
-            counterparty: e.args.to,
+            description: e.parsed.args[3] || 'Payment sent',        // note
+            counterparty: e.parsed.args[1],                         // to
             dr: null,
-            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr Cash (S)
+            cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
           ...saves.map(e => ({
             hash: e.transactionHash, blockNumber: e.blockNumber,
@@ -174,16 +185,16 @@ export default function Company() {
             description: 'S → V conversion',
             counterparty: null,
             dr: null,
-            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr Cash (S), Dr V Reserve
+            cr: Math.floor(Number(ethers.formatEther(e.parsed.args[1]))),
           })),
           ...dividends.map(e => ({
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'dividend',
-            description: `V dividend → ${e.args.to.slice(0,6)}…${e.args.to.slice(-4)}`,
-            counterparty: e.args.to,
+            description: `V dividend → ${String(e.parsed.args[1]).slice(0,6)}…${String(e.parsed.args[1]).slice(-4)}`,
+            counterparty: e.parsed.args[1],
             dr: null,
-            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr V Reserve
+            cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
         ].sort((a, b) => b.blockNumber - a.blockNumber)
 
