@@ -137,11 +137,61 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-25 | As a company owner, I want to see my outstanding stewardship fee per land parcel so I can pay before falling into arrears | P2 | — |
 | F-26 | As a company owner, I want a notification when another citizen force-purchases one of my land parcels | P3 | — |
 
+### Company as Smart Contract
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| F-27 | As a citizen registering a company, I want the registration flow to deploy a company smart contract so the company has its own on-chain wallet address — not just a ledger entry | P1 | — |
+| F-28 | As a company owner, I want to share the company wallet address so customers can pay us directly via colony.send() without knowing anything about our internal equity structure | P1 | — |
+
 *F-08: Auto-conversion is a smart contract concern; UI shows estimated projection only.*
 *F-11: Dividend distribution UI is display-only; on-chain distribution not yet wired.*
 *F-15: Share listing (sell side) built; buy side not yet implemented.*
 *F-17–F-21: Contracts tab UI is built; no on-chain contract; display-only mock.*
 *F-22–F-26: AssetRegistry.sol is written and ready to deploy; no UI built yet.*
+*F-27–F-28: Requires CompanyFactory refactor — companies currently stored as registry entries, not deployed contracts.*
+
+---
+
+## Role 2b — Organisation Secretary
+
+The citizen who currently holds the O-token for a registered organisation. Initially the
+founding citizen on company registration. May be transferred to any registered citizen when
+the role changes hands. The MCC chair is also an O-token holder; their stories are in Role 4.
+
+The O-token is not a voting instrument. The secretary votes in colony governance as a
+citizen, using their personal G-token. The O-token authorises them to perform on-chain
+operations on behalf of the organisation.
+
+### O-Token Identity
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| OS-01 | As a citizen registering a company, I want to automatically receive the company O-token so I am the verified on-chain representative from day one | P1 | — |
+| OS-02 | As an organisation secretary, I want to see the O-token in my wallet with the company name, registration number, and org type so I can confirm my authority at a glance | P1 | — |
+| OS-03 | As any citizen, I want to look up any company and see who currently holds its O-token so I know who is authorised to act on its behalf | P1 | — |
+| OS-04 | As an organisation secretary, I want to transfer the O-token to another registered citizen when I hand over the role so the incoming secretary has full on-chain authority immediately | P1 | — |
+| OS-05 | As any citizen, I want to see the O-token transfer history for a company so I can audit who has held the secretary role over time | P2 | — |
+
+### Company Wallet Operations
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| OS-06 | As an organisation secretary, I want to see the company wallet's S-token balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | — |
+| OS-07 | As an organisation secretary, I want to convert the company's net S-token earnings to V-tokens in a single on-chain transaction | P1 | — |
+| OS-08 | As an organisation secretary, I want to distribute V-token dividends to all equity holders in one transaction — amounts calculated automatically from the equity register in basis points | P1 | — |
+| OS-09 | As an organisation secretary, I want to see a dividend history showing each distribution: date, total V-tokens distributed, and the per-holder breakdown | P2 | — |
+| OS-10 | As an organisation secretary, I want to pay a supplier (citizen or company) in S-tokens from the company wallet with a note recorded on-chain | P1 | — |
+
+### Asset Management
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| OS-11 | As an organisation secretary, I want to register a physical asset to the company wallet so it appears on-chain as company-owned | P2 | — |
+| OS-12 | As an organisation secretary, I want to transfer a company-owned A-token to a citizen's wallet (e.g. on sale of company equipment) | P2 | — |
+| OS-13 | As an organisation secretary, I want to file a Harberger land claim in the company's name, paying the first epoch's stewardship fee from the company's V-token reserve | P2 | — |
+
+*OS-01–OS-13: Requires O-token contract (OToken.sol) and CompanyFactory refactor. No UI or contracts exist yet.*
 
 ---
 
@@ -203,11 +253,20 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-19 | As MCC Chair, I want the founder to retain emergency Chair powers even if no explicit role is granted, so the colony cannot be locked out | P1 | ✓ |
 | M-20 | As MCC Chair, I want to replace the MCC Chair role via a G-token governance referendum so the founder is not permanent | P2 | — |
 
+### O-Token & Succession
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| M-21 | As MCC chair, I want to hold the MCC O-token so my authority over MCC on-chain operations — epoch advance, service pricing, billing — is cryptographically verifiable by any citizen | P1 | — |
+| M-22 | As MCC chair, I want to transfer the MCC O-token to my elected successor immediately after the annual election so they have full operational authority from day one of their term | P1 | — |
+| M-23 | As any citizen, I want to see who currently holds the MCC O-token so I know who is authorised to act as MCC chair on-chain | P1 | — |
+
 *M-01–M-03: Fully on-chain via MCCServices contract.*
 *M-04: Revenue MTD tracked on-chain via MCCBilling.totalRevenueMTD(); increments when Chair/FD confirms payment.*
 *M-06: Bills set and read on-chain via MCCBilling.setBill() / getBills().*
 *M-14–M-19: MCCTreasury contract deployed as part of 4-contract colony creation. Bill payments route to treasury address, not founder wallet.*
 *M-20: Requires governance referendum → future work.*
+*M-21–M-23: Requires OToken.sol and integration with colony deploy flow. MCC O-token currently not issued; founder controls MCC operations via private key.*
 
 ---
 
@@ -358,10 +417,12 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 70 | 49% |
-| ~ Partial / UI mock | 27 | 19% |
-| — Not built | 43 | 30% |
-| **Total** | **140** | |
+| ✓ Done (on-chain) | 70 | 45% |
+| ~ Partial / UI mock | 27 | 17% |
+| — Not built | 59 | 38% |
+| **Total** | **156** | |
+
+*v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession). All new stories are status — pending OToken.sol and CompanyFactory refactor.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -411,5 +472,5 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v8*
+*SPICE Colony · User Stories & Requirements Spec · v9*
 *Last updated: April 2026*

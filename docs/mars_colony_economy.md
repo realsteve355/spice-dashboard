@@ -32,7 +32,18 @@ Money is still needed. It drives efficiency, allocates scarce resources, and rew
 
 ## Part 1 — The Token System
 
-The colony uses two tokens for two fundamentally different purposes. One token cannot serve both simultaneously.
+The colony uses five tokens, each serving a distinct and non-overlapping purpose. The full set is described below; S and V are the economic tokens that govern daily life, while G, O, A and L are identity, authority, and property tokens that make ownership and governance legible on the blockchain.
+
+| Token | Purpose | Holders |
+|-------|---------|---------|
+| **S** | Spending currency — monthly UBI, all transactions | Citizens, companies, MCC |
+| **V** | Long-term savings and company capital | Citizens, companies, MCC |
+| **G** | Citizen identity and governance voting | Citizens only (one per adult) |
+| **O** | Organisation identity and on-chain authority | Company secretaries and MCC chair (one per org) |
+| **A** | Physical asset ownership | Citizens and company wallets |
+| **L** | Surface land — Harberger stewardship | Citizens and company wallets |
+
+The economic logic of S and V is described first because it governs the most visible aspect of colony life. G, O, A and L are described in Sections 1.6–1.8.
 
 ### 1.1 Why Two Tokens Are Necessary
 
@@ -101,6 +112,26 @@ V-tokens can only be spent by redeeming them to S-tokens first. When redeemed th
 
 In the early post-founding colony, MCC services consume a larger share of the UBI — perhaps 50–60%. As the economy grows and competition emerges, prices adjust and the discretionary surplus expands.
 
+### 1.6 G-Token — Citizen Governance
+
+Every adult citizen holds exactly one G-token, issued on signing the founding constitution. It is soulbound — non-transferable, non-purchasable, non-inheritable. It is retired on registered death. Children do not hold G-tokens until they sign the constitution at adulthood (18).
+
+The G-token is a governance instrument, not an economic one. It confers one vote in MCC board elections, recall referenda, and constitutional amendments. It does not confer commercial ownership of MCC or any claim on colony assets. Full G-token rules are set out in Part 5.2 and the constitutional protections in Part 8.
+
+### 1.7 O-Token — Organisation Identity
+
+Every registered organisation in the colony holds exactly one O-token. This includes companies, the MCC, cooperatives, and civic associations. The O-token is held by the organisation's authorised representative — typically the company secretary or MCC chair — and transfers to their successor when the role changes hands.
+
+The O-token is not a voting instrument. Organisations do not vote in colony governance. The secretary votes as a citizen, using their personal G-token. The O-token is an identity and authority token: it proves who speaks for the organisation on-chain, and authorises that person to sign transactions — dividend distributions, treasury operations, asset transfers — on the organisation's behalf.
+
+The MCC holds one O-token, initially issued to the colony founder and transferable to any designated MCC chair. Having the MCC's authority held as a transferable on-chain token — rather than permanently locked to a founding private key — is a constitutional requirement.
+
+### 1.8 A-Token and L-Token — Assets and Land
+
+Physical assets above the registration threshold (value > 500 S-token equivalent, weight > 50 kg, or autonomous AI capability) must be registered on-chain as A-tokens. Below the threshold, possession implies ownership. A-tokens are ERC-721 tokens transferable between citizens and company wallets.
+
+Surface land operates under Harberger stewardship as L-tokens. The owner declares a V-token value; anyone may force-purchase at that price at any time; the owner cannot refuse. The owner pays 0.5% of declared value per epoch in V-tokens to the colony treasury. Full Harberger rules are set out in Part 7.4.
+
 ### 1.5 Billing on the Blockchain
 
 MCC bills are not issued manually. Smart meters feed consumption data — power in kWh, water in litres, habitat in m² — directly to the Fisc smart contracts. At month end the Fisc calculates each citizen's bill automatically and deducts it from their wallet. Citizens can view their real-time consumption and projected bill on the blockchain at any moment. The bill is calculated and settled without any action required from the citizen.
@@ -112,8 +143,8 @@ MCC bills are not issued manually. Smart meters feed consumption data — power 
 | Entity | Role | Earns | Governed by |
 |---|---|---|---|
 | **Citizen** | Receives UBI, spends S-tokens, saves V-tokens, holds MCC share, may found or join companies | UBI (S) · equity dividends (V) · service income (S) | Founding constitution · annual MCC election |
-| **Company** | Provides goods or services, earns S-tokens, converts to V-tokens, pays dividends | S-tokens from sales → V-token dividends | Market competition · equity holders |
-| **MCC** (Mars Colony Company) | Provides essential infrastructure — dome, life support, power, water, security. The board owns MCC commercially and sets prices to make a profit. Citizens hold G-tokens giving them governance oversight. | S-tokens from metered bills and company levies | Board elected annually by G-token holders · blockchain transparency · automatic recall trigger |
+| **Company** | Provides goods or services, earns S-tokens, converts to V-tokens, pays dividends. Has its own on-chain wallet. Secretary holds the company O-token. | S-tokens from sales → V-token dividends | Market competition · equity holders |
+| **MCC** (Mars Colony Company) | Provides essential infrastructure — dome, life support, power, water, security. The board owns MCC commercially and sets prices to make a profit. Citizens hold G-tokens giving them governance oversight. MCC chair holds the MCC O-token. | S-tokens from metered bills and company levies | Board elected annually by G-token holders · blockchain transparency · automatic recall trigger |
 | **The Fisc** | Fully automated blockchain institution. Issues S-tokens, manages conversions, enforces all monetary rules | None — constitutional utility, no profit motive | Founding constitution only |
 
 ---
@@ -186,6 +217,8 @@ The floor is guaranteed. What changes over time is the ceiling — more to spend
 MCC is a company governed by the same token rules as every other company. It exists to provide essential infrastructure — the services every citizen depends on that cannot safely be left to market competition.
 
 The board are the shareholders. They own MCC commercially and receive its profits. Citizens do not own MCC in the commercial sense — they hold a **Governance Token (G-token)** that gives them democratic oversight without economic ownership.
+
+MCC holds one **O-token** (Organisation Token), initially issued to the colony founder. The O-token is held by the designated MCC chair and transfers to their successor when the role changes. It authorises the holder to perform on-chain MCC operations — advancing the monthly epoch, updating service prices, distributing dividends — without requiring the founding private key. The O-token makes the MCC's institutional authority transferable and transparent, rather than permanently locked to one person.
 
 | | |
 |---|---|
@@ -346,6 +379,9 @@ The following questions were open in earlier versions and are now resolved:
 | Automatic recall trigger | MCC bill rises >20% above 12-month rolling average in any single month |
 | Board term length | One year |
 | Citizen V-token expiry | 100 years from mint date — outlasts any realistic lifespan, limits dynastic accumulation |
+| Organisation identity token | O-token — one per registered organisation, held by company secretary or MCC chair. Role-transferable between citizens. Not a voting instrument. |
+| Organisations and voting | Organisations do not vote in colony governance. Citizens vote using G-tokens. The company secretary votes as a citizen. |
+| Company wallet | Each company is a smart contract with its own on-chain address. The address is the company wallet. No separate key management required. |
 | Inter-colony monetary policy | All Mars colonies share the same Fisc and constitutional rules |
 | Governance of large companies | Governed by their shareholders — no special constitutional status |
 | MCC governance | Board are commercial shareholders; citizens hold one G-token each conferring voting rights and conditional dividend rights |
@@ -671,4 +707,5 @@ This section will be elaborated in a separate Phase 2 document.
 
 ---
 
-*Mars Colony Economy · Token & Governance System · Working Document — Version 13*
+*Mars Colony Economy · Token & Governance System · Working Document — Version 14*
+*v14 changes: full five-token system introduced (Part 1 table + Sections 1.6–1.8); O-token added to Part 2 entities table; O-token paragraph added to Part 5.1 (MCC); three new resolved decisions added to Part 9 (O-token, org voting, company wallet).*
