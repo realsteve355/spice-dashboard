@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, us
 import { ethers } from 'ethers'
 import CONTRACTS from './data/contracts.json'
 import { MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
+import { logInfo, logError } from './utils/logger'
 import Directory       from './pages/Directory'
 import ColonyPage      from './pages/ColonyPage'
 import CreateColony    from './pages/CreateColony'
@@ -109,12 +110,14 @@ export default function App() {
 
       // Set address immediately so the UI shows "connected" without waiting for on-chain reads
       setAddress(addr)
+      logInfo('wallet.connected', { address: addr, meta: { chainId: BASE_CHAIN_ID } })
 
       try {
         const sign = await prov.getSigner()
         setSigner(sign)
       } catch (e) {
         console.warn('[connect] getSigner failed — transactions will not work:', e)
+        logError('wallet.signer_failed', { address: addr, message: e?.message })
       }
       setProvider(prov)
 
@@ -126,6 +129,7 @@ export default function App() {
     } catch (e) {
       // User rejected or unexpected error — log but don't clear address if already set
       console.error('[connect] failed:', e)
+      logError('wallet.connect_failed', { message: e?.message })
     } finally {
       connectingRef.current = false
     }

@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
+import { logInfo, logError } from '../utils/logger'
 
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
@@ -35,10 +36,14 @@ export default function PaymentConfirm() {
     try {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
       const tx = await colony.send(to, ethers.parseEther(String(amount)), note)
+      logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} S`, meta: { to, note } })
       await tx.wait()
+      logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} S confirmed` })
       setDone(true)
     } catch (e) {
-      setError(e?.reason || e?.shortMessage || 'Transaction failed')
+      const msg = e?.reason || e?.shortMessage || e?.message || 'Transaction failed'
+      logError('tx.failed', { colony: slug, address: signer?.address, message: msg, meta: { action: 'payment', to, amount, note } })
+      setError(msg)
     }
     setPending(false)
   }
