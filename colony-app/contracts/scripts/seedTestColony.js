@@ -59,8 +59,8 @@ const BILLING_ABI = [
 ];
 
 const COMPANY_ABI = [
-  "function registerCompany(string, address[], uint256[]) external returns (uint256)",
-  "function getCompaniesByOwner(address) view returns (uint256[])",
+  "function register(string, address[], uint256[]) external returns (uint256)",
+  "function getCompaniesOf(address) view returns (uint256[])",
 ];
 
 const S = (n) => hre.ethers.parseUnits(String(n), 18);
@@ -170,13 +170,13 @@ async function main() {
   console.log("\n6. Registering test companies…");
   let existingCos = [];
   try {
-    existingCos = await compReg.getCompaniesByOwner(steve.address);
+    existingCos = await compReg.getCompaniesOf(steve.address);
   } catch {}
 
   const COMPANIES = [
-    { name: "Dave's Coffee",    founders: [CITIZENS.Steve], stakes: [100] },
-    { name: "Colony Bakery",    founders: [CITIZENS.Steve], stakes: [100] },
-    { name: "Solar Co-op",      founders: [CITIZENS.Steve], stakes: [100] },
+    { name: "Dave's Coffee",    founders: [CITIZENS.Steve], stakes: [10000] },
+    { name: "Colony Bakery",    founders: [CITIZENS.Steve], stakes: [10000] },
+    { name: "Solar Co-op",      founders: [CITIZENS.Steve], stakes: [10000] },
   ];
 
   if (existingCos.length >= COMPANIES.length) {
@@ -184,7 +184,7 @@ async function main() {
   } else {
     for (const co of COMPANIES) {
       try {
-        const tx = await compReg.registerCompany(co.name, co.founders, co.stakes);
+        const tx = await compReg.register(co.name, co.founders, co.stakes);
         await tx.wait();
         console.log(`   ✓ Registered: ${co.name}`);
       } catch (e) {
