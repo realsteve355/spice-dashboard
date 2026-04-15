@@ -2,7 +2,7 @@
   "network": "baseSepolia",
   "chainId": 84532,
   "colonies": {
-    "dave-s-colony": {
+    "daves-colony": {
       "name": "Dave's Colony",
       "colony": "0xCc50C7C853EfB0826Da823641010333EB3FF5338",
       "gToken": "0xBfbE81eb87128ff08042564787Ea9314DBfe9109",

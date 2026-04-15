@@ -169,34 +169,37 @@ export default function Directory() {
  *   3. localStorage spice_user_colonies (user-deployed, not yet in registry)
  */
 function buildColonyList(registryColonies) {
-  const seen = new Set()
+  const seenIds      = new Set()
+  const seenAddrs    = new Set()
+
+  const add = (entry) => {
+    seenIds.add(entry.id)
+    if (entry.address) seenAddrs.add(entry.address.toLowerCase())
+    return entry
+  }
 
   // Registry entries (most authoritative once deployed)
-  const fromRegistry = (registryColonies || [])
-  fromRegistry.forEach(c => seen.add(c.id))
+  const fromRegistry = (registryColonies || []).map(add)
 
   // contracts.json entries not already covered by registry
   const fromContracts = Object.entries(CONTRACTS.colonies)
-    .filter(([id]) => !seen.has(id))
-    .map(([id, cfg]) => {
-      seen.add(id)
-      return {
-        id,
-        name:        cfg.name || id,
-        address:     cfg.colony || null,
-        description: '',
-        founded:     null,
-        citizenCount: null,
-        mcc:         { name: 'MCC' },
-        source:      'contracts',
-      }
-    })
+    .filter(([id, cfg]) => !seenIds.has(id) && (!cfg.colony || !seenAddrs.has(cfg.colony.toLowerCase())))
+    .map(([id, cfg]) => add({
+      id,
+      name:        cfg.name || id,
+      address:     cfg.colony || null,
+      description: '',
+      founded:     null,
+      citizenCount: null,
+      mcc:         { name: 'MCC' },
+      source:      'contracts',
+    }))
 
-  // localStorage — user-deployed colonies not in registry or contracts.json
+  // localStorage — user-deployed colonies not already shown by address or id
   const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
   const fromStorage = Object.entries(stored)
-    .filter(([id]) => !seen.has(id))
-    .map(([id, info]) => ({
+    .filter(([id, info]) => !seenIds.has(id) && (!info.address || !seenAddrs.has(info.address.toLowerCase())))
+    .map(([id, info]) => add({
       id,
       name:        info.name || id,
       address:     info.address || null,
