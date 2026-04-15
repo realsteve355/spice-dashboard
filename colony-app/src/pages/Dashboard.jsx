@@ -165,7 +165,9 @@ export default function Dashboard() {
       }
     }
     loadTx()
-  }, [contracts, slug, address])
+  // onChain[slug]?.sBalance changes after every refresh() — re-queries tx history automatically
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contracts, slug, address, onChain?.[slug]?.sBalance])
 
   // On-chain companies this user holds equity in
   const [myCompanies, setMyCompanies] = useState(null)  // null = loading

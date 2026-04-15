@@ -12,6 +12,8 @@ const COLONY_ABI = [
 ]
 const COLONY_EVENTS_ABI = [
   "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
+  "event Saved(address indexed citizen, uint256 amount)",
+  "event VDividendPaid(address indexed from, address indexed to, uint256 amount)",
 ]
 
 // CompanyImplementation — the company's own smart-contract wallet
@@ -106,30 +108,80 @@ export default function Company() {
     if (tab !== 'transactions') return
     const cfg = deployedContracts?.colonies?.[slug]
     if (!cfg?.colony) return
-    const queryAddr = onChain ? companyId : address  // company wallet or user wallet
+    // For on-chain companies, query events from/to the company wallet.
+    // For mock companies, query from/to the user's personal wallet (legacy behaviour).
+    const queryAddr = onChain ? companyId : address
     if (!queryAddr) return
     setTxLoading(true)
     const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
     const colonyContract = new ethers.Contract(cfg.colony, COLONY_EVENTS_ABI, rpc)
-    Promise.all([
-      colonyContract.queryFilter(colonyContract.filters.Sent(null, queryAddr)),
-      colonyContract.queryFilter(colonyContract.filters.Sent(queryAddr, null)),
-    ]).then(([received, sent]) => {
-      const all = [
-        ...received.map(e => ({
-          hash: e.transactionHash, from: e.args.from, to: e.args.to,
-          amount: Math.floor(Number(ethers.formatEther(e.args.amount))),
-          note: e.args.note, direction: 'in',
-        })),
-        ...sent.map(e => ({
-          hash: e.transactionHash, from: e.args.from, to: e.args.to,
-          amount: Math.floor(Number(ethers.formatEther(e.args.amount))),
-          note: e.args.note, direction: 'out',
-        })),
-      ].sort((a, b) => a.hash < b.hash ? 1 : -1)
-      setOnChainTxs(all)
-    }).catch(e => console.warn('Failed to load on-chain txs', e))
-      .finally(() => setTxLoading(false))
+
+    async function load() {
+      try {
+        const [received, sent, saves, dividends] = await Promise.all([
+          colonyContract.queryFilter(colonyContract.filters.Sent(null, queryAddr)),
+          colonyContract.queryFilter(colonyContract.filters.Sent(queryAddr, null)),
+          onChain ? colonyContract.queryFilter(colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
+          onChain ? colonyContract.queryFilter(colonyContract.filters.VDividendPaid(queryAddr, null)) : Promise.resolve([]),
+        ])
+
+        const allEvents = [...received, ...sent, ...saves, ...dividends]
+        const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
+        const blockMap = {}
+        await Promise.all(uniqueBlocks.map(async n => {
+          const b = await rpc.getBlock(n)
+          if (b) blockMap[n] = b.timestamp
+        }))
+        const fmtDate = ts => ts
+          ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          : ''
+
+        const rows = [
+          ...received.map(e => ({
+            hash: e.transactionHash, blockNumber: e.blockNumber,
+            date: fmtDate(blockMap[e.blockNumber]),
+            type: 'revenue',
+            description: e.args.note || 'Payment received',
+            counterparty: e.args.from,
+            dr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Dr Cash (S)
+            cr: null,
+          })),
+          ...sent.map(e => ({
+            hash: e.transactionHash, blockNumber: e.blockNumber,
+            date: fmtDate(blockMap[e.blockNumber]),
+            type: 'expense',
+            description: e.args.note || 'Payment sent',
+            counterparty: e.args.to,
+            dr: null,
+            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr Cash (S)
+          })),
+          ...saves.map(e => ({
+            hash: e.transactionHash, blockNumber: e.blockNumber,
+            date: fmtDate(blockMap[e.blockNumber]),
+            type: 'convert',
+            description: 'S → V conversion',
+            counterparty: null,
+            dr: null,
+            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr Cash (S), Dr V Reserve
+          })),
+          ...dividends.map(e => ({
+            hash: e.transactionHash, blockNumber: e.blockNumber,
+            date: fmtDate(blockMap[e.blockNumber]),
+            type: 'dividend',
+            description: `V dividend → ${e.args.to.slice(0,6)}…${e.args.to.slice(-4)}`,
+            counterparty: e.args.to,
+            dr: null,
+            cr: Math.floor(Number(ethers.formatEther(e.args.amount))),  // Cr V Reserve
+          })),
+        ].sort((a, b) => b.blockNumber - a.blockNumber)
+
+        setOnChainTxs(rows)
+      } catch (e) {
+        console.warn('Failed to load on-chain txs', e)
+      }
+      setTxLoading(false)
+    }
+    load()
   }, [tab, deployedContracts, slug, address, companyId, onChain])
 
   // ── Action state ───────────────────────────────────────────────────────────
@@ -514,57 +566,96 @@ export default function Company() {
 
         {/* ── Transactions ── */}
         {tab === 'transactions' && (
-          <div style={card}>
-            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
-              TRANSACTIONS
-            </div>
-
+          <div>
             {txLoading && (
-              <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 20 }}>Loading...</div>
+              <div style={{ ...card, textAlign: 'center', color: C.faint, fontSize: 12, padding: 24 }}>Loading…</div>
             )}
 
-            {!txLoading && onChainTxs.length > 0 && onChainTxs.map((tx, i) => (
-              <div key={tx.hash + i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                paddingBottom: i < onChainTxs.length - 1 ? 10 : 0,
-                marginBottom: i < onChainTxs.length - 1 ? 10 : 0,
-                borderBottom: i < onChainTxs.length - 1 ? `1px solid ${C.border}` : 'none',
-              }}>
-                <div>
-                  <div style={{ fontSize: 12, color: C.text }}>
-                    {tx.note || (tx.direction === 'in' ? 'Payment received' : 'Payment sent')}
-                  </div>
-                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
-                    {tx.direction === 'in'
-                      ? `from ${tx.from.slice(0, 8)}…${tx.from.slice(-4)}`
-                      : `to ${tx.to.slice(0, 8)}…${tx.to.slice(-4)}`}
-                  </div>
+            {/* P&L summary — on-chain companies only */}
+            {!txLoading && onChain && onChainTxs.length > 0 && (() => {
+              const revenue  = onChainTxs.filter(t => t.type === 'revenue') .reduce((s, t) => s + (t.dr || 0), 0)
+              const expenses = onChainTxs.filter(t => t.type === 'expense') .reduce((s, t) => s + (t.cr || 0), 0)
+              const locked   = onChainTxs.filter(t => t.type === 'convert') .reduce((s, t) => s + (t.cr || 0), 0)
+              const dividends= onChainTxs.filter(t => t.type === 'dividend').reduce((s, t) => s + (t.cr || 0), 0)
+              const net = revenue - expenses
+              return (
+                <div style={card}>
+                  <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>P&amp;L SUMMARY</div>
+                  <Row label="Revenue (S in)"     value={`+${revenue} S`}   color={C.green} />
+                  <Divider />
+                  <Row label="Expenses (S out)"   value={`−${expenses} S`}  color={C.red} />
+                  <Divider />
+                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.gold : C.red} bold />
+                  {locked > 0 && <><Divider /><Row label="Locked to V"      value={`${locked} S → V`} color={C.green} /></>}
+                  {dividends > 0 && <><Divider /><Row label="V distributed" value={`${dividends} V`}  color='#8b5cf6' /></>}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: tx.direction === 'in' ? C.green : C.red }}>
-                  {tx.direction === 'in' ? '+' : '-'}{tx.amount} S
-                </div>
-              </div>
-            ))}
+              )
+            })()}
 
-            {!txLoading && onChainTxs.length === 0 && !onChain && company.transactions.map((tx, i) => (
-              <div key={i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                paddingBottom: i < company.transactions.length - 1 ? 10 : 0,
-                marginBottom: i < company.transactions.length - 1 ? 10 : 0,
-                borderBottom: i < company.transactions.length - 1 ? `1px solid ${C.border}` : 'none',
-              }}>
-                <div>
-                  <div style={{ fontSize: 12, color: C.text }}>{tx.label}</div>
-                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{tx.date}</div>
+            {/* Journal */}
+            {!txLoading && (onChainTxs.length > 0 || (!onChain && company.transactions.length > 0)) && (
+              <div style={card}>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>JOURNAL</div>
+
+                {/* Column headers */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em' }}>DESCRIPTION</div>
+                  <div style={{ fontSize: 9, color: C.green, letterSpacing: '0.1em', textAlign: 'right', minWidth: 56 }}>DR</div>
+                  <div style={{ fontSize: 9, color: C.red,   letterSpacing: '0.1em', textAlign: 'right', minWidth: 56 }}>CR</div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: tx.amount > 0 ? C.green : C.red }}>
-                  {tx.amount > 0 ? '+' : ''}{tx.amount} S
-                </div>
+
+                {onChainTxs.length > 0 && onChainTxs.map((tx, i) => {
+                  const typeColor = { revenue: C.green, expense: C.red, convert: C.gold, dividend: '#8b5cf6' }[tx.type] || C.faint
+                  const unit = tx.type === 'dividend' ? 'V' : 'S'
+                  return (
+                    <div key={tx.hash + i} style={{
+                      display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
+                      paddingBottom: i < onChainTxs.length - 1 ? 10 : 0,
+                      marginBottom: i < onChainTxs.length - 1 ? 10 : 0,
+                      borderBottom: i < onChainTxs.length - 1 ? `1px solid ${C.border}` : 'none',
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: C.text }}>{tx.description}</div>
+                        <div style={{ fontSize: 10, color: C.faint, marginTop: 1, fontFamily: 'monospace' }}>
+                          {tx.date}
+                          {tx.counterparty && ` · ${tx.counterparty.slice(0,6)}…${tx.counterparty.slice(-4)}`}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: C.green, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
+                        {tx.dr != null ? `${tx.dr} ${unit}` : ''}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 500, color: typeColor, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
+                        {tx.cr != null ? `${tx.cr} ${unit}` : ''}
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* Mock fallback for non-on-chain companies */}
+                {!onChain && onChainTxs.length === 0 && company.transactions.map((tx, i) => (
+                  <div key={i} style={{
+                    display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
+                    paddingBottom: i < company.transactions.length - 1 ? 10 : 0,
+                    marginBottom: i < company.transactions.length - 1 ? 10 : 0,
+                    borderBottom: i < company.transactions.length - 1 ? `1px solid ${C.border}` : 'none',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: C.text }}>{tx.label}</div>
+                      <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>{tx.date}</div>
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: C.green, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
+                      {tx.amount > 0 ? `${tx.amount} S` : ''}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: C.red, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
+                      {tx.amount < 0 ? `${Math.abs(tx.amount)} S` : ''}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
             {!txLoading && onChainTxs.length === 0 && (onChain || company.transactions.length === 0) && (
-              <div style={{ fontSize: 12, color: C.faint }}>No transactions yet.</div>
+              <div style={{ ...card, fontSize: 12, color: C.faint }}>No transactions yet.</div>
             )}
           </div>
         )}
