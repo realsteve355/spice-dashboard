@@ -167,9 +167,12 @@ export default function ColonyPage() {
     }
   }
 
+  // Resolve contract address once (stable string, not the contracts object)
+  const colonyContractAddr = contracts?.colonies?.[slug]?.colony || resolvedAddr || null
+
   useEffect(() => {
-    const contractAddress = contracts?.colonies?.[slug]?.colony || resolvedAddr
-    if (!contractAddress) return
+    if (!colonyContractAddr) return
+    let cancelled = false
     setCitizensLoading(true)
     const prov = new ethers.JsonRpcProvider(RPC)
     const CITIZEN_ABI = [
@@ -177,7 +180,7 @@ export default function ColonyPage() {
       "function citizens(uint256) view returns (address)",
       "function citizenName(address) view returns (string)",
     ]
-    const c = new ethers.Contract(contractAddress, CITIZEN_ABI, prov)
+    const c = new ethers.Contract(colonyContractAddr, CITIZEN_ABI, prov)
     c.citizenCount()
       .then(async (count) => {
         const n = Number(count)
@@ -185,11 +188,12 @@ export default function ColonyPage() {
           Array.from({ length: n }, (_, i) => c.citizens(i))
         )
         const names = await Promise.all(addrs.map(a => c.citizenName(a)))
-        setCitizens(addrs.map((addr, i) => ({ addr, name: names[i] })))
+        if (!cancelled) setCitizens(addrs.map((addr, i) => ({ addr, name: names[i] })))
       })
-      .catch(() => setCitizens([]))
-      .finally(() => setCitizensLoading(false))
-  }, [slug, resolvedAddr, contracts])
+      .catch((e) => { if (!cancelled) { console.warn('[citizens] load failed:', e); setCitizens([]) } })
+      .finally(() => { if (!cancelled) setCitizensLoading(false) })
+    return () => { cancelled = true }
+  }, [slug, colonyContractAddr])
 
   return (
     <Layout title={colony.name} back="/" colonySlug={isCitizen ? slug : null}>

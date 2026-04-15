@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ethers } from 'ethers'
 import CONTRACTS from './data/contracts.json'
 import { MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
@@ -182,7 +182,7 @@ export default function App() {
           founderAddr,
         }
       } catch (e) {
-        console.warn('Failed to load on-chain data for', colonyId, e)
+        console.error('[loadOnChainData] failed for', colonyId, ':', e?.message || e)
       }
     }
 
@@ -291,25 +291,30 @@ export default function App() {
     return !!address && MOCK_CITIZEN_COLONIES.includes(id)
   }
 
-  // Augment CONTRACTS with user-deployed colonies so pages can look up colony addresses
-  const userColoniesStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-  const augmentedContracts = {
-    ...CONTRACTS,
-    colonies: {
-      ...CONTRACTS.colonies,
-      ...Object.fromEntries(
-        Object.entries(userColoniesStored).map(([id, info]) => [id, {
-          colony:       info.address,
-          sToken:       info.sToken,
-          vToken:       info.vToken,
-          gToken:       info.gToken,
-          mccTreasury:  info.mccTreasury,
-          mccServices:  info.mccServices,
-          mccBilling:   info.mccBilling,
-        }])
-      ),
-    },
-  }
+  // Augment CONTRACTS with user-deployed colonies so pages can look up colony addresses.
+  // Memoized so the reference is stable across renders — prevents useEffects that depend
+  // on `contracts` from firing on every render (localStorage is read once per onChain update).
+  const augmentedContracts = useMemo(() => {
+    const userColoniesStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+    return {
+      ...CONTRACTS,
+      colonies: {
+        ...CONTRACTS.colonies,
+        ...Object.fromEntries(
+          Object.entries(userColoniesStored).map(([id, info]) => [id, {
+            colony:       info.address,
+            sToken:       info.sToken,
+            vToken:       info.vToken,
+            gToken:       info.gToken,
+            mccTreasury:  info.mccTreasury,
+            mccServices:  info.mccServices,
+            mccBilling:   info.mccBilling,
+          }])
+        ),
+      },
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChain])  // onChain changes after loadOnChainData, which is when localStorage may have been updated
 
   const ctx = {
     address,
