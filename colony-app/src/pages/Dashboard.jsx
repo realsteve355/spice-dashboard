@@ -113,20 +113,47 @@ export default function Dashboard() {
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
     if (!cfg || !address) return
-    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
-    const contract = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
-    const fromBlock = cfg.deployBlock || 0
+    const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
+    const iface = new ethers.Interface(COLONY_ABI)
     async function loadTx() {
       try {
-        const [sentFrom, sentTo, ubis, saves, redeems] = await Promise.all([
-          contract.queryFilter(contract.filters.Sent(address, null),    fromBlock),
-          contract.queryFilter(contract.filters.Sent(null, address),    fromBlock),
-          contract.queryFilter(contract.filters.UbiClaimed(address),    fromBlock),
-          contract.queryFilter(contract.filters.Saved(address),         fromBlock),
-          contract.queryFilter(contract.filters.Redeemed(address),      fromBlock),
-        ])
+        const toBlock = await rpc.getBlockNumber()
+        const CHUNK   = 9000
+        const T_SENT    = ethers.id('Sent(address,address,uint256,string)')
+        const T_UBI     = ethers.id('UbiClaimed(address,uint256,uint256)')
+        const T_SAVED   = ethers.id('Saved(address,uint256)')
+        const T_REDEEMED = ethers.id('Redeemed(address,uint256)')
+        const pad = (addr) => ethers.zeroPadValue(addr, 32)
+
+        const safeLogs = async (filter) => {
+          try { return await rpc.getLogs(filter) } catch { return [] }
+        }
+
+        // 5 chunks × 9,000 blocks ≈ 25 hours of Base Sepolia history
+        const chunkResults = await Promise.all(
+          Array.from({ length: 5 }, (_, i) => {
+            const chunkTo   = toBlock - i * CHUNK
+            const chunkFrom = Math.max(0, chunkTo - CHUNK)
+            const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
+            return Promise.all([
+              safeLogs({ ...base, topics: [T_SENT,    pad(address), null] }),
+              safeLogs({ ...base, topics: [T_SENT,    null, pad(address)] }),
+              safeLogs({ ...base, topics: [T_UBI,     pad(address)]       }),
+              safeLogs({ ...base, topics: [T_SAVED,   pad(address)]       }),
+              safeLogs({ ...base, topics: [T_REDEEMED, pad(address)]      }),
+            ])
+          })
+        )
+
+        const decode = (log) => { try { return iface.parseLog(log) } catch { return null } }
+        const flat = (idx) => chunkResults.flatMap(c => c[idx]).map(l => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const sentFrom = flat(0)
+        const sentTo   = flat(1)
+        const ubis     = flat(2)
+        const saves    = flat(3)
+        const redeems  = flat(4)
+
         const allEvents = [...sentFrom, ...sentTo, ...ubis, ...saves, ...redeems]
-        // Batch-fetch all unique block timestamps in parallel
         const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
         const blockMap = {}
         await Promise.all(uniqueBlocks.map(async n => {
@@ -136,26 +163,26 @@ export default function Dashboard() {
         const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
         const rows = []
         for (const e of sentFrom) {
-          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          const to  = e.args.to
-          rows.push({ type: 'sent',     label: e.args.note || `To ${to.slice(0,6)}…${to.slice(-4)}`,     amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
+          const to  = e.parsed.args[1]
+          rows.push({ type: 'sent',     label: e.parsed.args[3] || `To ${to.slice(0,6)}…${to.slice(-4)}`,         amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of sentTo) {
-          const amt  = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          const from = e.args.from
-          rows.push({ type: 'received', label: e.args.note || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const amt  = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
+          const from = e.parsed.args[0]
+          rows.push({ type: 'received', label: e.parsed.args[3] || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of ubis) {
-          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          rows.push({ type: 'ubi',    label: 'UBI allocation',          amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[1])))
+          rows.push({ type: 'ubi',    label: 'UBI allocation',         amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of saves) {
-          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          rows.push({ type: 'save',   label: 'Saved to V-tokens',       amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[1])))
+          rows.push({ type: 'save',   label: 'Saved to V-tokens',      amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of redeems) {
-          const amt = Math.floor(Number(ethers.formatEther(e.args.amount)))
-          rows.push({ type: 'redeem', label: 'Redeemed from V-tokens',  amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[1])))
+          rows.push({ type: 'redeem', label: 'Redeemed from V-tokens', amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         rows.sort((a, b) => b.blockNumber - a.blockNumber)
         setTxHistory(rows)
