@@ -45,17 +45,15 @@ export const MOCK_COLONIES = [
   },
   {
     id: 'daves-colony',
-    name: "Dave's Test Colony",
-    description: 'A minimal colony for testing the system mechanics.',
+    name: "Dave's Colony",
+    description: '',
     founded: '2026-04-01',
-    citizenCount: 3,
+    citizenCount: 5,
     mcc: {
       name: 'Dave',
       board: ['0x3333...cccc', '0xf39F...2266'],
     },
-    services: [
-      { name: 'Coffee', billing: 'Per cup', price: '5 S', revenueMTD: 45 },
-    ],
+    services: [],
   },
 ]
 
