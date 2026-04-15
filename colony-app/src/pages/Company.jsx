@@ -143,6 +143,10 @@ export default function Company() {
   const [actionError,   setActError]   = useState(null)
   const [actionDone,    setActDone]    = useState(null)  // message string
 
+  // Customer pay state (any citizen, not equity-gated)
+  const [payAmt,  setPayAmt]  = useState('')
+  const [payNote, setPayNote] = useState('')
+
   function companyContract() {
     if (!signer || !onChain) return null
     return new ethers.Contract(companyId, COMPANY_ABI, signer)
@@ -402,6 +406,38 @@ export default function Company() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pay this company — visible to any connected citizen who isn't the secretary */}
+        {tab === 'overview' && address && !isSecretary && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              PAY {company.name.toUpperCase()}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <div style={{ position: 'relative', width: 100, flexShrink: 0 }}>
+                <input
+                  style={{ ...inlineInput, width: '100%', paddingRight: 20 }}
+                  type="number" min="1" placeholder="0"
+                  value={payAmt} onChange={e => setPayAmt(e.target.value)}
+                />
+                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>S</span>
+              </div>
+              <input
+                style={{ ...inlineInput, flex: 1 }}
+                placeholder="Note (e.g. Coffee)"
+                value={payNote} onChange={e => setPayNote(e.target.value)}
+                maxLength={80}
+              />
+            </div>
+            <button
+              onClick={() => navigate(`/colony/${slug}/pay?to=${companyId}&amount=${encodeURIComponent(payAmt)}&note=${encodeURIComponent(payNote)}`)}
+              disabled={!payAmt || Number(payAmt) <= 0}
+              style={{ ...actionBtn(C.gold), width: '100%', opacity: payAmt && Number(payAmt) > 0 ? 1 : 0.4 }}
+            >
+              Pay →
+            </button>
           </div>
         )}
 

@@ -14,6 +14,11 @@ const COLONY_ABI = [
   "function citizenCount() view returns (uint256)",
 ]
 
+const COMPANY_FACTORY_ABI = [
+  "function companyCount() view returns (uint256)",
+  "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
+]
+
 import { C } from '../theme'
 
 const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
@@ -86,6 +91,9 @@ export default function ColonyPage() {
 
   const [citizens, setCitizens]         = useState(null)  // null = not loaded, [] = empty
   const [citizensLoading, setCitizensLoading] = useState(false)
+
+  const [companies, setCompanies]         = useState(null)
+  const [companiesLoading, setCompaniesLoading] = useState(false)
 
   // If not in mock list but we have an address, load from chain
   useEffect(() => {
@@ -197,6 +205,33 @@ export default function ColonyPage() {
       .finally(() => { if (!cancelled) setCitizensLoading(false) })
     return () => { cancelled = true }
   }, [slug, colonyContractAddr])
+
+  // Load all companies registered in this colony's CompanyFactory
+  const companyFactoryAddr = contracts?.colonies?.[slug]?.companyFactory
+  useEffect(() => {
+    if (!companyFactoryAddr) { setCompanies([]); return }
+    let cancelled = false
+    setCompaniesLoading(true)
+    const prov = new ethers.JsonRpcProvider(RPC)
+    const factory = new ethers.Contract(companyFactoryAddr, COMPANY_FACTORY_ABI, prov)
+    async function load() {
+      try {
+        const count = Number(await factory.companyCount())
+        const list = await Promise.all(
+          Array.from({ length: count }, (_, i) => factory.getCompany(i))
+        )
+        if (!cancelled) setCompanies(list.map(([name, wallet, founder, oTokenId, registeredAt], i) => ({
+          id: i, name, wallet, registeredAt: Number(registeredAt),
+        })))
+      } catch (e) {
+        console.warn('[ColonyPage] load companies failed:', e?.message || e)
+        if (!cancelled) setCompanies([])
+      }
+      if (!cancelled) setCompaniesLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [companyFactoryAddr])
 
   return (
     <Layout title={colony.name} back="/" colonySlug={isCitizen ? slug : null}>
@@ -368,6 +403,36 @@ export default function ColonyPage() {
             </div>
           ))}
         </div>
+
+        {/* Companies */}
+        {(companiesLoading || (companies && companies.length > 0)) && (
+          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>COMPANIES</div>
+            {companiesLoading ? (
+              <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
+            ) : companies.map((co, i) => (
+              <div
+                key={co.wallet}
+                onClick={() => navigate(`/colony/${slug}/company/${co.wallet}`)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  paddingBottom: i < companies.length - 1 ? 10 : 0,
+                  marginBottom: i < companies.length - 1 ? 10 : 0,
+                  borderBottom: i < companies.length - 1 ? `1px solid ${C.border}` : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 12, color: C.text }}>{co.name}</div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
+                    {co.wallet.slice(0, 8)}…{co.wallet.slice(-4)}
+                  </div>
+                </div>
+                <span style={{ fontSize: 13, color: C.faint }}>›</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Constitution accordion */}
         <div
