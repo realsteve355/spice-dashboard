@@ -19,8 +19,8 @@ contract GToken is ERC721, Ownable {
     // tokenId → issued timestamp
     mapping(uint256 => uint256) public issuedAt;
 
-    constructor(string memory _colonyName)
-        ERC721("SPICE Governance Token", "GSPICE")
+    constructor(string memory _colonyName, string memory _ticker)
+        ERC721(string.concat(_ticker, " Governance"), string.concat("G-", _ticker))
         Ownable(msg.sender)
     {
         colonyName = _colonyName;

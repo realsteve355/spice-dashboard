@@ -21,7 +21,9 @@ contract SToken is ERC20, Ownable {
     // Current epoch — incremented by Colony on monthly reset
     uint256 public currentEpoch = 1;
 
-    constructor() ERC20("SPICE S-Token", "SSPICE") Ownable(msg.sender) {}
+    constructor(string memory _ticker)
+        ERC20(string.concat(_ticker, " S-Token"), string.concat("S-", _ticker))
+        Ownable(msg.sender) {}
 
     /**
      * @notice Issue monthly UBI to a citizen. Only Colony (owner) can call.

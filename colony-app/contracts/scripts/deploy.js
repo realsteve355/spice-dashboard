@@ -7,7 +7,10 @@ async function main() {
   console.log("Deploying with:", deployer.address);
   console.log("Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)), "ETH");
 
-  // ── Already deployed ──────────────────────────────────────────────────────
+  // ── Already deployed ─────────────────────────────────────────────────────
+  // NOTE: Colony constructor is now Colony(name, ticker) e.g. Colony("Dave's Colony", "DC")
+  // Dave's Colony was deployed with the old single-arg constructor — addresses below are live.
+  // For a fresh full redeploy: Colony.deploy("Colony Name", "TICKER")
   const colonyAddr          = "0x112240357669CC163011C729F0fE219A799838B5";
   const gTokenAddr          = "0x50568a432E91a85161FFDdE8dA9dFe333Ed73a5f";
   const sTokenAddr          = "0xbEb225D184dD27Df728EE2871a8207F91ead32e4";

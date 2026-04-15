@@ -18,7 +18,9 @@ contract VToken is ERC20, Ownable {
 
     uint256 public currentEpoch = 1;
 
-    constructor() ERC20("SPICE V-Token", "VSPICE") Ownable(msg.sender) {}
+    constructor(string memory _ticker)
+        ERC20(string.concat(_ticker, " V-Token"), string.concat("V-", _ticker))
+        Ownable(msg.sender) {}
 
     /**
      * @notice Convert S-tokens to V-tokens (called by Colony after burning S).
