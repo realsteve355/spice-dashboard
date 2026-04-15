@@ -201,6 +201,7 @@ export default function Dashboard() {
       }
     } catch (e) {
       console.warn('wallet_watchAsset failed', e)
+      alert('Could not add token to MetaMask: ' + (e?.message || e))
     }
   }
 
