@@ -121,7 +121,7 @@ export default function Company() {
         // queryFilter/contract.filters hits LavaMoat restrictions in some MetaMask builds.
         const iface = new ethers.Interface(COLONY_EVENTS_ABI)
         const toBlock   = await rpc.getBlockNumber()
-        const fromBlock = Math.max(0, toBlock - 500000)  // ~11 days of Base Sepolia blocks
+        const fromBlock = Math.max(0, toBlock - 9000)  // public RPC hard limit: 10,000 blocks
 
         // Topic hashes
         const T_SENT    = ethers.id('Sent(address,address,uint256,string)')
