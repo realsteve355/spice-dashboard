@@ -118,13 +118,18 @@ export default function Company() {
 
     async function load() {
       try {
-        // Query each event type individually so one missing event doesn't block the others
-        const safeQuery = (filter) => colonyContract.queryFilter(filter).catch(() => [])
+        // safeQuery wraps both filter creation and the async call so a synchronous
+        // "unpermitted intrinsics" throw from LavaMoat can't escape the catch.
+        const safeQuery = async (filterFn) => {
+          try {
+            return await colonyContract.queryFilter(filterFn())
+          } catch { return [] }
+        }
         const [received, sent, saves, dividends] = await Promise.all([
-          safeQuery(colonyContract.filters.Sent(null, queryAddr)),
-          safeQuery(colonyContract.filters.Sent(queryAddr, null)),
-          onChain ? safeQuery(colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
-          onChain ? safeQuery(colonyContract.filters.VDividendPaid(queryAddr, null)) : Promise.resolve([]),
+          safeQuery(() => colonyContract.filters.Sent(undefined, queryAddr)),
+          safeQuery(() => colonyContract.filters.Sent(queryAddr, undefined)),
+          onChain ? safeQuery(() => colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
+          onChain ? safeQuery(() => colonyContract.filters.VDividendPaid(queryAddr, undefined)) : Promise.resolve([]),
         ])
 
         const allEvents = [...received, ...sent, ...saves, ...dividends]
