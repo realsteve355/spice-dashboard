@@ -1,7 +1,7 @@
 // Fire-and-forget activity logger — posts to spice.zpc.finance/api/log
 // Never throws or blocks the UI regardless of network/server errors.
 
-const ENDPOINT = 'https://spice.zpc.finance/api/log'
+const ENDPOINT = 'https://app.zpc.finance/api/log'
 
 export function logEvent({ level = 'info', event, colony, address, txHash, message, meta } = {}) {
   if (!event) return
