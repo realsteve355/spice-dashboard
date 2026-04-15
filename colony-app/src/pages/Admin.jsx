@@ -41,6 +41,8 @@ const COLONY_ABI_ADMIN = [
   "function pendingProtocolFee() view returns (uint256)",
   "function settleProtocol() external payable",
   "function registry() view returns (address)",
+  "function advanceEpoch() external",
+  "function currentEpoch() view returns (uint256)",
 ]
 
 const RPC = 'https://sepolia.base.org'
@@ -113,6 +115,12 @@ export default function Admin() {
 
   // ── Overview state ──
   const [citizenCount, setCitizenCount] = useState(null)
+
+  // ── Epoch state ──
+  const [currentEpoch,   setCurrentEpoch]   = useState(null)
+  const [epochPending,   setEpochPending]   = useState(false)
+  const [epochError,     setEpochError]     = useState(null)
+  const [epochDone,      setEpochDone]      = useState(false)
 
   async function loadServices() {
     if (!mccServicesAddr) {
@@ -207,6 +215,30 @@ export default function Admin() {
     setSettlePending(false)
   }
 
+  async function loadEpoch() {
+    if (!colonyAddr) return
+    const prov = provider || new ethers.JsonRpcProvider(RPC)
+    try {
+      const c = new ethers.Contract(colonyAddr, COLONY_ABI_ADMIN, prov)
+      const epoch = await c.currentEpoch().catch(() => null)
+      setCurrentEpoch(epoch !== null ? Number(epoch) : null)
+    } catch { /* older colony contracts may not have currentEpoch */ }
+  }
+
+  async function doAdvanceEpoch() {
+    if (!colonyAddr || !signer) return
+    setEpochPending(true); setEpochError(null); setEpochDone(false)
+    try {
+      const c = new ethers.Contract(colonyAddr, COLONY_ABI_ADMIN, signer)
+      const tx = await c.advanceEpoch()
+      await tx.wait()
+      setEpochDone(true)
+      setCurrentEpoch(e => e !== null ? e + 1 : null)
+    } catch (e) { setEpochError(e?.reason || e?.shortMessage || 'Transaction failed') }
+    setEpochPending(false)
+  }
+
+  useEffect(() => { if (tab === 'overview') loadEpoch() }, [tab, colonyAddr, provider])
   useEffect(() => { if (tab === 'services') loadServices() }, [tab, mccServicesAddr, provider])
   useEffect(() => {
     if (tab === 'citizens' || tab === 'billing') loadCitizens()
@@ -414,6 +446,34 @@ export default function Admin() {
                   New colonies need MCCServices and MCCBilling deployed separately.
                   This will be automated in a future release.
                 </div>
+              </div>
+            )}
+
+            {/* Epoch control */}
+            {colonyAddr && (
+              <div style={card}>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>EPOCH CONTROL</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: C.sub }}>
+                      Current epoch: <span style={{ color: C.text, fontWeight: 500 }}>
+                        {currentEpoch !== null ? `#${currentEpoch}` : '—'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.faint, marginTop: 3, lineHeight: 1.5 }}>
+                      Advancing the epoch resets UBI eligibility for all citizens.<br />
+                      Founder-only. Use to simulate the passage of time during testing.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { setEpochDone(false); doAdvanceEpoch() }}
+                  disabled={epochPending}
+                  style={{ ...smallBtn(epochDone ? C.green : C.gold), opacity: epochPending ? 0.6 : 1 }}
+                >
+                  {epochPending ? '…' : epochDone ? 'Epoch advanced ✓' : 'Advance Epoch →'}
+                </button>
+                {epochError && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{epochError}</div>}
               </div>
             )}
           </div>

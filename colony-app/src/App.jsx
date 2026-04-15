@@ -61,9 +61,8 @@ export default function App() {
       alert('MetaMask not found. Please install it.')
       return
     }
-    const prov = new ethers.BrowserProvider(window.ethereum)
+    let prov = new ethers.BrowserProvider(window.ethereum)
     const network = await prov.getNetwork()
-    setChainId(Number(network.chainId))
 
     if (Number(network.chainId) !== BASE_CHAIN_ID) {
       try {
@@ -71,18 +70,31 @@ export default function App() {
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: '0x14A34' }],  // Base Sepolia
         })
+        // Re-create provider after chain switch — old instance has stale chain state
+        prov = new ethers.BrowserProvider(window.ethereum)
       } catch {
         alert('Please switch MetaMask to the Base network.')
         return
       }
     }
 
+    setChainId(BASE_CHAIN_ID)
+
     const accounts = await prov.send('eth_requestAccounts', [])
+    if (!accounts || accounts.length === 0) return
     const addr = accounts[0]
-    const sign = await prov.getSigner()
-    setProvider(prov)
-    setSigner(sign)
+
+    // Set address immediately so the UI shows "connected" without waiting for getSigner
     setAddress(addr)
+
+    try {
+      const sign = await prov.getSigner()
+      setProvider(prov)
+      setSigner(sign)
+    } catch (e) {
+      console.warn('[connect] getSigner failed:', e)
+    }
+
     await loadOnChainData(addr, prov)
   }, [])
 
@@ -221,13 +233,21 @@ export default function App() {
     return () => window.ethereum.removeListener('accountsChanged', handler)
   }, [connect, disconnect])
 
-  // Listen for network changes — disconnect so user re-connects on correct chain
+  // Listen for network changes — clear local state and reconnect on new chain
+  // NOTE: do NOT call disconnect() here — that revokes MetaMask permissions,
+  // which silently breaks a connect() call that is already in flight.
   useEffect(() => {
     if (!window.ethereum) return
-    const handler = () => disconnect()
+    const handler = () => {
+      setAddress(null)
+      setProvider(null)
+      setSigner(null)
+      setOnChain({})
+      connect()
+    }
     window.ethereum.on('chainChanged', handler)
     return () => window.ethereum.removeListener('chainChanged', handler)
-  }, [disconnect])
+  }, [connect])
 
   const isCitizenOf = (id) => {
     // If colony has a real contract (contracts.json or localStorage), always use on-chain data

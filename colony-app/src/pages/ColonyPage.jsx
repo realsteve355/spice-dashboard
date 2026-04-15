@@ -84,6 +84,9 @@ export default function ColonyPage() {
   const [txPending, setTxPending] = useState(false)
   const [txError, setTxError]     = useState(null)
 
+  const [citizens, setCitizens]         = useState(null)  // null = not loaded, [] = empty
+  const [citizensLoading, setCitizensLoading] = useState(false)
+
   // If not in mock list but we have an address, load from chain
   useEffect(() => {
     if (mockColony || !resolvedAddr) return
@@ -163,6 +166,30 @@ export default function ColonyPage() {
       setTxPending(false)
     }
   }
+
+  useEffect(() => {
+    const contractAddress = contracts?.colonies?.[slug]?.colony || resolvedAddr
+    if (!contractAddress) return
+    setCitizensLoading(true)
+    const prov = new ethers.JsonRpcProvider(RPC)
+    const CITIZEN_ABI = [
+      "function citizenCount() view returns (uint256)",
+      "function citizens(uint256) view returns (address)",
+      "function citizenName(address) view returns (string)",
+    ]
+    const c = new ethers.Contract(contractAddress, CITIZEN_ABI, prov)
+    c.citizenCount()
+      .then(async (count) => {
+        const n = Number(count)
+        const addrs = await Promise.all(
+          Array.from({ length: n }, (_, i) => c.citizens(i))
+        )
+        const names = await Promise.all(addrs.map(a => c.citizenName(a)))
+        setCitizens(addrs.map((addr, i) => ({ addr, name: names[i] })))
+      })
+      .catch(() => setCitizens([]))
+      .finally(() => setCitizensLoading(false))
+  }, [slug, resolvedAddr, contracts])
 
   return (
     <Layout title={colony.name} back="/" colonySlug={isCitizen ? slug : null}>
@@ -306,6 +333,31 @@ export default function ColonyPage() {
               <div style={{ fontSize: 12, color: C.gold, fontWeight: 500, textAlign: 'right' }}>
                 {s.price}
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Citizens */}
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>CITIZENS</div>
+          {citizensLoading ? (
+            <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
+          ) : !citizens || citizens.length === 0 ? (
+            <div style={{ fontSize: 11, color: C.faint }}>No citizens yet.</div>
+          ) : citizens.map(({ addr, name }, i) => (
+            <div key={addr} style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              paddingBottom: i < citizens.length - 1 ? 10 : 0,
+              marginBottom: i < citizens.length - 1 ? 10 : 0,
+              borderBottom: i < citizens.length - 1 ? `1px solid ${C.border}` : 'none',
+            }}>
+              <div>
+                <div style={{ fontSize: 12, color: C.text }}>{name || '(unnamed)'}</div>
+                <div style={{ fontSize: 10, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
+                  {addr.slice(0, 10)}…{addr.slice(-6)}
+                </div>
+              </div>
+              <div style={{ fontSize: 10, color: C.faint }}>#{i + 1}</div>
             </div>
           ))}
         </div>
