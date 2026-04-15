@@ -307,15 +307,17 @@ export default function App() {
       colonies: {
         ...CONTRACTS.colonies,
         ...Object.fromEntries(
-          Object.entries(userColoniesStored).map(([id, info]) => [id, {
-            colony:       info.address,
-            sToken:       info.sToken,
-            vToken:       info.vToken,
-            gToken:       info.gToken,
-            mccTreasury:  info.mccTreasury,
-            mccServices:  info.mccServices,
-            mccBilling:   info.mccBilling,
-          }])
+          Object.entries(userColoniesStored)
+            .filter(([id]) => !CONTRACTS.colonies[id])  // contracts.json takes priority — never override
+            .map(([id, info]) => [id, {
+              colony:       info.address,
+              sToken:       info.sToken,
+              vToken:       info.vToken,
+              gToken:       info.gToken,
+              mccTreasury:  info.mccTreasury,
+              mccServices:  info.mccServices,
+              mccBilling:   info.mccBilling,
+            }])
         ),
       },
     }
