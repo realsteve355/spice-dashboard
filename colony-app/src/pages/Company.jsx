@@ -118,11 +118,16 @@ export default function Company() {
 
     async function load() {
       try {
-        // safeQuery wraps both filter creation and the async call so a synchronous
-        // "unpermitted intrinsics" throw from LavaMoat can't escape the catch.
+        // Limit block range — public Base Sepolia RPC rejects getLogs over ~10k blocks.
+        // 500k blocks ≈ 11 days at 2s block time, covering all recent test activity.
+        const toBlock   = await rpc.getBlockNumber()
+        const fromBlock = Math.max(0, toBlock - 500000)
+
+        // safeQuery wraps both filter creation and the async call so any RPC error
+        // (range limit, missing event, etc.) returns [] rather than killing Promise.all.
         const safeQuery = async (filterFn) => {
           try {
-            return await colonyContract.queryFilter(filterFn())
+            return await colonyContract.queryFilter(filterFn(), fromBlock, toBlock)
           } catch { return [] }
         }
         const [received, sent, saves, dividends] = await Promise.all([
