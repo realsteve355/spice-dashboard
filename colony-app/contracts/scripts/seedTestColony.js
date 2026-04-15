@@ -20,11 +20,13 @@
  */
 const hre = require("hardhat");
 
-// ── Addresses ──────────────────────────────────────────────────────────────────
-const COLONY_ADDRESS   = "0x112240357669CC163011C729F0fE219A799838B5";
-const BILLING_ADDRESS  = "0x8B2dD9D2C35e59FDfED6071056AEE66AC11D19Cb";
-const SERVICES_ADDRESS = "0x1d7Abc42621729807d2Dfb6Fc6a60D50B79A45c4";
-const COMPANY_REG      = "0x92d8F29F07889434559c9D9ab9EBc9444365FC94";
+// ── Addresses — update these after each fresh deploy ─────────────────────────
+// Run `npx hardhat run scripts/deploy.js --network baseSepolia` first,
+// then copy the printed addresses here.
+const COLONY_ADDRESS    = "0x112240357669CC163011C729F0fE219A799838B5";
+const BILLING_ADDRESS   = "0x8B2dD9D2C35e59FDfED6071056AEE66AC11D19Cb";
+const SERVICES_ADDRESS  = "0x1d7Abc42621729807d2Dfb6Fc6a60D50B79A45c4";
+const COMPANY_FACTORY   = ""; // set after Phase 2 redeploy
 
 const CITIZENS = {
   Steve: "0x92378C9b6e556C695F91eB6675E142d7114C43BC",
@@ -59,8 +61,9 @@ const BILLING_ABI = [
 ];
 
 const COMPANY_ABI = [
-  "function register(string, address[], uint256[]) external returns (uint256)",
+  "function deployCompany(string, address[], uint256[]) external returns (uint256)",
   "function getCompaniesOf(address) view returns (uint256[])",
+  "function companyCount() view returns (uint256)",
 ];
 
 const S = (n) => hre.ethers.parseUnits(String(n), 18);
@@ -73,7 +76,9 @@ async function main() {
   const colony   = new hre.ethers.Contract(COLONY_ADDRESS,   COLONY_ABI,   steve);
   const services = new hre.ethers.Contract(SERVICES_ADDRESS, SERVICES_ABI, steve);
   const billing  = new hre.ethers.Contract(BILLING_ADDRESS,  BILLING_ABI,  steve);
-  const compReg  = new hre.ethers.Contract(COMPANY_REG,      COMPANY_ABI,  steve);
+  const compReg  = COMPANY_FACTORY
+    ? new hre.ethers.Contract(COMPANY_FACTORY, COMPANY_ABI, steve)
+    : null;
 
   const sTokenAddr = await colony.sToken();
   const sToken = new hre.ethers.Contract(sTokenAddr, STOKEN_ABI, steve);
@@ -166,29 +171,31 @@ async function main() {
     }
   }
 
-  // ── 6. Register test companies ────────────────────────────────────────────
-  console.log("\n6. Registering test companies…");
-  let existingCos = [];
-  try {
-    existingCos = await compReg.getCompaniesOf(steve.address);
-  } catch {}
-
-  const COMPANIES = [
-    { name: "Dave's Coffee",    founders: [CITIZENS.Steve], stakes: [10000] },
-    { name: "Colony Bakery",    founders: [CITIZENS.Steve], stakes: [10000] },
-    { name: "Solar Co-op",      founders: [CITIZENS.Steve], stakes: [10000] },
-  ];
-
-  if (existingCos.length >= COMPANIES.length) {
-    console.log(`   SKIP — ${existingCos.length} companies already registered`);
+  // ── 6. Deploy test companies ──────────────────────────────────────────────
+  console.log("\n6. Deploying test companies…");
+  if (!compReg) {
+    console.log("   SKIP — COMPANY_FACTORY address not set (Phase 2 redeploy required)");
   } else {
-    for (const co of COMPANIES) {
-      try {
-        const tx = await compReg.register(co.name, co.founders, co.stakes);
-        await tx.wait();
-        console.log(`   ✓ Registered: ${co.name}`);
-      } catch (e) {
-        console.log(`   SKIP ${co.name}:`, e.reason || e.shortMessage);
+    let existingCount = 0n;
+    try { existingCount = await compReg.companyCount(); } catch {}
+
+    const COMPANIES = [
+      { name: "Dave's Coffee", founders: [CITIZENS.Steve], stakes: [10000] },
+      { name: "Colony Bakery", founders: [CITIZENS.Steve], stakes: [10000] },
+      { name: "Solar Co-op",   founders: [CITIZENS.Steve], stakes: [10000] },
+    ];
+
+    if (existingCount >= BigInt(COMPANIES.length)) {
+      console.log(`   SKIP — ${existingCount} companies already deployed`);
+    } else {
+      for (const co of COMPANIES) {
+        try {
+          const tx = await compReg.deployCompany(co.name, co.founders, co.stakes);
+          await tx.wait();
+          console.log(`   ✓ Deployed: ${co.name}`);
+        } catch (e) {
+          console.log(`   SKIP ${co.name}:`, e.reason || e.shortMessage);
+        }
       }
     }
   }

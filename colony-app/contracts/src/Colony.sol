@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./GToken.sol";
 import "./SToken.sol";
 import "./VToken.sol";
+import "./OToken.sol";
 
 interface IColonyRegistry {
     function getFeeForColony(address colony) external view returns (uint256);
@@ -31,16 +32,21 @@ contract Colony {
     GToken public gToken;
     SToken public sToken;
     VToken public vToken;
+    OToken public oToken;
 
     string  public colonyName;
     address public founder;
     address public registry;           // ColonyRegistry — address(0) if not registered
+    address public companyFactory;     // CompanyFactory — address(0) until set
 
     uint256 public pendingProtocolFee; // ETH wei accrued since last settlement
 
     mapping(address => bool)   public isCitizen;
     mapping(address => string) public citizenName;
     address[] public citizens;
+
+    // Company wallets registered by CompanyFactory — may send S-tokens
+    mapping(address => bool) public isCompanyWallet;
 
     event CitizenJoined(address indexed citizen, uint256 gTokenId, string name);
     event NameUpdated(address indexed citizen, string name);
@@ -49,6 +55,8 @@ contract Colony {
     event Redeemed(address indexed citizen, uint256 amount);
     event Sent(address indexed from, address indexed to, uint256 amount, string note);
     event ProtocolFeeSettled(uint256 amount, address treasury);
+    event CompanyWalletRegistered(address indexed wallet);
+    event VDividendPaid(address indexed from, address indexed to, uint256 amount);
 
     /**
      * @param _name     Colony display name
@@ -63,10 +71,19 @@ contract Colony {
         gToken = new GToken(_name, _ticker);
         sToken = new SToken(_ticker);
         vToken = new VToken(_ticker);
+        oToken = new OToken(_name, address(this));
+
+        // Mint MCC O-token (id=1) to the colony founder as initial MCC chair
+        oToken.mint(founder, string.concat(_name, " MCC"), OToken.OrgType.MCC);
     }
 
     modifier onlyCitizen() {
         require(isCitizen[msg.sender], "Colony: not a citizen");
+        _;
+    }
+
+    modifier onlyCitizenOrCompany() {
+        require(isCitizen[msg.sender] || isCompanyWallet[msg.sender], "Colony: not authorized");
         _;
     }
 
@@ -134,7 +151,7 @@ contract Colony {
      *         The fee is NOT taken from the sender — it accumulates as a colony
      *         obligation on pendingProtocolFee, settled monthly by the MCC Fisc.
      */
-    function send(address to, uint256 amount, string calldata note) external onlyCitizen {
+    function send(address to, uint256 amount, string calldata note) external onlyCitizenOrCompany {
         require(sToken.balanceOf(msg.sender) >= amount, "Colony: insufficient S balance");
         sToken.colonyTransfer(msg.sender, to, amount);
 
@@ -172,6 +189,48 @@ contract Colony {
         }
 
         emit ProtocolFeeSettled(amount, treasury);
+    }
+
+    /**
+     * @notice Set the CompanyFactory address. Founder only. Call once after factory deployment.
+     */
+    function setCompanyFactory(address _factory) external {
+        require(msg.sender == founder, "Colony: only founder");
+        require(_factory != address(0), "Colony: zero address");
+        companyFactory = _factory;
+    }
+
+    /**
+     * @notice Register a company wallet so it can send S-tokens via Colony.send().
+     *         Only the CompanyFactory can call this — triggered on deployCompany().
+     */
+    function registerCompanyWallet(address wallet) external {
+        require(msg.sender == companyFactory, "Colony: only factory");
+        isCompanyWallet[wallet] = true;
+        emit CompanyWalletRegistered(wallet);
+    }
+
+    /**
+     * @notice Convert a company's S-tokens to V-tokens. No monthly cap — companies
+     *         convert all net earnings. Called by CompanyImplementation.convertToV().
+     */
+    function saveToVCompany(uint256 amount) external {
+        require(isCompanyWallet[msg.sender], "Colony: not a company wallet");
+        require(sToken.balanceOf(msg.sender) >= amount, "Colony: insufficient S balance");
+        sToken.burn(msg.sender, amount);
+        vToken.mintCompany(msg.sender, amount);
+        emit Saved(msg.sender, amount);
+    }
+
+    /**
+     * @notice Transfer V-tokens from a company wallet to an equity holder (dividend).
+     *         Called by CompanyImplementation.distributeVDividend().
+     */
+    function transferVDividend(address to, uint256 amount) external {
+        require(isCompanyWallet[msg.sender], "Colony: not a company wallet");
+        require(vToken.balanceOf(msg.sender) >= amount, "Colony: insufficient V balance");
+        vToken.colonyTransfer(msg.sender, to, amount);
+        emit VDividendPaid(msg.sender, to, amount);
     }
 
     /**

@@ -48,6 +48,14 @@ contract VToken is ERC20, Ownable {
     }
 
     /**
+     * @notice Mint V-tokens to a company wallet — no monthly savings cap.
+     *         Called by Colony.saveToVCompany(). Only Colony (owner) can call.
+     */
+    function mintCompany(address company, uint256 amount) external onlyOwner {
+        _mint(company, amount);
+    }
+
+    /**
      * @notice Colony-authorised transfer only (dividends, inheritance).
      *         P2P transfers are blocked.
      */
