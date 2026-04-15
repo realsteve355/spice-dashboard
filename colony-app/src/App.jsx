@@ -150,17 +150,20 @@ export default function App() {
 
   // Read S, V, G balances + citizen status for all known colonies
   const loadOnChainData = useCallback(async (addr, prov) => {
-    if (!addr || !prov) return
+    if (!addr) return
     setOnChainLoading(true)
+    // Use a direct JSON-RPC provider for reads — MetaMask's BrowserProvider
+    // can silently drop batch calls, causing the per-colony Promise.all to fail.
+    const readProv = new ethers.JsonRpcProvider('https://sepolia.base.org')
     const result = {}
 
     // Known colonies from contracts.json
     for (const [colonyId, cfg] of Object.entries(CONTRACTS.colonies)) {
       try {
-        const sToken  = new ethers.Contract(cfg.sToken,  ERC20_ABI,  prov)
-        const vToken  = new ethers.Contract(cfg.vToken,  ERC20_ABI,  prov)
-        const gToken  = new ethers.Contract(cfg.gToken,  ERC721_ABI, prov)
-        const colony  = new ethers.Contract(cfg.colony,  COLONY_ABI, prov)
+        const sToken  = new ethers.Contract(cfg.sToken,  ERC20_ABI,  readProv)
+        const vToken  = new ethers.Contract(cfg.vToken,  ERC20_ABI,  readProv)
+        const gToken  = new ethers.Contract(cfg.gToken,  ERC721_ABI, readProv)
+        const colony  = new ethers.Contract(cfg.colony,  COLONY_ABI, readProv)
 
         const [sRaw, vRaw, gId, citizen, founderAddr] = await Promise.all([
           sToken.balanceOf(addr),
@@ -191,7 +194,7 @@ export default function App() {
     for (const [colonyId, info] of Object.entries(userColonies)) {
       if (CONTRACTS.colonies[colonyId]) continue  // already loaded above
       try {
-        const colonyContract = new ethers.Contract(info.address, COLONY_ABI, prov)
+        const colonyContract = new ethers.Contract(info.address, COLONY_ABI, readProv)
         const [sAddr, vAddr, gAddr, citizen, colonyName] = await Promise.all([
           colonyContract.sToken(),
           colonyContract.vToken(),
@@ -199,9 +202,9 @@ export default function App() {
           colonyContract.isCitizen(addr),
           colonyContract.colonyName(),
         ])
-        const sToken = new ethers.Contract(sAddr, ERC20_ABI,  prov)
-        const vToken = new ethers.Contract(vAddr, ERC20_ABI,  prov)
-        const gToken = new ethers.Contract(gAddr, ERC721_ABI, prov)
+        const sToken = new ethers.Contract(sAddr, ERC20_ABI,  readProv)
+        const vToken = new ethers.Contract(vAddr, ERC20_ABI,  readProv)
+        const gToken = new ethers.Contract(gAddr, ERC721_ABI, readProv)
         const [sRaw, vRaw, gId, sSym, vSym] = await Promise.all([
           sToken.balanceOf(addr),
           vToken.balanceOf(addr),
@@ -244,9 +247,9 @@ export default function App() {
 
   // Refresh on-chain data — small delay lets the RPC node index the new block
   const refresh = useCallback((delayMs = 1500) => {
-    if (!address || !provider) return
-    setTimeout(() => loadOnChainData(address, provider), delayMs)
-  }, [address, provider, loadOnChainData])
+    if (!address) return
+    setTimeout(() => loadOnChainData(address, null), delayMs)
+  }, [address, loadOnChainData])
 
   // Auto-connect if MetaMask already has this site authorised
   useEffect(() => {
