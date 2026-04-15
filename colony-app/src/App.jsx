@@ -164,12 +164,14 @@ export default function App() {
         const gToken  = new ethers.Contract(cfg.gToken,  ERC721_ABI, readProv)
         const colony  = new ethers.Contract(cfg.colony,  COLONY_ABI, readProv)
 
-        const [sRaw, vRaw, gId, citizen, founderAddr] = await Promise.all([
+        const [sRaw, vRaw, gId, citizen, founderAddr, sSym, vSym] = await Promise.all([
           sToken.balanceOf(addr),
           vToken.balanceOf(addr),
           gToken.tokenOf(addr),
           colony.isCitizen(addr),
           colony.founder(),
+          sToken.symbol(),
+          vToken.symbol(),
         ])
 
         const name = citizen ? await colony.citizenName(addr) : ''
@@ -182,6 +184,8 @@ export default function App() {
           citizenName: name,
           isFounder:   founderAddr.toLowerCase() === addr.toLowerCase(),
           founderAddr,
+          sSymbol:     sSym,
+          vSymbol:     vSym,
         }
       } catch (e) {
         console.error('[loadOnChainData] failed for', colonyId, ':', e?.message || e)
