@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { ethers } from 'ethers'
 import CONTRACTS from './data/contracts.json'
 import { MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
@@ -54,6 +54,7 @@ export default function App() {
   const [chainId,   setChainId]   = useState(null)
   const [onChain,   setOnChain]   = useState({})  // { [colonyId]: { sBalance, vBalance, gTokenId, isCitizen } }
   const [onChainLoading, setOnChainLoading] = useState(false)
+  const connectingRef = useRef(false)  // guard against concurrent connect() calls
 
   // Connect MetaMask
   const connect = useCallback(async () => {
@@ -61,41 +62,74 @@ export default function App() {
       alert('MetaMask not found. Please install it.')
       return
     }
-    let prov = new ethers.BrowserProvider(window.ethereum)
-    const network = await prov.getNetwork()
+    if (connectingRef.current) return  // prevent concurrent calls
+    connectingRef.current = true
+    try {
+      let prov = new ethers.BrowserProvider(window.ethereum)
+      const network = await prov.getNetwork()
 
-    if (Number(network.chainId) !== BASE_CHAIN_ID) {
-      try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x14A34' }],  // Base Sepolia
-        })
+      if (Number(network.chainId) !== BASE_CHAIN_ID) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x14A34' }],  // Base Sepolia hex
+          })
+        } catch (switchErr) {
+          // Error 4902 = chain not added to MetaMask yet — add it
+          if (switchErr?.code === 4902 || switchErr?.data?.originalError?.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: '0x14A34',
+                  chainName: 'Base Sepolia',
+                  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                  rpcUrls: ['https://sepolia.base.org'],
+                  blockExplorerUrls: ['https://sepolia.basescan.org'],
+                }],
+              })
+            } catch {
+              alert('Could not add Base Sepolia network. Please add it manually in MetaMask.')
+              return
+            }
+          } else {
+            alert('Please switch MetaMask to the Base Sepolia network.')
+            return
+          }
+        }
         // Re-create provider after chain switch — old instance has stale chain state
         prov = new ethers.BrowserProvider(window.ethereum)
-      } catch {
-        alert('Please switch MetaMask to the Base network.')
-        return
       }
-    }
 
-    setChainId(BASE_CHAIN_ID)
+      setChainId(BASE_CHAIN_ID)
 
-    const accounts = await prov.send('eth_requestAccounts', [])
-    if (!accounts || accounts.length === 0) return
-    const addr = accounts[0]
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+      if (!accounts || accounts.length === 0) return
+      const addr = accounts[0]
 
-    // Set address immediately so the UI shows "connected" without waiting for getSigner
-    setAddress(addr)
+      // Set address immediately so the UI shows "connected" without waiting for on-chain reads
+      setAddress(addr)
 
-    try {
-      const sign = await prov.getSigner()
-      setProvider(prov)
-      setSigner(sign)
+      try {
+        const sign = await prov.getSigner()
+        setProvider(prov)
+        setSigner(sign)
+      } catch (e) {
+        console.warn('[connect] getSigner failed:', e)
+        setProvider(prov)
+      }
+
+      try {
+        await loadOnChainData(addr, prov)
+      } catch (e) {
+        console.warn('[connect] loadOnChainData failed:', e)
+      }
     } catch (e) {
-      console.warn('[connect] getSigner failed:', e)
+      // User rejected or unexpected error — log but don't clear address if already set
+      console.error('[connect] failed:', e)
+    } finally {
+      connectingRef.current = false
     }
-
-    await loadOnChainData(addr, prov)
   }, [])
 
   const disconnect = useCallback(async () => {
