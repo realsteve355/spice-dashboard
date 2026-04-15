@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
-import { MOCK_COLONIES, MOCK_CITIZEN_DATA, MOCK_MY_EQUITY, DAYS_TO_RESET, RESET_DATE, CURRENT_MONTH } from '../data/mock'
+import { MOCK_COLONIES, MOCK_CITIZEN_DATA, DAYS_TO_RESET, RESET_DATE, CURRENT_MONTH } from '../data/mock'
 import { useWallet } from '../App'
 
 const COLONY_ABI = [
@@ -20,6 +20,17 @@ const COLONY_ABI = [
 
 const MCC_BILLING_ABI = [
   "function billOf(address) view returns (uint256)",
+]
+
+const COMPANY_FACTORY_ABI = [
+  "function getCompaniesOf(address) view returns (uint256[])",
+  "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
+]
+
+const OTOKEN_ABI = [
+  "function tokensOf(address) view returns (uint256[])",
+  "function orgs(uint256) view returns (string, uint8, uint256)",
+  "function ownerOf(uint256) view returns (address)",
 ]
 
 import { C } from '../theme'
@@ -154,6 +165,65 @@ export default function Dashboard() {
       }
     }
     loadTx()
+  }, [contracts, slug, address])
+
+  // On-chain companies this user holds equity in
+  const [myCompanies, setMyCompanies] = useState(null)  // null = loading
+
+  useEffect(() => {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg?.companyFactory || !address) { setMyCompanies([]); return }
+    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const factory = new ethers.Contract(cfg.companyFactory, COMPANY_FACTORY_ABI, rpc)
+    let cancelled = false
+    async function load() {
+      try {
+        const ids = await factory.getCompaniesOf(address)
+        const companies = await Promise.all(ids.map(async id => {
+          const [name, wallet, , oTokenId] = await factory.getCompany(id)
+          let isSecretary = false
+          if (cfg.oToken) {
+            try {
+              const oTokenContract = new ethers.Contract(cfg.oToken, OTOKEN_ABI, rpc)
+              const owner = await oTokenContract.ownerOf(oTokenId)
+              isSecretary = owner.toLowerCase() === address.toLowerCase()
+            } catch {}
+          }
+          return { id: Number(id), name, wallet, oTokenId: Number(oTokenId), isSecretary }
+        }))
+        if (!cancelled) setMyCompanies(companies)
+      } catch (e) {
+        console.warn('[Dashboard] load companies failed:', e?.message || e)
+        if (!cancelled) setMyCompanies([])
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [contracts, slug, address])
+
+  // O-tokens held by this user — shows their active roles (MCC chair, company secretary, etc.)
+  const [myOTokens, setMyOTokens] = useState([])
+
+  useEffect(() => {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg?.oToken || !address) { setMyOTokens([]); return }
+    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const oTokenContract = new ethers.Contract(cfg.oToken, OTOKEN_ABI, rpc)
+    let cancelled = false
+    async function load() {
+      try {
+        const ids = await oTokenContract.tokensOf(address)
+        const tokens = await Promise.all(ids.map(async tokenId => {
+          const [name, orgType] = await oTokenContract.orgs(tokenId)
+          return { tokenId: Number(tokenId), name, orgType: Number(orgType) }
+        }))
+        if (!cancelled) setMyOTokens(tokens)
+      } catch (e) {
+        console.warn('[Dashboard] load O-tokens failed:', e?.message || e)
+      }
+    }
+    load()
+    return () => { cancelled = true }
   }, [contracts, slug, address])
 
   const [saving, setSaving]       = useState(false)
@@ -592,49 +662,75 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* My Companies */}
-        {(() => {
-          const myEquity = MOCK_MY_EQUITY[slug] || []
-          return (
-            <div style={card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MY COMPANIES</div>
-                <button
-                  onClick={() => navigate(`/colony/${slug}/company/new`)}
-                  style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
-                >
-                  + Register
-                </button>
-              </div>
-              {myEquity.length === 0 ? (
-                <div style={{ fontSize: 12, color: C.faint }}>No companies yet.</div>
-              ) : (
-                myEquity.map((co, i) => (
-                  <div
-                    key={co.companyId}
-                    onClick={() => navigate(`/colony/${slug}/company/${co.companyId}`)}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      paddingBottom: i < myEquity.length - 1 ? 10 : 0,
-                      marginBottom: i < myEquity.length - 1 ? 10 : 0,
-                      borderBottom: i < myEquity.length - 1 ? `1px solid ${C.border}` : 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontSize: 12, color: C.text }}>{co.name}</div>
-                      <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
-                        {co.pct}% equity
-                        {co.lastDividendV > 0 && ` · last div: ${co.lastDividendV} V`}
-                      </div>
+        {/* Active Roles (O-tokens) */}
+        {myOTokens.length > 0 && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>ACTIVE ROLES</div>
+            {myOTokens.map((tok, i) => {
+              const typeLabel = ['COMPANY', 'MCC', 'COOPERATIVE', 'CIVIC'][tok.orgType] || 'ORG'
+              const typeColor = [C.gold, '#8b5cf6', '#16a34a', '#3b82f6'][tok.orgType] || C.faint
+              return (
+                <div key={tok.tokenId} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  paddingBottom: i < myOTokens.length - 1 ? 10 : 0,
+                  marginBottom: i < myOTokens.length - 1 ? 10 : 0,
+                  borderBottom: i < myOTokens.length - 1 ? `1px solid ${C.border}` : 'none',
+                }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: C.text }}>{tok.name}</div>
+                    <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
+                      O#{String(tok.tokenId).padStart(4, '0')} · secretary
                     </div>
-                    <span style={{ fontSize: 14, color: C.faint }}>›</span>
                   </div>
-                ))
-              )}
-            </div>
-          )
-        })()}
+                  <span style={{
+                    fontSize: 9, color: typeColor, border: `1px solid ${typeColor}`,
+                    borderRadius: 10, padding: '2px 7px', letterSpacing: '0.06em', flexShrink: 0,
+                  }}>{typeLabel}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* My Companies */}
+        <div style={card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MY COMPANIES</div>
+            <button
+              onClick={() => navigate(`/colony/${slug}/company/new`)}
+              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+            >
+              + Register
+            </button>
+          </div>
+          {myCompanies === null ? (
+            <div style={{ fontSize: 12, color: C.faint }}>Loading...</div>
+          ) : myCompanies.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.faint }}>No companies yet.</div>
+          ) : (
+            myCompanies.map((co, i) => (
+              <div
+                key={co.wallet}
+                onClick={() => navigate(`/colony/${slug}/company/${co.wallet}`)}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  paddingBottom: i < myCompanies.length - 1 ? 10 : 0,
+                  marginBottom: i < myCompanies.length - 1 ? 10 : 0,
+                  borderBottom: i < myCompanies.length - 1 ? `1px solid ${C.border}` : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 12, color: C.text }}>{co.name}</div>
+                  {co.isSecretary && (
+                    <div style={{ fontSize: 10, color: '#8b5cf6', marginTop: 2 }}>secretary</div>
+                  )}
+                </div>
+                <span style={{ fontSize: 14, color: C.faint }}>›</span>
+              </div>
+            ))
+          )}
+        </div>
 
         {/* Transactions */}
         <div id="tx-history" style={{ ...card, marginBottom: 8 }}>

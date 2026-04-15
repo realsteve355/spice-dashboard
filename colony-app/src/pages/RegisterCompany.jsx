@@ -4,8 +4,8 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 
-const REGISTRY_ABI = [
-  "function register(string, address[], uint256[]) external returns (uint256)",
+const FACTORY_ABI = [
+  "function deployCompany(string, address[], uint256[]) external returns (uint256)",
 ]
 
 import { C } from '../theme'
@@ -49,17 +49,17 @@ export default function RegisterCompany() {
     }
     setDeploy(true); setTxError(null)
     try {
-      const registry = new ethers.Contract(cfg.companyRegistry, REGISTRY_ABI, signer)
+      const factory = new ethers.Contract(cfg.companyFactory, FACTORY_ABI, signer)
       const wallets = holders.map((h, i) => i === 0 ? address : h.wallet)
-      const stakes  = holders.map(h => Math.round(Number(h.pct) * 100))  // bps
-      const tx = await registry.register(name.trim(), wallets, stakes)
+      const stakes  = holders.map(h => Math.round(Number(h.pct) * 100))  // bps (pct × 100, must sum to 10000)
+      const tx = await factory.deployCompany(name.trim(), wallets, stakes)
       const receipt = await tx.wait()
-      // Extract companyId from CompanyRegistered event
-      const iface = new ethers.Interface(["event CompanyRegistered(uint256 indexed id, string name, address indexed founder)"])
+      // Extract company wallet address from CompanyDeployed event
+      const iface = new ethers.Interface(["event CompanyDeployed(uint256 indexed id, address indexed wallet, string name, address indexed founder, uint256 oTokenId)"])
       for (const log of receipt.logs) {
         try {
           const parsed = iface.parseLog(log)
-          if (parsed) { setCompanyId(Number(parsed.args.id)); break }
+          if (parsed) { setCompanyId(parsed.args.wallet); break }
         } catch {}
       }
       setDone(true)
