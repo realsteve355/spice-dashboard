@@ -321,7 +321,7 @@ export default function Company() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
-          {[['overview','Overview'],['equity','Equity'],['transactions','History'],['contracts','Contracts']].map(([t, label]) => (
+          {[['overview','Overview'],['equity','Equity'],['transactions','Accounts'],['contracts','Contracts']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{
               flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
               border: 'none', color: tab === t ? '#fff' : C.sub,
