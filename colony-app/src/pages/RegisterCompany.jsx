@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
+import { logInfo, logError } from '../utils/logger'
 
 const FACTORY_ABI = [
   "function deployCompany(string, address[], uint256[]) external returns (uint256)",
@@ -56,15 +57,19 @@ export default function RegisterCompany() {
       const receipt = await tx.wait()
       // Extract company wallet address from CompanyDeployed event
       const iface = new ethers.Interface(["event CompanyDeployed(uint256 indexed id, address indexed wallet, string name, address indexed founder, uint256 oTokenId)"])
+      let companyWallet = null
       for (const log of receipt.logs) {
         try {
           const parsed = iface.parseLog(log)
-          if (parsed) { setCompanyId(parsed.args.wallet); break }
+          if (parsed) { companyWallet = parsed.args.wallet; setCompanyId(companyWallet); break }
         } catch {}
       }
+      logInfo('company.deployed', { colony: slug, address, meta: { name: name.trim(), wallet: companyWallet } })
       setDone(true)
     } catch (e) {
-      setTxError(e?.reason || e?.shortMessage || 'Transaction failed')
+      const msg = e?.reason || e?.shortMessage || 'Transaction failed'
+      logError('company.deploy_failed', { colony: slug, address, message: msg, meta: { name: name.trim() } })
+      setTxError(msg)
     }
     setDeploy(false)
   }

@@ -4,6 +4,7 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
+import { logInfo, logError } from '../utils/logger'
 
 const RPC = 'https://sepolia.base.org'
 
@@ -167,12 +168,15 @@ export default function ColonyPage() {
       const colony = new ethers.Contract(contractAddress, COLONY_ABI, signer)
       const tx = await colony.join(citizenName.trim())
       await tx.wait()
+      logInfo('colony.joined', { colony: slug, address, meta: { name: citizenName.trim() } })
       setJoining(false)
       setJoined(true)
       refresh()
     } catch (e) {
+      const msg = e?.reason || e?.message || 'Transaction failed'
+      logError('colony.join_failed', { colony: slug, address, message: msg })
       console.error(e)
-      setTxError(e?.reason || e?.message || 'Transaction failed')
+      setTxError(msg)
     } finally {
       setTxPending(false)
     }

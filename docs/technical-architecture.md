@@ -8,17 +8,19 @@
 
 The SPICE Colony app is a decentralised community economic system. Citizens hold
 tokens, spend with companies, save in V-tokens, and govern the MCC — all on-chain.
-The frontend is a React SPA; there is no backend server. All state lives on-chain or
-in ethers.js in-memory context.
+The frontend is a React SPA. All financial state lives on-chain. Off-chain infrastructure
+is limited to Vercel hosting and a Supabase activity log.
 
 ```
-Browser (React SPA)
+Browser (React SPA — app.zpc.finance)
     │
     ├── MetaMask (wallet, transaction signing)
-    │       └── Base Sepolia RPC (https://sepolia.base.org)
+    │       └── Base Sepolia RPC (https://base-sepolia-rpc.publicnode.com)
     │
-    └── Vercel CDN (static hosting)
-            └── app.zpc.finance
+    ├── Vercel CDN (static hosting + serverless functions)
+    │       └── /api/log  →  Supabase (activity_log table)
+    │
+    └── PublicNode RPC (read-only event queries — getLogs)
 ```
 
 ---
@@ -26,140 +28,162 @@ Browser (React SPA)
 ## 2. Repository Structure
 
 ```
-spice-dashboard/                  # Root — main SPICE research site (zpc.finance)
+spice-dashboard/                  # Root — main SPICE research site (zpc.finance / spice.zpc.finance)
 │   src/                          # React pages: Home, Collision, Simulation, etc.
 │   public/                       # Static assets, spice-methodology.html
-│   vercel.json                   # Main site routing
+│   api/                          # Vercel serverless functions for main site
+│   │   ├── fred.js               # FRED API proxy
+│   │   ├── economy-overview.js   # AI economic summary
+│   │   └── log.js                # Activity log proxy (CORS issues — see colony-app/api/log.js)
+│   vercel.json                   # Main site routing + CORS headers
 │
 └── colony-app/                   # Colony app (app.zpc.finance)
     ├── src/
     │   ├── App.jsx               # Router, WalletCtx, on-chain data loader
-    │   ├── pages/                # One file per route
-    │   │   ├── Directory.jsx
-    │   │   ├── ColonyPage.jsx
-    │   │   ├── Dashboard.jsx
-    │   │   ├── Admin.jsx
-    │   │   ├── Company.jsx
-    │   │   ├── RegisterCompany.jsx
-    │   │   ├── Votes.jsx
-    │   │   ├── Profile.jsx
-    │   │   ├── Guardian.jsx
-    │   │   ├── RequestPayment.jsx
-    │   │   └── PaymentConfirm.jsx
+    │   ├── pages/
+    │   │   ├── Directory.jsx     # Colony list (on-chain + localStorage)
+    │   │   ├── ColonyPage.jsx    # Public colony page + join flow + company directory
+    │   │   ├── Dashboard.jsx     # Citizen dashboard — balances, tx history, actions
+    │   │   ├── Admin.jsx         # MCC admin — services, citizens, billing
+    │   │   ├── Company.jsx       # Company page — overview, equity, accounts (double-entry)
+    │   │   ├── RegisterCompany.jsx  # Deploy new company via CompanyFactory
+    │   │   ├── Votes.jsx         # Governance proposals and voting
+    │   │   ├── Profile.jsx       # Citizen profile — V batches, inheritance
+    │   │   ├── Guardian.jsx      # Guardian view for minor wallets
+    │   │   ├── RequestPayment.jsx   # QR code payment request generator
+    │   │   ├── PaymentConfirm.jsx   # Payment confirmation + Colony.send()
+    │   │   └── CreateColony.jsx  # Deploy new colony via ColonyFactory
     │   ├── components/
     │   │   ├── Layout.jsx        # Shell: header, back button, nav
     │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
+    │   ├── utils/
+    │   │   └── logger.js         # Fire-and-forget activity logger → /api/log
     │   └── data/
-    │       ├── contracts.json    # Deployed contract addresses + deployBlock
+    │       ├── contracts.json    # Deployed contract addresses
     │       └── mock.js           # Mock data for features not yet on-chain
+    ├── api/
+    │   └── log.js                # Serverless function — writes to Supabase activity_log
     ├── contracts/
-    │   ├── src/                  # Solidity source files
+    │   ├── src/                  # Solidity source files (see §3)
     │   ├── scripts/deploy.js     # Hardhat deploy script
     │   └── hardhat.config.js
-    └── vercel.json               # Colony app routing (catch-all rewrite)
+    └── vercel.json               # Colony app routing (catch-all rewrite, excludes /api/*)
 ```
 
 ---
 
 ## 3. Smart Contracts
 
-Deployed on **Base Sepolia** (chain ID 84532). All contracts verified.
+Deployed on **Base Sepolia** (chain ID 84532).
 
-### 3.1 Contract Addresses
+### 3.1 Contract Addresses (Dave's Colony — primary test colony)
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
-| Colony | `0x112240357669CC163011C729F0fE219A799838B5` | Main Fisc — entry point for all citizen actions |
-| GToken | `0x50568a432E91a85161FFDdE8dA9dFe333Ed73a5f` | ERC-721 soulbound governance NFT, one per citizen |
-| SToken | `0xbEb225D184dD27Df728EE2871a8207F91ead32e4` | ERC-20 spending token (UBI-issued, 18 decimals) |
-| VToken | `0xcdf651d4EE8f0FFD6f8cb857bFB8bF4FC721DEF1` | ERC-20 savings token (18 decimals) |
-| Governance | `0xC60c72dc36Fe422E747C5A76ac76164fE3beB705` | Proposals and G-token voting |
-| CompanyRegistry | `0x92d8F29F07889434559c9D9ab9EBc9444365FC94` | Fisc company registration |
-| MCCServices | `0x1d7Abc42621729807d2Dfb6Fc6a60D50B79A45c4` | MCC services catalogue |
+| Colony | `0xcc50c7c853efb0826da823641010333eb3ff5338` | Main Fisc — entry point for all citizen/company actions |
+| GToken | — | ERC-721 soulbound governance NFT, one per citizen |
+| SToken | — | ERC-20 spending token (UBI-issued, 18 decimals) |
+| VToken | — | ERC-20 savings token (18 decimals) |
+| OToken | — | ERC-721 org token — one per company/MCC/cooperative |
+| CompanyFactory | — | Deploys EIP-1167 clones of CompanyImplementation |
 
-Deployment block: **40,073,500** (used as fromBlock for all event queries).
+> Full addresses in `colony-app/src/data/contracts.json`
 
 ### 3.2 Colony.sol — Core Fisc
 
-The central contract. Owns GToken, SToken, and VToken contracts.
-
 ```
-constructor(string colonyName)
-    → deploys GToken, SToken, VToken
-
 join(string name)
     → isCitizen[msg.sender] = true
-    → citizenName[msg.sender] = name
-    → gToken.mint(msg.sender)
-    → sToken.issueUbi(msg.sender)         // 1000 S immediately
+    → gToken.mint(msg.sender)         // soulbound G-token
+    → sToken.issueUbi(msg.sender)     // 1000 S immediately
     emits CitizenJoined, UbiClaimed
 
-claimUbi()                                 // once per epoch
-    → sToken.issueUbi(msg.sender)
+claimUbi()                            // once per epoch (monthly)
     emits UbiClaimed
 
-saveToV(uint256 amount)
-    → sToken.burn(msg.sender, amount)
-    → vToken.mint(msg.sender, amount)
+saveToV(uint256 amount)               // max 200/epoch for citizens, unlimited for companies
+    → sToken.burn + vToken.mint
     emits Saved
 
 redeemV(uint256 amount)
-    → vToken.burn(msg.sender, amount)
-    → sToken.issueUbiRaw(msg.sender, amount)
+    → vToken.burn + sToken.issueUbiRaw
     emits Redeemed
 
-send(address to, uint256 amount, string note)
-    → sToken.colonyTransfer(from, to, amount)
-    emits Sent(from, to, amount, note)     // ← used for payment history
+send(address to, uint256 amount, string note)   // citizens + registered company wallets
+    → sToken.colonyTransfer
+    emits Sent(from indexed, to indexed, amount, note)
 
-advanceEpoch()                             // founder only, monthly
-setName(string name)                       // update citizen display name
+registerCompanyWallet(address)        // CompanyFactory only
+    emits CompanyWalletRegistered
+
+mintOrgToken(address, name, orgType)  // CompanyFactory only → OToken.mint()
+    emits (on OToken)
+
+saveToVCompany(uint256)               // company wallets only, no monthly cap
+    emits Saved
+
+transferVDividend(address to, uint256)  // company wallets only
+    emits VDividendPaid(from indexed, to indexed, amount)
+
+advanceEpoch()                        // founder only, monthly
 ```
 
-**Key state:**
-```solidity
-mapping(address => bool)   public isCitizen;
-mapping(address => string) public citizenName;
-address[] public citizens;
-address public founder;
+### 3.3 CompanyFactory.sol
+
+Deploys EIP-1167 minimal proxy clones of CompanyImplementation.
+
+```
+deployCompany(string name, address[] holders, uint256[] stakes)
+    → clones CompanyImplementation
+    → colony.registerCompanyWallet(wallet)
+    → colony.mintOrgToken(founder, name, 0)   // orgType 0 = Company
+    emits CompanyDeployed(id indexed, wallet indexed, name, founder indexed, oTokenId)
+
+getCompany(uint256 id) → (name, wallet, founder, registeredAt, oTokenId)
+companyCount() → uint256
 ```
 
-### 3.3 GToken.sol — Governance NFT
+### 3.4 CompanyImplementation.sol
 
-- ERC-721, soulbound (transfers blocked except mint)
-- On-chain SVG metadata — renders in MetaMask without external hosting
-- `tokenOf(address)` returns token ID, or 0 if none
+Smart-contract wallet for each company. Holds S and V tokens.
 
-### 3.4 SToken.sol — Spending Token
+```
+name()           → string
+secretary()      → address (O-token holder — has admin rights)
+sBalance()       → uint256
+vBalance()       → uint256
+oTokenId()       → uint256
+getEquityTable() → (address[] holders, uint256[] stakes)   // stakes in bps
+
+pay(address to, uint256 amount, string note)    // secretary only → Colony.send()
+convertToV(uint256 amount)                      // secretary only → Colony.saveToVCompany()
+distributeVDividend()                           // secretary only → Colony.transferVDividend() per holder
+```
+
+### 3.5 OToken.sol — Org Token
+
+ERC-721 role-bound NFT. One per organisation (company, MCC, cooperative, civic).
+
+```
+tokensOf(address) → uint256[]      // all O-token IDs held
+orgs(uint256 id)  → (name, orgType, registeredAt)
+ownerOf(uint256)  → address
+```
+
+OrgType: `0=Company, 1=MCC, 2=Cooperative, 3=Civic`
+
+### 3.6 GToken.sol — Governance NFT
+
+- ERC-721, soulbound
+- On-chain SVG metadata
+- `tokenOf(address)` → token ID (0 if none)
+
+### 3.7 SToken.sol / VToken.sol
 
 - ERC-20, 18 decimals
-- `issueUbi(address)` — mints 1,000 tokens, enforces one-per-epoch
-- `colonyTransfer(from, to, amount)` — colony-authorised transfer (bypasses allowance)
-- `burn(address, amount)` — colony-authorised burn for S→V conversion
-
-### 3.5 VToken.sol — Savings Token
-
-- ERC-20, 18 decimals
-- Minted by Colony on `saveToV()`, burned on `redeemV()`
-- Monthly savings cap (200 S per epoch) enforced in Colony
-
-### 3.6 Governance.sol
-
-- `createProposal(type, description, options[], durationDays)`
-- `vote(proposalId, optionIndex)` — one vote per G-token
-- `getProposal(id)` — returns proposal state and vote counts
-
-### 3.7 CompanyRegistry.sol
-
-- `register(name, wallets[], stakes[])` — stakes in basis points (100 = 1%)
-- emits `CompanyRegistered(id, name, founder)`
-
-### 3.8 MCCServices.sol
-
-- `addService(name, billing, price)` — MCC board only
-- `editService(index, name, billing, price)`
-- `removeService(index)`
-- `getServices()` — returns full catalogue
+- Colony-authorised mint/burn/transfer
+- SToken: `issueUbi()`, `colonyTransfer()`, `burn()`
+- VToken: `mint()`, `mintCompany()`, `colonyTransfer()`, `burn()`
 
 ---
 
@@ -172,96 +196,125 @@ address public founder;
 | Framework | React 19 | Vite 6 build |
 | Routing | React Router v7 | Client-side, catch-all rewrite on Vercel |
 | Web3 | ethers.js v6 | Wallet connection, contract calls, event queries |
-| Styling | Inline JS objects only | No CSS files, no Tailwind, no CSS modules |
+| Styling | Inline JS objects only | No CSS files, no Tailwind |
 | Font | IBM Plex Mono | Monospace throughout |
 | QR codes | qrcode.react (QRCodeSVG) | Payment request QR generation |
-| Hosting | Vercel | Manual deploy of colony-app; main site auto-deploys |
+| Hosting | Vercel | Auto-deploys from master branch on GitHub push |
+| Activity log | Supabase (Postgres) | Via /api/log serverless function |
 
 ### 4.2 WalletCtx — Global State
 
-`App.jsx` provides a single React context (`WalletCtx`) consumed by all pages via `useWallet()`.
+`App.jsx` provides a React context (`WalletCtx`) consumed via `useWallet()`.
 
 ```
 WalletCtx {
-  address          string | null      Connected wallet address
-  provider         BrowserProvider    ethers.js provider
-  signer           Signer             For write transactions
-  chainId          number             Should be 84532 (Base Sepolia)
+  address          string | null
+  provider         BrowserProvider
+  signer           Signer
+  chainId          number             84532 (Base Sepolia)
   isConnected      bool
-  onChainLoading   bool               True while loadOnChainData running
-  onChain          { [colonyId]: {    Loaded on connect and refresh
+  onChainLoading   bool
+  onChain          { [colonyId]: {
     sBalance, vBalance, gTokenId,
-    isCitizen, citizenName
+    isCitizen, citizenName, isFounder,
+    founderAddr, sSymbol, vSymbol,
+    colonyAddress (user-deployed only)
   }}
-  connect()        → prompts MetaMask, loads on-chain data
-  disconnect()     → clears all state
-  refresh(delayMs) → re-loads on-chain data (default 1500ms delay for RPC lag)
-  isCitizenOf(id)  → bool (on-chain if contract exists, mock fallback otherwise)
-  isMccOf(id)      → bool (mock only for now)
-  citizenColonies  string[]           Colony IDs this wallet is a citizen of
-  contracts        contracts.json     Injected for contract address lookups
+  connect()        → MetaMask prompt, loads on-chain data
+  disconnect()     → revokes MetaMask permissions, clears state
+  refresh(delayMs) → re-loads on-chain data (default 1500ms)
+  isCitizenOf(id)  → bool
+  isMccOf(id)      → bool (isFounder check)
+  citizenColonies  string[]
+  contracts        augmented contracts.json + localStorage colonies
 }
 ```
 
-**Auto-connect:** On mount, App.jsx calls `eth_accounts` (read-only, no popup). If MetaMask has a previously authorised account, `connect()` is called silently. This means the dashboard loads with real on-chain data without requiring the user to click Connect.
+**Colony sources:** `contracts.json` (known colonies) + `localStorage['spice_user_colonies']`
+(user-deployed colonies). `contracts.json` always takes priority — localStorage entries
+with matching IDs are silently ignored.
 
 ### 4.3 Route Map
 
-| Path | Component | Auth |
-|------|-----------|------|
-| `/` | Directory | Public |
-| `/colony/:slug` | ColonyPage | Public |
-| `/colony/:slug/dashboard` | Dashboard | Citizen |
-| `/colony/:slug/admin` | Admin | MCC board |
-| `/colony/:slug/company/new` | RegisterCompany | Citizen |
-| `/colony/:slug/company/:id` | Company | Citizen |
-| `/colony/:slug/votes` | Votes | Citizen |
-| `/colony/:slug/profile` | Profile | Citizen |
-| `/colony/:slug/guardian` | Guardian | Citizen |
-| `/colony/:slug/request` | RequestPayment | Citizen |
-| `/colony/:slug/pay` | PaymentConfirm | Citizen |
-| `/create` | CreateColony | Public |
+| Path | Component | Notes |
+|------|-----------|-------|
+| `/` | Directory | Lists all known + user-deployed colonies |
+| `/colony/:slug` | ColonyPage | Public info, citizen list, company directory, join |
+| `/colony/:slug/dashboard` | Dashboard | Balances, tx history, UBI, save/redeem, send |
+| `/colony/:slug/admin` | Admin | MCC board: services, citizens, billing |
+| `/colony/:slug/company/new` | RegisterCompany | Deploy company via CompanyFactory |
+| `/colony/:slug/company/:wallet` | Company | Overview, equity, accounts (double-entry) |
+| `/colony/:slug/votes` | Votes | Governance proposals |
+| `/colony/:slug/profile` | Profile | V batches, inheritance |
+| `/colony/:slug/guardian` | Guardian | Minor wallet management |
+| `/colony/:slug/request` | RequestPayment | QR payment request |
+| `/colony/:slug/pay` | PaymentConfirm | Confirm + submit payment |
+| `/create` | CreateColony | Deploy new colony |
 
-### 4.4 On-Chain Data Loading
+### 4.4 Event Queries — getLogs Pattern
 
-`loadOnChainData(addr, provider)` runs on connect and on explicit refresh.
-For each colony in `contracts.json` it reads:
+All on-chain history queries use raw `provider.getLogs()` + `Interface.parseLog()`.
+`contract.queryFilter()` / `contract.filters.*` are avoided — they trigger LavaMoat
+"unpermitted intrinsics" errors in MetaMask-hardened browser environments.
 
+**Block range:** Public RPCs cap `eth_getLogs` at 10,000 blocks. Base Sepolia runs at
+~2s/block = 10,000 blocks ≈ 5.5 hours. To cover ~25 hours of history we paginate:
+5 chunks × 9,000 blocks in parallel, results merged.
+
+**RPC:** `https://base-sepolia-rpc.publicnode.com` — more permissive than the official
+`https://sepolia.base.org` node.
+
+```js
+// Pattern used in Dashboard.jsx and Company.jsx
+const toBlock = await rpc.getBlockNumber()
+const CHUNK = 9000
+const chunkResults = await Promise.all(
+  Array.from({ length: 5 }, (_, i) => {
+    const chunkTo = toBlock - i * CHUNK
+    const chunkFrom = Math.max(0, chunkTo - CHUNK)
+    return Promise.all([
+      safeLogs({ address: colonyAddr, fromBlock: chunkFrom, toBlock: chunkTo, topics: [...] }),
+      // ... more queries
+    ])
+  })
+)
 ```
-Promise.all([
-  sToken.balanceOf(addr),
-  vToken.balanceOf(addr),
-  gToken.tokenOf(addr),
-  colony.isCitizen(addr),
-])
-// then, if citizen:
-colony.citizenName(addr)
-```
 
-Results stored in `onChain[colonyId]`. Errors are caught per-colony and logged; other colonies still load.
+### 4.5 Activity Logging
 
-### 4.5 Transaction History
+A fire-and-forget logger (`src/utils/logger.js`) POSTs to `/api/log` on the same
+domain (app.zpc.finance). The serverless function writes to Supabase `activity_log`.
+Errors are silently swallowed — logging never blocks the UI.
 
-Dashboard queries five event types from the Colony contract, scoped to `deployBlock` → latest to stay within the Base Sepolia public RPC 10,000-block `eth_getLogs` limit:
+**Instrumented events:**
 
-```
-Sent(from=addr, *)      → outbound payments
-Sent(*, to=addr)        → inbound payments
-UbiClaimed(citizen=addr)
-Saved(citizen=addr)
-Redeemed(citizen=addr)
-```
+| Event | Trigger |
+|-------|---------|
+| `wallet.connected` | Successful MetaMask connect |
+| `wallet.connect_failed` | MetaMask error/rejection |
+| `wallet.signer_failed` | getSigner() failure |
+| `colony.joined` | Successful join() tx |
+| `colony.join_failed` | join() revert |
+| `ubi.claimed` | Successful claimUbi() |
+| `ubi.claim_failed` | claimUbi() revert |
+| `v.saved` | Successful saveToV() |
+| `v.save_failed` | saveToV() revert |
+| `v.redeemed` | Successful redeemV() |
+| `v.redeem_failed` | redeemV() revert |
+| `tx.submitted` | Payment tx broadcast |
+| `tx.confirmed` | Payment tx confirmed |
+| `tx.failed` | Payment tx revert |
+| `company.deployed` | Successful deployCompany() |
+| `company.deploy_failed` | deployCompany() revert |
 
-Block timestamps are fetched in parallel (unique blocks only) then formatted. Events sorted by block number descending.
+Ops console: **Supabase dashboard → Table Editor → activity_log**
 
 ---
 
 ## 5. Payment Flow
 
-The QR payment flow is the primary point-of-sale mechanism.
-
 ```
-Merchant (PC or phone)                  Customer (iPhone)
+Merchant (PC or phone)                  Customer (phone)
 ──────────────────────                  ─────────────────
 1. Dashboard → Request Payment
 2. Enter amount + note
@@ -274,99 +327,107 @@ Merchant (PC or phone)                  Customer (iPhone)
    &amount={amount}
    &note={note}
 
-                                        4. Point iPhone camera at QR
-                                        5. iOS universal link opens MetaMask app
-                                        6. MetaMask in-app browser loads /pay URL
-                                        7. PaymentConfirm page shows:
-                                           - amount, note, recipient
-                                           - S balance check (green/red)
-                                        8. Tap "Confirm & Pay"
-                                           → colony.send(to, amount, note)
-                                        9. MetaMask signs + broadcasts
+                                        4. Camera → MetaMask in-app browser
+                                        5. PaymentConfirm shows amount, note,
+                                           balance check
+                                        6. Tap Pay → Colony.send(to, amt, note)
+                                        7. MetaMask signs + broadcasts
+                                        8. tx.submitted + tx.confirmed logged
 
-4. Dashboard refreshes after 1.5s
-   showing new balance and Sent event
-   in transaction history
+4. Dashboard refreshes (1.5s delay)
+   → new balance + Sent event in history
 ```
 
-**No backend required.** Payment details travel in the URL. The transaction is a direct on-chain call from the customer's wallet.
+No backend required for payments. Transaction details travel in the URL.
 
 ---
 
-## 6. Token Economics (Testnet)
+## 6. Company Flow
 
-| Token | Ticker | Standard | Decimals | Supply mechanism |
-|-------|--------|----------|----------|-----------------|
-| S-token (SPICE) | SSPICE | ERC-20 | 18 | Minted by Colony on UBI claim |
-| V-token | VSPICE | ERC-20 | 18 | Minted by Colony on saveToV() |
-| G-token | GSPICE | ERC-721 | — | One per citizen, soulbound |
+```
+1. Citizen → /colony/:slug/company/new
+   → Enter name, equity holders + % stakes
+   → CompanyFactory.deployCompany(name, holders[], stakes[])
+   → EIP-1167 clone of CompanyImplementation deployed
+   → Colony.registerCompanyWallet(wallet)
+   → Colony.mintOrgToken(founder, name, 0)  → O-token minted
+   emits CompanyDeployed
 
-**UBI:** 1,000 S-tokens per citizen per epoch. First tranche issued on `join()`.
+2. Company appears in ColonyPage COMPANIES section
+   (reads CompanyFactory.getCompany() for each id 0..companyCount)
 
-**Savings cap:** 200 S → V per epoch (enforced in Colony contract).
+3. Customer visits /colony/:slug/company/:wallet
+   → PAY card (non-secretary citizens)
+   → Fills amount + note → PaymentConfirm → Colony.send(companyWallet, amt, note)
 
-**Redemption:** V → S is unrestricted in quantity.
-
-**Inter-colony settlement:** Not yet implemented. Reserved for BTC/ETH/SOL.
+4. Secretary visits company page
+   → Overview: balances, equity table
+   → Accounts tab: double-entry journal of all Colony events to/from company wallet
+   → Equity tab: holder list with bps stakes
+   → Actions: Convert S→V, Distribute V Dividend
+```
 
 ---
 
-## 7. Deployment
+## 7. Token Economics (Testnet)
+
+| Token | Standard | Decimals | Mechanism |
+|-------|----------|----------|-----------|
+| S-token | ERC-20 | 18 | Minted by Colony on UBI claim |
+| V-token | ERC-20 | 18 | Minted by Colony on saveToV() |
+| G-token | ERC-721 | — | Soulbound, one per citizen |
+| O-token | ERC-721 | — | Role-bound, one per organisation |
+
+**UBI:** 1,000 S per citizen per epoch. First tranche on join().
+**Savings cap:** 200 S→V per epoch for citizens. No cap for companies.
+**V dividend:** Company secretary calls distributeVDividend() → pro-rata to equity holders.
+
+---
+
+## 8. Deployment
 
 ### Colony App (app.zpc.finance)
+- Vercel project connected to GitHub — **auto-deploys on push to master**
+- Build: `npm run build` in `colony-app/`
+- `vercel.json`: catch-all rewrite to `/`, excludes `/api/*`
 
-- Separate Vercel project from the main site
-- **Not** auto-deployed on git push — must be manually promoted in Vercel dashboard
-- Build process: `npm run build` in `colony-app/`, then promote latest Vercel deployment to production
-- `vercel.json`: catch-all rewrite to `/` for React Router
+### Main Site (spice.zpc.finance)
+- Auto-deploys from master branch
+- `vercel.json`: catch-all rewrite excluding `/spice-methodology.html` and `/api/*`
 
-### Main Site (zpc.finance)
-
-- Auto-deploys from `master` branch on GitHub push
-- Vercel project at root of repo
-- `vercel.json`: catch-all rewrite excluding `/spice-methodology.html`
-
-### Smart Contract Deployment
-
+### Smart Contracts
 - Hardhat v2, Solidity 0.8.25, evmVersion: cancun
-- Deploy via `npx hardhat run scripts/deploy.js --network baseSepolia`
-- Writes new addresses to `colony-app/src/data/contracts.json` automatically
-- Each deploy is a full fresh deployment (Colony deploys GToken/SToken/VToken internally)
-- **Note:** Base Sepolia public RPC sometimes has stuck mempool issues ("replacement transaction underpriced"). Pattern: hardcode successfully deployed addresses in deploy script and resume from next contract.
+- `npx hardhat run scripts/deploy.js --network baseSepolia`
+- Writes addresses to `colony-app/src/data/contracts.json`
+- Base Sepolia public RPC can have stuck mempool — hardcode deployed addresses and resume
 
 ---
 
-## 8. Known Limitations & Technical Debt
+## 9. Known Limitations & Technical Debt
 
 | Item | Impact | Fix |
 |------|--------|-----|
-| Base Sepolia RPC 10,000-block log limit | Event queries must use deployBlock as fromBlock | Already fixed; deployBlock in contracts.json |
-| RPC staleness after tx.wait() | Balances show stale for ~1.5s after transaction | refresh() has 1500ms delay; manual ↻ button on dashboard |
-| No auto-deployment of colony-app | Every code change requires manual Vercel promotion | Connect colony-app to GitHub auto-deploy in Vercel settings |
-| MetaMask only (no WalletConnect) | iOS users must use MetaMask in-app browser | Add WalletConnect v2 for broader wallet support |
-| QR payment requires MetaMask installed | Limits payment to MetaMask users | WalletConnect would broaden this |
-| Mock data for MCC billing, guardians, intra-month contracts | These features show UI but no real data | Requires additional smart contracts |
-| Colony directory is static mock | New colonies don't appear automatically | Deploy a ColonyRegistry contract |
-| Single colony hardcoded in contracts.json | Multi-colony support requires registry | ColonyRegistry + dynamic contracts.json |
-| No mainnet deployment | Testnet only | Audit contracts → deploy to Base mainnet |
+| getLogs 10,000-block limit | Only ~25h history visible (5×9k chunks) | Use an indexer (The Graph) or Alchemy for longer history |
+| RPC staleness post-tx | Balances stale ~1.5s after transaction | refresh() has 1500ms delay; manual ↻ button |
+| MetaMask only | iOS users need MetaMask in-app browser | Add WalletConnect v2 |
+| Mock data: MCC billing, guardians, intra-month contracts | UI shown but no real data | Requires MCCBilling, Guardian contracts |
+| V dividend distribution is manual | Secretary must call distributeVDividend() | Automate via epoch advance trigger |
+| No governance on-chain | Votes page shows mock data | Wire to Governance.sol |
+| No ColonyRegistry | Directory uses static JSON + localStorage | Deploy ColonyRegistry, dynamic lookup |
+| No mainnet | Testnet only | Audit → Base mainnet |
+| Supabase activity log has no auth | Anyone with the anon key can insert | Add row-level security or switch to service key |
 
 ---
 
-## 9. Future Architecture — Native App
+## 10. Future Architecture
 
-For a production payment experience, the web app should be complemented by a native app:
-
-- **React Native** — shares token/contract logic, adds NFC tap-to-pay
-- **WalletConnect v2** — connects any mobile wallet without MetaMask dependency
-- **NFC tap** — requires native iOS/Android app; Apple restricts NFC to native code
-- **Push notifications** — for received payments and UBI issuance
-
-Recommended sequence:
-1. WalletConnect v2 integration (web app, no new app needed)
-2. React Native app with WalletConnect
-3. NFC tap when native app is stable
+- **WalletConnect v2** — broader wallet support, removes MetaMask dependency
+- **React Native** — NFC tap-to-pay, push notifications
+- **The Graph** — event indexer, removes getLogs pagination workaround
+- **ColonyRegistry** — on-chain colony discovery
+- **MCCBilling contract** — automate citizen bills from service usage
 
 ---
 
-*SPICE Colony · Technical Architecture · v1*
-*Last updated: April 2026*
+*SPICE Colony · Technical Architecture · v2*
+*Last updated: 15 April 2026*

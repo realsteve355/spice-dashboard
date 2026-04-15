@@ -141,15 +141,15 @@ to V-tokens at month end, and distributes dividends to equity holders.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-27 | As a citizen registering a company, I want the registration flow to deploy a company smart contract so the company has its own on-chain wallet address — not just a ledger entry | P1 | — |
-| F-28 | As a company owner, I want to share the company wallet address so customers can pay us directly via colony.send() without knowing anything about our internal equity structure | P1 | — |
+| F-27 | As a citizen registering a company, I want the registration flow to deploy a company smart contract so the company has its own on-chain wallet address — not just a ledger entry | P1 | ✓ |
+| F-28 | As a company owner, I want to share the company wallet address so customers can pay us directly via colony.send() without knowing anything about our internal equity structure | P1 | ✓ |
 
 *F-08: Auto-conversion is a smart contract concern; UI shows estimated projection only.*
 *F-11: Dividend distribution UI is display-only; on-chain distribution not yet wired.*
 *F-15: Share listing (sell side) built; buy side not yet implemented.*
 *F-17–F-21: Contracts tab UI is built; no on-chain contract; display-only mock.*
 *F-22–F-26: AssetRegistry.sol is written and ready to deploy; no UI built yet.*
-*F-27–F-28: Requires CompanyFactory refactor — companies currently stored as registry entries, not deployed contracts.*
+*F-27–F-28: Completed April 2026. CompanyFactory deploys EIP-1167 clones of CompanyImplementation. Company wallet address used as route param.*
 
 ---
 
@@ -167,9 +167,9 @@ operations on behalf of the organisation.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| OS-01 | As a citizen registering a company, I want to automatically receive the company O-token so I am the verified on-chain representative from day one | P1 | — |
-| OS-02 | As an organisation secretary, I want to see the O-token in my wallet with the company name, registration number, and org type so I can confirm my authority at a glance | P1 | — |
-| OS-03 | As any citizen, I want to look up any company and see who currently holds its O-token so I know who is authorised to act on its behalf | P1 | — |
+| OS-01 | As a citizen registering a company, I want to automatically receive the company O-token so I am the verified on-chain representative from day one | P1 | ✓ |
+| OS-02 | As an organisation secretary, I want to see the O-token in my wallet with the company name, registration number, and org type so I can confirm my authority at a glance | P1 | ✓ |
+| OS-03 | As any citizen, I want to look up any company and see who currently holds its O-token so I know who is authorised to act on its behalf | P1 | ✓ |
 | OS-04 | As an organisation secretary, I want to transfer the O-token to another registered citizen when I hand over the role so the incoming secretary has full on-chain authority immediately | P1 | — |
 | OS-05 | As any citizen, I want to see the O-token transfer history for a company so I can audit who has held the secretary role over time | P2 | — |
 
@@ -191,7 +191,7 @@ operations on behalf of the organisation.
 | OS-12 | As an organisation secretary, I want to transfer a company-owned A-token to a citizen's wallet (e.g. on sale of company equipment) | P2 | — |
 | OS-13 | As an organisation secretary, I want to file a Harberger land claim in the company's name, paying the first epoch's stewardship fee from the company's V-token reserve | P2 | — |
 
-*OS-01–OS-13: Requires O-token contract (OToken.sol) and CompanyFactory refactor. No UI or contracts exist yet.*
+*OS-01–OS-03: Completed April 2026. OToken.sol deployed, CompanyFactory mints O-token on deployCompany(). Dashboard shows Active Roles section. OS-04+ not yet built.*
 
 ---
 
@@ -422,7 +422,8 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | — Not built | 59 | 38% |
 | **Total** | **156** | |
 
-*v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession). All new stories are status — pending OToken.sol and CompanyFactory refactor.*
+*v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*
+*v10 updates (15 April 2026): F-27, F-28, OS-01–OS-03 marked ✓ — CompanyFactory + OToken.sol deployed and wired. Company accounts (double-entry), activity log, and getLogs pagination fix also shipped.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -448,7 +449,11 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | MCC billing — set & confirm bills | MCCBilling.setBill() / recordPayment() | ✓ Live |
 | MCC revenue MTD | MCCBilling.totalRevenueMTD() | ✓ Live |
 | Governance proposals + voting | Governance contract | ✓ Live |
-| Company registration + equity | CompanyRegistry contract | ✓ Live |
+| Company registration + equity | CompanyFactory + CompanyImplementation (EIP-1167) | ✓ Live |
+| Company smart-contract wallet | CompanyImplementation | ✓ Live |
+| O-token issuance (org NFT) | OToken.sol | ✓ Live |
+| Company accounts (double-entry journal) | Colony event queries | ✓ Live |
+| Activity log (ops/audit) | Supabase via /api/log | ✓ Live |
 | Asset registration (A-tokens) | AssetRegistry.registerAsset() | Not deployed |
 | Harberger land claims (L-tokens) | AssetRegistry.claimLand() | Not deployed |
 | Protocol infrastructure fee accrual | Colony.pendingProtocolFee + send() | ✓ Live (contracts compiled; new colonies only) |

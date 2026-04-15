@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { MOCK_COLONIES, MOCK_CITIZEN_DATA, DAYS_TO_RESET, RESET_DATE, CURRENT_MONTH } from '../data/mock'
 import { useWallet } from '../App'
+import { logInfo, logError } from '../utils/logger'
 
 const COLONY_ABI = [
   "function claimUbi() external",
@@ -310,10 +311,13 @@ export default function Dashboard() {
     try {
       const tx = await contract.claimUbi()
       await tx.wait()
+      logInfo('ubi.claimed', { colony: slug, address })
       setClaimDone(true)
       refresh()
     } catch (e) {
-      setClaimError(e?.reason || e?.shortMessage || 'Transaction failed')
+      const msg = e?.reason || e?.shortMessage || 'Transaction failed'
+      logError('ubi.claim_failed', { colony: slug, address, message: msg })
+      setClaimError(msg)
     }
     setClaimPending(false)
   }
@@ -331,9 +335,12 @@ export default function Dashboard() {
     try {
       const tx = await contract.saveToV(ethers.parseEther(String(saveAmt)))
       await tx.wait()
+      logInfo('v.saved', { colony: slug, address, meta: { amount: saveAmt } })
       setSaveAmt(''); setSaving(false); refresh()
     } catch (e) {
-      setSaveError(e?.reason || e?.shortMessage || 'Transaction failed')
+      const msg = e?.reason || e?.shortMessage || 'Transaction failed'
+      logError('v.save_failed', { colony: slug, address, message: msg, meta: { amount: saveAmt } })
+      setSaveError(msg)
     } finally { setSavePending(false) }
   }
 
@@ -344,9 +351,12 @@ export default function Dashboard() {
     try {
       const tx = await contract.redeemV(ethers.parseEther(String(redeemAmt)))
       await tx.wait()
+      logInfo('v.redeemed', { colony: slug, address, meta: { amount: redeemAmt } })
       setRedeemAmt(''); setRedeem(false); refresh()
     } catch (e) {
-      setRedeemError(e?.reason || e?.shortMessage || 'Transaction failed')
+      const msg = e?.reason || e?.shortMessage || 'Transaction failed'
+      logError('v.redeem_failed', { colony: slug, address, message: msg, meta: { amount: redeemAmt } })
+      setRedeemError(msg)
     } finally { setRedeemPending(false) }
   }
 
@@ -356,8 +366,10 @@ export default function Dashboard() {
     try {
       const tx = await contract.send(recipient, ethers.parseEther(String(amt)), note)
       await tx.wait()
+      logInfo('tx.confirmed', { colony: slug, address, txHash: tx.hash, message: `send ${amt} S`, meta: { to: recipient, note } })
       refresh()
     } catch (e) {
+      logError('tx.failed', { colony: slug, address, message: e?.reason || e?.shortMessage || e?.message, meta: { action: 'send', to: recipient, amount: amt } })
       console.error(e)
     }
     setSending(false)
