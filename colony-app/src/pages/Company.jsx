@@ -113,40 +113,50 @@ export default function Company() {
     const queryAddr = onChain ? companyId : address
     if (!queryAddr) return
     setTxLoading(true)
-    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    // PublicNode has a higher getLogs range limit than the public Base Sepolia RPC
+    const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
 
     async function load() {
       try {
         // Use raw getLogs + Interface.parseLog instead of contract.queryFilter —
         // queryFilter/contract.filters hits LavaMoat restrictions in some MetaMask builds.
         const iface = new ethers.Interface(COLONY_EVENTS_ABI)
-        const toBlock   = await rpc.getBlockNumber()
-        const fromBlock = Math.max(0, toBlock - 9000)  // public RPC hard limit: 10,000 blocks
+        const toBlock = await rpc.getBlockNumber()
 
         // Topic hashes
-        const T_SENT    = ethers.id('Sent(address,address,uint256,string)')
-        const T_SAVED   = ethers.id('Saved(address,uint256)')
-        const T_VDIV    = ethers.id('VDividendPaid(address,address,uint256)')
-        const pad = (addr) => ethers.zeroPadValue(addr, 32)
+        const T_SENT  = ethers.id('Sent(address,address,uint256,string)')
+        const T_SAVED = ethers.id('Saved(address,uint256)')
+        const T_VDIV  = ethers.id('VDividendPaid(address,address,uint256)')
+        const pad     = (addr) => ethers.zeroPadValue(addr, 32)
 
         const safeLogs = async (filter) => {
           try { return await rpc.getLogs(filter) }
           catch (e) { console.warn('[Accounts] getLogs failed:', e?.message); return [] }
         }
 
-        const base = { address: cfg.colony, fromBlock, toBlock }
-        const [receivedLogs, sentLogs, savedLogs, dividendLogs] = await Promise.all([
-          safeLogs({ ...base, topics: [T_SENT,  null,          pad(queryAddr)] }),
-          safeLogs({ ...base, topics: [T_SENT,  pad(queryAddr), null]          }),
-          onChain ? safeLogs({ ...base, topics: [T_SAVED, pad(queryAddr)] }) : Promise.resolve([]),
-          onChain ? safeLogs({ ...base, topics: [T_VDIV,  pad(queryAddr), null] }) : Promise.resolve([]),
-        ])
+        // Paginate backward in 9k-block chunks (public RPCs limit to 10k per request).
+        // 5 chunks × 9,000 × 2s ≈ 25 hours of coverage — enough for all recent testing.
+        const CHUNK = 9000
+        const chunkResults = await Promise.all(
+          Array.from({ length: 5 }, (_, i) => {
+            const chunkTo   = toBlock - i * CHUNK
+            const chunkFrom = Math.max(0, chunkTo - CHUNK)
+            const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
+            return Promise.all([
+              safeLogs({ ...base, topics: [T_SENT,  null,           pad(queryAddr)] }),
+              safeLogs({ ...base, topics: [T_SENT,  pad(queryAddr), null]           }),
+              onChain ? safeLogs({ ...base, topics: [T_SAVED, pad(queryAddr)]         }) : Promise.resolve([]),
+              onChain ? safeLogs({ ...base, topics: [T_VDIV,  pad(queryAddr), null]   }) : Promise.resolve([]),
+            ])
+          })
+        )
 
         const decode = (log) => { try { return iface.parseLog(log) } catch { return null } }
-        const received  = receivedLogs.map(l  => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
-        const sent      = sentLogs.map(l      => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
-        const saves     = savedLogs.map(l     => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
-        const dividends = dividendLogs.map(l  => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const flat   = (idx) => chunkResults.flatMap(c => c[idx]).map(l => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
+        const received  = flat(0)
+        const sent      = flat(1)
+        const saves     = flat(2)
+        const dividends = flat(3)
 
         const allEvents = [...received, ...sent, ...saves, ...dividends]
         const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
