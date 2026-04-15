@@ -4,11 +4,15 @@ pragma solidity ^0.8.25;
 import "./GToken.sol";
 import "./SToken.sol";
 import "./VToken.sol";
-import "./OToken.sol";
 
 interface IColonyRegistry {
     function getFeeForColony(address colony) external view returns (uint256);
     function protocolTreasury()             external view returns (address);
+}
+
+// Minimal interface — Colony only needs to call mint() on OToken
+interface IOToken {
+    function mint(address to, string calldata name, uint8 orgType) external returns (uint256);
 }
 
 /**
@@ -32,14 +36,14 @@ contract Colony {
     GToken public gToken;
     SToken public sToken;
     VToken public vToken;
-    OToken public oToken;
+    address public oToken;              // OToken address — set via setOToken() after deploy
 
     string  public colonyName;
     address public founder;
-    address public registry;           // ColonyRegistry — address(0) if not registered
-    address public companyFactory;     // CompanyFactory — address(0) until set
+    address public registry;            // ColonyRegistry — address(0) if not registered
+    address public companyFactory;      // CompanyFactory — address(0) until set
 
-    uint256 public pendingProtocolFee; // ETH wei accrued since last settlement
+    uint256 public pendingProtocolFee;  // ETH wei accrued since last settlement
 
     mapping(address => bool)   public isCitizen;
     mapping(address => string) public citizenName;
@@ -60,21 +64,29 @@ contract Colony {
 
     /**
      * @param _name     Colony display name
-     * @param _ticker   Token ticker (e.g. "SFC")
      * @param _registry ColonyRegistry address — pass address(0) if deploying without registry
+     * @param _gToken   Pre-deployed GToken address (ownership must be transferred to Colony after)
+     * @param _sToken   Pre-deployed SToken address
+     * @param _vToken   Pre-deployed VToken address
+     *
+     * Tokens are deployed separately in the deploy script to keep Colony's constructor
+     * gas cost low and each contract independently verifiable on Basescan.
+     * After deploying Colony, call transferOwnership(colonyAddr) on each token contract,
+     * then call setOToken() and setCompanyFactory().
      */
-    constructor(string memory _name, string memory _ticker, address _registry) {
+    constructor(
+        string memory _name,
+        address _registry,
+        address _gToken,
+        address _sToken,
+        address _vToken
+    ) {
         colonyName = _name;
         founder    = msg.sender;
         registry   = _registry;
-
-        gToken = new GToken(_name, _ticker);
-        sToken = new SToken(_ticker);
-        vToken = new VToken(_ticker);
-        oToken = new OToken(_name, address(this));
-
-        // Mint MCC O-token (id=1) to the colony founder as initial MCC chair
-        oToken.mint(founder, string.concat(_name, " MCC"), OToken.OrgType.MCC);
+        gToken     = GToken(_gToken);
+        sToken     = SToken(_sToken);
+        vToken     = VToken(_vToken);
     }
 
     modifier onlyCitizen() {
@@ -87,17 +99,41 @@ contract Colony {
         _;
     }
 
+    // ── One-time wiring ───────────────────────────────────────────────────────
+
+    /**
+     * @notice Set the OToken address. Founder only. Call once after OToken ownership
+     *         has been transferred to this Colony contract.
+     */
+    function setOToken(address _oToken) external {
+        require(msg.sender == founder,    "Colony: only founder");
+        require(oToken == address(0),     "Colony: OToken already set");
+        require(_oToken != address(0),    "Colony: zero address");
+        oToken = _oToken;
+    }
+
+    /**
+     * @notice Set the CompanyFactory address. Founder only. Call once after deployment.
+     */
+    function setCompanyFactory(address _factory) external {
+        require(msg.sender == founder,    "Colony: only founder");
+        require(_factory != address(0),   "Colony: zero address");
+        companyFactory = _factory;
+    }
+
+    // ── Citizen actions ───────────────────────────────────────────────────────
+
     /**
      * @notice Join the colony. Mints a G-token and issues first UBI immediately.
      *         Can only join once. Name is stored on-chain and may be updated later.
      */
     function join(string calldata name) external {
         require(!isCitizen[msg.sender], "Colony: already a citizen");
-        require(bytes(name).length > 0,  "Colony: name required");
+        require(bytes(name).length > 0,   "Colony: name required");
         require(bytes(name).length <= 64, "Colony: name too long");
 
-        isCitizen[msg.sender] = true;
-        citizenName[msg.sender] = name;
+        isCitizen[msg.sender]    = true;
+        citizenName[msg.sender]  = name;
         citizens.push(msg.sender);
 
         uint256 tokenId = gToken.mint(msg.sender);
@@ -111,7 +147,7 @@ contract Colony {
      * @notice Update your display name at any time.
      */
     function setName(string calldata name) external onlyCitizen {
-        require(bytes(name).length > 0,  "Colony: name required");
+        require(bytes(name).length > 0,   "Colony: name required");
         require(bytes(name).length <= 64, "Colony: name too long");
         citizenName[msg.sender] = name;
         emit NameUpdated(msg.sender, name);
@@ -147,15 +183,13 @@ contract Colony {
 
     /**
      * @notice Send S-tokens to another address with an optional note.
-     *         Accrues a small ETH infrastructure fee (set by ColonyRegistry).
-     *         The fee is NOT taken from the sender — it accumulates as a colony
-     *         obligation on pendingProtocolFee, settled monthly by the MCC Fisc.
+     *         Citizens and registered company wallets may call.
+     *         Accrues a small ETH infrastructure fee (tracked for monthly settlement).
      */
     function send(address to, uint256 amount, string calldata note) external onlyCitizenOrCompany {
         require(sToken.balanceOf(msg.sender) >= amount, "Colony: insufficient S balance");
         sToken.colonyTransfer(msg.sender, to, amount);
 
-        // Accrue protocol infrastructure fee (no ETH taken here — tracked for monthly settlement)
         if (registry != address(0)) {
             uint256 fee = IColonyRegistry(registry).getFeeForColony(address(this));
             if (fee > 0) pendingProtocolFee += fee;
@@ -166,15 +200,14 @@ contract Colony {
 
     /**
      * @notice MCC Fisc settles the accumulated protocol infrastructure fee.
-     *         Caller must send exactly pendingProtocolFee in ETH.
-     *         Called monthly as part of the billing cycle.
+     *         Caller must send exactly pendingProtocolFee in ETH. Called monthly.
      */
     function settleProtocol() external payable {
-        require(msg.sender == founder, "Colony: only founder");
-        require(registry != address(0), "Colony: no registry");
+        require(msg.sender == founder,    "Colony: only founder");
+        require(registry != address(0),   "Colony: no registry");
         uint256 amount = pendingProtocolFee;
-        require(amount > 0, "Colony: nothing to settle");
-        require(msg.value >= amount, "Colony: insufficient ETH");
+        require(amount > 0,               "Colony: nothing to settle");
+        require(msg.value >= amount,      "Colony: insufficient ETH");
 
         pendingProtocolFee = 0;
 
@@ -182,7 +215,6 @@ contract Colony {
         (bool ok,) = treasury.call{value: amount}("");
         require(ok, "Colony: transfer failed");
 
-        // Refund overpayment
         if (msg.value > amount) {
             (bool r,) = msg.sender.call{value: msg.value - amount}("");
             require(r, "Colony: refund failed");
@@ -191,18 +223,11 @@ contract Colony {
         emit ProtocolFeeSettled(amount, treasury);
     }
 
-    /**
-     * @notice Set the CompanyFactory address. Founder only. Call once after factory deployment.
-     */
-    function setCompanyFactory(address _factory) external {
-        require(msg.sender == founder, "Colony: only founder");
-        require(_factory != address(0), "Colony: zero address");
-        companyFactory = _factory;
-    }
+    // ── Company wallet support ────────────────────────────────────────────────
 
     /**
-     * @notice Register a company wallet so it can send S-tokens via Colony.send().
-     *         Only the CompanyFactory can call this — triggered on deployCompany().
+     * @notice Register a company wallet so it can send S-tokens via send().
+     *         Only CompanyFactory can call — triggered inside deployCompany().
      */
     function registerCompanyWallet(address wallet) external {
         require(msg.sender == companyFactory, "Colony: only factory");
@@ -211,12 +236,29 @@ contract Colony {
     }
 
     /**
-     * @notice Convert a company's S-tokens to V-tokens. No monthly cap — companies
-     *         convert all net earnings. Called by CompanyImplementation.convertToV().
+     * @notice Mint an O-token for a newly deployed company.
+     *         Only CompanyFactory can call. Colony is the OToken owner (minter).
+     * @param to      Founding secretary — receives the O-token
+     * @param name    Company name
+     * @param orgType OToken.OrgType enum value (0=Company,1=MCC,2=Cooperative,3=Civic)
+     */
+    function mintOrgToken(
+        address to,
+        string calldata name,
+        uint8 orgType
+    ) external returns (uint256) {
+        require(msg.sender == companyFactory, "Colony: only factory");
+        require(oToken != address(0),         "Colony: OToken not set");
+        return IOToken(oToken).mint(to, name, orgType);
+    }
+
+    /**
+     * @notice Convert a company's S-tokens to V-tokens. No monthly cap.
+     *         Called by CompanyImplementation.convertToV().
      */
     function saveToVCompany(uint256 amount) external {
-        require(isCompanyWallet[msg.sender], "Colony: not a company wallet");
-        require(sToken.balanceOf(msg.sender) >= amount, "Colony: insufficient S balance");
+        require(isCompanyWallet[msg.sender],             "Colony: not a company wallet");
+        require(sToken.balanceOf(msg.sender) >= amount,  "Colony: insufficient S balance");
         sToken.burn(msg.sender, amount);
         vToken.mintCompany(msg.sender, amount);
         emit Saved(msg.sender, amount);
@@ -227,11 +269,13 @@ contract Colony {
      *         Called by CompanyImplementation.distributeVDividend().
      */
     function transferVDividend(address to, uint256 amount) external {
-        require(isCompanyWallet[msg.sender], "Colony: not a company wallet");
+        require(isCompanyWallet[msg.sender],            "Colony: not a company wallet");
         require(vToken.balanceOf(msg.sender) >= amount, "Colony: insufficient V balance");
         vToken.colonyTransfer(msg.sender, to, amount);
         emit VDividendPaid(msg.sender, to, amount);
     }
+
+    // ── Admin ─────────────────────────────────────────────────────────────────
 
     /**
      * @notice Advance epoch (monthly reset). Founder only for now.
