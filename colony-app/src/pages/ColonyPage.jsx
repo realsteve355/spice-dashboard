@@ -145,9 +145,12 @@ export default function ColonyPage() {
 
   async function handleSign() {
     const contractAddress = contracts?.colonies?.[slug]?.colony || resolvedAddr
-    if (!contractAddress || !signer) {
-      setJoining(false)
-      setJoined(true)
+    if (!contractAddress) {
+      setTxError('Colony contract address not found. Try refreshing.')
+      return
+    }
+    if (!signer) {
+      setTxError('Wallet not fully connected. Please disconnect and reconnect MetaMask.')
       return
     }
     setTxPending(true)

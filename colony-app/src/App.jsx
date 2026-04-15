@@ -112,12 +112,11 @@ export default function App() {
 
       try {
         const sign = await prov.getSigner()
-        setProvider(prov)
         setSigner(sign)
       } catch (e) {
-        console.warn('[connect] getSigner failed:', e)
-        setProvider(prov)
+        console.warn('[connect] getSigner failed — transactions will not work:', e)
       }
+      setProvider(prov)
 
       try {
         await loadOnChainData(addr, prov)
@@ -237,7 +236,7 @@ export default function App() {
           localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
         }
       } catch (e) {
-        console.warn('Failed to load user colony data for', colonyId, e)
+        console.warn('[loadOnChainData] user colony failed for', colonyId, '— old/dead contract, skipping:', e?.message || e)
       }
     }
 
