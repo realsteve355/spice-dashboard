@@ -118,11 +118,13 @@ export default function Company() {
 
     async function load() {
       try {
+        // Query each event type individually so one missing event doesn't block the others
+        const safeQuery = (filter) => colonyContract.queryFilter(filter).catch(() => [])
         const [received, sent, saves, dividends] = await Promise.all([
-          colonyContract.queryFilter(colonyContract.filters.Sent(null, queryAddr)),
-          colonyContract.queryFilter(colonyContract.filters.Sent(queryAddr, null)),
-          onChain ? colonyContract.queryFilter(colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
-          onChain ? colonyContract.queryFilter(colonyContract.filters.VDividendPaid(queryAddr, null)) : Promise.resolve([]),
+          safeQuery(colonyContract.filters.Sent(null, queryAddr)),
+          safeQuery(colonyContract.filters.Sent(queryAddr, null)),
+          onChain ? safeQuery(colonyContract.filters.Saved(queryAddr)) : Promise.resolve([]),
+          onChain ? safeQuery(colonyContract.filters.VDividendPaid(queryAddr, null)) : Promise.resolve([]),
         ])
 
         const allEvents = [...received, ...sent, ...saves, ...dividends]
