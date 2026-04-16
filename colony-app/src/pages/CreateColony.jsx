@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 
@@ -15,9 +16,18 @@ const FIXED_PARAMS = [
   { label: 'Harberger fee',          value: '0.5% declared value/mo' },
 ]
 
+// Deploy a contract from its artifact — returns { contract, addr }
+async function deployContract(label, abi, bytecode, signer, ...args) {
+  const factory  = new ethers.ContractFactory(abi, bytecode, signer)
+  const contract = await factory.deploy(...args)
+  await contract.deploymentTransaction().wait(1)
+  const addr = await contract.getAddress()
+  return { contract, addr }
+}
+
 export default function CreateColony() {
   const navigate  = useNavigate()
-  const { isConnected, connect, address } = useWallet()
+  const { isConnected, connect, address, signer } = useWallet()
 
   const [step, setStep]           = useState(1)
   const [name, setName]           = useState('')
@@ -26,7 +36,11 @@ export default function CreateColony() {
   const [description, setDesc]    = useState('')
   const [boards, setBoards]       = useState([''])
   const [accepted, setAccepted]   = useState(false)
+
   const [deploying, setDeploying] = useState(false)
+  const [deployLog, setDeployLog] = useState([])   // array of { text, done }
+  const [deployError, setDeployError] = useState(null)
+  const [deployedAddrs, setDeployedAddrs] = useState(null)
 
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
@@ -49,12 +63,143 @@ export default function CreateColony() {
   function updateBoard(i, v) { setBoards(b => b.map((x, idx) => idx === i ? v : x)) }
   function removeBoard(i) { setBoards(b => b.filter((_, idx) => idx !== i)) }
 
-  function handleDeploy() {
+  async function handleDeploy() {
+    if (!signer) { setDeployError('Wallet not connected.'); return }
     setDeploying(true)
-    setTimeout(() => {
+    setDeployError(null)
+    setDeployLog([])
+
+    // Lazy-load the compiled artifacts (215 KB) — only when user triggers deploy
+    let ARTIFACTS
+    try {
+      const mod = await import('../data/deployArtifacts.js')
+      ARTIFACTS = mod.ARTIFACTS
+    } catch (e) {
+      setDeployError('Failed to load contract artifacts: ' + e.message)
+      setDeploying(false)
+      return
+    }
+
+    const addLog = (text, done = false) =>
+      setDeployLog(prev => [...prev, { text, done }])
+
+    const step = async (label, fn) => {
+      addLog(`${label}…`)
+      const result = await fn()
+      setDeployLog(prev => {
+        const next = [...prev]
+        next[next.length - 1] = { text: `✓ ${label}`, done: true }
+        return next
+      })
+      return result
+    }
+
+    try {
+      const deployer = await signer.getAddress()
+      const zero     = ethers.ZeroAddress
+
+      // ── 1–3. Tokens ──────────────────────────────────────────────────────────
+      const { contract: gTokenC, addr: gTokenAddr } = await step(
+        `Deploy GToken (${ticker})`, () =>
+        deployContract('GToken', ARTIFACTS.GToken.abi, ARTIFACTS.GToken.bytecode, signer, name, ticker)
+      )
+      const { contract: sTokenC, addr: sTokenAddr } = await step(
+        `Deploy SToken (S-${ticker})`, () =>
+        deployContract('SToken', ARTIFACTS.SToken.abi, ARTIFACTS.SToken.bytecode, signer, ticker)
+      )
+      const { contract: vTokenC, addr: vTokenAddr } = await step(
+        `Deploy VToken (V-${ticker})`, () =>
+        deployContract('VToken', ARTIFACTS.VToken.abi, ARTIFACTS.VToken.bytecode, signer, ticker)
+      )
+
+      // ── 4. Colony ─────────────────────────────────────────────────────────────
+      const { contract: colonyC, addr: colonyAddr } = await step(
+        'Deploy Colony (Fisc)', () =>
+        deployContract('Colony', ARTIFACTS.Colony.abi, ARTIFACTS.Colony.bytecode, signer,
+          name, zero, gTokenAddr, sTokenAddr, vTokenAddr)
+      )
+
+      // ── 5. Transfer token ownership to Colony ─────────────────────────────────
+      await step('Transfer GToken ownership to Colony', async () => {
+        const tx = await gTokenC.transferOwnership(colonyAddr)
+        await tx.wait(1)
+      })
+      await step('Transfer SToken ownership to Colony', async () => {
+        const tx = await sTokenC.transferOwnership(colonyAddr)
+        await tx.wait(1)
+      })
+      await step('Transfer VToken ownership to Colony', async () => {
+        const tx = await vTokenC.transferOwnership(colonyAddr)
+        await tx.wait(1)
+      })
+
+      // ── 6. OToken ─────────────────────────────────────────────────────────────
+      const { contract: oTokenC, addr: oTokenAddr } = await step(
+        'Deploy OToken (org identity)', () =>
+        deployContract('OToken', ARTIFACTS.OToken.abi, ARTIFACTS.OToken.bytecode, signer, name, colonyAddr)
+      )
+
+      // ── 7. OToken wiring ──────────────────────────────────────────────────────
+      await step('Mint MCC O-token to founder', async () => {
+        const tx = await oTokenC.mint(deployer, name + ' MCC', 1)
+        await tx.wait(1)
+      })
+      await step('Transfer OToken ownership to Colony', async () => {
+        const tx = await oTokenC.transferOwnership(colonyAddr)
+        await tx.wait(1)
+      })
+      await step('Wire OToken into Colony', async () => {
+        const tx = await colonyC.setOToken(oTokenAddr)
+        await tx.wait(1)
+      })
+
+      // ── 8–10. Company contracts ───────────────────────────────────────────────
+      const { addr: implAddr } = await step(
+        'Deploy CompanyImplementation', () =>
+        deployContract('CompanyImplementation', ARTIFACTS.CompanyImplementation.abi, ARTIFACTS.CompanyImplementation.bytecode, signer)
+      )
+      const { addr: beaconAddr } = await step(
+        'Deploy UpgradeableBeacon', () =>
+        deployContract('UpgradeableBeacon', ARTIFACTS.UpgradeableBeacon.abi, ARTIFACTS.UpgradeableBeacon.bytecode, signer, implAddr, deployer)
+      )
+      const { contract: factoryC, addr: factoryAddr } = await step(
+        'Deploy CompanyFactory', () =>
+        deployContract('CompanyFactory', ARTIFACTS.CompanyFactory.abi, ARTIFACTS.CompanyFactory.bytecode, signer, colonyAddr, oTokenAddr, beaconAddr)
+      )
+      await step('Wire CompanyFactory into Colony', async () => {
+        const tx = await colonyC.setCompanyFactory(factoryAddr)
+        await tx.wait(1)
+      })
+
+      // ── 11–12. MCC contracts ─────────────────────────────────────────────────
+      const { addr: billingAddr } = await step(
+        'Deploy MCCBilling', () =>
+        deployContract('MCCBilling', ARTIFACTS.MCCBilling.abi, ARTIFACTS.MCCBilling.bytecode, signer, colonyAddr)
+      )
+      const { addr: servicesAddr } = await step(
+        'Deploy MCCServices', () =>
+        deployContract('MCCServices', ARTIFACTS.MCCServices.abi, ARTIFACTS.MCCServices.bytecode, signer, colonyAddr)
+      )
+
+      // ── Save to localStorage so Directory can find this colony ────────────────
+      const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
+      stored[slug] = {
+        name,
+        address:     colonyAddr,
+        mccBilling:  billingAddr,
+        mccServices: servicesAddr,
+      }
+      localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
+
+      setDeployedAddrs({ colony: colonyAddr, billing: billingAddr, services: servicesAddr })
       setDeploying(false)
       setStep(4)
-    }, 1800)
+
+    } catch (e) {
+      const msg = e?.reason || e?.shortMessage || e?.message || 'Deploy failed'
+      setDeployError(msg)
+      setDeploying(false)
+    }
   }
 
   if (!isConnected) return (
@@ -197,66 +342,111 @@ export default function CreateColony() {
           </div>
         )}
 
-        {/* ── Step 3: Constitution ── */}
+        {/* ── Step 3: Constitution & Deploy ── */}
         {step === 3 && (
           <div>
-            <div style={stepTitle}>Review the founding constitution</div>
-            <div style={stepSub}>
-              These rules are fixed. They may only be amended by 80% referendum of all registered citizens.
-            </div>
-
-            {/* Fixed parameters */}
-            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 16 }}>
-              <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
-                FIXED PARAMETERS
-              </div>
-              {FIXED_PARAMS.map((p, i) => (
-                <div key={i} style={{
-                  padding: '10px 16px',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  borderBottom: i < FIXED_PARAMS.length - 1 ? `1px solid ${C.border}` : 'none',
-                }}>
-                  <span style={{ fontSize: 11, color: C.sub }}>{p.label}</span>
-                  <span style={{ fontSize: 11, color: C.gold, fontWeight: 500 }}>{p.value}</span>
+            {!deploying && !deployError && (
+              <>
+                <div style={stepTitle}>Review the founding constitution</div>
+                <div style={stepSub}>
+                  These rules are fixed. They may only be amended by 80% referendum of all registered citizens.
                 </div>
-              ))}
-            </div>
 
-            {/* Summary */}
-            <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
-              <span style={{ color: C.gold }}>Colony:</span> {name}<br />
-              <span style={{ color: C.gold }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
-              <span style={{ color: C.gold }}>URL:</span> app.zpc.finance/colony/{slug}<br />
-              <span style={{ color: C.gold }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
-              <span style={{ color: C.gold }}>Network:</span> Base Sepolia
-            </div>
+                {/* Fixed parameters */}
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 16 }}>
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
+                    FIXED PARAMETERS
+                  </div>
+                  {FIXED_PARAMS.map((p, i) => (
+                    <div key={i} style={{
+                      padding: '10px 16px',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      borderBottom: i < FIXED_PARAMS.length - 1 ? `1px solid ${C.border}` : 'none',
+                    }}>
+                      <span style={{ fontSize: 11, color: C.sub }}>{p.label}</span>
+                      <span style={{ fontSize: 11, color: C.gold, fontWeight: 500 }}>{p.value}</span>
+                    </div>
+                  ))}
+                </div>
 
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={accepted}
-                onChange={e => setAccepted(e.target.checked)}
-                style={{ marginTop: 2, width: 16, height: 16, accentColor: C.gold, flexShrink: 0 }}
-              />
-              <span style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
-                I have read and accept the founding constitution. I understand that these rules are fixed and may only be amended by 80% referendum.
-              </span>
-            </label>
+                {/* Summary */}
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
+                  <span style={{ color: C.gold }}>Colony:</span> {name}<br />
+                  <span style={{ color: C.gold }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
+                  <span style={{ color: C.gold }}>URL:</span> app.zpc.finance/colony/{slug}<br />
+                  <span style={{ color: C.gold }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
+                  <span style={{ color: C.gold }}>Network:</span> Base Sepolia
+                </div>
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setStep(2)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
-              <button
-                onClick={handleDeploy}
-                disabled={!accepted || deploying}
-                style={{ ...primaryBtn, flex: 2, opacity: accepted && !deploying ? 1 : 0.4 }}
-              >
-                {deploying ? 'Deploying...' : 'Deploy Colony →'}
-              </button>
-            </div>
+                <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
+                  Deploying requires <strong>17 MetaMask confirmations</strong> — 10 contract deploys + 7 setup transactions. Keep MetaMask open throughout.
+                </div>
 
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={accepted}
+                    onChange={e => setAccepted(e.target.checked)}
+                    style={{ marginTop: 2, width: 16, height: 16, accentColor: C.gold, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
+                    I have read and accept the founding constitution. I understand that these rules are fixed and may only be amended by 80% referendum.
+                  </span>
+                </label>
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setStep(2)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
+                  <button
+                    onClick={handleDeploy}
+                    disabled={!accepted}
+                    style={{ ...primaryBtn, flex: 2, opacity: accepted ? 1 : 0.4 }}
+                  >
+                    Deploy Colony →
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Deploy progress log */}
             {deploying && (
-              <div style={{ marginTop: 12, fontSize: 11, color: C.faint, textAlign: 'center' }}>
-                Deploying Fisc contracts to Base Sepolia...
+              <div>
+                <div style={stepTitle}>Deploying to Base Sepolia</div>
+                <div style={stepSub}>Confirm each transaction in MetaMask as it appears.</div>
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+                  {deployLog.map((entry, i) => (
+                    <div key={i} style={{
+                      fontSize: 11, lineHeight: 1.8,
+                      color: entry.done ? C.green : C.sub,
+                    }}>
+                      {entry.text}
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 11, color: C.faint, marginTop: 8, fontStyle: 'italic' }}>
+                    Waiting for MetaMask…
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Deploy error */}
+            {deployError && !deploying && (
+              <div>
+                <div style={stepTitle}>Deploy failed</div>
+                <div style={{ background: '#fee2e2', border: `1px solid #fca5a5`, borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                  <div style={{ fontSize: 11, color: C.red, lineHeight: 1.6 }}>{deployError}</div>
+                </div>
+                {deployLog.length > 0 && (
+                  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                    {deployLog.map((entry, i) => (
+                      <div key={i} style={{ fontSize: 11, lineHeight: 1.8, color: entry.done ? C.green : C.sub }}>
+                        {entry.text}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => { setDeployError(null); setDeployLog([]) }} style={{ ...ghostBtn, width: '100%' }}>
+                  ← Try again
+                </button>
               </div>
             )}
           </div>
@@ -270,10 +460,13 @@ export default function CreateColony() {
               Colony deployed
             </div>
             <div style={{ fontSize: 13, color: C.gold, marginBottom: 4 }}>{name}</div>
-            <div style={{ fontSize: 11, color: C.faint, marginBottom: 24, lineHeight: 1.6 }}>
-              G-token issued · G-token #0001<br />
-              Your first 1,000 S-tokens arrive 1 May 2026
-            </div>
+            {deployedAddrs && (
+              <div style={{ fontSize: 10, color: C.faint, marginBottom: 24, lineHeight: 1.9, fontFamily: 'monospace' }}>
+                Colony: {deployedAddrs.colony.slice(0, 10)}…{deployedAddrs.colony.slice(-6)}<br />
+                MCCBilling: {deployedAddrs.billing.slice(0, 10)}…{deployedAddrs.billing.slice(-6)}<br />
+                MCCServices: {deployedAddrs.services.slice(0, 10)}…{deployedAddrs.services.slice(-6)}
+              </div>
+            )}
 
             {/* Share */}
             <div style={{
@@ -297,10 +490,10 @@ export default function CreateColony() {
             </div>
 
             <button
-              onClick={() => navigate(`/colony/${slug}/dashboard`)}
+              onClick={() => navigate(`/colony/${slug}?address=${deployedAddrs?.colony || ''}`)}
               style={{ ...primaryBtn, width: '100%' }}
             >
-              Go to Dashboard →
+              Go to Colony →
             </button>
           </div>
         )}
