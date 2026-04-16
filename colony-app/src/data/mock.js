@@ -43,18 +43,6 @@ export const MOCK_COLONIES = [
       { name: 'Printing',          billing: 'Per page',  price: '1 S / page',revenueMTD: 168 },
     ],
   },
-  {
-    id: 'daves-colony',
-    name: "Dave's Colony",
-    description: '',
-    founded: '2026-04-01',
-    citizenCount: 5,
-    mcc: {
-      name: 'Dave',
-      board: ['0x3333...cccc', '0xf39F...2266'],
-    },
-    services: [],
-  },
 ]
 
 // Today is 2026-04-09 — reset in 21 days (April 30)
