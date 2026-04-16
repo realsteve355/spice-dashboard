@@ -44,8 +44,9 @@ export default function Directory() {
         const entries = await Promise.all(
           addresses.map(addr => registry.entries(addr))
         )
-        setRegistryColonies(entries
-          .filter(e => e.slug && e.name && e.colony !== ethers.ZeroAddress)
+        const filtered = entries.filter(e => e.slug && e.name && e.colony !== ethers.ZeroAddress)
+        console.log('[Directory] registry getAll:', addresses.length, 'addresses,', filtered.length, 'valid entries', filtered.map(e => e.slug))
+        setRegistryColonies(filtered
           .map(e => ({
             id:          e.slug,
             name:        e.name,
@@ -221,6 +222,7 @@ function buildColonyList(registryColonies) {
       source:      'local',
     }))
 
+  console.log('[Directory] registry:', fromRegistry.length, 'contracts:', fromContracts.length, 'localStorage:', fromStorage.length, 'stored keys:', Object.keys(stored))
   return [...fromRegistry, ...fromContracts, ...fromStorage]
 }
 
