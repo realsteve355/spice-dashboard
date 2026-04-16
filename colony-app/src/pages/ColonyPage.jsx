@@ -213,17 +213,20 @@ export default function ColonyPage() {
       setTxError('Colony contract address not found. Try refreshing.')
       return
     }
-    if (!signer) {
-      setTxError('Wallet not fully connected. Please disconnect and reconnect MetaMask.')
+    if (!window.ethereum) {
+      setTxError('MetaMask not found.')
       return
     }
     setTxPending(true)
     setTxError(null)
     try {
-      const colony = new ethers.Contract(contractAddress, COLONY_ABI, signer)
-      const tx = await colony.join(citizenName.trim())
+      // Fresh signer — avoids stale state from a previous connect or chain switch
+      const freshSigner = await new ethers.BrowserProvider(window.ethereum).getSigner()
+      const walletAddr  = await freshSigner.getAddress()
+      const colonyContract = new ethers.Contract(contractAddress, COLONY_ABI, freshSigner)
+      const tx = await colonyContract.join(citizenName.trim())
       // Show success as soon as MetaMask confirms submission — don't block on mining
-      logInfo('colony.joined', { colony: slug, address, meta: { name: citizenName.trim() } })
+      logInfo('colony.joined', { colony: slug, address: walletAddr, meta: { name: citizenName.trim() } })
       setJoining(false)
       setJoined(true)
       setTxPending(false)
@@ -232,8 +235,8 @@ export default function ColonyPage() {
         .then(() => refresh())
         .catch(e => console.warn('[join] tx reverted after submission:', e))
     } catch (e) {
-      const msg = e?.reason || e?.message || 'Transaction failed'
-      logError('colony.join_failed', { colony: slug, address, message: msg })
+      const msg = e?.reason || e?.shortMessage || e?.message || 'Transaction failed'
+      logError('colony.join_failed', { colony: slug, message: msg })
       console.error(e)
       setTxError(msg)
       setTxPending(false)
@@ -348,7 +351,7 @@ export default function ColonyPage() {
               <div style={{ fontSize: 11, color: C.red, marginBottom: 10 }}>{txError}</div>
             )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setJoining(false)} disabled={txPending} style={{ ...btn(C.faint, '#fff', C.faint), flex: 1 }}>
+              <button onClick={() => { setJoining(false); setTxPending(false); setTxError(null) }} style={{ ...btn(C.faint, '#fff', C.faint), flex: 1 }}>
                 Cancel
               </button>
               <button
