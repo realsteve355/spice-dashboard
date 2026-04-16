@@ -4,9 +4,9 @@
 
 export const COLONIES = [
   {
-    id:      "daves-colony",
-    slug:    "daves-colony",
-    address: "0x112240357669CC163011C729F0fE219A799838B5",
+    id:      "dave-s-colony",
+    slug:    "dave-s-colony",
+    address: "0xa4bCadeE7263AE5a26D921fD39453699B5D20A8b",
   },
   {
     id:      "steves-first-colony",
