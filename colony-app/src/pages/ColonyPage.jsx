@@ -134,6 +134,62 @@ export default function ColonyPage() {
       .finally(() => setChainLoading(false))
   }, [slug, resolvedAddr, mockColony])
 
+  // Canonical colony contract address — contracts.json takes priority over localStorage/URL param
+  const colonyContractAddr = contracts?.colonies?.[slug]?.colony || resolvedAddr || null
+
+  // Load citizens list — must be above early returns (rules of hooks)
+  useEffect(() => {
+    if (!colonyContractAddr) return
+    let cancelled = false
+    setCitizensLoading(true)
+    const prov = new ethers.JsonRpcProvider(RPC)
+    const CITIZEN_ABI = [
+      "function citizenCount() view returns (uint256)",
+      "function citizens(uint256) view returns (address)",
+      "function citizenName(address) view returns (string)",
+    ]
+    const c = new ethers.Contract(colonyContractAddr, CITIZEN_ABI, prov)
+    c.citizenCount()
+      .then(async (count) => {
+        const n = Number(count)
+        const addrs = await Promise.all(
+          Array.from({ length: n }, (_, i) => c.citizens(i))
+        )
+        const names = await Promise.all(addrs.map(a => c.citizenName(a)))
+        if (!cancelled) setCitizens(addrs.map((addr, i) => ({ addr, name: names[i] })))
+      })
+      .catch((e) => { if (!cancelled) { console.warn('[citizens] load failed:', e); setCitizens([]) } })
+      .finally(() => { if (!cancelled) setCitizensLoading(false) })
+    return () => { cancelled = true }
+  }, [slug, colonyContractAddr])
+
+  // Load companies — must be above early returns (rules of hooks)
+  const companyFactoryAddr = contracts?.colonies?.[slug]?.companyFactory
+  useEffect(() => {
+    if (!companyFactoryAddr) { setCompanies([]); return }
+    let cancelled = false
+    setCompaniesLoading(true)
+    const prov = new ethers.JsonRpcProvider(RPC)
+    const factory = new ethers.Contract(companyFactoryAddr, COMPANY_FACTORY_ABI, prov)
+    async function load() {
+      try {
+        const count = Number(await factory.companyCount())
+        const list = await Promise.all(
+          Array.from({ length: count }, (_, i) => factory.getCompany(i))
+        )
+        if (!cancelled) setCompanies(list.map(([name, wallet, , , registeredAt], i) => ({
+          id: i, name, wallet, registeredAt: Number(registeredAt),
+        })))
+      } catch (e) {
+        console.warn('[ColonyPage] load companies failed:', e?.message || e)
+        if (!cancelled) setCompanies([])
+      }
+      if (!cancelled) setCompaniesLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [companyFactoryAddr])
+
   const colony = mockColony || chainColony
 
   if (!colony && chainLoading) return (
@@ -182,61 +238,6 @@ export default function ColonyPage() {
       setTxPending(false)
     }
   }
-
-  // Resolve contract address once (stable string, not the contracts object)
-  const colonyContractAddr = contracts?.colonies?.[slug]?.colony || resolvedAddr || null
-
-  useEffect(() => {
-    if (!colonyContractAddr) return
-    let cancelled = false
-    setCitizensLoading(true)
-    const prov = new ethers.JsonRpcProvider(RPC)
-    const CITIZEN_ABI = [
-      "function citizenCount() view returns (uint256)",
-      "function citizens(uint256) view returns (address)",
-      "function citizenName(address) view returns (string)",
-    ]
-    const c = new ethers.Contract(colonyContractAddr, CITIZEN_ABI, prov)
-    c.citizenCount()
-      .then(async (count) => {
-        const n = Number(count)
-        const addrs = await Promise.all(
-          Array.from({ length: n }, (_, i) => c.citizens(i))
-        )
-        const names = await Promise.all(addrs.map(a => c.citizenName(a)))
-        if (!cancelled) setCitizens(addrs.map((addr, i) => ({ addr, name: names[i] })))
-      })
-      .catch((e) => { if (!cancelled) { console.warn('[citizens] load failed:', e); setCitizens([]) } })
-      .finally(() => { if (!cancelled) setCitizensLoading(false) })
-    return () => { cancelled = true }
-  }, [slug, colonyContractAddr])
-
-  // Load all companies registered in this colony's CompanyFactory
-  const companyFactoryAddr = contracts?.colonies?.[slug]?.companyFactory
-  useEffect(() => {
-    if (!companyFactoryAddr) { setCompanies([]); return }
-    let cancelled = false
-    setCompaniesLoading(true)
-    const prov = new ethers.JsonRpcProvider(RPC)
-    const factory = new ethers.Contract(companyFactoryAddr, COMPANY_FACTORY_ABI, prov)
-    async function load() {
-      try {
-        const count = Number(await factory.companyCount())
-        const list = await Promise.all(
-          Array.from({ length: count }, (_, i) => factory.getCompany(i))
-        )
-        if (!cancelled) setCompanies(list.map(([name, wallet, founder, oTokenId, registeredAt], i) => ({
-          id: i, name, wallet, registeredAt: Number(registeredAt),
-        })))
-      } catch (e) {
-        console.warn('[ColonyPage] load companies failed:', e?.message || e)
-        if (!cancelled) setCompanies([])
-      }
-      if (!cancelled) setCompaniesLoading(false)
-    }
-    load()
-    return () => { cancelled = true }
-  }, [companyFactoryAddr])
 
   return (
     <Layout title={colony.name} back="/" colonySlug={isCitizen ? slug : null}>
