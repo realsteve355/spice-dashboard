@@ -366,8 +366,10 @@ export default function Dashboard() {
   )
 
   // Show loading while on-chain data is being fetched for this colony
-  const isUserColony = !!JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]
-  if (onChainLoading || (isUserColony && !chain)) return (
+  // (contracts.json entries and localStorage colonies are both "real" and need chain data)
+  const isRealColony = !!contracts?.colonies?.[slug]
+    || !!JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]
+  if (onChainLoading || (isRealColony && !chain)) return (
     <Layout title="Dashboard" back={`/colony/${slug}`}>
       <div style={{ padding: 32, textAlign: 'center', color: C.faint, fontSize: 12 }}>
         Loading colony data…

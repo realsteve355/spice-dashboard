@@ -74,23 +74,6 @@ export const MOCK_CITIZEN_DATA = {
       { type: 'save',   label: 'Saved to V-tokens', amount: -200,  date: '28 Mar 2026' },
     ],
   },
-  'daves-colony': {
-    gTokenId: 1,
-    registeredDate: '2026-04-01',
-    sBalance: 950,
-    vBalance: 0,
-    vSavedThisMonth: 50,
-    vMaxMonthly: 200,
-    ubiAmount: 1000,
-    mccBill: {
-      total: 0,
-      breakdown: [],
-    },
-    transactions: [
-      { type: 'save', label: 'Saved to V-tokens', amount: -50,   date: '5 Apr 2026' },
-      { type: 'ubi',  label: 'UBI allocation',    amount: +1000, date: '1 Apr 2026' },
-    ],
-  },
 }
 
 // Companies per colony
@@ -138,26 +121,6 @@ export const MOCK_COMPANIES = {
         { type: 'revenue', label: 'Print job', amount: 12, date: '3 Apr 2026' },
         { type: 'revenue', label: 'Print job', amount:  8, date: '2 Apr 2026' },
         { type: 'revenue', label: 'Print job', amount:  5, date: '1 Apr 2026' },
-      ],
-    },
-  ],
-  'daves-colony': [
-    {
-      id: 'daves-coffee',
-      name: "Dave's Coffee",
-      registeredDate: '2026-04-01',
-      sBalance: 45,
-      vReserve: 0,
-      monthRevenue: 45,
-      monthExpenses: 0,
-      equity: [
-        { wallet: '0xf39F...2266', label: 'You', pct: 100 },
-      ],
-      dividendHistory: [],
-      transactions: [
-        { type: 'revenue', label: 'Coffee sale', amount: 15, date: '9 Apr 2026' },
-        { type: 'revenue', label: 'Coffee sale', amount:  5, date: '8 Apr 2026' },
-        { type: 'revenue', label: 'Coffee sale', amount: 25, date: '5 Apr 2026' },
       ],
     },
   ],
@@ -220,7 +183,6 @@ export const MOCK_VOTES = {
       totalVoted: 13,
     },
   ],
-  'daves-colony': [],
 }
 
 // Citizen profile per colony
@@ -235,16 +197,6 @@ export const MOCK_PROFILE = {
       { minted: 'Mar 2026', amount: 600,  expiresYear: 2126 },
       { minted: 'Feb 2026', amount: 600,  expiresYear: 2126 },
       { minted: 'Jan 2026', amount: 200,  expiresYear: 2126 },
-    ],
-  },
-  'daves-colony': {
-    gTokenId: 1,
-    registeredDate: '1 Apr 2026',
-    partner: null,
-    offspring: [],
-    inheritanceDesignation: null,
-    vBatches: [
-      { minted: 'Apr 2026', amount: 50, expiresYear: 2126 },
     ],
   },
 }
@@ -303,7 +255,6 @@ export const MOCK_CONTRACTS = {
     },
   ],
   'campus-print': [],
-  'daves-coffee': [],
 }
 
 // Guardian / child wallets per colony
@@ -327,20 +278,6 @@ export const MOCK_CHILDREN = {
       ],
     },
   ],
-  'daves-colony': [],
 }
 
-// MCC admin data for daves-colony
-export const MOCK_ADMIN_DATA = {
-  'daves-colony': {
-    totalRevenueMTD: 45,
-    recallThreshold: 114,   // 20% above 12-month avg bill of 95 S
-    avgBill12m: 95,
-    currentAvgBill: 15,
-    citizens: [
-      { wallet: '0xf39F...2266', gTokenId: 1, registered: '1 Apr 2026',  sBalance: 950  },
-      { wallet: '0xABCD...1234', gTokenId: 2, registered: '1 Apr 2026',  sBalance: 820  },
-      { wallet: '0x5678...EFGH', gTokenId: 3, registered: '3 Apr 2026',  sBalance: 1000 },
-    ],
-  },
-}
+export const MOCK_ADMIN_DATA = {}
