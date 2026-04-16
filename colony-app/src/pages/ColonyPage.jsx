@@ -252,9 +252,9 @@ export default function ColonyPage() {
             {colony.description}
           </div>
 
-          {/* Citizen count badge */}
+          {/* Citizen count badge — prefer live citizens array count once loaded */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Chip label={`${colony.citizenCount} citizens`} />
+            <Chip label={`${citizens !== null ? citizens.length : colony.citizenCount} citizens`} />
             <Chip label="Active" color={C.green} />
             {isCitizen && <Chip label="You are a citizen" color={C.gold} />}
             {isMcc    && <Chip label="You are MCC board" color="#8b5cf6" />}
