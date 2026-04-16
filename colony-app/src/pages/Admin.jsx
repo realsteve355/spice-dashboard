@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
-import { MOCK_COLONIES, MOCK_ADMIN_DATA } from '../data/mock'
 import { useWallet } from '../App'
 import { C } from '../theme'
 
@@ -52,15 +51,14 @@ export default function Admin() {
   const navigate  = useNavigate()
   const { isConnected, isMccOf, connect, provider, signer, contracts, onChain, address } = useWallet()
 
-  const mockColony = MOCK_COLONIES.find(c => c.id === slug)
   const chain      = onChain?.[slug]
-  const colony     = mockColony || (chain ? {
+  const colony     = chain ? {
     id: slug,
     name: chain.colonyName || slug,
     citizenCount: null,
     mcc: { name: 'Not yet configured', board: [] },
     services: [],
-  } : null)
+  } : null
 
   const isMcc            = isMccOf(slug)
   const mccServicesAddr  = contracts?.colonies?.[slug]?.mccServices
@@ -124,7 +122,7 @@ export default function Admin() {
 
   async function loadServices() {
     if (!mccServicesAddr) {
-      setServices(colony?.services?.map((s, i) => ({ ...s, id: i })) || [])
+      setServices([])
       return
     }
     const prov = provider || new ethers.JsonRpcProvider(RPC)
@@ -259,8 +257,6 @@ export default function Admin() {
         const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
         await (await contract.addService(newSvc.name.trim(), newSvc.billing.trim(), newSvc.price.trim())).wait()
         await loadServices()
-      } else {
-        setServices(s => [...s, { ...newSvc, id: s.length }])
       }
       setNewSvc({ name: '', billing: '', price: '' }); setAdding(false)
     } catch (e) { setSvcError(e?.reason || e?.shortMessage || 'Transaction failed') }
@@ -275,8 +271,6 @@ export default function Admin() {
         const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
         await (await contract.editService(svc.id, editSvc.name.trim(), editSvc.billing.trim(), editSvc.price.trim())).wait()
         await loadServices()
-      } else {
-        setServices(s => s.map((x, i) => i === editingIdx ? { ...x, ...editSvc } : x))
       }
       setEditIdx(null)
     } catch (e) { setSvcError(e?.reason || e?.shortMessage || 'Transaction failed') }
@@ -291,8 +285,6 @@ export default function Admin() {
         const contract = new ethers.Contract(mccServicesAddr, MCC_SERVICES_ABI, signer)
         await (await contract.removeService(svc.id)).wait()
         await loadServices()
-      } else {
-        setServices(s => s.filter((_, idx) => idx !== i))
       }
       setRemoveIdx(null)
     } catch (e) { setSvcError(e?.reason || e?.shortMessage || 'Transaction failed') }
@@ -389,9 +381,8 @@ export default function Admin() {
     </Layout>
   )
 
-  const mockData       = MOCK_ADMIN_DATA[slug]
   const displayCount   = citizenCount ?? colony.citizenCount ?? 0
-  const displayRevenue = revenueMTD ?? mockData?.totalRevenueMTD ?? 0
+  const displayRevenue = revenueMTD ?? 0
 
   return (
     <Layout title={`${colony.name} — MCC`} back={`/colony/${slug}/dashboard`} colonySlug={slug}>
@@ -424,7 +415,7 @@ export default function Admin() {
             <div style={card}>
               <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>MCC BOARD (FOUNDER)</div>
               <div style={{ fontSize: 11, color: C.sub, fontFamily: 'monospace' }}>
-                {chain?.founderAddr || mockData?.citizens?.[0]?.wallet || 'Unknown'}
+                {chain?.founderAddr || 'Unknown'}
               </div>
             </div>
 

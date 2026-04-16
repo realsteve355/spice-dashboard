@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
-import { MOCK_COMPANIES, MOCK_CONTRACTS, MOCK_WALLET } from '../data/mock'
 import { useWallet } from '../App'
 
 // Colony contract — for send() (personal wallet → company) and event queries
@@ -89,13 +88,8 @@ export default function Company() {
     return () => { cancelled = true }
   }, [companyId, onChain])
 
-  // ── Mock fallback ──────────────────────────────────────────────────────────
-  const mockCos   = MOCK_COMPANIES[slug] || []
-  const mockCo    = !onChain ? mockCos.find(c => c.id === companyId) : null
-  const mockContracts = MOCK_CONTRACTS[companyId] || []
-
   // ── Active company object ──────────────────────────────────────────────────
-  const company = onChain ? chainCo : mockCo
+  const company = onChain ? chainCo : null
 
   const [tab, setTab] = useState('overview')
 
@@ -107,9 +101,7 @@ export default function Company() {
     if (tab !== 'transactions') return
     const cfg = deployedContracts?.colonies?.[slug]
     if (!cfg?.colony) return
-    // For on-chain companies, query events from/to the company wallet.
-    // For mock companies, query from/to the user's personal wallet (legacy behaviour).
-    const queryAddr = onChain ? companyId : address
+    const queryAddr = companyId
     if (!queryAddr) return
     setTxLoading(true)
     // PublicNode has a higher getLogs range limit than the public Base Sepolia RPC
@@ -316,10 +308,8 @@ export default function Company() {
   )
 
   const myAddr     = address?.toLowerCase()
-  const myStake    = company.equity.find(e => e.wallet.toLowerCase() === (myAddr || MOCK_WALLET))
-  const isSecretary = onChain
-    ? chainCo?.secretary === myAddr
-    : !!myStake  // mock: any equity holder is treated as owner
+  const myStake    = company.equity.find(e => e.wallet.toLowerCase() === myAddr)
+  const isSecretary = chainCo?.secretary === myAddr
   const isEquityHolder = !!myStake
 
   return (
@@ -336,7 +326,7 @@ export default function Company() {
                   {myStake.pct}% EQUITY
                 </span>
               )}
-              {isSecretary && onChain && (
+              {isSecretary && (
                 <span style={{ fontSize: 10, color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 10, padding: '2px 8px' }}>
                   SECRETARY
                 </span>
@@ -344,10 +334,7 @@ export default function Company() {
             </div>
           </div>
           <div style={{ fontSize: 11, color: C.faint }}>
-            {onChain
-              ? `${company.equity.length} shareholder${company.equity.length !== 1 ? 's' : ''} · ${companyId.slice(0,8)}…${companyId.slice(-4)}`
-              : `Registered ${company.registeredDate} · ${company.equity.length} shareholder${company.equity.length !== 1 ? 's' : ''}`
-            }
+            {company.equity.length} shareholder{company.equity.length !== 1 ? 's' : ''} · {companyId.slice(0,8)}…{companyId.slice(-4)}
           </div>
         </div>
 
@@ -381,22 +368,6 @@ export default function Company() {
               </div>
             </div>
 
-            {/* P&L — mock only, not tracked on-chain per-period */}
-            {!onChain && company.monthRevenue !== null && (
-              <div style={card}>
-                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>THIS MONTH</div>
-                {(() => {
-                  const net = company.monthRevenue - company.monthExpenses
-                  return <>
-                    <Row label="Revenue"  value={`+${company.monthRevenue} S`} color={C.green} />
-                    <Divider />
-                    <Row label="Expenses" value={`−${company.monthExpenses} S`} color={C.red} />
-                    <Divider />
-                    <Row label="Net"      value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.gold : C.red} bold />
-                  </>
-                })()}
-              </div>
-            )}
 
             {/* Actions */}
             {(isSecretary || isEquityHolder) && (
@@ -564,7 +535,7 @@ export default function Company() {
                 <div style={{ fontSize: 12, color: C.faint }}>No dividends distributed yet.</div>
               ) : (
                 company.dividendHistory.map((d, i) => {
-                  const myShare = d.perHolder?.[address || MOCK_WALLET] || 0
+                  const myShare = d.perHolder?.[address] || 0
                   return (
                     <div key={i} style={{
                       paddingBottom: i < company.dividendHistory.length - 1 ? 10 : 0,
@@ -584,16 +555,12 @@ export default function Company() {
               )}
             </div>
 
-            {/* Share trading (mock only — not yet on-chain) */}
-            {!onChain && isEquityHolder && (
-              <ShareTrading company={company} myStake={myStake} slug={slug} />
-            )}
           </div>
         )}
 
         {/* ── Contracts ── */}
         {tab === 'contracts' && (
-          <ContractsTab contracts={mockContracts} isOwner={isEquityHolder} companyId={companyId} />
+          <ContractsTab contracts={[]} isOwner={isEquityHolder} companyId={companyId} />
         )}
 
         {/* ── Transactions ── */}
@@ -625,7 +592,7 @@ export default function Company() {
             })()}
 
             {/* Journal */}
-            {!txLoading && (onChainTxs.length > 0 || (!onChain && company.transactions.length > 0)) && (
+            {!txLoading && onChainTxs.length > 0 && (
               <div style={card}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>JOURNAL</div>
 
@@ -663,30 +630,10 @@ export default function Company() {
                   )
                 })}
 
-                {/* Mock fallback for non-on-chain companies */}
-                {!onChain && onChainTxs.length === 0 && company.transactions.map((tx, i) => (
-                  <div key={i} style={{
-                    display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8,
-                    paddingBottom: i < company.transactions.length - 1 ? 10 : 0,
-                    marginBottom: i < company.transactions.length - 1 ? 10 : 0,
-                    borderBottom: i < company.transactions.length - 1 ? `1px solid ${C.border}` : 'none',
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 12, color: C.text }}>{tx.label}</div>
-                      <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>{tx.date}</div>
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: C.green, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
-                      {tx.amount > 0 ? `${tx.amount} S` : ''}
-                    </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: C.red, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
-                      {tx.amount < 0 ? `${Math.abs(tx.amount)} S` : ''}
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
 
-            {!txLoading && onChainTxs.length === 0 && (onChain || company.transactions.length === 0) && (
+            {!txLoading && onChainTxs.length === 0 && (
               <div style={{ ...card, fontSize: 12, color: C.faint }}>No transactions yet.</div>
             )}
           </div>

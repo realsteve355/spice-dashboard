@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
-import { MOCK_CHILDREN, MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
 import { C } from '../theme'
@@ -21,9 +20,8 @@ export default function Guardian() {
   const { isCitizenOf } = useWallet()
 
   const isCitizen = isCitizenOf(slug)
-  const colony    = MOCK_COLONIES.find(c => c.id === slug)
 
-  const [children, setChildren]     = useState(MOCK_CHILDREN[slug] || [])
+  const [children, setChildren]     = useState([])
   const [selected, setSelected]     = useState(children[0]?.id || null)
   const [registering, setReg]       = useState(false)
   const [savingChild, setSaving]    = useState(null)

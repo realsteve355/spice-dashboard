@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
-import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 
 import { C } from '../theme'
@@ -26,10 +25,10 @@ const GOV_ABI = [
 
 export default function Votes() {
   const { slug }  = useParams()
-  const { isCitizenOf, provider, signer, address, contracts } = useWallet()
+  const { isCitizenOf, provider, signer, address, contracts, onChain } = useWallet()
 
-  const colony    = MOCK_COLONIES.find(c => c.id === slug)
-  const isCitizen = isCitizenOf(slug)
+  const colonyName = onChain?.[slug]?.colonyName || slug
+  const isCitizen  = isCitizenOf(slug)
 
   const [proposals, setProposals] = useState([])
   const [expanded,  setExpanded]  = useState(null)
@@ -113,7 +112,7 @@ export default function Votes() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
-            {colony?.name} · {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+            {colonyName} · {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
           </div>
           {isCitizen && (
             <button

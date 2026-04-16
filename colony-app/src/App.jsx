@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ethers } from 'ethers'
 import CONTRACTS from './data/contracts.json'
-import { MOCK_CITIZEN_COLONIES, MOCK_MCC_COLONIES } from './data/mock'
 import { logInfo, logError } from './utils/logger'
 import Directory       from './pages/Directory'
 import ColonyPage      from './pages/ColonyPage'
@@ -297,8 +296,8 @@ export default function App() {
     // If colony has a real contract (contracts.json or localStorage), always use on-chain data
     const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
     if (CONTRACTS.colonies[id] || userColonies[id]) return onChain[id]?.isCitizen === true
-    // No contract — fall back to mock
-    return !!address && MOCK_CITIZEN_COLONIES.includes(id)
+    // No contract — no on-chain data, not a citizen
+    return false
   }
 
   // Augment CONTRACTS with user-deployed colonies so pages can look up colony addresses.
@@ -341,15 +340,11 @@ export default function App() {
     refresh,
     isCitizenOf,
     isMccOf:      (id) => {
-      // Use on-chain founder check if we have chain data for this colony
       if (onChain[id] !== undefined) return onChain[id]?.isFounder === true
-      return !!address && MOCK_MCC_COLONIES.includes(id)
+      return false
     },
     citizenColonies: address
-      ? [...new Set([
-          ...Object.entries(onChain).filter(([,v]) => v.isCitizen).map(([k]) => k),
-          ...MOCK_CITIZEN_COLONIES.filter(id => !CONTRACTS.colonies[id]),
-        ])]
+      ? Object.entries(onChain).filter(([,v]) => v.isCitizen).map(([k]) => k)
       : [],
     contracts: augmentedContracts,
   }

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
-import { MOCK_COLONIES } from '../data/mock'
 import { useWallet } from '../App'
 import { logInfo, logError } from '../utils/logger'
 
@@ -63,7 +62,6 @@ export default function ColonyPage() {
   const navigate            = useNavigate()
   const { isConnected, onChainLoading, isCitizenOf, isMccOf, connect, signer, contracts, refresh } = useWallet()
 
-  const mockColony = MOCK_COLONIES.find(c => c.id === slug)
   const isCitizen  = isCitizenOf(slug)
   const isMcc      = isMccOf(slug)
 
@@ -81,7 +79,7 @@ export default function ColonyPage() {
 
   // Start in loading state if we have an address to fetch — avoids "not found" flash
   const [chainColony, setChainColony] = useState(null)
-  const [chainLoading, setChainLoading] = useState(!mockColony && !!resolvedAddr)
+  const [chainLoading, setChainLoading] = useState(!!resolvedAddr)
 
   const [showConstitution, setShowConstitution] = useState(false)
   const [joining, setJoining]     = useState(false)
@@ -97,9 +95,9 @@ export default function ColonyPage() {
   const [companies, setCompanies]         = useState(null)
   const [companiesLoading, setCompaniesLoading] = useState(false)
 
-  // If not in mock list but we have an address, load from chain
+  // Load colony info from chain
   useEffect(() => {
-    if (mockColony || !resolvedAddr) return
+    if (!resolvedAddr) return
     setChainLoading(true)
     const prov = new ethers.JsonRpcProvider(RPC)
     const c = new ethers.Contract(resolvedAddr, COLONY_ABI, prov)
@@ -190,7 +188,7 @@ export default function ColonyPage() {
     return () => { cancelled = true }
   }, [companyFactoryAddr])
 
-  const colony = mockColony || chainColony
+  const colony = chainColony
 
   if (!colony && chainLoading) return (
     <Layout title="Loading…" back="/">

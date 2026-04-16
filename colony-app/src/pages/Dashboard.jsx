@@ -3,8 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
-import { MOCK_COLONIES, MOCK_CITIZEN_DATA, DAYS_TO_RESET, RESET_DATE, CURRENT_MONTH } from '../data/mock'
 import { useWallet } from '../App'
+
+// Compute epoch display values from current date
+function getEpochDisplay() {
+  const now = new Date()
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const daysToReset = lastDay.getDate() - now.getDate() + 1
+  const currentMonth = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const resetDate = lastDay.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return { daysToReset, currentMonth, resetDate }
+}
+const { daysToReset: DAYS_TO_RESET, currentMonth: CURRENT_MONTH } = getEpochDisplay()
 import { logInfo, logError } from '../utils/logger'
 
 const COLONY_ABI = [
@@ -49,9 +59,8 @@ export default function Dashboard() {
   const isCitizen = isCitizenOf(slug)
   const isMcc     = isMccOf(slug)
 
-  const mockColony = MOCK_COLONIES.find(c => c.id === slug)
-  // Synthesize a minimal colony object from chain data for user-deployed colonies
-  const colony = mockColony || (chain ? {
+  // Synthesize a minimal colony object from chain data
+  const colony = chain ? {
     id: slug,
     name: chain.colonyName || slug,
     description: '',
@@ -59,16 +68,9 @@ export default function Dashboard() {
     citizenCount: 1,
     mcc: { name: 'Not yet configured', board: [] },
     services: [],
-  } : null)
+  } : null
 
-  const mockData  = MOCK_CITIZEN_DATA[slug]
-  // Use on-chain balances when available, else mock; synthesize from chain for new colonies
-  const data = mockData ? {
-    ...mockData,
-    sBalance: chain ? chain.sBalance : mockData.sBalance,
-    vBalance: chain ? chain.vBalance : mockData.vBalance,
-    gTokenId: chain?.gTokenId > 0 ? chain.gTokenId : mockData.gTokenId,
-  } : chain ? {
+  const data = chain ? {
     sBalance:        chain.sBalance,
     vBalance:        chain.vBalance,
     gTokenId:        chain.gTokenId,
@@ -595,7 +597,6 @@ export default function Dashboard() {
               {onChainBill !== null && <span style={{ fontSize: 9, color: C.green, marginLeft: 6 }}>live</span>}
             </div>
           </div>
-          {/* On-chain bill takes precedence; show breakdown from mock if available */}
           {onChainBill === null && data.mccBill.breakdown.length > 0 && (
             data.mccBill.breakdown.map((b, i) => (
               <div key={i} style={{
