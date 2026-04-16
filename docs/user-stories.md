@@ -31,7 +31,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-30 | As a citizen, I want to see my name, G-token ID, and wallet address prominently on the dashboard so I know which account I am using | P1 | ✓ |
 | C-31 | As a citizen, I want to see all A-tokens and L-tokens registered to my wallet in one place | P2 | — |
 
-*C-06–C-08: Profile page UI exists; inheritance logic is display-only, not on-chain.*
+*C-06–C-08: Profile page shows on-chain identity (name, G-token, balances). Inheritance designation form replaced with a stub — on-chain implementation pending.*
 
 ### S-Token (Spending)
 
@@ -144,12 +144,12 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-27 | As a citizen registering a company, I want the registration flow to deploy a company smart contract so the company has its own on-chain wallet address — not just a ledger entry | P1 | ✓ |
 | F-28 | As a company owner, I want to share the company wallet address so customers can pay us directly via colony.send() without knowing anything about our internal equity structure | P1 | ✓ |
 
-*F-08: Auto-conversion is a smart contract concern; UI shows estimated projection only.*
-*F-11: Dividend distribution UI is display-only; on-chain distribution not yet wired.*
-*F-15: Share listing (sell side) built; buy side not yet implemented.*
-*F-17–F-21: Contracts tab UI is built; no on-chain contract; display-only mock.*
+*F-08: Auto-conversion is a smart contract concern; manual convertToV() call available now.*
+*F-11: distributeVDividend() is implemented on CompanyImplementation; UI button wired.*
+*F-15: proposeShareTransfer() on CompanyImplementation; full two-party flow not yet built.*
+*F-17–F-21: Contracts tab shows empty list; no on-chain intra-month contract yet.*
 *F-22–F-26: AssetRegistry.sol is written and ready to deploy; no UI built yet.*
-*F-27–F-28: Completed April 2026. CompanyFactory deploys EIP-1167 clones of CompanyImplementation. Company wallet address used as route param.*
+*F-27–F-28: Completed April 2026. CompanyFactory deploys BeaconProxy instances of CompanyImplementation via UpgradeableBeacon. Company wallet address used as route param.*
 
 ---
 
@@ -209,8 +209,8 @@ Any citizen holding equity in one or more colony companies.
 | S-06 | As a shareholder, I want to transfer shares as a gift | P2 | — |
 | S-07 | As a shareholder, I want my shares included in my inheritance designation | P2 | — |
 
-*S-02: Dividend history UI exists; data is mock.*
-*S-04: Seller can list shares; buyer flow not yet built.*
+*S-02: Dividend history section exists in Company page; populated from VDividendPaid events once secretary calls distributeVDividend() on-chain.*
+*S-04: Share transfer proposal UI exists in CompanyImplementation; full buy/sell flow not yet built.*
 
 ---
 
@@ -284,7 +284,7 @@ An adult citizen managing a child citizen's wallet.
 | G-06 | As a guardian, I want the wallet to automatically transfer to the child at age 18 | P2 | ~ |
 | G-07 | As a guardian, I want to designate a backup guardian | P3 | — |
 
-*G-01–G-06: Guardian page UI is fully built; all data is mock. No on-chain guardian contract exists yet.*
+*G-01–G-06: Guardian page UI is built; starts with empty state (no mock data). No on-chain guardian contract exists yet — children cannot be registered on-chain.*
 
 ---
 
@@ -424,6 +424,7 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 *v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*
 *v10 updates (15 April 2026): F-27, F-28, OS-01–OS-03 marked ✓ — CompanyFactory + OToken.sol deployed and wired. Company accounts (double-entry), activity log, and getLogs pagination fix also shipped.*
+*v11 updates (16 April 2026): All mock data removed from frontend. Pages read from chain or show clean empty states. Footnotes updated to reflect actual state. CompanyFactory corrected to BeaconProxy (not EIP-1167). Guardian and contracts features note they have UI but no on-chain contract.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -460,9 +461,9 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | Protocol fee settlement | Colony.settleProtocol() payable | ✓ Live (contracts compiled; new colonies only) |
 | Colony auto-registration | ColonyRegistry.register() | ~ Contract written; not yet deployed |
 | Colony directory from registry | ColonyRegistry.getAll() | ~ Contract written; not yet deployed |
-| MCC revenue by service | — | Mock only |
-| Intra-month contracts | — | Mock only |
-| Guardian management | — | Mock only |
+| MCC revenue by service | — | Not built — MCCBilling tracks total only; per-service breakdown needs service-level billing |
+| Intra-month contracts | — | Not built — Contracts tab shows empty list |
+| Guardian management | — | UI built, starts empty; no on-chain guardian contract |
 | Share trading (buy side) | — | Not built |
 
 ### Remaining P1 gaps
@@ -477,5 +478,5 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v9*
-*Last updated: April 2026*
+*SPICE Colony · User Stories & Requirements Spec · v11*
+*Last updated: 16 April 2026*
