@@ -124,6 +124,19 @@ export default function CreateColony() {
         return
       }
 
+      // Check slug availability before spending any gas
+      const registryRead = new ethers.Contract(
+        REGISTRY_ADDRESS,
+        ['function slugToColony(string) view returns (address)'],
+        freshProvider
+      )
+      const existingAddr = await registryRead.slugToColony(slug)
+      if (existingAddr !== ethers.ZeroAddress) {
+        setDeployError(`The name "${name}" is already taken in the global directory (slug: "${slug}"). Please go back and choose a different colony name.`)
+        setDeploying(false)
+        return
+      }
+
       const zero = ethers.ZeroAddress
 
       // ── 1–3. Tokens ──────────────────────────────────────────────────────────
@@ -209,14 +222,7 @@ export default function CreateColony() {
         deployContract('MCCServices', ARTIFACTS.MCCServices.abi, ARTIFACTS.MCCServices.bytecode, freshSigner, colonyAddr)
       )
 
-      // ── Register on-chain so all users on all devices can discover it ─────────
-      await run('Register colony in global directory', async () => {
-        const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, freshSigner)
-        const tx = await registry.register(colonyAddr, name, slug)
-        await tx.wait(1)
-      })
-
-      // ── Save to localStorage so Directory can find this colony ────────────────
+      // ── Save to localStorage first — colony is usable even if registry call fails ─
       const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
       stored[slug] = {
         name,
@@ -225,6 +231,26 @@ export default function CreateColony() {
         mccServices: servicesAddr,
       }
       localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
+
+      // ── Register on-chain so all users on all devices can discover it ─────────
+      // Non-fatal — colony is fully deployed and usable even without registry listing.
+      try {
+        await run('Register colony in global directory', async () => {
+          const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, freshSigner)
+          const tx = await registry.register(colonyAddr, name, slug)
+          await tx.wait(1)
+        })
+      } catch (regErr) {
+        const reason = regErr?.reason || regErr?.shortMessage || ''
+        setDeployLog(prev => {
+          const next = [...prev]
+          next[next.length - 1] = {
+            text: `⚠ Directory registration skipped (${reason || 'slug may already be taken'}) — colony still usable via direct link`,
+            done: true,
+          }
+          return next
+        })
+      }
 
       setDeployedAddrs({ colony: colonyAddr, billing: billingAddr, services: servicesAddr })
       setDeploying(false)
