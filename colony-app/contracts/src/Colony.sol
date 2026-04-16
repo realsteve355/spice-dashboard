@@ -113,11 +113,13 @@ contract Colony {
     }
 
     /**
-     * @notice Set the CompanyFactory address. Founder only. Call once after deployment.
+     * @notice Set or update the CompanyFactory address. Founder only.
+     *         May be called again to point to a new factory (e.g. after an
+     *         upgrade to the beacon proxy pattern).
      */
     function setCompanyFactory(address _factory) external {
-        require(msg.sender == founder,    "Colony: only founder");
-        require(_factory != address(0),   "Colony: zero address");
+        require(msg.sender == founder,  "Colony: only founder");
+        require(_factory != address(0), "Colony: zero address");
         companyFactory = _factory;
     }
 

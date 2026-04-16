@@ -9,18 +9,24 @@ const path = require("path");
  * and every contract is independently verifiable on Basescan.
  *
  * Deploy order:
- *   1.  GToken          — colony governance token (soulbound ERC-721)
- *   2.  SToken          — colony spending currency (ERC-20)
- *   3.  VToken          — long-term savings (ERC-20, non-transferable P2P)
- *   4.  Colony          — Fisc; token addresses wired in constructor
- *   5.  Ownership       — GToken/SToken/VToken ownership transferred to Colony
- *   6.  OToken          — organisation identity token (ERC-721)
- *   7.  OToken wiring   — ownership → Colony; MCC O-token minted; setOToken()
- *   8.  CompanyImpl     — CompanyImplementation clone template
- *   9.  CompanyFactory  — deploys company clones, wired to Colony + OToken
- *   10. Factory wiring  — colony.setCompanyFactory()
- *   11. MCCBilling      — monthly bill tracking
- *   12. MCCServices     — MCC service registry
+ *   1.  GToken              — colony governance token (soulbound ERC-721)
+ *   2.  SToken              — colony spending currency (ERC-20)
+ *   3.  VToken              — long-term savings (ERC-20, non-transferable P2P)
+ *   4.  Colony              — Fisc; token addresses wired in constructor
+ *   5.  Ownership           — GToken/SToken/VToken ownership transferred to Colony
+ *   6.  OToken              — organisation identity token (ERC-721, soulbound to org)
+ *   7.  OToken wiring       — ownership → Colony; MCC O-token minted to deployer; setOToken()
+ *   8.  CompanyImpl         — CompanyImplementation template (beacon target)
+ *   9.  UpgradeableBeacon   — beacon owned by deployer; points at CompanyImpl
+ *   10. CompanyFactory      — deploys BeaconProxy per org; wired to Colony + OToken + beacon
+ *   11. Factory wiring      — colony.setCompanyFactory()
+ *   12. MCCBilling          — monthly bill tracking
+ *   13. MCCServices         — MCC service registry
+ *
+ * Upgrade path (future):
+ *   Deploy new CompanyImplementation, then call:
+ *     beacon.upgradeTo(newImplAddress)
+ *   All organisation contracts upgrade simultaneously. No re-registration needed.
  *
  * Usage:
  *   npx hardhat run scripts/deploy.js --network baseSepolia
@@ -118,21 +124,31 @@ async function main() {
   await setOTx.wait();
   console.log("colony.setOToken ✓");
 
-  // ── 8-9. CompanyImplementation + CompanyFactory ───────────────────────────
+  // ── 8-10. CompanyImplementation + Beacon + CompanyFactory ────────────────
   console.log("\n── Company contracts ───────────────────────────────────────────");
-  const { addr: implAddr }    = await deploy("CompanyImplementation");
+  const { addr: implAddr } = await deploy("CompanyImplementation");
+
+  // Deploy UpgradeableBeacon — owned by deployer wallet.
+  // To upgrade all organisations later: beacon.upgradeTo(newImplAddress)
+  // Ownership can be transferred to a governance contract when ready.
+  const { contract: beaconC, addr: beaconAddr } = await deploy(
+    "UpgradeableBeacon",
+    implAddr,
+    deployer.address
+  );
+
   const { contract: factoryC, addr: factoryAddr } = await deploy("CompanyFactory",
     colonyAddr,
     oTokenAddr,
-    implAddr
+    beaconAddr
   );
 
-  // ── 10. Wire factory into Colony ──────────────────────────────────────────
+  // ── 11. Wire factory into Colony ──────────────────────────────────────────
   const setFTx = await colonyC.setCompanyFactory(factoryAddr, await gasOpts());
   await setFTx.wait();
   console.log("colony.setCompanyFactory ✓");
 
-  // ── 11-12. MCC contracts ──────────────────────────────────────────────────
+  // ── 12-13. MCC contracts ─────────────────────────────────────────────────
   console.log("\n── MCC contracts ───────────────────────────────────────────────");
   const { addr: billingAddr  } = await deploy("MCCBilling",  colonyAddr);
   const { addr: servicesAddr } = await deploy("MCCServices", colonyAddr);
@@ -152,6 +168,7 @@ async function main() {
         vToken:         vTokenAddr,
         oToken:         oTokenAddr,
         companyImpl:    implAddr,
+        companyBeacon:  beaconAddr,
         companyFactory: factoryAddr,
         mccBilling:     billingAddr,
         mccServices:    servicesAddr,

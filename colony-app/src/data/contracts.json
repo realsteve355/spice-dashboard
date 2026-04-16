@@ -2,17 +2,18 @@
   "network": "baseSepolia",
   "chainId": 84532,
   "colonies": {
-    "daves-colony": {
+    "dave-s-colony": {
       "name": "Dave's Colony",
-      "colony": "0xCc50C7C853EfB0826Da823641010333EB3FF5338",
-      "gToken": "0xBfbE81eb87128ff08042564787Ea9314DBfe9109",
-      "sToken": "0xe877a1BA927DA347fdEd482eab68144CFb774021",
-      "vToken": "0x6D28c0e171FAD5F8e818bA872A80E3C420d17220",
-      "oToken": "0x31c1579F394B344BeC462d54c30E2B5F7e8fF770",
-      "companyImpl": "0x2838f04584524090809aCE96C411d9e7B48D72eC",
-      "companyFactory": "0x41bdE8af438d9FEb710FE1e4425F14bd567BD0F3",
-      "mccBilling": "0xb272Ec915eE3460103532B98Ed2cbBbB9dcaCA9D",
-      "mccServices": "0xb42B83abF7150000E399FF9337EB3A23Dd527792"
+      "colony": "0xa4bCadeE7263AE5a26D921fD39453699B5D20A8b",
+      "gToken": "0x36BEf50b0A340b4cF28E166b1504a4F4134eaA27",
+      "sToken": "0xFe2eda69fb869B2BA8661501b38799Bf83E19429",
+      "vToken": "0x00E9177190c2945b2549Fc3Fa28329C0213F4920",
+      "oToken": "0x6058AB1E41b06971e79b41f3d6E9a3c8E7cAa5ab",
+      "companyImpl": "0x2f9B9534e6222Ca5c83e738f91b4685853Fc7f41",
+      "companyBeacon": "0x9cECDDED964eB259808697567BEc97dA73425FaE",
+      "companyFactory": "0xDe434AA890FEca4895B8cf22663fA532488438f0",
+      "mccBilling": "0x9647A0Fa0277523693DCEe3B5612A09A51836Eb1",
+      "mccServices": "0xbBE846695219F59a5123870a86AA4A92519E60ff"
     }
   }
 }
