@@ -130,7 +130,7 @@ export default function ColonyPage() {
       })
       .catch(() => setChainColony(null))
       .finally(() => setChainLoading(false))
-  }, [slug, resolvedAddr, mockColony])
+  }, [slug, resolvedAddr])
 
   // Canonical colony contract address — contracts.json takes priority over localStorage/URL param
   const colonyContractAddr = contracts?.colonies?.[slug]?.colony || resolvedAddr || null

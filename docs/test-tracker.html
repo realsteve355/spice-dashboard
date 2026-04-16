@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPICE Colony — Test Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'IBM Plex Mono', monospace; background: #f7f7f5; color: #111; font-size: 13px; }
+  h1 { font-size: 16px; font-weight: 700; padding: 20px 24px 4px; letter-spacing: 0.06em; }
+  .subtitle { font-size: 10px; color: #999; padding: 0 24px 16px; letter-spacing: 0.1em; }
+
+  .summary {
+    display: flex; gap: 12px; padding: 0 24px 16px; flex-wrap: wrap;
+  }
+  .chip {
+    font-size: 10px; padding: 4px 10px; border-radius: 12px;
+    font-weight: 600; letter-spacing: 0.06em;
+  }
+  .chip.pass   { background: #dcfce7; color: #16a34a; }
+  .chip.fail   { background: #fee2e2; color: #dc2626; }
+  .chip.block  { background: #fef9c3; color: #b45309; }
+  .chip.skip   { background: #f3f4f6; color: #6b7280; }
+  .chip.none   { background: #f0f0f0; color: #999; }
+  .progress {
+    height: 6px; border-radius: 3px; overflow: hidden;
+    background: #e5e7eb; margin: 0 24px 20px;
+  }
+  .progress-bar { height: 100%; display: flex; }
+  .pb-pass  { background: #16a34a; }
+  .pb-fail  { background: #dc2626; }
+  .pb-block { background: #eab308; }
+
+  .section { margin: 0 24px 24px; }
+  .section-title {
+    font-size: 9px; color: #999; letter-spacing: 0.18em;
+    text-transform: uppercase; margin-bottom: 8px; padding-top: 4px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .test-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 6px; padding: 10px 12px; margin-bottom: 6px;
+    transition: border-color 0.1s;
+  }
+  .test-row.pass  { border-left: 3px solid #16a34a; }
+  .test-row.fail  { border-left: 3px solid #dc2626; }
+  .test-row.block { border-left: 3px solid #eab308; }
+  .test-row.skip  { border-left: 3px solid #d1d5db; opacity: 0.6; }
+
+  .test-id {
+    font-size: 10px; color: #B8860B; font-weight: 700;
+    min-width: 36px; padding-top: 1px;
+  }
+  .test-body { flex: 1; }
+  .test-title { font-size: 12px; color: #111; line-height: 1.4; margin-bottom: 3px; }
+  .test-note {
+    font-size: 10px; color: #888; margin-top: 4px; line-height: 1.5;
+    border-top: 1px solid #f0f0f0; padding-top: 4px;
+  }
+  .note-input {
+    font-size: 10px; color: #555; font-family: inherit;
+    border: 1px solid #e0e0e0; border-radius: 4px; padding: 4px 6px;
+    width: 100%; margin-top: 4px; resize: none; height: 44px;
+    background: #fafafa; outline: none;
+  }
+  .note-input:focus { border-color: #B8860B; }
+
+  .test-actions { display: flex; gap: 4px; flex-shrink: 0; align-items: flex-start; margin-top: 1px; }
+  .btn {
+    font-size: 9px; padding: 3px 7px; border-radius: 4px; cursor: pointer;
+    border: 1px solid transparent; font-family: inherit; font-weight: 600;
+    letter-spacing: 0.04em; transition: opacity 0.1s;
+  }
+  .btn:hover { opacity: 0.8; }
+  .btn.pass  { background: #dcfce7; color: #16a34a; border-color: #86efac; }
+  .btn.fail  { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+  .btn.block { background: #fef9c3; color: #b45309; border-color: #fde047; }
+  .btn.skip  { background: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
+  .btn.reset { background: #f3f4f6; color: #999;    border-color: #e0e0e0; }
+  .btn.active-pass  { background: #16a34a; color: #fff; border-color: #16a34a; }
+  .btn.active-fail  { background: #dc2626; color: #fff; border-color: #dc2626; }
+  .btn.active-block { background: #eab308; color: #fff; border-color: #eab308; }
+  .btn.active-skip  { background: #6b7280; color: #fff; border-color: #6b7280; }
+
+  .reset-all {
+    margin: 0 24px 32px;
+    font-size: 10px; color: #dc2626; cursor: pointer;
+    background: none; border: 1px solid #fca5a5; border-radius: 4px;
+    padding: 5px 12px; font-family: inherit;
+  }
+  .reset-all:hover { background: #fee2e2; }
+  .linked-issue {
+    font-size: 9px; color: #B8860B; margin-left: 6px;
+    text-decoration: none; border: 1px solid #B8860B;
+    border-radius: 8px; padding: 1px 5px;
+  }
+</style>
+</head>
+<body>
+
+<h1>SPICE Colony — Test Tracker</h1>
+<div class="subtitle">app.zpc.finance · Base Sepolia testnet · 63 tests · 16 Apr 2026 · click a button to mark each test</div>
+
+<div class="summary" id="summary"></div>
+<div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div id="tests-container"></div>
+
+<button class="reset-all" onclick="resetAll()">Reset all results</button>
+
+<script>
+const TESTS = [
+  { section: "Colony Creation (zpc.finance/create)" },
+  { id:"T01", title:"Deploy new colony — all 4 contracts deploy (Colony, MCCTreasury, MCCServices, MCCBilling)", issue:null },
+  { id:"T02", title:"Deploy status messages update correctly during multi-step deploy (1/4 → 2/4 → 3/4 → 4/4)", issue:null },
+  { id:"T03", title:"Success screen shows all 4 contract addresses correctly", issue:null },
+  { id:"T04", title:"'Enter colony →' link navigates to app.zpc.finance with correct ?address, ?mccTreasury, ?mccBilling, ?mccServices URL params", issue:"#2" },
+  { id:"T05", title:"Wallet disconnect: is there a way to disconnect? What if MetaMask switches network mid-session?", issue:"#1" },
+
+  { section: "Colony Page & Joining" },
+  { id:"T06", title:"Colony page loads without 'colony not found' flash for a newly deployed colony", issue:null },
+  { id:"T07", title:"Colony page shows name, citizen count, MCC services correctly", issue:null },
+  { id:"T08", title:"Join colony: sign constitution, enter name, confirm tx — G-token issued and UBI received", issue:null },
+  { id:"T09", title:"After joining, 'Go to Dashboard →' navigates correctly without 'You are not a citizen' error", issue:null },
+
+  { section: "Directory" },
+  { id:"T10", title:"Directory (app.zpc.finance) shows user-deployed colonies from localStorage", issue:"#3" },
+  { id:"T11", title:"Mock colonies are removed or hidden from directory (not showing stale test data)", issue:"#4" },
+  { id:"T12", title:"Clicking a colony in directory navigates to colony page correctly", issue:null },
+
+  { section: "Citizen Dashboard" },
+  { id:"T13", title:"Dashboard loads correctly for new colony (no 'loading colony data' stuck state)", issue:null },
+  { id:"T14", title:"S-token balance shown correctly", issue:null },
+  { id:"T15", title:"Claim UBI tx confirmed on-chain and balance updates", issue:null },
+  { id:"T16", title:"Send S-tokens to another address — tx confirms, balance updates", issue:null },
+  { id:"T17", title:"Save S → V — tx confirms, both balances update", issue:null },
+  { id:"T18", title:"Redeem V → S — tx confirms, both balances update", issue:null },
+  { id:"T19", title:"Transaction history shows correct on-chain events with dates", issue:null },
+  { id:"T20", title:"G-token display: token ID shown, differentiated per colony (not just '0001' for all colonies)", issue:"#5" },
+  { id:"T21", title:"MetaMask '+ MetaMask' buttons visible for S, V, G tokens", issue:null },
+  { id:"T22", title:"QR payment request generates correct MetaMask deep-link QR", issue:null },
+
+  { section: "MCC Bill (Citizen side)" },
+  { id:"T23", title:"MCC bill amount shown correctly (from MCCBilling contract)", issue:null },
+  { id:"T24", title:"'Pay MCC bill' sends S-tokens to MCCTreasury address (not founder personal wallet)", issue:null },
+  { id:"T25", title:"After paying bill, on-chain bill shows 0 / 'No bill outstanding'", issue:null },
+
+  { section: "MCC Admin — Overview & Services" },
+  { id:"T26", title:"Admin page accessible to founder (MCC board member)", issue:null },
+  { id:"T27", title:"Admin: add / edit / remove a service — confirmed on-chain via MCCServices", issue:null },
+  { id:"T28", title:"Admin overview: citizen count correct", issue:null },
+
+  { section: "MCC Admin — Citizens" },
+  { id:"T29", title:"Citizens tab lists all registered citizens with names and G-token IDs", issue:null },
+
+  { section: "MCC Admin — Billing & Treasury" },
+  { id:"T30", title:"Billing tab: Revenue MTD shows (from MCCBilling.totalRevenueMTD)", issue:null },
+  { id:"T31", title:"Billing tab: MCC Treasury balance shown (from MCCTreasury.balance())", issue:null },
+  { id:"T32", title:"Billing tab: MCC Board Roles panel shows Founder + any assigned roles", issue:null },
+  { id:"T33", title:"Billing tab: Grant FD role to another address — confirmed on-chain", issue:null },
+  { id:"T34", title:"Billing tab: Revoke a role — confirmed on-chain", issue:null },
+  { id:"T35", title:"Billing tab: Set citizen bill — confirmed on-chain", issue:null },
+  { id:"T36", title:"Billing tab: Confirm payment ('Paid ✓') — Revenue MTD increments, bill clears", issue:null },
+  { id:"T37", title:"Billing tab: Withdraw from treasury — S-tokens sent to specified address", issue:null },
+  { id:"T38", title:"Billing tab: Waive a bill — bill clears without recording revenue", issue:null },
+
+  { section: "Votes" },
+  { id:"T39", title:"Votes page loads — shows colony name and 'no proposals' state cleanly", issue:null },
+  { id:"T40", title:"(Future) Create a proposal — tx confirms, proposal appears in list", issue:null },
+  { id:"T41", title:"(Future) Cast a vote — tx confirms, tally updates", issue:null },
+
+  { section: "Profile" },
+  { id:"T42", title:"Profile page loads for a citizen — no 'You are not a citizen' error", issue:null },
+  { id:"T43", title:"Profile: citizenName matches the name entered at registration", issue:null },
+  { id:"T44", title:"Profile: G-token ID matches the token ID shown on dashboard", issue:null },
+  { id:"T45", title:"Profile: S-balance and V-balance match the values shown on dashboard", issue:null },
+  { id:"T46", title:"Profile: 'Disconnect wallet' returns to home and clears wallet state", issue:null },
+  { id:"T47", title:"Profile: non-citizen wallet sees 'You are not a citizen' message (not a crash)", issue:null },
+
+  { section: "Company Registration" },
+  { id:"T48", title:"Register a new company — CompanyFactory.deployCompany tx confirms on-chain", issue:null },
+  { id:"T49", title:"New company address appears in company list for the colony", issue:null },
+  { id:"T50", title:"Company page loads — shows name, org type, secretary address", issue:null },
+  { id:"T51", title:"Company equity table: all founding holders shown with correct stake %", issue:null },
+  { id:"T52", title:"Company S-token balance shown correctly (ERC20 balanceOf)", issue:null },
+  { id:"T53", title:"Company journal: shows on-chain transfer/receive events with dates", issue:null },
+
+  { section: "Company Secretary Actions" },
+  { id:"T54", title:"Secretary: equity transfer to new holder — tx confirms, equity table updates", issue:null },
+  { id:"T55", title:"Non-secretary wallet: secretary action buttons absent or disabled", issue:null },
+
+  { section: "Guardian" },
+  { id:"T56", title:"Guardian page loads for a citizen — no crash or missing data error", issue:null },
+  { id:"T57", title:"Guardian: 'Register a child' form validates DOB and blocks age ≥ 18", issue:null },
+  { id:"T58", title:"Guardian: registering a child creates a local entry with correct UBI/save fields", issue:null },
+
+  { section: "Edge Cases & Resilience" },
+  { id:"T59", title:"Navigate directly to /colony/{slug}/dashboard with valid address param — page loads without needing directory first", issue:null },
+  { id:"T60", title:"Wrong network (e.g. Ethereum mainnet) — app shows a clear network warning, not a silent failure", issue:null },
+  { id:"T61", title:"No wallet connected — app prompts to connect, no unhandled JS error", issue:null },
+  { id:"T62", title:"Two browser tabs open on the same colony — balance update in one tab does not cause crash in other", issue:null },
+  { id:"T63", title:"Colony address with no registered citizens — citizen count shows 0, dashboard shows empty state", issue:null },
+];
+
+const STATUSES = ['pass','fail','block','skip'];
+const LABELS   = { pass:'Pass', fail:'Fail', block:'Blocked', skip:'Skip' };
+const STORE_KEY = 'spice_test_tracker_v2';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch { return {}; }
+}
+function save(data) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+}
+
+let state = load();
+
+function setStatus(id, status) {
+  if (state[id]?.status === status) {
+    delete state[id];
+  } else {
+    state[id] = { ...state[id], status };
+  }
+  save(state);
+  render();
+}
+
+function setNote(id, note) {
+  state[id] = { ...state[id], note };
+  save(state);
+}
+
+function resetAll() {
+  if (!confirm('Reset all test results?')) return;
+  state = {};
+  save(state);
+  render();
+}
+
+function render() {
+  const container = document.getElementById('tests-container');
+  container.innerHTML = '';
+
+  let counts = { pass: 0, fail: 0, block: 0, skip: 0, none: 0 };
+  const testItems = TESTS.filter(t => t.id);
+  testItems.forEach(t => {
+    const s = state[t.id]?.status || 'none';
+    counts[s]++;
+  });
+
+  // Summary chips
+  const total = testItems.length;
+  const done  = counts.pass + counts.fail + counts.block + counts.skip;
+  document.getElementById('summary').innerHTML = `
+    <span class="chip pass">${counts.pass} Pass</span>
+    <span class="chip fail">${counts.fail} Fail</span>
+    <span class="chip block">${counts.block} Blocked</span>
+    <span class="chip skip">${counts.skip} Skip</span>
+    <span class="chip none">${counts.none} Not done</span>
+    <span class="chip none" style="margin-left:8px">${done}/${total} tested</span>
+  `;
+
+  // Progress bar
+  const pPass  = (counts.pass  / total * 100).toFixed(1);
+  const pFail  = (counts.fail  / total * 100).toFixed(1);
+  const pBlock = (counts.block / total * 100).toFixed(1);
+  document.getElementById('progress-bar').innerHTML = `
+    <div class="pb-pass"  style="width:${pPass}%"></div>
+    <div class="pb-fail"  style="width:${pFail}%"></div>
+    <div class="pb-block" style="width:${pBlock}%"></div>
+  `;
+
+  // Sections + tests
+  let currentSection = null;
+  TESTS.forEach(t => {
+    if (t.section) {
+      const sec = document.createElement('div');
+      sec.className = 'section';
+      sec.id = 'sec_' + t.section.replace(/\W/g,'_');
+      sec.innerHTML = `<div class="section-title">${t.section}</div>`;
+      container.appendChild(sec);
+      currentSection = sec;
+      return;
+    }
+
+    const status  = state[t.id]?.status || 'none';
+    const note    = state[t.id]?.note   || '';
+
+    const row = document.createElement('div');
+    row.className = `test-row ${status !== 'none' ? status : ''}`;
+
+    const issueLink = t.issue
+      ? `<a class="linked-issue" href="https://github.com/realsteve355/spice-dashboard/issues/${t.issue.replace('#','')}" target="_blank">${t.issue}</a>`
+      : '';
+
+    const btns = STATUSES.map(s => {
+      const active = status === s ? `active-${s}` : s;
+      return `<button class="btn ${active}" onclick="setStatus('${t.id}','${s}')">${LABELS[s]}</button>`;
+    }).join('');
+
+    row.innerHTML = `
+      <div class="test-id">${t.id}</div>
+      <div class="test-body">
+        <div class="test-title">${t.title}${issueLink}</div>
+        ${note ? `<div class="test-note">${note.replace(/</g,'&lt;')}</div>` : ''}
+        <textarea class="note-input" placeholder="Notes / steps / error message…" oninput="setNote('${t.id}', this.value)">${note}</textarea>
+      </div>
+      <div class="test-actions">${btns}</div>
+    `;
+
+    if (currentSection) {
+      currentSection.appendChild(row);
+    } else {
+      container.appendChild(row);
+    }
+  });
+}
+
+render();
+</script>
+</body>
+</html>
