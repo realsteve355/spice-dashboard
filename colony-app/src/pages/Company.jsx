@@ -20,9 +20,10 @@ const COLONY_EVENTS_ABI = [
 const COMPANY_ABI = [
   "function name() view returns (string)",
   "function secretary() view returns (address)",
+  "function ceo() view returns (address)",
+  "function fd() view returns (address)",
   "function sBalance() view returns (uint256)",
   "function vBalance() view returns (uint256)",
-  "function oTokenId() view returns (uint256)",
   "function getEquityTable() view returns (address[], uint256[])",
   "function pay(address, uint256, string) external",
   "function convertToV(uint256) external",
@@ -55,12 +56,11 @@ export default function Company() {
     setChainLoading(true)
     async function load() {
       try {
-        const [name, secretary, sRaw, vRaw, oTokenId, [holders, stakes]] = await Promise.all([
+        const [name, secretary, sRaw, vRaw, [holders, stakes]] = await Promise.all([
           co.name(),
           co.secretary(),
           co.sBalance(),
           co.vBalance(),
-          co.oTokenId(),
           co.getEquityTable(),
         ])
         if (cancelled) return
@@ -69,7 +69,6 @@ export default function Company() {
           secretary:       secretary.toLowerCase(),
           sBalance:        Math.floor(Number(ethers.formatEther(sRaw))),
           vReserve:        Math.floor(Number(ethers.formatEther(vRaw))),
-          oTokenId:        Number(oTokenId),
           equity:          holders.map((addr, i) => ({
             wallet: addr,
             label:  addr.slice(0, 6) + '…' + addr.slice(-4),

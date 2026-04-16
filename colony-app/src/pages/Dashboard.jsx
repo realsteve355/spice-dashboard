@@ -28,6 +28,10 @@ const COMPANY_FACTORY_ABI = [
   "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
 ]
 
+const COMPANY_IMPL_ABI = [
+  "function secretary() view returns (address)",
+]
+
 const OTOKEN_ABI = [
   "function tokensOf(address) view returns (uint256[])",
   "function orgs(uint256) view returns (string, uint8, uint256)",
@@ -210,16 +214,14 @@ export default function Dashboard() {
       try {
         const ids = await factory.getCompaniesOf(address)
         const companies = await Promise.all(ids.map(async id => {
-          const [name, wallet, , oTokenId] = await factory.getCompany(id)
+          const [name, wallet] = await factory.getCompany(id)
           let isSecretary = false
-          if (cfg.oToken) {
-            try {
-              const oTokenContract = new ethers.Contract(cfg.oToken, OTOKEN_ABI, rpc)
-              const owner = await oTokenContract.ownerOf(oTokenId)
-              isSecretary = owner.toLowerCase() === address.toLowerCase()
-            } catch {}
-          }
-          return { id: Number(id), name, wallet, oTokenId: Number(oTokenId), isSecretary }
+          try {
+            const companyContract = new ethers.Contract(wallet, COMPANY_IMPL_ABI, rpc)
+            const secretary = await companyContract.secretary()
+            isSecretary = secretary.toLowerCase() === address.toLowerCase()
+          } catch {}
+          return { id: Number(id), name, wallet, isSecretary }
         }))
         if (!cancelled) setMyCompanies(companies)
       } catch (e) {
@@ -231,30 +233,9 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [contracts, slug, address])
 
-  // O-tokens held by this user — shows their active roles (MCC chair, company secretary, etc.)
-  const [myOTokens, setMyOTokens] = useState([])
-
-  useEffect(() => {
-    const cfg = contracts?.colonies?.[slug]
-    if (!cfg?.oToken || !address) { setMyOTokens([]); return }
-    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
-    const oTokenContract = new ethers.Contract(cfg.oToken, OTOKEN_ABI, rpc)
-    let cancelled = false
-    async function load() {
-      try {
-        const ids = await oTokenContract.tokensOf(address)
-        const tokens = await Promise.all(ids.map(async tokenId => {
-          const [name, orgType] = await oTokenContract.orgs(tokenId)
-          return { tokenId: Number(tokenId), name, orgType: Number(orgType) }
-        }))
-        if (!cancelled) setMyOTokens(tokens)
-      } catch (e) {
-        console.warn('[Dashboard] load O-tokens failed:', e?.message || e)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [contracts, slug, address])
+  // O-tokens are now soulbound to company contracts (not held by citizens).
+  // isSecretary is determined by calling company.secretary() directly.
+  const myOTokens = []
 
   const [saving, setSaving]       = useState(false)
   const [saveAmt, setSaveAmt]     = useState('')
