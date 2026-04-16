@@ -71,7 +71,8 @@ export default function ColonyPage() {
   const stored0     = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
   const storedEntry = stored0[slug]
   const storedAddr  = storedEntry?.address
-  const resolvedAddr = addressParam || storedAddr
+  // contracts.json (deployed) takes priority so all sections read the same address
+  const resolvedAddr = contracts?.colonies?.[slug]?.colony || addressParam || storedAddr
 
   // Extra addresses passed in URL from CreateColony
   const mccTreasuryParam = searchParams.get('mccTreasury')
