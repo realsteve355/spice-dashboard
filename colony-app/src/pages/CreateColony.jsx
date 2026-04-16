@@ -6,6 +6,12 @@ import { useWallet } from '../App'
 
 import { C } from '../theme'
 
+// On-chain registry — makes colonies discoverable to all users on all devices
+const REGISTRY_ADDRESS = '0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d'
+const REGISTRY_ABI = [
+  'function register(address colony, string calldata name, string calldata slug) external',
+]
+
 const FIXED_PARAMS = [
   { label: 'UBI per citizen',        value: '1,000 S-tokens / month' },
   { label: 'Max monthly savings',    value: '200 S-tokens → V'       },
@@ -180,6 +186,13 @@ export default function CreateColony() {
         'Deploy MCCServices', () =>
         deployContract('MCCServices', ARTIFACTS.MCCServices.abi, ARTIFACTS.MCCServices.bytecode, signer, colonyAddr)
       )
+
+      // ── Register on-chain so all users on all devices can discover it ─────────
+      await step('Register colony in global directory', async () => {
+        const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer)
+        const tx = await registry.register(colonyAddr, name, slug)
+        await tx.wait(1)
+      })
 
       // ── Save to localStorage so Directory can find this colony ────────────────
       const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
@@ -379,7 +392,7 @@ export default function CreateColony() {
                 </div>
 
                 <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
-                  Deploying requires <strong>17 MetaMask confirmations</strong> — 10 contract deploys + 7 setup transactions. Keep MetaMask open throughout.
+                  Deploying requires <strong>18 MetaMask confirmations</strong> — 10 contract deploys + 8 setup transactions. Keep MetaMask open throughout. The final step registers your colony in the global directory so anyone can find it.
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
