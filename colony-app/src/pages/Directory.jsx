@@ -31,30 +31,39 @@ export default function Directory() {
       setRegistryColonies([])
       return
     }
+    // Fallback: if registry doesn't respond within 8s, show localStorage entries anyway
+    const timeout = setTimeout(() => {
+      setRegistryColonies(prev => prev === null ? [] : prev)
+    }, 8000)
+
     const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC)
     const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider)
     registry.getAll()
       .then(async (addresses) => {
+        if (addresses.length === 0) { setRegistryColonies([]); return }
         const entries = await Promise.all(
           addresses.map(addr => registry.entries(addr))
         )
-        setRegistryColonies(entries.map(e => ({
-          id:          e.slug,
-          name:        e.name,
-          address:     e.colony,
-          founder:     e.founder,
-          description: '',
-          founded:     null,
-          citizenCount: null,
-          mcc:         { name: 'MCC' },
-          source:      'registry',
-        })))
+        setRegistryColonies(entries
+          .filter(e => e.slug && e.name && e.colony !== ethers.ZeroAddress)
+          .map(e => ({
+            id:          e.slug,
+            name:        e.name,
+            address:     e.colony,
+            founder:     e.founder,
+            description: '',
+            founded:     null,
+            citizenCount: null,
+            mcc:         { name: 'MCC' },
+            source:      'registry',
+          })))
       })
       .catch(err => {
         console.warn('ColonyRegistry read failed:', err)
         setRegistryError(true)
         setRegistryColonies([])
       })
+      .finally(() => clearTimeout(timeout))
   }, [])
 
   // Build colony list: registry (if available) + contracts.json + localStorage fallback
@@ -195,10 +204,12 @@ function buildColonyList(registryColonies) {
       source:      'contracts',
     }))
 
-  // localStorage — user-deployed colonies not already shown by address or id
+  // localStorage — user-deployed colonies not already shown by slug
+  // Deduplicate by slug only (not address) so new deploys always appear even if
+  // the registry returned a different address for the same slug.
   const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
   const fromStorage = Object.entries(stored)
-    .filter(([id, info]) => !seenIds.has(id) && (!info.address || !seenAddrs.has(info.address.toLowerCase())))
+    .filter(([id]) => !seenIds.has(id))
     .map(([id, info]) => add({
       id,
       name:        info.name || id,
