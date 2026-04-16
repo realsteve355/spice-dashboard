@@ -224,17 +224,20 @@ export default function ColonyPage() {
     try {
       const colony = new ethers.Contract(contractAddress, COLONY_ABI, signer)
       const tx = await colony.join(citizenName.trim())
-      await tx.wait()
+      // Show success as soon as MetaMask confirms submission — don't block on mining
       logInfo('colony.joined', { colony: slug, address, meta: { name: citizenName.trim() } })
       setJoining(false)
       setJoined(true)
-      refresh()
+      setTxPending(false)
+      // Wait for mining in background then refresh on-chain state
+      tx.wait()
+        .then(() => refresh())
+        .catch(e => console.warn('[join] tx reverted after submission:', e))
     } catch (e) {
       const msg = e?.reason || e?.message || 'Transaction failed'
       logError('colony.join_failed', { colony: slug, address, message: msg })
       console.error(e)
       setTxError(msg)
-    } finally {
       setTxPending(false)
     }
   }
