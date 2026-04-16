@@ -70,7 +70,7 @@ export default function CreateColony() {
   function removeBoard(i) { setBoards(b => b.filter((_, idx) => idx !== i)) }
 
   async function handleDeploy() {
-    if (!signer) { setDeployError('Wallet not connected.'); return }
+    if (!window.ethereum) { setDeployError('MetaMask not found.'); return }
     setDeploying(true)
     setDeployError(null)
     setDeployLog([])
@@ -89,7 +89,7 @@ export default function CreateColony() {
     const addLog = (text, done = false) =>
       setDeployLog(prev => [...prev, { text, done }])
 
-    const step = async (label, fn) => {
+    const run = async (label, fn) => {
       addLog(`${label}…`)
       const result = await fn()
       setDeployLog(prev => {
@@ -101,95 +101,117 @@ export default function CreateColony() {
     }
 
     try {
-      const deployer = await signer.getAddress()
-      const zero     = ethers.ZeroAddress
+      // Get a fresh signer directly from MetaMask — avoids stale state from a previous
+      // connect() call or a chain switch that happened after the signer was stored.
+      const freshProvider = new ethers.BrowserProvider(window.ethereum)
+
+      // Verify network before spending any gas
+      const network = await freshProvider.getNetwork()
+      if (Number(network.chainId) !== 84532) {
+        setDeployError(`Wrong network. MetaMask is on chain ${network.chainId}. Please switch to Base Sepolia (84532) and try again.`)
+        setDeploying(false)
+        return
+      }
+
+      const freshSigner = await freshProvider.getSigner()
+      const deployer    = await freshSigner.getAddress()
+
+      // Warn on very low balance — each deploy needs ~0.01 ETH on Base Sepolia
+      const balance = await freshProvider.getBalance(deployer)
+      if (balance < ethers.parseEther('0.005')) {
+        setDeployError(`Insufficient ETH. Your balance is ${Number(ethers.formatEther(balance)).toFixed(4)} ETH. You need at least 0.005 Base Sepolia ETH for gas. Get some from the Base Sepolia faucet at faucet.quicknode.com or faucet.triangleplatform.com.`)
+        setDeploying(false)
+        return
+      }
+
+      const zero = ethers.ZeroAddress
 
       // ── 1–3. Tokens ──────────────────────────────────────────────────────────
-      const { contract: gTokenC, addr: gTokenAddr } = await step(
+      const { contract: gTokenC, addr: gTokenAddr } = await run(
         `Deploy GToken (${ticker})`, () =>
-        deployContract('GToken', ARTIFACTS.GToken.abi, ARTIFACTS.GToken.bytecode, signer, name, ticker)
+        deployContract('GToken', ARTIFACTS.GToken.abi, ARTIFACTS.GToken.bytecode, freshSigner, name, ticker)
       )
-      const { contract: sTokenC, addr: sTokenAddr } = await step(
+      const { contract: sTokenC, addr: sTokenAddr } = await run(
         `Deploy SToken (S-${ticker})`, () =>
-        deployContract('SToken', ARTIFACTS.SToken.abi, ARTIFACTS.SToken.bytecode, signer, ticker)
+        deployContract('SToken', ARTIFACTS.SToken.abi, ARTIFACTS.SToken.bytecode, freshSigner, ticker)
       )
-      const { contract: vTokenC, addr: vTokenAddr } = await step(
+      const { contract: vTokenC, addr: vTokenAddr } = await run(
         `Deploy VToken (V-${ticker})`, () =>
-        deployContract('VToken', ARTIFACTS.VToken.abi, ARTIFACTS.VToken.bytecode, signer, ticker)
+        deployContract('VToken', ARTIFACTS.VToken.abi, ARTIFACTS.VToken.bytecode, freshSigner, ticker)
       )
 
       // ── 4. Colony ─────────────────────────────────────────────────────────────
-      const { contract: colonyC, addr: colonyAddr } = await step(
+      const { contract: colonyC, addr: colonyAddr } = await run(
         'Deploy Colony (Fisc)', () =>
-        deployContract('Colony', ARTIFACTS.Colony.abi, ARTIFACTS.Colony.bytecode, signer,
+        deployContract('Colony', ARTIFACTS.Colony.abi, ARTIFACTS.Colony.bytecode, freshSigner,
           name, zero, gTokenAddr, sTokenAddr, vTokenAddr)
       )
 
       // ── 5. Transfer token ownership to Colony ─────────────────────────────────
-      await step('Transfer GToken ownership to Colony', async () => {
-        const tx = await gTokenC.transferOwnership(colonyAddr)
+      await run('Transfer GToken ownership to Colony', async () => {
+        const tx = await gTokenC.connect(freshSigner).transferOwnership(colonyAddr)
         await tx.wait(1)
       })
-      await step('Transfer SToken ownership to Colony', async () => {
-        const tx = await sTokenC.transferOwnership(colonyAddr)
+      await run('Transfer SToken ownership to Colony', async () => {
+        const tx = await sTokenC.connect(freshSigner).transferOwnership(colonyAddr)
         await tx.wait(1)
       })
-      await step('Transfer VToken ownership to Colony', async () => {
-        const tx = await vTokenC.transferOwnership(colonyAddr)
+      await run('Transfer VToken ownership to Colony', async () => {
+        const tx = await vTokenC.connect(freshSigner).transferOwnership(colonyAddr)
         await tx.wait(1)
       })
 
       // ── 6. OToken ─────────────────────────────────────────────────────────────
-      const { contract: oTokenC, addr: oTokenAddr } = await step(
+      const { contract: oTokenC, addr: oTokenAddr } = await run(
         'Deploy OToken (org identity)', () =>
-        deployContract('OToken', ARTIFACTS.OToken.abi, ARTIFACTS.OToken.bytecode, signer, name, colonyAddr)
+        deployContract('OToken', ARTIFACTS.OToken.abi, ARTIFACTS.OToken.bytecode, freshSigner, name, colonyAddr)
       )
 
       // ── 7. OToken wiring ──────────────────────────────────────────────────────
-      await step('Mint MCC O-token to founder', async () => {
-        const tx = await oTokenC.mint(deployer, name + ' MCC', 1)
+      await run('Mint MCC O-token to founder', async () => {
+        const tx = await oTokenC.connect(freshSigner).mint(deployer, name + ' MCC', 1)
         await tx.wait(1)
       })
-      await step('Transfer OToken ownership to Colony', async () => {
-        const tx = await oTokenC.transferOwnership(colonyAddr)
+      await run('Transfer OToken ownership to Colony', async () => {
+        const tx = await oTokenC.connect(freshSigner).transferOwnership(colonyAddr)
         await tx.wait(1)
       })
-      await step('Wire OToken into Colony', async () => {
-        const tx = await colonyC.setOToken(oTokenAddr)
+      await run('Wire OToken into Colony', async () => {
+        const tx = await colonyC.connect(freshSigner).setOToken(oTokenAddr)
         await tx.wait(1)
       })
 
       // ── 8–10. Company contracts ───────────────────────────────────────────────
-      const { addr: implAddr } = await step(
+      const { addr: implAddr } = await run(
         'Deploy CompanyImplementation', () =>
-        deployContract('CompanyImplementation', ARTIFACTS.CompanyImplementation.abi, ARTIFACTS.CompanyImplementation.bytecode, signer)
+        deployContract('CompanyImplementation', ARTIFACTS.CompanyImplementation.abi, ARTIFACTS.CompanyImplementation.bytecode, freshSigner)
       )
-      const { addr: beaconAddr } = await step(
+      const { addr: beaconAddr } = await run(
         'Deploy UpgradeableBeacon', () =>
-        deployContract('UpgradeableBeacon', ARTIFACTS.UpgradeableBeacon.abi, ARTIFACTS.UpgradeableBeacon.bytecode, signer, implAddr, deployer)
+        deployContract('UpgradeableBeacon', ARTIFACTS.UpgradeableBeacon.abi, ARTIFACTS.UpgradeableBeacon.bytecode, freshSigner, implAddr, deployer)
       )
-      const { contract: factoryC, addr: factoryAddr } = await step(
+      const { contract: factoryC, addr: factoryAddr } = await run(
         'Deploy CompanyFactory', () =>
-        deployContract('CompanyFactory', ARTIFACTS.CompanyFactory.abi, ARTIFACTS.CompanyFactory.bytecode, signer, colonyAddr, oTokenAddr, beaconAddr)
+        deployContract('CompanyFactory', ARTIFACTS.CompanyFactory.abi, ARTIFACTS.CompanyFactory.bytecode, freshSigner, colonyAddr, oTokenAddr, beaconAddr)
       )
-      await step('Wire CompanyFactory into Colony', async () => {
-        const tx = await colonyC.setCompanyFactory(factoryAddr)
+      await run('Wire CompanyFactory into Colony', async () => {
+        const tx = await colonyC.connect(freshSigner).setCompanyFactory(factoryAddr)
         await tx.wait(1)
       })
 
       // ── 11–12. MCC contracts ─────────────────────────────────────────────────
-      const { addr: billingAddr } = await step(
+      const { addr: billingAddr } = await run(
         'Deploy MCCBilling', () =>
-        deployContract('MCCBilling', ARTIFACTS.MCCBilling.abi, ARTIFACTS.MCCBilling.bytecode, signer, colonyAddr)
+        deployContract('MCCBilling', ARTIFACTS.MCCBilling.abi, ARTIFACTS.MCCBilling.bytecode, freshSigner, colonyAddr)
       )
-      const { addr: servicesAddr } = await step(
+      const { addr: servicesAddr } = await run(
         'Deploy MCCServices', () =>
-        deployContract('MCCServices', ARTIFACTS.MCCServices.abi, ARTIFACTS.MCCServices.bytecode, signer, colonyAddr)
+        deployContract('MCCServices', ARTIFACTS.MCCServices.abi, ARTIFACTS.MCCServices.bytecode, freshSigner, colonyAddr)
       )
 
       // ── Register on-chain so all users on all devices can discover it ─────────
-      await step('Register colony in global directory', async () => {
-        const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer)
+      await run('Register colony in global directory', async () => {
+        const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, freshSigner)
         const tx = await registry.register(colonyAddr, name, slug)
         await tx.wait(1)
       })
