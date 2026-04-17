@@ -1,4 +1,4 @@
 {
   "version": 2,
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- spice-admin/"
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- ."
 }
