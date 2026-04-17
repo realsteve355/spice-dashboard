@@ -142,8 +142,16 @@ function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const REGISTRY_ABI = [
+  "function getAll() view returns (address[])",
+  "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
+];
+
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
+  // colonies: live list from registry (falls back to COLONIES constant while loading)
+  const [colonies, setColonies] = useState(COLONIES);
   // colonyData: { [id]: { name, citizens, epoch } | null }
   // undefined = still loading, null = failed
   const [colonyData, setColonyData] = useState({});
@@ -153,6 +161,28 @@ export default function Home() {
       const s = JSON.parse(localStorage.getItem("spice_level_cache"));
       if (s && Date.now() - s.timestamp < 24 * 60 * 60 * 1000) setCachedLevel(s.level);
     } catch {}
+  }, []);
+
+  // Fetch live colony list from ColonyRegistry — updates the directory panel dynamically
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchRegistry() {
+      try {
+        const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
+        const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider);
+        const addresses = await registry.getAll();
+        if (!addresses.length) return;
+        const entries = await Promise.all(addresses.map(a => registry.entries(a)));
+        const list = entries
+          .filter(e => e.slug && e.name && e.colony !== ethers.ZeroAddress)
+          .map(e => ({ id: e.slug, slug: e.slug, address: e.colony }));
+        if (!cancelled && list.length > 0) setColonies(list);
+      } catch {
+        // Registry unavailable — keep COLONIES fallback, silently ignore
+      }
+    }
+    fetchRegistry();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -167,7 +197,7 @@ export default function Home() {
     async function load() {
       const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
       const results = await Promise.all(
-        COLONIES.map(async (c) => {
+        colonies.map(async (c) => {
           try {
             const contract = new ethers.Contract(c.address, COLONY_ABI, provider);
             const [name, count, sTokenAddr] = await Promise.all([
@@ -187,7 +217,7 @@ export default function Home() {
     }
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [colonies]);
 
   const level      = cachedLevel ?? M.currentLevel;
   const levelColor = LEVEL_COLORS[level];
@@ -263,7 +293,7 @@ export default function Home() {
             ZPC COLONIES
           </div>
           <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, overflowY:"auto" }}>
-            {COLONIES.map(c => {
+            {colonies.map(c => {
               const d = colonyData[c.id];
               return (
                 <a
