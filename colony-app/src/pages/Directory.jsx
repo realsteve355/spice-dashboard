@@ -107,19 +107,6 @@ export default function Directory() {
           + Create a Colony
         </button>
 
-        {/* TEMP DEBUG — remove once directory issue resolved */}
-        {(() => {
-          const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-          const keys = Object.keys(stored)
-          return (
-            <div style={{ background: '#f0f4ff', border: '1px solid #99b', borderRadius: 6, padding: '8px 12px', marginBottom: 12, fontSize: 10, color: '#444', lineHeight: 1.8 }}>
-              <div>localStorage keys: {keys.length > 0 ? keys.join(', ') : '(none)'}</div>
-              <div>registry: {registryColonies === null ? 'loading…' : registryColonies.length + ' entries'}</div>
-              <div>allColonies: {allColonies.length} — {allColonies.map(c => c.id).join(', ')}</div>
-            </div>
-          )
-        })()}
-
         {/* Colony list */}
         {loading ? (
           <div style={{ fontSize: 11, color: C.faint, textAlign: 'center', padding: '24px 0' }}>
@@ -259,7 +246,6 @@ function buildColonyList(registryColonies) {
     return true
   })
 
-  console.log('[Directory] registry:', fromRegistry.length, 'contracts:', fromContracts.length, 'localStorage:', fromStorage.length, '→ total:', all.length, all.map(c => c.id))
   return all
 }
 
