@@ -40,10 +40,9 @@ The colony uses five tokens, each serving a distinct and non-overlapping purpose
 | **V** | Long-term savings and company capital | Citizens, companies, MCC |
 | **G** | Citizen identity and governance voting | Citizens only (one per adult) |
 | **O** | Organisation identity and on-chain authority | Company secretaries and MCC chair (one per org) |
-| **A** | Physical asset ownership | Citizens and company wallets |
-| **L** | Surface land — Harberger stewardship | Citizens and company wallets |
+| **A** | Any economic claim — asset or liability | Citizens, companies, MCC |
 
-The economic logic of S and V is described first because it governs the most visible aspect of colony life. G, O, A and L are described in Sections 1.6–1.8.
+The economic logic of S and V is described first because it governs the most visible aspect of colony life. G, O, and A are described in Sections 1.6–1.8.
 
 ### 1.1 Why Two Tokens Are Necessary
 
@@ -120,17 +119,69 @@ The G-token is a governance instrument, not an economic one. It confers one vote
 
 ### 1.7 O-Token — Organisation Identity
 
+The G-token and O-token are identity instruments, not economic ones. The G-token establishes citizen identity; the O-token establishes organisation identity. Neither pays dividends, accrues value, nor appears in a net worth calculation.
+
+> **G-token is to citizen as O-token is to organisation.**
+
 Every registered organisation in the colony holds exactly one O-token. This includes companies, the MCC, cooperatives, and civic associations. The O-token is held by the organisation's authorised representative — typically the company secretary or MCC chair — and transfers to their successor when the role changes hands.
 
 The O-token is not a voting instrument. Organisations do not vote in colony governance. The secretary votes as a citizen, using their personal G-token. The O-token is an identity and authority token: it proves who speaks for the organisation on-chain, and authorises that person to sign transactions — dividend distributions, treasury operations, asset transfers — on the organisation's behalf.
 
 The MCC holds one O-token, initially issued to the colony founder and transferable to any designated MCC chair. Having the MCC's authority held as a transferable on-chain token — rather than permanently locked to a founding private key — is a constitutional requirement.
 
-### 1.8 A-Token and L-Token — Assets and Land
+### 1.8 A-Tokens — Economic Claims
 
-Physical assets above the registration threshold (value > 500 S-token equivalent, weight > 50 kg, or autonomous AI capability) must be registered on-chain as A-tokens. Below the threshold, possession implies ownership. A-tokens are ERC-721 tokens transferable between citizens and company wallets.
+An A-token is a Fisc-registered economic claim. Every significant ownership right and every financial obligation in the colony is recorded as an A-token. A claim can be positive (you own something or are owed something) or negative (you owe something). The Fisc is the sole issuer of A-tokens — citizens and companies cannot create them unilaterally.
 
-Surface land operates under Harberger stewardship as L-tokens. The owner declares a V-token value; anyone may force-purchase at that price at any time; the owner cannot refuse. The owner pays 0.5% of declared value per epoch in V-tokens to the colony treasury. Full Harberger rules are set out in Part 7.4.
+**An A-token has four properties:**
+
+| Property | Range |
+|---|---|
+| Sign | Positive (asset) or negative (liability) |
+| Yield | Zero · variable (equity dividends) · fixed (contractual payments) |
+| Counterparty | None (unilateral) or paired (bilateral agreement) |
+| Value | Established at point of transfer; optional depreciation schedule for company-held physical assets |
+
+**Three forms:**
+
+**1. Unilateral asset token**
+A physical object owned outright — a robot, a vehicle, equipment, a land parcel. One A-token, held by the owner, no counterparty. Yield is zero. Value is the last transfer price. A company-owned physical asset may carry a declared depreciation schedule registered at acquisition; the Fisc applies this to the book value used in accounting and net worth calculations.
+
+**2. Paired equity tokens**
+A company share. The Fisc creates two A-tokens simultaneously:
+- An **asset A-token** held by the shareholder — records their stake in basis points and entitles the holder to a pro-rata share of the company's monthly V-token distribution
+- A **liability A-token** held by the company — records the aggregate obligation to distribute to all equity holders
+
+The company holds one liability A-token regardless of how many shareholders it has. At month end, the Fisc reads the company's liability A-token, calculates the distribution from net V-token earnings, and transfers V-tokens to each asset A-token holder automatically. No action is required from the company secretary.
+
+When a shareholder sells part of their stake, their asset A-token is split: the sold portion becomes a new asset A-token for the buyer. The company's single liability A-token is unchanged.
+
+**3. Paired fixed-obligation tokens**
+A bilateral payment agreement — a hire-purchase arrangement, an advance against future earnings, a personal loan. The Fisc creates two A-tokens simultaneously:
+- An **asset A-token** held by the recipient — entitles the holder to receive fixed periodic payments
+- A **liability A-token** held by the obligor — records the obligation to pay on schedule
+
+**Settlement priority:** The Fisc settles all liability A-token obligations before crediting monthly UBI. An obligation within the UBI amount therefore cannot be defaulted — payment is automatic before the citizen receives their net balance. The Fisc will not create a liability A-token if it would push the citizen's total monthly obligations beyond their guaranteed ability to pay (the UBI floor of 1,000 S per month). Structural default is impossible for any obligation the Fisc was willing to register.
+
+This is not fractional reserve banking. Paired A-tokens do not create new S or V tokens — they are commitments to redistribute tokens that will exist when payment falls due. The monthly reset operates identically regardless of what obligations exist.
+
+**Net worth**
+
+Net worth = V-tokens + S-tokens + Σ(positive A-token values) − Σ(liability A-token values)
+
+A-token value is the last known transfer price, adjusted where a depreciation schedule applies.
+
+**Inheritance**
+
+Positive A-tokens transfer per standard inheritance rules along with V-tokens. Liability A-tokens transfer with the estate — outstanding obligations are discharged from inherited assets before distribution to beneficiaries. A citizen cannot bequeath more than they own.
+
+**Land parcels**
+
+Land parcels are unilateral A-tokens. In colonies where surface land is unowned at founding — Mars being the reference case — the Fisc operates as Harberger agent: the owner must declare a value, pays a monthly stewardship fee of 0.5% of declared value in V-tokens to the colony treasury, and any citizen may force-purchase at the declared price at any time. The owner cannot refuse. In colonies where land is already privately owned before the colony forms, land A-tokens transfer by mutual agreement like any other asset. Harberger rules are a property of the colony's founding conditions, specified in the founding constitution — not a property of the A-token type.
+
+**Registration threshold**
+
+Physical A-tokens are required above the registration threshold: declared value > 500 S-token equivalent, weight > 50 kg, or autonomous AI capability. Below the threshold, possession implies ownership with no on-chain record needed.
 
 ### 1.5 Billing on the Blockchain
 
@@ -155,7 +206,7 @@ MCC bills are not issued manually. Smart meters feed consumption data — power 
 
 - 1,000 S-tokens issued unconditionally on the 1st of each month, for life — cannot be withheld, reduced, or means-tested
 - One non-transferable G-token — one vote in MCC governance, issued on adulthood, retired on death
-- Full property rights — S-tokens, V-tokens, company equity, physical assets, and land rights, all recorded on the Fisc blockchain
+- Full property rights — all economic claims (A-tokens), including physical assets, land parcels, equity stakes, and bilateral obligations, are recorded on the Fisc blockchain
 - Children receive UBI from birth. A guardian manages the wallet, covers MCC costs, and converts up to 200 S-tokens/month to V-tokens. By adulthood a child has accumulated at least 43,200 V-tokens — a capital foundation that is entirely their own from day one of adult life.
 
 ### 3.2 Obligations
@@ -201,12 +252,13 @@ The floor is guaranteed. What changes over time is the ceiling — more to spend
 
 ### 4.3 Equity and Shares
 
-- Shares represent fractional ownership of future earnings, registered on the blockchain
-- Bought and sold at freely agreed prices in S-tokens
-- Transfers are atomic — payment and ownership change simultaneously on chain
-- May be inherited, granted to contributors, or sold to raise capital
-- May not be pledged as collateral — the system does not support debt instruments
+Shares in a company are represented as paired A-tokens (see §1.8). Each shareholder holds one asset A-token recording their stake in basis points. The company holds one aggregate liability A-token recording its obligation to distribute. The Fisc distributes V-token dividends automatically at month end without any action from the company secretary.
+
+- Shares may be bought, sold, inherited, granted to contributors, or transferred — all via the Fisc
+- Transfers are atomic — payment and ownership change simultaneously on-chain
+- Minimum share unit: 0.01%
 - All shareholdings are publicly visible — no anonymous ownership
+- Shares may not be pledged as collateral for external obligations; bilateral fixed-obligation A-tokens (see §1.8) allow citizens and companies to make payment commitments to one another, subject to the Fisc's obligation cap
 
 ---
 
@@ -277,6 +329,7 @@ The Fisc is the colony's fully automated blockchain financial institution. Not a
 
 **What the Fisc does:**
 
+- Settles all liability A-token obligations before crediting monthly UBI (settlement priority)
 - Issues 1,000 S-tokens to every citizen wallet on the 1st of each month
 - Enforces month-end S-token expiry across all wallets simultaneously
 - Processes S→V conversions (citizen cap: 200/month; companies: ALL net earnings)
@@ -284,6 +337,7 @@ The Fisc is the colony's fully automated blockchain financial institution. Not a
 - Settles MCC bills automatically from smart meter data
 - Manages intra-month smart contracts — forward purchase agreements, escrowed payments, and revenue-sharing arrangements that commit future S-token flows within the same month, without creating new money or violating the monthly reset
 - Operates the blockchain — authoritative record of all ownership
+- Issues, transfers, and settles A-tokens — the sole creator of economic claim tokens
 - Registers citizens, companies, assets, and share transfers
 - Publishes all transaction data publicly — readable by any citizen
 - Processes inheritance transfers on registered death
@@ -319,9 +373,7 @@ All significant ownership is recorded on the Fisc blockchain. Ownership is enfor
 | Registry | Records |
 |---|---|
 | Wallets | S-token and V-token balances, full transaction history |
-| Shares | Company ownership, transfer history, dividend history |
-| Assets | Physical asset ownership, acquisition date, transfer history |
-| Rights | Habitat rights, surface land claims, licence rights |
+| Claims | All A-tokens — physical assets, land parcels, equity positions, bilateral obligations — with current holder, declared value, and transfer history |
 
 ### 7.3 Physical Asset Ownership
 
@@ -330,13 +382,22 @@ All significant ownership is recorded on the Fisc blockchain. Ownership is enfor
 - Both parties sign transfers on chain
 - Unregistered assets above threshold have no legal protection
 
-### 7.4 Surface Land — Harberger Stewardship
+### 7.4 Surface Land
 
-Every surface land claim is registered at a declared V-token value set by the owner. The owner pays a monthly stewardship fee to MCC of **0.5% of their declared value**. Anyone may purchase the land at the declared value at any time — the owner cannot refuse.
+Land parcels are A-tokens. They are owned, transferred, inherited, and valued using the same mechanisms as all other A-tokens.
+
+In colonies where surface land is unowned at founding — Mars being the reference case — the founding constitution specifies Harberger stewardship rules, enforced by the Fisc:
+
+- The owner declares a V-token value for their parcel
+- A monthly stewardship fee of **0.5% of declared value** is paid in V-tokens to the colony treasury
+- Any citizen or company may force-purchase the parcel at the declared price at any time — the owner cannot refuse
+- The Fisc executes the transfer atomically: buyer pays declared value, ownership A-token transfers immediately
 
 The self-correcting incentive: price too high → expensive monthly fee, idle land costs you. Price too low → someone buys immediately. Price honestly → fair fee, land held until someone has genuinely better use for it.
 
-**First registration** of unclaimed surface land is first-come-first-served. Any citizen or company may file a Harberger claim on unregistered land at any time by declaring a value and paying the first month's stewardship fee. From that moment the claim is legally valid and Harberger rules apply.
+**First registration** on Mars is first-come-first-served: any citizen or company may claim an unregistered parcel by declaring a value and paying the first month's stewardship fee. From that moment the land A-token is issued and Harberger rules apply.
+
+In Earth-based colonies where land is already privately owned before the colony forms, land A-tokens are issued at the colony's founding to reflect existing ownership. They transfer by mutual agreement at freely negotiated prices — no force-purchase mechanism applies unless the founding constitution explicitly adopts it.
 
 ---
 
@@ -371,9 +432,9 @@ The following questions were open in earlier versions and are now resolved:
 
 | Question | Decision |
 |---|---|
-| Harberger stewardship fee | 0.5% of declared value per month |
+| Harberger stewardship fee | 0.5% of declared value per month — applies to land A-tokens in colonies where the founding constitution specifies Harberger rules (Mars reference case) |
 | Physical asset registration threshold | 500 S-tokens / 50 kg / autonomous AI capability |
-| First surface land registration | First-come-first-served Harberger claim |
+| First surface land registration | Land parcels are A-tokens. On Mars (Harberger colony): first-come-first-served claim by declaring a value and paying first month's stewardship fee. On Earth (privately-owned land): A-tokens issued at founding to reflect existing ownership; ordinary transfer thereafter |
 | V-tokens for MCC bills | No — MCC bills paid in S-tokens only |
 | Minimum share unit | 0.01% |
 | Automatic recall trigger | MCC bill rises >20% above 12-month rolling average in any single month |
@@ -393,6 +454,12 @@ The following questions were open in earlier versions and are now resolved:
 | Citizen exit | Not available in Phase 1. V-tokens are colony-specific and non-portable. Phase 2 external mobility mechanism: BTC conversion |
 | S-token external value | None. Pure scrip. Value comes only from what MCC and participating merchants accept within the colony |
 | External trade (BTC/ETH/SOL) | Phase 2 scope. Not part of Phase 1 design |
+| A-token as unified claim | All economic ownership and obligation — physical assets, land parcels, equity positions, bilateral payment agreements — is recorded as A-tokens. Positive value = asset. Negative value = liability. L-tokens retired as a separate type. |
+| Company equity as paired A-tokens | Each shareholder holds one asset A-token (stake in bps). Company holds one aggregate liability A-token (distribution obligation). Fisc settles at month end automatically. Share transfer splits the seller's asset A-token; company liability token is unchanged. |
+| Fixed-obligation A-tokens permitted | Citizens and companies may enter bilateral payment agreements (hire-purchase, loans, advances). Fisc creates paired asset + liability tokens simultaneously. This does not create new money — no fractional reserve banking. Fractional reserve banking remains constitutionally prohibited. |
+| Obligation cap | The Fisc will not register a liability A-token that would push the holder's total monthly S-token obligations beyond their guaranteed UBI (1,000 S/month). Structural default is impossible for any Fisc-registered obligation. |
+| Harberger rules for land | Harberger mechanism is a property of colony founding conditions, specified in the founding constitution. Not hardcoded into the A-token type. Applies on Mars and equivalent new-land colonies. Does not apply in Earth colonies where land is pre-existing private property. |
+| Depreciation on physical A-tokens | Company-owned physical A-tokens may carry a declared depreciation schedule registered at acquisition. Fisc applies this to book value for accounting and net worth. No automatic monetary operation is triggered. |
 
 ---
 
@@ -707,5 +774,6 @@ This section will be elaborated in a separate Phase 2 document.
 
 ---
 
-*Mars Colony Economy · Token & Governance System · Working Document — Version 14*
+*Mars Colony Economy · Token & Governance System · Working Document — Version 15*
 *v14 changes: full five-token system introduced (Part 1 table + Sections 1.6–1.8); O-token added to Part 2 entities table; O-token paragraph added to Part 5.1 (MCC); three new resolved decisions added to Part 9 (O-token, org voting, company wallet).*
+*v15 changes: A-token redesigned as unified economic claim token (asset or liability). L-tokens retired — land parcels are A-tokens. Three A-token forms: unilateral asset, paired equity, paired fixed-obligation. Company equity moved from internal data structure to paired A-tokens (shareholder holds asset token; company holds single liability token; Fisc settles automatically). Fixed-obligation A-tokens permitted — not fractional reserve banking. Obligation cap: Fisc will not register liability exceeding UBI floor. Harberger mechanism relocated from token type to founding constitution (Mars yes, Earth no). Depreciation schedule added for company physical assets. G/O identity parallel made explicit. Part 3.1, Part 4.3, Part 6 (Fisc responsibilities), Part 7.2 (registries), Part 7.4 (land), Part 9 (resolved decisions) all updated.*
