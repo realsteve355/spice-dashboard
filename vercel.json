@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js",
   "rewrites": [
     { "source": "/((?!spice-methodology\\.html|api\\/).*)", "destination": "/index.html" }
   ],
