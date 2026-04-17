@@ -280,72 +280,57 @@ export default function Home() {
           color="#4488ff"
         />
 
-        {/* BOTTOM RIGHT: Colony Directory */}
+        {/* BOTTOM RIGHT: Colony App portal */}
         <div style={{
           height:"100%", background:BG2, borderRadius:6,
           borderTop:`3px solid ${GOLD}`, padding:"20px 22px",
           display:"flex", flexDirection:"column", boxSizing:"border-box",
         }}>
           <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-            Colony Directory
+            SPICE Protocol
           </div>
-          <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:14 }}>
-            ZPC COLONIES
+          <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:16 }}>
+            Colony Economy
           </div>
-          <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8, overflowY:"auto" }}>
-            {colonies.map(c => {
-              const d = colonyData[c.id];
-              return (
-                <a
-                  key={c.id}
-                  href={`${COLONY_APP_HOST}/colony/${c.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ textDecoration:"none" }}
-                >
-                  <div style={{
-                    background:`${GOLD}0e`,
-                    border:`1px solid ${GOLD}40`,
-                    borderRadius:4, padding:"12px 14px",
-                    cursor:"pointer",
-                  }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:T1, marginBottom:5 }}>
-                      {d ? d.name : c.slug}
-                    </div>
-                    <div style={{ fontSize:8, color:T2 }}>
-                      {d === undefined
-                        ? "loading…"
-                        : d === null
-                        ? "unavailable"
-                        : `${d.citizens} citizen${d.citizens !== 1 ? "s" : ""} · epoch ${d.epoch}`
-                      }
-                    </div>
-                    <div style={{ fontSize:8, color:T3, marginTop:6 }}>→ Enter colony</div>
-                  </div>
-                </a>
-              );
-            })}
+
+          {/* Stats */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
+            <div style={{ background:`${GOLD}0e`, border:`1px solid ${GOLD}30`, borderRadius:4, padding:"12px 14px" }}>
+              <div style={{ fontSize:22, fontWeight:700, color:GOLD, fontFamily:F }}>
+                {colonies.length}
+              </div>
+              <div style={{ fontSize:8, color:T2, marginTop:4, letterSpacing:"0.06em" }}>ACTIVE COLONIES</div>
+            </div>
+            <div style={{ background:`${GOLD}0e`, border:`1px solid ${GOLD}30`, borderRadius:4, padding:"12px 14px" }}>
+              <div style={{ fontSize:22, fontWeight:700, color:GOLD, fontFamily:F }}>
+                {Object.values(colonyData).reduce((sum, d) => sum + (d?.citizens || 0), 0)}
+              </div>
+              <div style={{ fontSize:8, color:T2, marginTop:4, letterSpacing:"0.06em" }}>CITIZENS ENROLLED</div>
+            </div>
           </div>
-          <Link
-            to="/create-colony"
-            style={{
-              display:"block", marginTop:12, padding:"9px 12px",
-              background:"none", border:`1px solid ${GOLD}`,
-              borderRadius:4, fontSize:9, color:GOLD,
-              textDecoration:"none", letterSpacing:"0.08em",
-              textAlign:"center",
-            }}
-          >
-            + Create new colony
-          </Link>
+
+          <div style={{ fontSize:10, color:T2, lineHeight:1.7, marginBottom:"auto" }}>
+            Each colony is an independent closed-loop economy. Citizens receive a monthly S-token
+            basic income, save into V-tokens, and transact through colony-registered companies.
+          </div>
+
           <a
             href={COLONY_APP_HOST}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize:8, color:T3, marginTop:8, textDecoration:"none", display:"block", textAlign:"right" }}
+            style={{
+              display:"block", marginTop:14, padding:"11px 14px",
+              background:GOLD, borderRadius:4,
+              fontSize:10, color:BG0, fontWeight:700,
+              textDecoration:"none", letterSpacing:"0.1em", textAlign:"center",
+              fontFamily:F,
+            }}
           >
-            app.zpc.finance ↗
+            ENTER COLONY APP →
           </a>
+          <div style={{ fontSize:8, color:T3, marginTop:8, textAlign:"right" }}>
+            app.zpc.finance · Base Sepolia testnet
+          </div>
         </div>
 
       </div>

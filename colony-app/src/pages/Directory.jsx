@@ -241,17 +241,21 @@ function buildColonyList(registryColonies) {
       source:      'local',
     }))
 
-  // Final dedup pass — remove any remaining duplicates by slug OR address.
-  // Catches cases like "daves-colony" (registry) vs "dave-s-colony" (contracts/local)
-  // pointing to the same on-chain contract. Registry entry wins (listed first).
+  // Final dedup pass — deduplicate by slug, address, OR name.
+  // Catches "daves-colony" (registry) vs "dave-s-colony" (local) — same colony,
+  // different slugs and potentially different addresses. Registry entry wins.
   const finalSlugs  = new Set()
   const finalAddrs  = new Set()
+  const finalNames  = new Set()
   const all = [...fromRegistry, ...fromContracts, ...fromStorage].filter(c => {
     if (finalSlugs.has(c.id)) return false
     const addr = c.address?.toLowerCase()
     if (addr && finalAddrs.has(addr)) return false
+    const name = c.name?.toLowerCase().trim()
+    if (name && finalNames.has(name)) return false
     finalSlugs.add(c.id)
     if (addr) finalAddrs.add(addr)
+    if (name) finalNames.add(name)
     return true
   })
 
