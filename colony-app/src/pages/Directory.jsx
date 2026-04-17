@@ -70,7 +70,10 @@ export default function Directory() {
   // Build colony list: registry (if available) + contracts.json + localStorage fallback
   const allColonies = buildColonyList(registryColonies)
 
-  const loading = REGISTRY_DEPLOYED && registryColonies === null
+  // Only show spinner if registry is still loading AND we have nothing at all to display yet.
+  // contracts.json + localStorage colonies are always available immediately — never hide them
+  // behind a registry spinner.
+  const loading = REGISTRY_DEPLOYED && registryColonies === null && allColonies.length === 0
 
   return (
     <Layout title="SPICE Colony">
@@ -113,8 +116,11 @@ export default function Directory() {
           <>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
               {allColonies.length} {allColonies.length === 1 ? 'COLONY' : 'COLONIES'}
-              {REGISTRY_DEPLOYED && (
-                <span style={{ marginLeft: 8, color: C.faint }}>· from registry</span>
+              {REGISTRY_DEPLOYED && registryColonies !== null && (
+                <span style={{ marginLeft: 8, color: C.faint }}>· registry</span>
+              )}
+              {REGISTRY_DEPLOYED && registryColonies === null && (
+                <span style={{ marginLeft: 8, color: C.faint }}>· syncing…</span>
               )}
               {registryError && (
                 <span style={{ marginLeft: 8, color: '#ef4444' }}>· registry unavailable</span>
