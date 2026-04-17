@@ -15,6 +15,8 @@ Money is still needed. It drives efficiency, allocates scarce resources, and rew
 
 **The floor of basic social support is guaranteed for all. The opportunity ceiling is infinite.**
 
+In a colony where robots provide for all basic needs, the purpose of work is not survival. Citizens do not need to work to live — the UBI guarantees that. Work is the means by which citizens contribute value and build wealth above the guaranteed floor. The mechanism for that wealth accumulation is ownership, not wages. Citizens earn above their UBI through equity stakes in companies — shares that vest with commitment, pay dividends, and appreciate as the company grows. The concept of employment in the conventional sense — selling time for money — does not exist in the SPICE system.
+
 ---
 
 ## Benefits of the SPICE System
@@ -194,7 +196,7 @@ MCC bills are not issued manually. Smart meters feed consumption data — power 
 | Entity | Role | Earns | Governed by |
 |---|---|---|---|
 | **Citizen** | Receives UBI, spends S-tokens, saves V-tokens, holds MCC share, may found or join companies | UBI (S) · equity dividends (V) · service income (S) | Founding constitution · annual MCC election |
-| **Company** | Provides goods or services, earns S-tokens, converts to V-tokens, pays dividends. Has its own on-chain wallet. Secretary holds the company O-token. | S-tokens from sales → V-token dividends | Market competition · equity holders |
+| **Company** | Provides goods or services, earns S-tokens, converts to V-tokens, declares dividends. Issues vesting equity to participants — no wages. Has its own on-chain wallet. Secretary holds the company O-token. | S-tokens from sales → V-token reserve → V-token dividends to shareholders | Market competition · equity holders |
 | **MCC** (Mars Colony Company) | Provides essential infrastructure — dome, life support, power, water, security. The board owns MCC commercially and sets prices to make a profit. Citizens hold G-tokens giving them governance oversight. MCC chair holds the MCC O-token. | S-tokens from metered bills and company levies | Board elected annually by G-token holders · blockchain transparency · automatic recall trigger |
 | **The Fisc** | Fully automated blockchain institution. Issues S-tokens, manages conversions, enforces all monetary rules | None — constitutional utility, no profit motive | Founding constitution only |
 
@@ -226,11 +228,14 @@ The floor is guaranteed. What changes over time is the ceiling — more to spend
 
 ### 3.4 Two Ways to Earn Above the UBI
 
-| | S-token income | V-token dividends |
+| | Equity dividends | Commerce income |
 |---|---|---|
-| **Nature** | Payment for a specific service or task | Monthly share of company profits |
-| **Duration** | Expires at month end if unspent | Permanent |
-| **Example** | A technician fixes an airlock seal — 300 S on the day | An equity holder receives 200 V at month end from the surface transport company |
+| **Nature** | Monthly V-token distribution from company shares held | S-token payment for a specific good or service supplied |
+| **Duration** | Permanent — shares accumulate; dividend recurs as long as shares are held | Expires at month end if unspent |
+| **Who** | Company participants and investors | Anyone — sole traders, occasional services, goods sold |
+| **Example** | A participant in the surface transport company receives 400 V this month from the declared dividend | A technician repairs a habitat seal for a company — 300 S paid on the day |
+
+For ongoing participation in an enterprise, equity is the mechanism. For one-off exchange of goods or services, S-tokens are the mechanism. A **sole trader** is a citizen who provides goods or services in exchange for S-tokens, holds no company equity, and accumulates wealth by converting S-token surplus to V-tokens. The colony has no wages — no ongoing S-token payment for being a participant in a company.
 
 ---
 
@@ -246,19 +251,44 @@ The floor is guaranteed. What changes over time is the ceiling — more to spend
 
 ### 4.2 Monthly Token Rules
 
-**During the month:** earns S-tokens from customers, pays suppliers in S-tokens, accumulates balance in Fisc wallet.
+**During the month:** earns S-tokens from customers, pays suppliers and sole-trader contractors in S-tokens, accumulates S balance. Does not pay wages — participants are equity holders, not employees.
 
-**At month end:** converts ALL net S-tokens to V-tokens, distributes V-tokens as dividends to equity holders, retains a portion for capital investment. All remaining S-tokens expire.
+**At month end:** converts ALL net S-tokens to V-tokens. The FD declares the monthly dividend — the declared V-token amount is moved to a distribution wallet and the Fisc distributes it pro-rata to all shareholders. The remainder is retained in the V reserve for capital investment. All remaining S-tokens expire.
 
 ### 4.3 Equity and Shares
 
-Shares in a company are represented as paired A-tokens (see §1.8). Each shareholder holds one asset A-token recording their stake in basis points. The company holds one aggregate liability A-token recording its obligation to distribute. The Fisc distributes V-token dividends automatically at month end without any action from the company secretary.
+Company equity is represented as A-tokens (see §1.8). All shares are fungible. They may be held, sold, or redeemed — but are subject to a vesting schedule when issued to participants.
 
-- Shares may be bought, sold, inherited, granted to contributors, or transferred — all via the Fisc
-- Transfers are atomic — payment and ownership change simultaneously on-chain
+**No wages**
+Companies do not pay ongoing S-token compensation to participants. Participants receive equity. Their income above UBI comes from the dividends those shares pay and from the shares' appreciating NAV. One-off services or goods supplied to a company by sole traders or other parties are paid in S-tokens as a normal commerce transaction — this is trade, not wages.
+
+**Vesting shares — participant equity**
+When a company brings on an ongoing participant, the Fisc issues shares with a vesting schedule of 1–12 monthly tranches. The month-12 tranche is larger — a commitment bonus for completing the full year. Each month, one tranche unlocks. The holder may then:
+- **Hold** — retain the shares, continue receiving dividends, next tranche approaching
+- **Sell on the open market** — receive current market price
+- **Sell back to the company** — receive current NAV (the company's V reserve × the holder's share fraction) in S-tokens, at the company's discretion
+
+Unvested shares receive dividends monthly alongside vested shares — participants are compensated from day one. If a participant stops contributing, unvested shares are forfeited to the company for reallocation. Vested shares remain the participant's permanently.
+
+**Open shares — investor equity**
+Shares issued to outside investors or other companies are issued without a vesting schedule (or with a shorter lock-up agreed at issuance). Freely tradeable from issuance or vesting.
+
+**Share value — NAV**
+The floor value of any share is the current NAV:
+
+> share value = company's V reserve × (shares held / total shares outstanding)
+
+Market price may exceed NAV where buyers expect the V reserve to grow. The Fisc always honours sell-back requests at NAV, subject to the company holding sufficient S-tokens to fund the buyback.
+
+**Dividends**
+The FD declares a dividend each month. The declared V-token amount is moved to a distribution wallet; the Fisc distributes pro-rata to all shareholders (vested and unvested). The remainder stays in the V reserve. There is no obligation to distribute — the FD may retain all earnings for capital investment.
+
+**Buybacks**
+The company may repurchase shares from any holder at any time at current market value. Bought-back shares are cancelled, reducing total shares outstanding and increasing the NAV of remaining shares.
+
 - Minimum share unit: 0.01%
-- All shareholdings are publicly visible — no anonymous ownership
-- Shares may not be pledged as collateral for external obligations; bilateral fixed-obligation A-tokens (see §1.8) allow citizens and companies to make payment commitments to one another, subject to the Fisc's obligation cap
+- All shareholdings publicly visible on-chain — no anonymous ownership
+- Shares may not be pledged as collateral for external obligations
 
 ---
 
@@ -335,7 +365,6 @@ The Fisc is the colony's fully automated blockchain financial institution. Not a
 - Processes S→V conversions (citizen cap: 200/month; companies: ALL net earnings)
 - Processes V→S redemptions (uncapped, 1:1)
 - Settles MCC bills automatically from smart meter data
-- Manages intra-month smart contracts — forward purchase agreements, escrowed payments, and revenue-sharing arrangements that commit future S-token flows within the same month, without creating new money or violating the monthly reset
 - Operates the blockchain — authoritative record of all ownership
 - Issues, transfers, and settles A-tokens — the sole creator of economic claim tokens
 - Registers citizens, companies, assets, and share transfers
@@ -344,21 +373,13 @@ The Fisc is the colony's fully automated blockchain financial institution. Not a
 
 **Why the Fisc must be separate from MCC:** if the board that sets its own profit also controlled the institution that issues currency, the conflict of interest would be unacceptable. The Fisc serves all participants equally. No elected body has authority over its operation.
 
-### 6.1 Intra-Month Contracting
+### 6.1 Cashflow and Commitment
 
-Companies face a timing problem: costs and revenues do not always align within the month. A construction company may need to pay robot operators on day 15 but will not receive payment from its client until day 25. Without any smoothing mechanism, viable businesses face unnecessary friction. The solution is intra-month smart contracts enforced by the Fisc — instruments that commit future S-token flows within the same month without creating new money or violating the monthly reset.
+Companies manage cashflow through their V-token reserve — redeeming V to S when expenditure precedes revenue within a month. This handles all timing mismatches between inflows and outflows without external instruments. Since companies no longer pay wages, the main intra-month outflows are supplier payments and sole-trader contractor fees — both ordinary S-token transactions settled as they occur.
 
-**Three permitted instruments:**
+Where one party must act before the other pays — a contractor delivers before the company settles — the bilateral A-token framework handles the commitment (see §1.8). A fixed-obligation A-token records the payment on-chain; the Fisc enforces it at the agreed date.
 
-**Forward purchase contract.** A buyer pre-commits to pay a specific S-token amount on a specific day this month. The Fisc locks the buyer's S-tokens in escrow at contract creation. The seller can proceed knowing payment is guaranteed. Tokens are released on delivery confirmation. If delivery fails, tokens return to the buyer. No new money is created — the tokens already existed, just sequenced.
-
-**Escrowed payment.** Either party deposits S-tokens with the Fisc at contract creation. They are released to the counterparty when a defined condition is met — delivery, milestone completion, quality confirmation. If the condition is not met by month end, all escrowed tokens are destroyed with all other unspent S-tokens.
-
-**Revenue-sharing agreement.** Two companies agree that a defined percentage of Company A's incoming S-token revenues this month are routed automatically to Company B. The Fisc enforces this as revenues arrive. Useful for joint ventures and supply chain partnerships where one party fronts costs and recovers via revenue share.
-
-**The critical rule:** all contracts must specify a settlement date within the current month. The Fisc rejects any contract with a settlement date beyond month end. If the month ends with a contract unsettled, all escrowed tokens are destroyed. Parties know this going in — it creates a strong incentive to settle promptly and price contracts conservatively.
-
-**What intra-month contracting does not solve:** a company that has no S-tokens at all on day 15 and will not earn any until day 25. In that case the V-token reserve is the answer — the company redeems V-tokens to S-tokens to cover the gap. Intra-month contracts help with timing and sequencing; V-token reserves handle genuine illiquidity. Both together eliminate the need for debt.
+The forward purchase contracts, escrowed payments, and revenue-sharing instruments described in earlier versions of this document are superseded by this combination of V-token reserves and A-token bilateral commitments.
 
 ---
 
@@ -446,7 +467,11 @@ The following questions were open in earlier versions and are now resolved:
 | Inter-colony monetary policy | All Mars colonies share the same Fisc and constitutional rules |
 | Governance of large companies | Governed by their shareholders — no special constitutional status |
 | MCC governance | Board are commercial shareholders; citizens hold one G-token each conferring voting rights and conditional dividend rights |
-| Intra-month contracting | Three instruments: forward purchase contracts, escrowed payments, revenue-sharing agreements. All must settle within the current month. Specified in Part 6.1. |
+| Intra-month contracting | Superseded. V-token reserve handles cashflow timing; A-token bilateral framework handles commitment. No separate forward contracts, escrow, or revenue-sharing instruments needed. |
+| No wages | Companies do not pay ongoing S-token compensation to participants. Participants receive vesting equity; their income above UBI comes from dividends. One-off services and goods are paid in S-tokens as normal commerce — this is trade, not wages. |
+| Vesting shares | Participant equity vests in monthly tranches, 1–12 months. Month-12 tranche is larger (commitment bonus). Unvested shares receive dividends but cannot be transferred. Unvested shares forfeited if participant leaves; vested shares are permanent. |
+| Share value = NAV | Share floor value = company's V reserve × (shares held / total shares outstanding). Market price may exceed NAV on growth expectations. Buybacks at market value; bought-back shares are cancelled. |
+| Sole trader | A citizen providing goods or services in exchange for S-tokens with no ongoing equity relationship. Accumulates wealth by converting S-token surplus to V-tokens. Fully supported by base mechanisms — no special treatment required. |
 | Citizenship model | Commitment: any person signs the founding constitution on-chain. Fisc issues G-token. UBI starts 1st of following month. No vetting, no fee |
 | Adulthood | 18 years. Citizen signs constitution, receives G-token, inherits V-token pool from guardian |
 | V-token transferability | Non-transferable P2P. Only via Fisc conversion, company dividend payments, or inheritance |
@@ -774,6 +799,7 @@ This section will be elaborated in a separate Phase 2 document.
 
 ---
 
-*Mars Colony Economy · Token & Governance System · Working Document — Version 15*
+*Mars Colony Economy · Token & Governance System · Working Document — Version 16*
 *v14 changes: full five-token system introduced (Part 1 table + Sections 1.6–1.8); O-token added to Part 2 entities table; O-token paragraph added to Part 5.1 (MCC); three new resolved decisions added to Part 9 (O-token, org voting, company wallet).*
 *v15 changes: A-token redesigned as unified economic claim token (asset or liability). L-tokens retired — land parcels are A-tokens. Three A-token forms: unilateral asset, paired equity, paired fixed-obligation. Company equity moved from internal data structure to paired A-tokens (shareholder holds asset token; company holds single liability token; Fisc settles automatically). Fixed-obligation A-tokens permitted — not fractional reserve banking. Obligation cap: Fisc will not register liability exceeding UBI floor. Harberger mechanism relocated from token type to founding constitution (Mars yes, Earth no). Depreciation schedule added for company physical assets. G/O identity parallel made explicit. Part 3.1, Part 4.3, Part 6 (Fisc responsibilities), Part 7.2 (registries), Part 7.4 (land), Part 9 (resolved decisions) all updated.*
+*v16 changes: No-wages principle established — companies do not pay ongoing S-token compensation; participants receive vesting equity only. Founding Philosophy updated with post-scarcity framing. Vesting share model: fungible, monthly tranches 1–12, month-12 bonus, unvested shares pay dividends but are non-transferable, forfeited on departure. Share value = NAV (company V reserve / total shares). Dividends declared by FD monthly, moved to distribution wallet, Fisc distributes. Buybacks at market value. Sole trader defined. Part 6.1 intra-month contracting replaced — superseded by V reserve + A-token bilateral framework. Part 9 updated with five new resolved decisions.*
