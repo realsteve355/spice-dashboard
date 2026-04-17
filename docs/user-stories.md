@@ -300,19 +300,19 @@ A citizen deploying a new colony.
 | N-04 | As a colony founder, I want to deploy all colony contracts (Colony, MCCTreasury, MCCServices, MCCBilling) in a single guided flow | P1 | ✓ |
 | N-05 | As a colony founder, I want to receive the first G-token and start receiving UBI from Month 1 | P1 | ✓ |
 | N-06 | As a colony founder, I want a shareable invite URL and QR code to recruit citizens | P1 | ~ |
-| N-07 | As a colony founder, I want to see my colony appear in the public directory immediately | P1 | ~ |
+| N-07 | As a colony founder, I want to see my colony appear in the public directory immediately | P1 | ✓ |
 | N-08 | As a colony founder, I want to set an optional colony description and logo | P2 | ~ |
 | N-09 | As a colony founder, I want to create my colony from zpc.finance (the platform layer) rather than from inside the colony app | P1 | ✓ |
 
-| N-10 | As a colony founder, I want my colony to appear automatically in the global directory for all users without any manual step by the protocol team | P1 | ~ |
-| N-11 | As a colony founder, I want the deploy flow to register my colony with the ColonyRegistry contract so it is publicly discoverable | P1 | ~ |
+| N-10 | As a colony founder, I want my colony to appear automatically in the global directory for all users without any manual step by the protocol team | P1 | ✓ |
+| N-11 | As a colony founder, I want the deploy flow to register my colony with the ColonyRegistry contract so it is publicly discoverable | P1 | ✓ |
 
-*N-04: Deploy wizard on zpc.finance/create deploys Colony + MCCTreasury + MCCServices + MCCBilling (4 txs) then registers with ColonyRegistry (5th tx, once registry is deployed).*
+*N-04: Deploy wizard at app.zpc.finance/create runs an 18-step guided flow: 17 contract deploys/wires (GToken, SToken, VToken, Colony, ownership transfers, OToken, CompanyImpl, UpgradeableBeacon, CompanyFactory, MCCBilling, MCCServices) + step 18: registry.register() (non-fatal). Pre-flight: network check (84532), balance check (≥0.005 ETH), slug availability check via slugToColony().*
 *N-06: Invite URL copyable; QR not yet generated.*
-*N-07: Directory reads from ColonyRegistry on-chain when deployed; falls back to contracts.json + localStorage.*
-*N-09: zpc.finance/create — name input, MetaMask connect, 4-contract deploy + registry register, success screen with colony URL.*
-*N-10: Requires ColonyRegistry to be deployed on Base Sepolia and address set in COLONY_REGISTRY_ADDRESS constant.*
-*N-11: CreateColony calls registry.register(colony, name, slug) as step 5 of 5 after all 4 contracts deploy successfully.*
+*N-07: Directory reads from ColonyRegistry (0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d) on-chain; falls back to contracts.json + localStorage['spice_user_colonies'].*
+*N-09: app.zpc.finance/create — name input, MetaMask connect, 18-step deploy, success screen with colony URL.*
+*N-10: ColonyRegistry deployed at 0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d on Base Sepolia. REGISTRY_ADDRESS set in CreateColony.jsx and Directory.jsx.*
+*N-11: CreateColony.jsx step 18 calls registry.register(colonyAddr, name, slug) — non-fatal (colony saved to localStorage first, so it is usable even if registration fails).*
 
 ---
 
@@ -425,6 +425,7 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 *v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*
 *v10 updates (15 April 2026): F-27, F-28, OS-01–OS-03 marked ✓ — CompanyFactory + OToken.sol deployed and wired. Company accounts (double-entry), activity log, and getLogs pagination fix also shipped.*
 *v11 updates (16 April 2026): All mock data removed from frontend. Pages read from chain or show clean empty states. Footnotes updated to reflect actual state. CompanyFactory corrected to BeaconProxy (not EIP-1167). Guardian and contracts features note they have UI but no on-chain contract.*
+*v12 updates (17 April 2026): N-07, N-10, N-11 marked ✓ — ColonyRegistry deployed at 0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d. Directory.jsx reads registry live; falls back to contracts.json + localStorage. EIP-1167 → BeaconProxy corrected in on-chain table. Colony auto-registration and directory-from-registry rows updated to ✓ Live. N-07/P-01 removed from Remaining P1 gaps. Footnotes for N-04/N-07/N-10/N-11 updated with registry address and 18-step deploy details.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -450,7 +451,7 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | MCC billing — set & confirm bills | MCCBilling.setBill() / recordPayment() | ✓ Live |
 | MCC revenue MTD | MCCBilling.totalRevenueMTD() | ✓ Live |
 | Governance proposals + voting | Governance contract | ✓ Live |
-| Company registration + equity | CompanyFactory + CompanyImplementation (EIP-1167) | ✓ Live |
+| Company registration + equity | CompanyFactory + CompanyImplementation (BeaconProxy) | ✓ Live |
 | Company smart-contract wallet | CompanyImplementation | ✓ Live |
 | O-token issuance (org NFT) | OToken.sol | ✓ Live |
 | Company accounts (double-entry journal) | Colony event queries | ✓ Live |
@@ -459,8 +460,8 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | Harberger land claims (L-tokens) | AssetRegistry.claimLand() | Not deployed |
 | Protocol infrastructure fee accrual | Colony.pendingProtocolFee + send() | ✓ Live (contracts compiled; new colonies only) |
 | Protocol fee settlement | Colony.settleProtocol() payable | ✓ Live (contracts compiled; new colonies only) |
-| Colony auto-registration | ColonyRegistry.register() | ~ Contract written; not yet deployed |
-| Colony directory from registry | ColonyRegistry.getAll() | ~ Contract written; not yet deployed |
+| Colony auto-registration | ColonyRegistry.register() | ✓ Live (step 18 of CreateColony deploy flow) |
+| Colony directory from registry | ColonyRegistry.getAll() | ✓ Live (0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d) |
 | MCC revenue by service | — | Not built — MCCBilling tracks total only; per-service breakdown needs service-level billing |
 | Intra-month contracts | — | Not built — Contracts tab shows empty list |
 | Guardian management | — | UI built, starts empty; no on-chain guardian contract |
@@ -474,9 +475,8 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | M-05 | MCC revenue by service | MCCBilling tracks total only; per-service breakdown needs service-level billing |
 | M-07 | Auto-deduct MCC bills at month end | Manual confirm flow currently; needs epoch-triggered auto-collection |
 | M-20 | Replace MCC Chair via referendum | MCCTreasury roles currently founder-controlled; governance vote not yet wired |
-| N-07 / P-01 | Auto-list deployed colonies in directory | ColonyRegistry.sol written + compiled; deploy with `npx hardhat run scripts/deployRegistry.js --network baseSepolia`, then set COLONY_REGISTRY_ADDRESS in CreateColony.jsx and Directory.jsx |
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v11*
-*Last updated: 16 April 2026*
+*SPICE Colony · User Stories & Requirements Spec · v12*
+*Last updated: 17 April 2026*

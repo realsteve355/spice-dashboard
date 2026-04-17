@@ -269,6 +269,59 @@ Key sources:
 
 ---
 
+## Colony App & Multi-Project Architecture
+
+This repo contains **three Vercel projects** deployed from the same `master` branch:
+
+| Domain | Root dir | Purpose |
+|--------|----------|---------|
+| `zpc.finance` | `/` (repo root) | Main research site — Home, Collision, Simulation, Methodology, Dashboard |
+| `app.zpc.finance` | `colony-app/` | Colony app — React SPA, full on-chain colony economy |
+| `spice.zpc.finance` | `spice-admin/` | Protocol admin — static HTML, no build step, ethers.js CDN |
+
+Each has an `ignoreCommand` in its `vercel.json` so unrelated changes don't trigger
+unnecessary rebuilds. **CRITICAL:** paths in `ignoreCommand` are relative to each project's
+own root directory, not the repo root.
+
+### Colony App (`colony-app/`) — Key Facts
+
+- **Tech stack:** React 19, Vite 6, React Router v7, ethers.js v6, inline styles only
+- **Chain:** Base Sepolia testnet (chain ID 84532)
+- **Design system:** same tokens as main site (`colony-app/src/theme.js`)
+- **No mock data** — all state reads from chain; pages show clean empty states when no data
+
+**Contract addresses (Base Sepolia):**
+- ColonyRegistry: `0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d` (global, all colonies register here)
+- Dave's Colony (Colony contract): `0xa4bCadeE7263AE5a26D921fD39453699B5D20A8b`
+- Full per-colony addresses: `colony-app/src/data/contracts.json`
+- ABIs + bytecodes for deploy: `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded)
+
+**Colony deploy flow** (`CreateColony.jsx`): 18-step guided wizard.
+Pre-flight: network (84532) + balance (≥0.005 ETH) + slug availability.
+Steps 1–17: deploy 10 contracts + wiring (each MetaMask confirmation).
+Step 17.5: save to localStorage (colony usable from here).
+Step 18 (non-fatal): `ColonyRegistry.register(colonyAddr, name, slug)`.
+
+**Directory colony sources** (priority order):
+1. ColonyRegistry on-chain (`getAll()` + `entries(addr)`)
+2. `contracts.json` (manually curated known colonies)
+3. `localStorage['spice_user_colonies']` (user-deployed, not yet in registry)
+Final dedup pass: by slug AND address AND name — catches same colony under different slugs.
+
+**Event queries:** use raw `provider.getLogs()` + `Interface.parseLog()` — never
+`contract.queryFilter()` (triggers LavaMoat intrinsics errors in MetaMask).
+
+**Activity logging:** fire-and-forget POST to `/api/log` → Supabase `activity_log` table.
+
+**Protocol admin** (`spice-admin/`): single static HTML page at `spice.zpc.finance`.
+Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
+Config: `spice-admin/config.js` (ColonyRegistry address).
+
+**Full technical reference:** `docs/technical-architecture.md` (v4)
+**Full requirements spec:** `docs/user-stories.md` (v12)
+
+---
+
 ## Standing Instructions for Claude Code
 
 - **Always show proposed changes before applying them**

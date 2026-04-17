@@ -28,45 +28,51 @@ Browser (React SPA — app.zpc.finance)
 ## 2. Repository Structure
 
 ```
-spice-dashboard/                  # Root — main SPICE research site (zpc.finance / spice.zpc.finance)
+spice-dashboard/                  # Root — main SPICE research site (zpc.finance)
 │   src/                          # React pages: Home, Collision, Simulation, etc.
 │   public/                       # Static assets, spice-methodology.html
 │   api/                          # Vercel serverless functions for main site
 │   │   ├── fred.js               # FRED API proxy
 │   │   ├── economy-overview.js   # AI economic summary
 │   │   └── log.js                # Activity log proxy (CORS issues — see colony-app/api/log.js)
-│   vercel.json                   # Main site routing + CORS headers
+│   vercel.json                   # Main site routing + CORS headers + ignoreCommand
 │
-└── colony-app/                   # Colony app (app.zpc.finance)
-    ├── src/
-    │   ├── App.jsx               # Router, WalletCtx, on-chain data loader
-    │   ├── pages/
-    │   │   ├── Directory.jsx     # Colony list (on-chain + localStorage)
-    │   │   ├── ColonyPage.jsx    # Public colony page + join flow + company directory
-    │   │   ├── Dashboard.jsx     # Citizen dashboard — balances, tx history, actions
-    │   │   ├── Admin.jsx         # MCC admin — services, citizens, billing
-    │   │   ├── Company.jsx       # Company page — overview, equity, accounts (double-entry)
-    │   │   ├── RegisterCompany.jsx  # Deploy new company via CompanyFactory
-    │   │   ├── Votes.jsx         # Governance proposals and voting (on-chain)
-    │   │   ├── Profile.jsx       # Citizen profile — on-chain identity, inheritance stub
-    │   │   ├── Guardian.jsx      # Guardian view for minor wallets (UI only, no chain contract yet)
-    │   │   ├── RequestPayment.jsx   # QR code payment request generator
-    │   │   ├── PaymentConfirm.jsx   # Payment confirmation + Colony.send()
-    │   │   └── CreateColony.jsx  # Deploy new colony via ColonyFactory
-    │   ├── components/
-    │   │   ├── Layout.jsx        # Shell: header, back button, nav
-    │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
-    │   ├── utils/
-    │   │   └── logger.js         # Fire-and-forget activity logger → /api/log
-    │   └── data/
-    │       └── contracts.json    # Deployed contract addresses (source of truth)
-    ├── api/
-    │   └── log.js                # Serverless function — writes to Supabase activity_log
-    ├── contracts/
-    │   ├── src/                  # Solidity source files (see §3)
-    │   ├── scripts/deploy.js     # Hardhat deploy script
-    │   └── hardhat.config.js
-    └── vercel.json               # Colony app routing (catch-all rewrite, excludes /api/*)
+├── colony-app/                   # Colony app (app.zpc.finance)
+│   ├── src/
+│   │   ├── App.jsx               # Router, WalletCtx, on-chain data loader
+│   │   ├── pages/
+│   │   │   ├── Directory.jsx     # Colony list (registry on-chain + contracts.json + localStorage)
+│   │   │   ├── ColonyPage.jsx    # Public colony page + join flow + company directory
+│   │   │   ├── Dashboard.jsx     # Citizen dashboard — balances, tx history, actions
+│   │   │   ├── Admin.jsx         # MCC admin — services, citizens, billing
+│   │   │   ├── Company.jsx       # Company page — overview, equity, accounts (double-entry)
+│   │   │   ├── RegisterCompany.jsx  # Deploy new company via CompanyFactory
+│   │   │   ├── Votes.jsx         # Governance proposals and voting (on-chain)
+│   │   │   ├── Profile.jsx       # Citizen profile — on-chain identity, inheritance stub
+│   │   │   ├── Guardian.jsx      # Guardian view for minor wallets (UI only, no chain contract yet)
+│   │   │   ├── RequestPayment.jsx   # QR code payment request generator
+│   │   │   ├── PaymentConfirm.jsx   # Payment confirmation + Colony.send()
+│   │   │   └── CreateColony.jsx  # Deploy new colony — 18-step guided flow (see §8)
+│   │   ├── components/
+│   │   │   ├── Layout.jsx        # Shell: header, back button, nav
+│   │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
+│   │   ├── utils/
+│   │   │   └── logger.js         # Fire-and-forget activity logger → /api/log
+│   │   └── data/
+│   │       ├── contracts.json        # Deployed contract addresses (source of truth for known colonies)
+│   │       └── deployArtifacts.js    # 215KB lazy-loaded ABIs + bytecodes for 10 contracts (used by CreateColony.jsx)
+│   ├── api/
+│   │   └── log.js                # Serverless function — writes to Supabase activity_log
+│   ├── contracts/
+│   │   ├── src/                  # Solidity source files (see §3)
+│   │   ├── scripts/deploy.js     # Hardhat deploy script
+│   │   └── hardhat.config.js
+│   └── vercel.json               # Colony app routing (catch-all rewrite, excludes /api/*) + ignoreCommand
+│
+└── spice-admin/                  # Protocol admin panel (spice.zpc.finance)
+    ├── index.html                # Single-page admin UI — no build step, ethers.js CDN
+    ├── config.js                 # ColonyRegistry address + Supabase config
+    └── vercel.json               # Static routing + ignoreCommand
 ```
 
 ---
@@ -75,7 +81,18 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 
 Deployed on **Base Sepolia** (chain ID 84532).
 
-### 3.1 Contract Addresses (Dave's Colony — primary test colony)
+### 3.1 Contract Addresses
+
+#### ColonyRegistry (protocol-level, shared across all colonies)
+
+| Contract | Address | Purpose |
+|----------|---------|---------|
+| ColonyRegistry | `0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d` | Global directory — all deployed colonies register here |
+
+> Admin panel: `spice.zpc.finance` (spice-admin/) — read-only stats without wallet; owner actions require MetaMask.
+> Owner functions: update fee rate, update treasury address, per-colony fee override, deregister/reregister colony.
+
+#### Dave's Colony — primary test colony
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
@@ -90,7 +107,8 @@ Deployed on **Base Sepolia** (chain ID 84532).
 | MCCBilling | `0x9647A0Fa0277523693DCEe3B5612A09A51836Eb1` | Per-citizen monthly bill tracking |
 | MCCServices | `0xbBE846695219F59a5123870a86AA4A92519E60ff` | MCC service registry (name, billing basis, price) |
 
-> Full addresses also in `colony-app/src/data/contracts.json` (auto-generated by deploy.js)
+> Full colony addresses also in `colony-app/src/data/contracts.json` (auto-generated by deploy.js).
+> ABIs + bytecodes for all 10 contracts live in `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded only during colony creation).
 
 ### 3.2 Colony.sol — Core Fisc
 
@@ -419,21 +437,70 @@ No backend required for payments. Transaction details travel in the URL.
 
 ## 8. Deployment
 
-### Colony App (app.zpc.finance)
-- Vercel project connected to GitHub — **auto-deploys on push to master**
+### Three Vercel Projects
+
+All three projects auto-deploy from the same `master` branch on GitHub. Each has an
+`ignoreCommand` in its `vercel.json` so pushes to unrelated parts of the monorepo do not
+trigger unnecessary rebuilds.
+
+**CRITICAL:** `ignoreCommand` paths are relative to each project's own root directory
+(as configured in Vercel's "Root Directory" setting), not to the repo root. A path like
+`colony-app/src/` would mean `colony-app/colony-app/src/` if run from `colony-app/` — always
+use paths relative to the project root.
+
+| Domain | Vercel root dir | ignoreCommand triggers on changes to |
+|--------|----------------|--------------------------------------|
+| `zpc.finance` | `/` (repo root) | `src/ api/ public/ index.html vite.config.js` |
+| `app.zpc.finance` | `colony-app/` | `src/ public/ package.json vite.config.js` |
+| `spice.zpc.finance` | `spice-admin/` | `.` (any change to spice-admin/) |
+
+### zpc.finance (main research site)
+- Build: `npm run build` in repo root
+- `vercel.json`: catch-all rewrite excluding `/spice-methodology.html` and `/api/*`; CORS headers on all `/api/*` routes
+- Dynamic registry fetch in `src/pages/Home.jsx` — reads ColonyRegistry on mount, falls back to `src/data/colonies.js`
+
+### app.zpc.finance (colony app)
 - Build: `npm run build` in `colony-app/`
 - `vercel.json`: catch-all rewrite to `/`, excludes `/api/*`
+- Colony list sources (priority order): ColonyRegistry on-chain → `contracts.json` → `localStorage['spice_user_colonies']`
+- Final dedup pass in `Directory.jsx`: deduplicate by slug AND address AND name (catches same colony registered under different slugs)
 
-### Main Site (spice.zpc.finance)
-- Auto-deploys from master branch
-- `vercel.json`: catch-all rewrite excluding `/spice-methodology.html` and `/api/*`
+### spice.zpc.finance (protocol admin)
+- **No build step** — `spice-admin/index.html` is served as static HTML with ethers.js loaded from CDN
+- `spice-admin/config.js` contains ColonyRegistry address (`0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d`)
+- Stats (colony count, fee rate, total pending fees, treasury address) load read-only on page open
+- Owner actions (update fee, update treasury, per-colony overrides) require MetaMask connect
+
+### Colony Deploy Flow (CreateColony.jsx) — 18 steps
+
+The colony deploy wizard in `app.zpc.finance/create` guides the founder through a single
+MetaMask-confirmed flow. All ABIs and bytecodes are loaded lazily from `deployArtifacts.js`.
+
+**Pre-flight checks (before first MetaMask prompt):**
+1. Network check — must be Base Sepolia (chain ID 84532)
+2. Balance check — deployer wallet must hold ≥ 0.005 ETH
+3. Slug availability check — `ColonyRegistry.slugToColony(slug)` must return `address(0)`
+
+**Deploy steps (steps 1–17 — each requires MetaMask confirmation):**
+GToken deploy → SToken deploy → VToken deploy → Colony deploy → GToken ownership transfer →
+SToken ownership transfer → VToken ownership transfer → OToken deploy → Colony mint O-token →
+OToken ownership transfer → Colony setOToken → CompanyImpl deploy → UpgradeableBeacon deploy →
+CompanyFactory deploy → Colony setCompanyFactory → MCCBilling deploy → MCCServices deploy
+
+**Step 17.5:** Save colony to `localStorage['spice_user_colonies']` — done before step 18 so
+the colony is usable even if registry registration fails.
+
+**Step 18 (non-fatal):** `ColonyRegistry.register(colonyAddr, name, slug)` — if this fails,
+the colony is still fully functional; it just won't appear in the global directory until
+manually registered via `spice.zpc.finance`.
 
 ### Smart Contracts
 - Hardhat v2, Solidity 0.8.25, evmVersion: cancun
 - `npx hardhat run scripts/deploy.js --network baseSepolia`
 - Writes all addresses to `colony-app/src/data/contracts.json` (merged, preserves other colonies)
-- Also auto-generates `src/data/colonies.js` for the main site directory
+- Also auto-generates `src/data/colonies.js` for the main site fallback list
 - Base Sepolia public RPC can have stuck mempool — hardcode deployed addresses and resume
+- ColonyRegistry deploy: `npx hardhat run scripts/deployRegistry.js --network baseSepolia`
 
 ### Test Data
 - `npx hardhat run scripts/seedTestColony.js --network baseSepolia`
@@ -454,7 +521,6 @@ No backend required for payments. Transaction details travel in the URL.
 | Inheritance designation UI stub | Profile page shows placeholder; not on-chain | Add to Colony.sol or separate contract |
 | V dividend distribution is manual | Secretary must call distributeVDividend() | Automate via epoch advance trigger |
 | Governance contract not in deploy script | Votes.sol compiled; not wired to deploy.js | Add to deploy sequence, set govAddress in contracts.json |
-| No ColonyRegistry | Directory uses static JSON + localStorage | Deploy ColonyRegistry, dynamic lookup |
 | No mainnet | Testnet only | Audit → Base mainnet |
 | Supabase activity log has no auth | Anyone with the anon key can insert | Add row-level security or switch to service key |
 | Beacon ownership | UpgradeableBeacon owned by deployer EOA | Transfer to governance contract when ready |
@@ -466,11 +532,12 @@ No backend required for payments. Transaction details travel in the URL.
 - **WalletConnect v2** — broader wallet support, removes MetaMask dependency
 - **React Native** — NFC tap-to-pay, push notifications
 - **The Graph** — event indexer, removes getLogs pagination workaround
-- **ColonyRegistry** — on-chain colony discovery
 - **Guardian.sol** — on-chain minor wallet management with automatic 18th-birthday transfer
 - **Governance beacon upgrade** — transfer UpgradeableBeacon ownership to Governance.sol
+- **ColonyRegistry v2** — add per-colony fee override + deregister/reregister (contract written; needs redeployment)
 
 ---
 
-*SPICE Colony · Technical Architecture · v3*
-*Last updated: 16 April 2026*
+*SPICE Colony · Technical Architecture · v4*
+*Last updated: 17 April 2026*
+*v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
