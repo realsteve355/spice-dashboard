@@ -241,8 +241,16 @@ function buildColonyList(registryColonies) {
       source:      'local',
     }))
 
-  console.log('[Directory] registry:', fromRegistry.length, 'contracts:', fromContracts.length, 'localStorage:', fromStorage.length, 'stored keys:', Object.keys(stored))
-  return [...fromRegistry, ...fromContracts, ...fromStorage]
+  // Final dedup pass — remove any remaining duplicates by slug (registry wins, then contracts, then local)
+  const finalSeen = new Set()
+  const all = [...fromRegistry, ...fromContracts, ...fromStorage].filter(c => {
+    if (finalSeen.has(c.id)) return false
+    finalSeen.add(c.id)
+    return true
+  })
+
+  console.log('[Directory] registry:', fromRegistry.length, 'contracts:', fromContracts.length, 'localStorage:', fromStorage.length, '→ total:', all.length, all.map(c => c.id))
+  return all
 }
 
 function fmtDate(dateStr) {
