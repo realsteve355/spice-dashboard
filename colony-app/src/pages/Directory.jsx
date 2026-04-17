@@ -224,16 +224,16 @@ function buildColonyList(registryColonies) {
       source:      'contracts',
     }))
 
-  // localStorage — user-deployed colonies not already shown by slug
-  // Deduplicate by slug only (not address) so new deploys always appear even if
-  // the registry returned a different address for the same slug.
+  // localStorage — user-deployed colonies not already shown by slug.
+  // Only include entries with a real on-chain address — skip stale/fake entries
+  // that may have been saved by earlier test deploys with no real contract.
   const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
   const fromStorage = Object.entries(stored)
-    .filter(([id]) => !seenIds.has(id))
+    .filter(([id, info]) => !seenIds.has(id) && info.address && info.address !== '0x')
     .map(([id, info]) => add({
       id,
       name:        info.name || id,
-      address:     info.address || null,
+      address:     info.address,
       description: '',
       founded:     null,
       citizenCount: null,
@@ -241,11 +241,17 @@ function buildColonyList(registryColonies) {
       source:      'local',
     }))
 
-  // Final dedup pass — remove any remaining duplicates by slug (registry wins, then contracts, then local)
-  const finalSeen = new Set()
+  // Final dedup pass — remove any remaining duplicates by slug OR address.
+  // Catches cases like "daves-colony" (registry) vs "dave-s-colony" (contracts/local)
+  // pointing to the same on-chain contract. Registry entry wins (listed first).
+  const finalSlugs  = new Set()
+  const finalAddrs  = new Set()
   const all = [...fromRegistry, ...fromContracts, ...fromStorage].filter(c => {
-    if (finalSeen.has(c.id)) return false
-    finalSeen.add(c.id)
+    if (finalSlugs.has(c.id)) return false
+    const addr = c.address?.toLowerCase()
+    if (addr && finalAddrs.has(addr)) return false
+    finalSlugs.add(c.id)
+    if (addr) finalAddrs.add(addr)
     return true
   })
 
