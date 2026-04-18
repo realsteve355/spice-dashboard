@@ -315,8 +315,8 @@ export default function Company() {
         tx = await co.issueOpenShares(issueHolder, bps)
       } else {
         const months = Math.max(1, Number(issueVestMonths) || 12)
-        const perTranche = Math.floor(10000 / months)
-        const last = 10000 - perTranche * (months - 1)
+        const perTranche = Math.floor(bps / months)
+        const last = bps - perTranche * (months - 1)
         const vestingEpochs = Array.from({ length: months }, (_, i) => i + 1)
         const trancheBps    = Array.from({ length: months }, (_, i) => i === months - 1 ? last : perTranche)
         tx = await co.issueVestingShares(issueHolder, bps, vestingEpochs, trancheBps)
