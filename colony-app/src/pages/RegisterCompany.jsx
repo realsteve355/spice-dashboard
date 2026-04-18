@@ -9,6 +9,10 @@ const FACTORY_ABI = [
   "function deployCompany(string, address[], uint256[], uint8) external returns (uint256)",
 ]
 
+const COLONY_ABI = [
+  "function isCitizen(address) view returns (bool)",
+]
+
 import { C } from '../theme'
 
 export default function RegisterCompany() {
@@ -16,16 +20,34 @@ export default function RegisterCompany() {
   const navigate  = useNavigate()
   const { address, signer, contracts } = useWallet()
 
-  const [name, setName]         = useState('')
-  const [holders, setHolders]   = useState([{ wallet: address || '', pct: 100 }])
-  const [deploying, setDeploy]  = useState(false)
-  const [done, setDone]         = useState(false)
-  const [txError, setTxError]   = useState(null)
+  const [name, setName]           = useState('')
+  const [holders, setHolders]     = useState([{ wallet: address || '', pct: 100 }])
+  const [holderErrors, setHolderErrors] = useState({})
+  const [deploying, setDeploy]    = useState(false)
+  const [done, setDone]           = useState(false)
+  const [txError, setTxError]     = useState(null)
   const [companyId, setCompanyId] = useState(null)
 
   const totalPct  = holders.reduce((s, h) => s + Number(h.pct || 0), 0)
   const pctValid  = totalPct === 100
-  const canSubmit = name.trim() && pctValid
+  const hasErrors = Object.values(holderErrors).some(Boolean)
+  const canSubmit = name.trim() && pctValid && !hasErrors
+
+  async function checkCitizen(i, wallet) {
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg?.colony || !ethers.isAddress(wallet)) {
+      setHolderErrors(e => ({ ...e, [i]: wallet ? 'Invalid address' : null }))
+      return
+    }
+    try {
+      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
+      const ok     = await colony.isCitizen(wallet)
+      setHolderErrors(e => ({ ...e, [i]: ok ? null : 'Not a citizen of this colony' }))
+    } catch {
+      setHolderErrors(e => ({ ...e, [i]: null }))  // ignore RPC errors silently
+    }
+  }
 
   function addHolder() {
     const remaining = 100 - totalPct
@@ -126,12 +148,14 @@ export default function RegisterCompany() {
           </div>
 
           {holders.map((h, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+            <div key={i} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
-                style={{ ...inputStyle, flex: 1 }}
+                style={{ ...inputStyle, flex: 1, borderColor: holderErrors[i] ? C.red : C.border }}
                 placeholder={i === 0 ? address || '0x...' : '0x wallet address'}
                 value={i === 0 ? address || '' : h.wallet}
-                onChange={e => i > 0 && updateHolder(i, 'wallet', e.target.value)}
+                onChange={e => { if (i > 0) { updateHolder(i, 'wallet', e.target.value); setHolderErrors(er => ({ ...er, [i]: null })) } }}
+                onBlur={e => i > 0 && checkCitizen(i, e.target.value)}
                 readOnly={i === 0}
               />
               <div style={{ position: 'relative', width: 72, flexShrink: 0 }}>
@@ -148,11 +172,15 @@ export default function RegisterCompany() {
               </div>
               {i > 0 && (
                 <button
-                  onClick={() => removeHolder(i)}
+                  onClick={() => { removeHolder(i); setHolderErrors(e => { const n = { ...e }; delete n[i]; return n }) }}
                   style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '0 10px', cursor: 'pointer', color: C.faint, height: 40, flexShrink: 0 }}
                 >
                   ×
                 </button>
+              )}
+              </div>
+              {holderErrors[i] && (
+                <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{holderErrors[i]}</div>
               )}
             </div>
           ))}
