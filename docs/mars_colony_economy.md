@@ -133,6 +133,8 @@ The MCC holds one O-token, initially issued to the colony founder and transferab
 
 ### 1.8 A-Tokens — Economic Claims
 
+> **Implementation status (April 2026):** AToken.sol is deployed on Base Sepolia as a full ERC-721 contract ("SPICE A-Token", symbol: ATOKE). All three forms described below are live on-chain. A-tokens are visible as NFTs in MetaMask and verifiable on Basescan. Public transfers are blocked — all transfers must go through the Fisc (Colony contract), which enforces the rules below.
+
 An A-token is a Fisc-registered economic claim. Every significant ownership right and every financial obligation in the colony is recorded as an A-token. A claim can be positive (you own something or are owed something) or negative (you owe something). The Fisc is the sole issuer of A-tokens — citizens and companies cannot create them unilaterally.
 
 **An A-token has four properties:**
