@@ -11,6 +11,7 @@ import { C } from '../theme'
 const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d"
 const REGISTRY_ABI = [
   "function getAll() view returns (address[])",
+  "function getActive() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
   "function count() view returns (uint256)",
 ]
