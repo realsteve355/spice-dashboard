@@ -20,8 +20,10 @@ const path = require("path");
  *   9.  UpgradeableBeacon   — beacon owned by deployer; points at CompanyImpl
  *   10. CompanyFactory      — deploys BeaconProxy per org; wired to Colony + OToken + beacon
  *   11. Factory wiring      — colony.setCompanyFactory()
- *   12. MCCBilling          — monthly bill tracking
- *   13. MCCServices         — MCC service registry
+ *   12. AToken              — Fisc economic claims registry (equity, assets, obligations)
+ *   13. AToken wiring       — colony.setAToken()
+ *   14. MCCBilling          — monthly bill tracking
+ *   15. MCCServices         — MCC service registry
  *
  * Upgrade path (future):
  *   Deploy new CompanyImplementation, then call:
@@ -148,7 +150,15 @@ async function main() {
   await setFTx.wait();
   console.log("colony.setCompanyFactory ✓");
 
-  // ── 12-13. MCC contracts ─────────────────────────────────────────────────
+  // ── 12-13. AToken — Fisc economic claims registry ────────────────────────
+  console.log("\n── AToken ──────────────────────────────────────────────────────");
+  const { addr: aTokenAddr } = await deploy("AToken", colonyAddr);
+
+  const setATx = await colonyC.setAToken(aTokenAddr, await gasOpts());
+  await setATx.wait();
+  console.log("colony.setAToken ✓");
+
+  // ── 14-15. MCC contracts ─────────────────────────────────────────────────
   console.log("\n── MCC contracts ───────────────────────────────────────────────");
   const { addr: billingAddr  } = await deploy("MCCBilling",  colonyAddr);
   const { addr: servicesAddr } = await deploy("MCCServices", colonyAddr);
@@ -170,6 +180,7 @@ async function main() {
     sToken:         sTokenAddr,
     vToken:         vTokenAddr,
     oToken:         oTokenAddr,
+    aToken:         aTokenAddr,
     companyImpl:    implAddr,
     companyBeacon:  beaconAddr,
     companyFactory: factoryAddr,

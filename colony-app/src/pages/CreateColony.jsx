@@ -212,7 +212,17 @@ export default function CreateColony() {
         await tx.wait(1)
       })
 
-      // ── 11–12. MCC contracts ─────────────────────────────────────────────────
+      // ── 12–13. AToken — Fisc economic claims registry ────────────────────────
+      const { addr: aTokenAddr } = await run(
+        'Deploy AToken (economic claims registry)', () =>
+        deployContract('AToken', ARTIFACTS.AToken.abi, ARTIFACTS.AToken.bytecode, freshSigner, colonyAddr)
+      )
+      await run('Wire AToken into Colony', async () => {
+        const tx = await colonyC.connect(freshSigner).setAToken(aTokenAddr)
+        await tx.wait(1)
+      })
+
+      // ── 14–15. MCC contracts ─────────────────────────────────────────────────
       const { addr: billingAddr } = await run(
         'Deploy MCCBilling', () =>
         deployContract('MCCBilling', ARTIFACTS.MCCBilling.abi, ARTIFACTS.MCCBilling.bytecode, freshSigner, colonyAddr)
@@ -227,6 +237,7 @@ export default function CreateColony() {
       stored[slug] = {
         name,
         address:     colonyAddr,
+        aToken:      aTokenAddr,
         mccBilling:  billingAddr,
         mccServices: servicesAddr,
       }
@@ -252,7 +263,7 @@ export default function CreateColony() {
         })
       }
 
-      setDeployedAddrs({ colony: colonyAddr, billing: billingAddr, services: servicesAddr })
+      setDeployedAddrs({ colony: colonyAddr, aToken: aTokenAddr, billing: billingAddr, services: servicesAddr })
       setDeploying(false)
       setStep(4)
 
@@ -440,7 +451,7 @@ export default function CreateColony() {
                 </div>
 
                 <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
-                  Deploying requires <strong>18 MetaMask confirmations</strong> — 10 contract deploys + 8 setup transactions. Keep MetaMask open throughout. The final step registers your colony in the global directory so anyone can find it.
+                  Deploying requires <strong>20 MetaMask confirmations</strong> — 11 contract deploys + 9 setup transactions. Keep MetaMask open throughout. The final step registers your colony in the global directory so anyone can find it.
                 </div>
 
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
@@ -524,6 +535,7 @@ export default function CreateColony() {
             {deployedAddrs && (
               <div style={{ fontSize: 10, color: C.faint, marginBottom: 24, lineHeight: 1.9, fontFamily: 'monospace' }}>
                 Colony: {deployedAddrs.colony.slice(0, 10)}…{deployedAddrs.colony.slice(-6)}<br />
+                AToken: {deployedAddrs.aToken.slice(0, 10)}…{deployedAddrs.aToken.slice(-6)}<br />
                 MCCBilling: {deployedAddrs.billing.slice(0, 10)}…{deployedAddrs.billing.slice(-6)}<br />
                 MCCServices: {deployedAddrs.services.slice(0, 10)}…{deployedAddrs.services.slice(-6)}
               </div>
