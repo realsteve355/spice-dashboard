@@ -23,10 +23,10 @@ const hre = require("hardhat");
 // ── Addresses — update these after each fresh deploy ─────────────────────────
 // Run `npx hardhat run scripts/deploy.js --network baseSepolia` first,
 // then copy the printed addresses here.
-const COLONY_ADDRESS    = "0xCc50C7C853EfB0826Da823641010333EB3FF5338";
-const BILLING_ADDRESS   = "0xb272Ec915eE3460103532B98Ed2cbBbB9dcaCA9D";
-const SERVICES_ADDRESS  = "0xb42B83abF7150000E399FF9337EB3A23Dd527792";
-const COMPANY_FACTORY   = "0x41bdE8af438d9FEb710FE1e4425F14bd567BD0F3";
+const COLONY_ADDRESS    = "0x278FeBBf67Db542d458674d1cB707a4E654b8900";
+const BILLING_ADDRESS   = "0x8921CC4d017111b7899d018b689881B4d2942710";
+const SERVICES_ADDRESS  = "0xa7580aD4Ad074b42c7d45f8229d3ed0d128712ea";
+const COMPANY_FACTORY   = "0xF9De021813D012FBDAd272aB3958b86f5ce23904";
 
 const CITIZENS = {
   Steve: "0x92378C9b6e556C695F91eB6675E142d7114C43BC",
@@ -61,8 +61,7 @@ const BILLING_ABI = [
 ];
 
 const COMPANY_ABI = [
-  "function deployCompany(string, address[], uint256[]) external returns (uint256)",
-  "function getCompaniesOf(address) view returns (uint256[])",
+  "function deployCompany(string, address[], uint256[], uint8) external returns (uint256)",
   "function companyCount() view returns (uint256)",
 ];
 
@@ -190,7 +189,7 @@ async function main() {
     } else {
       for (const co of COMPANIES) {
         try {
-          const tx = await compReg.deployCompany(co.name, co.founders, co.stakes);
+          const tx = await compReg.deployCompany(co.name, co.founders, co.stakes, 0); // orgType 0 = Company
           await tx.wait();
           console.log(`   ✓ Deployed: ${co.name}`);
         } catch (e) {
@@ -212,7 +211,9 @@ async function main() {
   console.log("  • Re-run this script after they join to send them tokens + set bills");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
