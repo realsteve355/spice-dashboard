@@ -27,6 +27,7 @@ const COLONY_ABI = [
   "event UbiClaimed(address indexed citizen, uint256 amount, uint256 epoch)",
   "event Saved(address indexed citizen, uint256 amount)",
   "event Redeemed(address indexed citizen, uint256 amount)",
+  "event VDividendPaid(address indexed from, address indexed to, uint256 amount)",
 ]
 
 const MCC_BILLING_ABI = [
@@ -126,10 +127,11 @@ export default function Dashboard() {
       try {
         const toBlock = await rpc.getBlockNumber()
         const CHUNK   = 9000
-        const T_SENT    = ethers.id('Sent(address,address,uint256,string)')
-        const T_UBI     = ethers.id('UbiClaimed(address,uint256,uint256)')
-        const T_SAVED   = ethers.id('Saved(address,uint256)')
+        const T_SENT     = ethers.id('Sent(address,address,uint256,string)')
+        const T_UBI      = ethers.id('UbiClaimed(address,uint256,uint256)')
+        const T_SAVED    = ethers.id('Saved(address,uint256)')
         const T_REDEEMED = ethers.id('Redeemed(address,uint256)')
+        const T_VDIV     = ethers.id('VDividendPaid(address,address,uint256)')
         const pad = (addr) => ethers.zeroPadValue(addr, 32)
 
         const safeLogs = async (filter) => {
@@ -143,24 +145,26 @@ export default function Dashboard() {
             const chunkFrom = Math.max(0, chunkTo - CHUNK)
             const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
             return Promise.all([
-              safeLogs({ ...base, topics: [T_SENT,    pad(address), null] }),
-              safeLogs({ ...base, topics: [T_SENT,    null, pad(address)] }),
-              safeLogs({ ...base, topics: [T_UBI,     pad(address)]       }),
-              safeLogs({ ...base, topics: [T_SAVED,   pad(address)]       }),
-              safeLogs({ ...base, topics: [T_REDEEMED, pad(address)]      }),
+              safeLogs({ ...base, topics: [T_SENT,     pad(address), null]  }),
+              safeLogs({ ...base, topics: [T_SENT,     null, pad(address)]  }),
+              safeLogs({ ...base, topics: [T_UBI,      pad(address)]        }),
+              safeLogs({ ...base, topics: [T_SAVED,    pad(address)]        }),
+              safeLogs({ ...base, topics: [T_REDEEMED, pad(address)]        }),
+              safeLogs({ ...base, topics: [T_VDIV,     null, pad(address)]  }),
             ])
           })
         )
 
         const decode = (log) => { try { return iface.parseLog(log) } catch { return null } }
         const flat = (idx) => chunkResults.flatMap(c => c[idx]).map(l => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
-        const sentFrom = flat(0)
-        const sentTo   = flat(1)
-        const ubis     = flat(2)
-        const saves    = flat(3)
-        const redeems  = flat(4)
+        const sentFrom  = flat(0)
+        const sentTo    = flat(1)
+        const ubis      = flat(2)
+        const saves     = flat(3)
+        const redeems   = flat(4)
+        const dividends = flat(5)
 
-        const allEvents = [...sentFrom, ...sentTo, ...ubis, ...saves, ...redeems]
+        const allEvents = [...sentFrom, ...sentTo, ...ubis, ...saves, ...redeems, ...dividends]
         const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
         const blockMap = {}
         await Promise.all(uniqueBlocks.map(async n => {
@@ -190,6 +194,11 @@ export default function Dashboard() {
         for (const e of redeems) {
           const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[1])))
           rows.push({ type: 'redeem', label: 'Redeemed from V-tokens', amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+        }
+        for (const e of dividends) {
+          const amt  = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
+          const from = e.parsed.args[0]
+          rows.push({ type: 'dividend', label: `V dividend from ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         rows.sort((a, b) => b.blockNumber - a.blockNumber)
         setTxHistory(rows)
@@ -790,8 +799,9 @@ export default function Dashboard() {
 }
 
 function txUnit(type) {
-  if (type === 'save')   return 'S→V'
-  if (type === 'redeem') return 'V→S'
+  if (type === 'save')     return 'S→V'
+  if (type === 'redeem')   return 'V→S'
+  if (type === 'dividend') return 'V'
   return 'S'
 }
 
