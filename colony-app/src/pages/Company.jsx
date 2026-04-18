@@ -5,7 +5,7 @@ import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { useWallet } from '../App'
 
-// Colony contract — for send() (personal wallet → company) and event queries
+// Colony contract — for send() (personal wallet → company)
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
 ]
@@ -15,23 +15,31 @@ const COLONY_EVENTS_ABI = [
   "event VDividendPaid(address indexed from, address indexed to, uint256 amount)",
 ]
 
-// CompanyImplementation — the company's own smart-contract wallet
+// CompanyImplementation v2 — no internal equity state, all equity via AToken
 const COMPANY_ABI = [
   "function name() view returns (string)",
   "function secretary() view returns (address)",
-  "function ceo() view returns (address)",
-  "function fd() view returns (address)",
   "function sBalance() view returns (uint256)",
   "function vBalance() view returns (uint256)",
-  "function getEquityTable() view returns (address[], uint256[])",
+  "function getEquityTable() view returns (address[], uint256[], uint256[])",
   "function pay(address, uint256, string) external",
   "function convertToV(uint256) external",
-  "function distributeVDividend() external",
+  "function declareDividend(uint256) external",
+  "function issueVestingShares(address, uint256, uint256[], uint256[]) external",
+  "function issueOpenShares(address, uint256) external",
+  "function forfeitShares(uint256) external",
+  "function buybackShares(uint256, uint256, uint256) external",
+  "function shareNAV(uint256) view returns (uint256)",
+]
+
+// AToken — for reading equity token IDs (assetId lookups for forfeit/buyback)
+const ATOKEN_ABI = [
+  "function tokensOf(address) view returns (uint256[])",
+  "function getVestingStake(uint256) view returns (uint256, uint256, address)",
 ]
 
 import { C } from '../theme'
 
-// True when companyId is a contract address (on-chain company)
 function isAddress(id) {
   return typeof id === 'string' && id.startsWith('0x') && id.length === 42
 }
@@ -43,9 +51,9 @@ export default function Company() {
 
   const onChain = isAddress(companyId)
 
-  // ── On-chain company state ─────────────────────────────────────────────────
-  const [chainCo,      setChainCo]      = useState(null)   // loaded on-chain data
+  const [chainCo,      setChainCo]      = useState(null)
   const [chainLoading, setChainLoading] = useState(onChain)
+  const [reloadKey,    setReloadKey]    = useState(0)
 
   useEffect(() => {
     if (!onChain) return
@@ -53,9 +61,10 @@ export default function Company() {
     const co  = new ethers.Contract(companyId, COMPANY_ABI, rpc)
     let cancelled = false
     setChainLoading(true)
+
     async function load() {
       try {
-        const [name, secretary, sRaw, vRaw, [holders, stakes]] = await Promise.all([
+        const [name, secretary, sRaw, vRaw, equityResult] = await Promise.all([
           co.name(),
           co.secretary(),
           co.sBalance(),
@@ -63,19 +72,44 @@ export default function Company() {
           co.getEquityTable(),
         ])
         if (cancelled) return
+
+        const [holders, totalStakes, vestedStakes] = equityResult
+        const totalOutstandingBps = holders.reduce((sum, _, i) => sum + Number(totalStakes[i]), 0)
+
+        // Load equity assetIds from AToken so Secretary can forfeit/buyback
+        const aTokenAddr = deployedContracts?.colonies?.[slug]?.aToken
+        let equityAssetIds = holders.map(() => null)
+        if (aTokenAddr && holders.length > 0) {
+          const aToken = new ethers.Contract(aTokenAddr, ATOKEN_ABI, rpc)
+          equityAssetIds = await Promise.all(holders.map(async (holderAddr) => {
+            try {
+              const tokenIds = await aToken.tokensOf(holderAddr)
+              for (const id of tokenIds) {
+                const [, , company] = await aToken.getVestingStake(id)
+                if (company.toLowerCase() === companyId.toLowerCase()) return id.toString()
+              }
+            } catch {}
+            return null
+          }))
+        }
+
+        if (cancelled) return
         setChainCo({
           name,
-          secretary:       secretary.toLowerCase(),
-          sBalance:        Math.floor(Number(ethers.formatEther(sRaw))),
-          vReserve:        Math.floor(Number(ethers.formatEther(vRaw))),
-          equity:          holders.map((addr, i) => ({
-            wallet: addr,
-            label:  addr.slice(0, 6) + '…' + addr.slice(-4),
-            pct:    Number(stakes[i]) / 100,
+          secretary:          secretary.toLowerCase(),
+          sBalance:           Math.floor(Number(ethers.formatEther(sRaw))),
+          vReserve:           Math.floor(Number(ethers.formatEther(vRaw))),
+          totalOutstandingBps,
+          equity:             holders.map((addr, i) => ({
+            wallet:    addr,
+            label:     addr.slice(0, 6) + '…' + addr.slice(-4),
+            totalBps:  Number(totalStakes[i]),
+            vestedBps: Number(vestedStakes[i]),
+            pct:       totalOutstandingBps > 0
+                         ? Number(totalStakes[i]) / totalOutstandingBps * 100
+                         : 0,
+            assetId:   equityAssetIds[i],
           })),
-          registeredDate:  '—',
-          monthRevenue:    null,  // not tracked per-month on-chain
-          monthExpenses:   null,
           dividendHistory: [],
           transactions:    [],
         })
@@ -86,16 +120,15 @@ export default function Company() {
     }
     load()
     return () => { cancelled = true }
-  }, [companyId, onChain])
+  }, [companyId, onChain, deployedContracts, slug, reloadKey])
 
-  // ── Active company object ──────────────────────────────────────────────────
   const company = onChain ? chainCo : null
 
   const [tab, setTab] = useState('overview')
 
-  // ── On-chain transaction history (from Colony events) ─────────────────────
-  const [onChainTxs,  setOnChainTxs]  = useState([])
-  const [txLoading,   setTxLoading]   = useState(false)
+  // ── On-chain transaction history ───────────────────────────────────────────
+  const [onChainTxs, setOnChainTxs] = useState([])
+  const [txLoading,  setTxLoading]  = useState(false)
 
   useEffect(() => {
     if (tab !== 'transactions') return
@@ -104,29 +137,20 @@ export default function Company() {
     const queryAddr = companyId
     if (!queryAddr) return
     setTxLoading(true)
-    // PublicNode has a higher getLogs range limit than the public Base Sepolia RPC
     const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
 
     async function load() {
       try {
-        // Use raw getLogs + Interface.parseLog instead of contract.queryFilter —
-        // queryFilter/contract.filters hits LavaMoat restrictions in some MetaMask builds.
         const iface = new ethers.Interface(COLONY_EVENTS_ABI)
         const toBlock = await rpc.getBlockNumber()
-
-        // Topic hashes
         const T_SENT  = ethers.id('Sent(address,address,uint256,string)')
         const T_SAVED = ethers.id('Saved(address,uint256)')
         const T_VDIV  = ethers.id('VDividendPaid(address,address,uint256)')
         const pad     = (addr) => ethers.zeroPadValue(addr, 32)
-
         const safeLogs = async (filter) => {
           try { return await rpc.getLogs(filter) }
           catch (e) { console.warn('[Accounts] getLogs failed:', e?.message); return [] }
         }
-
-        // Paginate backward in 9k-block chunks (public RPCs limit to 10k per request).
-        // 5 chunks × 9,000 × 2s ≈ 25 hours of coverage — enough for all recent testing.
         const CHUNK = 9000
         const chunkResults = await Promise.all(
           Array.from({ length: 5 }, (_, i) => {
@@ -141,14 +165,12 @@ export default function Company() {
             ])
           })
         )
-
         const decode = (log) => { try { return iface.parseLog(log) } catch { return null } }
         const flat   = (idx) => chunkResults.flatMap(c => c[idx]).map(l => ({ ...l, parsed: decode(l) })).filter(l => l.parsed)
         const received  = flat(0)
         const sent      = flat(1)
         const saves     = flat(2)
         const dividends = flat(3)
-
         const allEvents = [...received, ...sent, ...saves, ...dividends]
         const uniqueBlocks = [...new Set(allEvents.map(e => e.blockNumber))]
         const blockMap = {}
@@ -159,14 +181,13 @@ export default function Company() {
         const fmtDate = ts => ts
           ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
           : ''
-
         const rows = [
           ...received.map(e => ({
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'revenue',
-            description: e.parsed.args[3] || 'Payment received',   // note
-            counterparty: e.parsed.args[0],                         // from
+            description: e.parsed.args[3] || 'Payment received',
+            counterparty: e.parsed.args[0],
             dr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
             cr: null,
           })),
@@ -174,8 +195,8 @@ export default function Company() {
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'expense',
-            description: e.parsed.args[3] || 'Payment sent',        // note
-            counterparty: e.parsed.args[1],                         // to
+            description: e.parsed.args[3] || 'Payment sent',
+            counterparty: e.parsed.args[1],
             dr: null,
             cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
@@ -198,7 +219,6 @@ export default function Company() {
             cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
         ].sort((a, b) => b.blockNumber - a.blockNumber)
-
         setOnChainTxs(rows)
       } catch (e) {
         console.warn('Failed to load on-chain txs', e)
@@ -209,17 +229,21 @@ export default function Company() {
   }, [tab, deployedContracts, slug, address, companyId, onChain])
 
   // ── Action state ───────────────────────────────────────────────────────────
-  const [redeeming, setRedeem]        = useState(false)
-  const [redeemAmt, setRedeemAmt]     = useState('')
-  const [dividending, setDiv]         = useState(false)
-  const [converting, setConverting]   = useState(false)
-  const [convertAmt, setConvertAmt]   = useState('')
-  const [sending, setSending]         = useState(false)
-  const [actionPending, setActPending] = useState(false)
-  const [actionError,   setActError]   = useState(null)
-  const [actionDone,    setActDone]    = useState(null)  // message string
+  const [converting,      setConverting]     = useState(false)
+  const [convertAmt,      setConvertAmt]     = useState('')
+  const [dividending,     setDiv]            = useState(false)
+  const [dividendAmt,     setDividendAmt]    = useState('')
+  const [sending,         setSending]        = useState(false)
+  const [issuingShares,   setIssuingShares]  = useState(false)
+  const [issueType,       setIssueType]      = useState('open')
+  const [issueHolder,     setIssueHolder]    = useState('')
+  const [issueStakeBps,   setIssueStakeBps]  = useState('')
+  const [issueVestMonths, setIssueVestMonths] = useState('12')
+  const [actionPending,   setActPending]     = useState(false)
+  const [actionError,     setActError]       = useState(null)
+  const [actionDone,      setActDone]        = useState(null)
 
-  // Customer pay state (any citizen, not equity-gated)
+  // Pay state (any citizen)
   const [payAmt,  setPayAmt]  = useState('')
   const [payNote, setPayNote] = useState('')
 
@@ -238,30 +262,72 @@ export default function Company() {
       await tx.wait()
       setActDone(`Converted ${amt} S → V`)
       setConverting(false); setConvertAmt('')
-      refresh()
+      refresh(); setReloadKey(k => k + 1)
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
     setActPending(false)
   }
 
-  async function handleDistributeVDividend() {
+  async function handleDeclareDividend() {
     const co = companyContract()
-    if (!co) return
+    const amt = Number(dividendAmt)
+    if (!co || !amt) return
     setActPending(true); setActError(null); setActDone(null)
     try {
-      const tx = await co.distributeVDividend()
+      const tx = await co.declareDividend(ethers.parseEther(String(amt)))
       await tx.wait()
-      setActDone('V-tokens distributed to equity holders')
-      setDiv(false)
-      refresh()
+      setActDone(`Declared ${amt} V dividend to shareholders`)
+      setDiv(false); setDividendAmt('')
+      refresh(); setReloadKey(k => k + 1)
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
     setActPending(false)
   }
 
-  // Secretary sends S from company wallet
+  async function handleIssueShares() {
+    const co = companyContract()
+    if (!co || !issueHolder || !issueStakeBps) return
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const bps = Number(issueStakeBps)
+      let tx
+      if (issueType === 'open') {
+        tx = await co.issueOpenShares(issueHolder, bps)
+      } else {
+        const months = Math.max(1, Number(issueVestMonths) || 12)
+        const perTranche = Math.floor(10000 / months)
+        const last = 10000 - perTranche * (months - 1)
+        const vestingEpochs = Array.from({ length: months }, (_, i) => i + 1)
+        const trancheBps    = Array.from({ length: months }, (_, i) => i === months - 1 ? last : perTranche)
+        tx = await co.issueVestingShares(issueHolder, bps, vestingEpochs, trancheBps)
+      }
+      await tx.wait()
+      setActDone(`Issued ${(bps / 100).toFixed(2)}% to ${issueHolder.slice(0, 8)}…`)
+      setIssuingShares(false); setIssueHolder(''); setIssueStakeBps('')
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
+  async function handleForfeitShares(assetId) {
+    const co = companyContract()
+    if (!co || assetId == null) return
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const tx = await co.forfeitShares(BigInt(assetId))
+      await tx.wait()
+      setActDone('Unvested shares forfeited')
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
   async function handleCompanyPay(amt, recipient, note) {
     const co = companyContract()
     if (!co) { setSending(false); return }
@@ -275,7 +341,6 @@ export default function Company() {
     setSending(false)
   }
 
-  // Citizen sends S from personal wallet to company
   async function handlePersonalSend(amt, recipient, note) {
     const cfg = deployedContracts?.colonies?.[slug]
     if (!cfg || !signer) { setSending(false); return }
@@ -307,9 +372,9 @@ export default function Company() {
     </Layout>
   )
 
-  const myAddr     = address?.toLowerCase()
-  const myStake    = company.equity.find(e => e.wallet.toLowerCase() === myAddr)
-  const isSecretary = chainCo?.secretary === myAddr
+  const myAddr         = address?.toLowerCase()
+  const myStake        = company.equity.find(e => e.wallet.toLowerCase() === myAddr)
+  const isSecretary    = chainCo?.secretary === myAddr
   const isEquityHolder = !!myStake
 
   return (
@@ -323,7 +388,7 @@ export default function Company() {
             <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
               {myStake && (
                 <span style={{ fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '2px 8px' }}>
-                  {myStake.pct}% EQUITY
+                  {myStake.pct.toFixed(1)}% EQUITY
                 </span>
               )}
               {isSecretary && (
@@ -368,94 +433,154 @@ export default function Company() {
               </div>
             </div>
 
-
-            {/* Actions */}
-            {(isSecretary || isEquityHolder) && (
+            {/* Actions — Secretary */}
+            {isSecretary && (
               <div style={card}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>ACTIONS</div>
 
-                {/* Action feedback */}
                 {actionDone  && <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✓ {actionDone}</div>}
                 {actionError && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{actionError}</div>}
 
-                {/* Secretary: send S from company wallet */}
-                {isSecretary && (
-                  <>
-                    <button onClick={() => setSending(v => !v)} style={{ ...actionBtn(C.sub, '#fff'), width: '100%', marginBottom: 8, border: `1px solid ${C.border}` }}>
-                      Send S from company wallet →
-                    </button>
-                    {sending && (
-                      <div style={{ marginBottom: 8 }}>
-                        <SendSheet
-                          maxAmount={company.sBalance}
-                          label="Pay supplier / citizen"
-                          onClose={() => setSending(false)}
-                          onConfirm={onChain ? handleCompanyPay : handlePersonalSend}
-                        />
-                      </div>
-                    )}
-
-                    {/* Convert S → V */}
-                    <button onClick={() => setConverting(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
-                      Convert S → V (lock earnings)
-                    </button>
-                    {converting && (
-                      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                        <input
-                          style={{ ...inlineInput, flex: 1 }}
-                          placeholder={`max ${company.sBalance} S`}
-                          value={convertAmt}
-                          onChange={e => setConvertAmt(e.target.value)}
-                          type="number"
-                        />
-                        <button
-                          onClick={handleConvertToV}
-                          disabled={actionPending}
-                          style={{ ...actionBtn(C.gold), opacity: actionPending ? 0.5 : 1 }}
-                        >
-                          {actionPending ? '…' : 'Convert'}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Distribute V dividend */}
-                    <button
-                      onClick={() => setDiv(v => !v)}
-                      style={{ ...actionBtn(C.sub), width: '100%' }}
-                    >
-                      Distribute V dividend to shareholders
-                    </button>
-                    {dividending && (
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ fontSize: 11, color: C.faint, marginBottom: 8, lineHeight: 1.6 }}>
-                          Distributes all {company.vReserve} V pro-rata to equity holders.
-                        </div>
-                        {company.equity.map(e => (
-                          <div key={e.wallet} style={{ fontSize: 11, color: C.sub, marginBottom: 4 }}>
-                            {e.label}: {Math.round(company.vReserve * e.pct / 100)} V ({e.pct}%)
-                          </div>
-                        ))}
-                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                          <button onClick={() => setDiv(false)} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1 }}>
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleDistributeVDividend}
-                            disabled={actionPending || company.vReserve === 0}
-                            style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || company.vReserve === 0) ? 0.4 : 1 }}
-                          >
-                            {actionPending ? 'Sending…' : 'Distribute →'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
+                {/* Send S from company wallet */}
+                <button onClick={() => setSending(v => !v)} style={{ ...actionBtn(C.sub, '#fff'), width: '100%', marginBottom: 8, border: `1px solid ${C.border}` }}>
+                  Send S from company wallet →
+                </button>
+                {sending && (
+                  <div style={{ marginBottom: 8 }}>
+                    <SendSheet
+                      maxAmount={company.sBalance}
+                      label="Pay supplier / citizen"
+                      onClose={() => setSending(false)}
+                      onConfirm={onChain ? handleCompanyPay : handlePersonalSend}
+                    />
+                  </div>
                 )}
 
-                {/* Any equity holder: request payment */}
+                {/* Convert S → V */}
+                <button onClick={() => setConverting(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
+                  Convert S → V (lock earnings)
+                </button>
+                {converting && (
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <input
+                      style={{ ...inlineInput, flex: 1 }}
+                      placeholder={`max ${company.sBalance} S`}
+                      value={convertAmt}
+                      onChange={e => setConvertAmt(e.target.value)}
+                      type="number"
+                    />
+                    <button
+                      onClick={handleConvertToV}
+                      disabled={actionPending}
+                      style={{ ...actionBtn(C.gold), opacity: actionPending ? 0.5 : 1 }}
+                    >
+                      {actionPending ? '…' : 'Convert'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Declare V dividend */}
+                <button onClick={() => setDiv(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
+                  Declare V dividend to shareholders
+                </button>
+                {dividending && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: C.faint, marginBottom: 8, lineHeight: 1.6 }}>
+                      V reserve: {company.vReserve} V. Enter amount to distribute pro-rata to all equity holders.
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                      <input
+                        style={{ ...inlineInput, flex: 1 }}
+                        placeholder={`max ${company.vReserve} V`}
+                        value={dividendAmt}
+                        onChange={e => setDividendAmt(e.target.value)}
+                        type="number"
+                      />
+                    </div>
+                    {Number(dividendAmt) > 0 && company.equity.map(e => (
+                      <div key={e.wallet} style={{ fontSize: 11, color: C.sub, marginBottom: 3 }}>
+                        {e.label}: {(Number(dividendAmt) * e.pct / 100).toFixed(1)} V ({e.pct.toFixed(1)}%)
+                      </div>
+                    ))}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                      <button
+                        onClick={() => { setDiv(false); setDividendAmt('') }}
+                        style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1 }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeclareDividend}
+                        disabled={actionPending || !dividendAmt || Number(dividendAmt) <= 0}
+                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !dividendAmt || Number(dividendAmt) <= 0) ? 0.4 : 1 }}
+                      >
+                        {actionPending ? 'Sending…' : 'Declare →'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Issue shares */}
+                <button onClick={() => setIssuingShares(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
+                  Issue shares to participant / investor
+                </button>
+                {issuingShares && (
+                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                      {[['open','Open (investor)'],['vesting','Vesting (participant)']].map(([t, label]) => (
+                        <button key={t} onClick={() => setIssueType(t)} style={{
+                          flex: 1, padding: '7px 4px', fontSize: 10,
+                          background: issueType === t ? C.gold : C.white,
+                          color: issueType === t ? '#fff' : C.sub,
+                          border: `1px solid ${issueType === t ? C.gold : C.border}`,
+                          borderRadius: 6, cursor: 'pointer',
+                        }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
+                      {issueType === 'open'
+                        ? 'Immediately transferable. Suitable for investors paying S-tokens upfront.'
+                        : 'Earned in monthly tranches. Unvested shares forfeit if the participant stops contributing.'}
+                    </div>
+                    <CField label="Holder address" value={issueHolder} onChange={setIssueHolder} placeholder="0x…" />
+                    <CField label="Stake in basis points (10000 = 100%)" value={issueStakeBps} onChange={setIssueStakeBps} placeholder="e.g. 2000 = 20%" type="number" />
+                    {issueType === 'vesting' && (
+                      <CField label="Vesting period (months, equal tranches)" value={issueVestMonths} onChange={setIssueVestMonths} placeholder="12" type="number" />
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button onClick={() => setIssuingShares(false)} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1 }}>
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleIssueShares}
+                        disabled={actionPending || !issueHolder || !issueStakeBps}
+                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
+                      >
+                        {actionPending ? 'Issuing…' : 'Issue shares →'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Request payment */}
                 <button
                   onClick={() => navigate(`/colony/${slug}/request?from=${onChain ? companyId : address}&label=${encodeURIComponent(company.name)}`)}
-                  style={{ ...actionBtn(C.gold), width: '100%', marginTop: isSecretary ? 8 : 0 }}
+                  style={{ ...actionBtn(C.gold), width: '100%' }}
+                >
+                  Request Payment (show QR) →
+                </button>
+              </div>
+            )}
+
+            {/* Equity holder — request payment only */}
+            {!isSecretary && isEquityHolder && (
+              <div style={card}>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>ACTIONS</div>
+                <button
+                  onClick={() => navigate(`/colony/${slug}/request?from=${onChain ? companyId : address}&label=${encodeURIComponent(company.name)}`)}
+                  style={{ ...actionBtn(C.gold), width: '100%' }}
                 >
                   Request Payment (show QR) →
                 </button>
@@ -509,30 +634,76 @@ export default function Company() {
                 ))}
               </div>
 
+              {/* Action feedback */}
+              {actionDone  && <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✓ {actionDone}</div>}
+              {actionError && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{actionError}</div>}
+
               {company.equity.map((e, i) => (
                 <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  paddingBottom: i < company.equity.length - 1 ? 10 : 0,
-                  marginBottom: i < company.equity.length - 1 ? 10 : 0,
+                  paddingBottom: i < company.equity.length - 1 ? 12 : 0,
+                  marginBottom: i < company.equity.length - 1 ? 12 : 0,
                   borderBottom: i < company.equity.length - 1 ? `1px solid ${C.border}` : 'none',
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: equityColor(i), flexShrink: 0 }} />
-                    <div>
-                      <div style={{ fontSize: 12, color: C.text }}>{e.label}</div>
-                      <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{e.wallet}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: equityColor(i), flexShrink: 0, marginTop: 2 }} />
+                      <div>
+                        <div style={{ fontSize: 12, color: C.text }}>{e.label}</div>
+                        <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{e.wallet}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: equityColor(i) }}>{e.pct.toFixed(1)}%</div>
+                      <div style={{ fontSize: 10, color: C.faint }}>{e.totalBps} bps total</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: equityColor(i) }}>{e.pct}%</div>
+
+                  {/* Vesting progress */}
+                  {e.totalBps > 0 && (
+                    <div style={{ marginTop: 6, marginLeft: 18 }}>
+                      <div style={{ height: 3, borderRadius: 2, background: C.border, overflow: 'hidden', marginBottom: 3 }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${e.vestedBps / e.totalBps * 100}%`,
+                          background: equityColor(i), opacity: 0.75,
+                        }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 10, color: C.faint }}>
+                          {e.vestedBps === e.totalBps
+                            ? 'Fully vested'
+                            : `${e.vestedBps} / ${e.totalBps} bps vested (${Math.round(e.vestedBps / e.totalBps * 100)}%)`}
+                        </span>
+                        {isSecretary && e.assetId != null && e.vestedBps < e.totalBps && (
+                          <button
+                            onClick={() => handleForfeitShares(e.assetId)}
+                            disabled={actionPending}
+                            style={{
+                              fontSize: 9, padding: '2px 7px',
+                              background: 'none', border: `1px solid ${C.red}`,
+                              color: C.red, borderRadius: 4, cursor: 'pointer',
+                              opacity: actionPending ? 0.4 : 1,
+                            }}
+                          >
+                            Forfeit unvested
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
+
+              {company.equity.length === 0 && (
+                <div style={{ fontSize: 12, color: C.faint }}>No equity issued yet.</div>
+              )}
             </div>
 
             {/* Dividend history */}
             <div style={card}>
               <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>DIVIDEND HISTORY</div>
               {company.dividendHistory.length === 0 ? (
-                <div style={{ fontSize: 12, color: C.faint }}>No dividends distributed yet.</div>
+                <div style={{ fontSize: 12, color: C.faint }}>No dividends declared yet.</div>
               ) : (
                 company.dividendHistory.map((d, i) => {
                   const myShare = d.perHolder?.[address] || 0
@@ -554,7 +725,6 @@ export default function Company() {
                 })
               )}
             </div>
-
           </div>
         )}
 
@@ -570,12 +740,12 @@ export default function Company() {
               <div style={{ ...card, textAlign: 'center', color: C.faint, fontSize: 12, padding: 24 }}>Loading…</div>
             )}
 
-            {/* P&L summary — on-chain companies only */}
+            {/* P&L summary */}
             {!txLoading && onChain && onChainTxs.length > 0 && (() => {
               const revenue  = onChainTxs.filter(t => t.type === 'revenue') .reduce((s, t) => s + (t.dr || 0), 0)
               const expenses = onChainTxs.filter(t => t.type === 'expense') .reduce((s, t) => s + (t.cr || 0), 0)
               const locked   = onChainTxs.filter(t => t.type === 'convert') .reduce((s, t) => s + (t.cr || 0), 0)
-              const dividends= onChainTxs.filter(t => t.type === 'dividend').reduce((s, t) => s + (t.cr || 0), 0)
+              const divs     = onChainTxs.filter(t => t.type === 'dividend').reduce((s, t) => s + (t.cr || 0), 0)
               const net = revenue - expenses
               return (
                 <div style={card}>
@@ -586,7 +756,7 @@ export default function Company() {
                   <Divider />
                   <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.gold : C.red} bold />
                   {locked > 0 && <><Divider /><Row label="Locked to V"      value={`${locked} S → V`} color={C.green} /></>}
-                  {dividends > 0 && <><Divider /><Row label="V distributed" value={`${dividends} V`}  color='#8b5cf6' /></>}
+                  {divs > 0 && <><Divider /><Row label="V dividends declared" value={`${divs} V`} color='#8b5cf6' /></>}
                 </div>
               )
             })()}
@@ -595,15 +765,12 @@ export default function Company() {
             {!txLoading && onChainTxs.length > 0 && (
               <div style={card}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>JOURNAL</div>
-
-                {/* Column headers */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, marginBottom: 8, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
                   <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em' }}>DESCRIPTION</div>
                   <div style={{ fontSize: 9, color: C.green, letterSpacing: '0.1em', textAlign: 'right', minWidth: 56 }}>DR</div>
                   <div style={{ fontSize: 9, color: C.red,   letterSpacing: '0.1em', textAlign: 'right', minWidth: 56 }}>CR</div>
                 </div>
-
-                {onChainTxs.length > 0 && onChainTxs.map((tx, i) => {
+                {onChainTxs.map((tx, i) => {
                   const typeColor = { revenue: C.green, expense: C.red, convert: C.gold, dividend: '#8b5cf6' }[tx.type] || C.faint
                   const unit = tx.type === 'dividend' ? 'V' : 'S'
                   return (
@@ -629,7 +796,6 @@ export default function Company() {
                     </div>
                   )
                 })}
-
               </div>
             )}
 
@@ -644,29 +810,18 @@ export default function Company() {
   )
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
-
-const CONTRACT_META = {
-  forward:         { label: 'FORWARD',    color: '#3b82f6' },
-  escrow:          { label: 'ESCROW',     color: '#8b5cf6' },
-  'revenue-share': { label: 'REV SHARE',  color: '#B8860B' },
-}
-const STATUS_META = {
-  active:    { label: 'ACTIVE',    color: '#16a34a' },
-  settled:   { label: 'SETTLED',   color: '#aaa'    },
-  cancelled: { label: 'CANCELLED', color: '#ef4444' },
-}
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function ContractsTab({ contracts, isOwner, companyId }) {
-  const [creating, setCreating]    = useState(false)
-  const [cType,    setCType]       = useState('forward')
-  const [cContra,  setCContra]     = useState('')
-  const [cAmount,  setCAmount]     = useState('')
-  const [cPct,     setCPct]        = useState('')
-  const [cDate,    setCDate]       = useState('')
-  const [cDesc,    setCDesc]       = useState('')
-  const [localCs,  setLocal]       = useState(contracts)
-  const [expanded, setExpanded]    = useState(null)
+  const [creating, setCreating] = useState(false)
+  const [cType,    setCType]    = useState('forward')
+  const [cContra,  setCContra]  = useState('')
+  const [cAmount,  setCAmount]  = useState('')
+  const [cPct,     setCPct]     = useState('')
+  const [cDate,    setCDate]    = useState('')
+  const [cDesc,    setCDesc]    = useState('')
+  const [localCs,  setLocal]    = useState(contracts)
+  const [expanded, setExpanded] = useState(null)
 
   const active = localCs.filter(c => c.status === 'active')
   const closed  = localCs.filter(c => c.status !== 'active')
@@ -786,9 +941,20 @@ function CField({ label, value, onChange, placeholder, type }) {
   )
 }
 
+const CONTRACT_META = {
+  forward:         { label: 'FORWARD',    color: '#3b82f6' },
+  escrow:          { label: 'ESCROW',     color: '#8b5cf6' },
+  'revenue-share': { label: 'REV SHARE',  color: '#B8860B' },
+}
+const STATUS_META = {
+  active:    { label: 'ACTIVE',    color: '#16a34a' },
+  settled:   { label: 'SETTLED',   color: '#aaa'    },
+  cancelled: { label: 'CANCELLED', color: '#ef4444' },
+}
+
 function ContractCard({ contract: c, isOwner, expanded, onToggle, onSettle }) {
-  const tmeta = CONTRACT_META[c.type]   || CONTRACT_META.escrow
-  const smeta = STATUS_META[c.status]   || STATUS_META.active
+  const tmeta = CONTRACT_META[c.type]  || CONTRACT_META.escrow
+  const smeta = STATUS_META[c.status] || STATUS_META.active
   return (
     <div style={{ background: C.white, border: `1px solid ${expanded ? C.gold : C.border}`, borderRadius: 8, marginBottom: 8, overflow: 'hidden' }}>
       <div onClick={onToggle} style={{ padding: '12px 14px', cursor: 'pointer' }}>
@@ -849,74 +1015,7 @@ function Badge({ label, color }) {
   )
 }
 
-function ShareTrading({ company, myStake, slug }) {
-  const [listing,   setListing]   = useState(false)
-  const [listPct,   setListPct]   = useState('')
-  const [listPrice, setListPrice] = useState('')
-  const [listed,    setListed]    = useState(false)
-
-  return (
-    <div style={{ ...card, borderColor: listed ? C.green : C.border }}>
-      <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>SHARE TRADING</div>
-      {listed ? (
-        <div>
-          <div style={{ fontSize: 12, color: C.green, marginBottom: 6 }}>
-            ✓ {listPct}% listed for {listPrice} S
-          </div>
-          <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
-            Any citizen in this colony can purchase at the listed price.
-            Transfer is atomic — payment and ownership change simultaneously on-chain.
-          </div>
-          <button onClick={() => { setListed(false); setListPct(''); setListPrice('') }}
-            style={{ ...actionBtn(C.faint, '#fff'), marginTop: 10, border: `1px solid ${C.border}` }}>
-            Cancel listing
-          </button>
-        </div>
-      ) : (
-        <div>
-          <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5, marginBottom: 12 }}>
-            You hold <span style={{ color: C.gold }}>{myStake?.pct}%</span> equity.
-            Shares may be sold to any citizen at a freely agreed price in S-tokens.
-          </div>
-          {!listing ? (
-            <button onClick={() => setListing(true)} style={{ ...actionBtn(C.sub), border: `1px solid ${C.border}`, background: C.white, color: C.sub }}>
-              List shares for sale
-            </button>
-          ) : (
-            <div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: C.faint, marginBottom: 4 }}>PERCENT TO SELL</div>
-                  <div style={{ position: 'relative' }}>
-                    <input style={{ ...inlineInput, width: '100%', paddingRight: 20 }}
-                      placeholder={`max ${myStake?.pct}`} value={listPct}
-                      onChange={e => setListPct(e.target.value)} type="number" min="0.01" max={myStake?.pct} />
-                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>%</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: C.faint, marginBottom: 4 }}>PRICE (S-TOKENS)</div>
-                  <input style={{ ...inlineInput, width: '100%' }} placeholder="e.g. 500" value={listPrice}
-                    onChange={e => setListPrice(e.target.value)} type="number" />
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setListing(false)} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1 }}>Cancel</button>
-                <button onClick={() => { setListed(true); setListing(false) }}
-                  disabled={!listPct || !listPrice}
-                  style={{ ...actionBtn(C.gold), flex: 2, opacity: listPct && listPrice ? 1 : 0.4 }}>
-                  List on-chain →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function equityColor(i) {
   return ['#B8860B', '#16a34a', '#8b5cf6', '#3b82f6', '#ef4444'][i % 5]
