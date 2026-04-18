@@ -317,8 +317,8 @@ Final dedup pass: by slug AND address AND name — catches same colony under dif
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
 Config: `spice-admin/config.js` (ColonyRegistry address).
 
-**Full technical reference:** `docs/technical-architecture.md` (v4)
-**Full requirements spec:** `docs/user-stories.md` (v12)
+**Full technical reference:** `docs/technical-architecture.md` (v5)
+**Full requirements spec:** `docs/user-stories.md` (v13)
 
 ---
 

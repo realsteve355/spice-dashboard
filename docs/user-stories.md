@@ -29,7 +29,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-08 | As a citizen, I want to update my inheritance designation at any time | P2 | ~ |
 | C-09 | As a citizen of multiple colonies, I want to switch between colony dashboards | P1 | ✓ |
 | C-30 | As a citizen, I want to see my name, G-token ID, and wallet address prominently on the dashboard so I know which account I am using | P1 | ✓ |
-| C-31 | As a citizen, I want to see all A-tokens and L-tokens registered to my wallet in one place | P2 | — |
+| C-31 | As a citizen, I want to see all A-tokens registered to my wallet in one portfolio view — assets, equity positions, and bilateral obligations | P2 | — |
 
 *C-06–C-08: Profile page shows on-chain identity (name, G-token, balances). Inheritance designation form replaced with a stub — on-chain implementation pending.*
 
@@ -102,30 +102,44 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-07 | As a company owner, I want to see all inbound and outbound S-token transactions | P1 | ✓ |
 | F-07a | As a company owner, I want on-chain payment history from Colony contract events | P1 | ✓ |
 | F-07b | As a company owner (merchant), I want to generate a QR code that opens MetaMask on the customer's phone so they can pay immediately | P1 | ✓ |
-| F-08 | As a company owner, I want the Fisc to automatically convert net S-tokens to V-tokens at month end | P1 | ~ |
+| F-08 | As a company owner, I want the Fisc to automatically convert all net S-tokens to V-tokens at epoch advance so no earnings are destroyed by the monthly reset | P1 | ~ |
 | F-09 | As a company owner, I want to redeem V-tokens → S-tokens to fund operations | P1 | ✓ |
 | F-10 | As a company owner, I want to pay another company or citizen in S-tokens | P1 | ✓ |
-| F-11 | As a company owner, I want to distribute V-token dividends to all equity holders | P1 | ~ |
+| F-11 | As the company FD, I want to declare a specific V-token dividend amount each month so that the Fisc distributes that amount pro-rata to all shareholders (vested and unvested) while the remainder stays in the company's V reserve | P1 | ~ |
+| F-11a | As a shareholder, I want to see the declared dividend amount and my expected share before the Fisc distributes | P2 | — |
 | F-12 | As a company owner, I want to see projected month-end V-token conversion | P2 | ~ |
 
 ### Equity Management
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-13 | As a company owner, I want to see the full equity register | P1 | ✓ |
-| F-14 | As a company owner, I want to issue new shares to a wallet address | P2 | — |
-| F-15 | As a company owner, I want to transfer shares atomically | P2 | ~ |
-| F-16 | As a company owner, I want to see the history of all share transfers | P2 | — |
+| F-13 | As a company owner, I want to see the full equity register — all current holders with their vested and unvested stakes in basis points | P1 | ~ |
+| F-14 | As a company secretary, I want to issue vesting shares to a participant — specifying total stake and number of monthly tranches (1–12) — so they earn equity progressively | P2 | — |
+| F-14a | As a company secretary, I want to issue open shares (no vesting) to an investor so they hold equity immediately | P2 | — |
+| F-15 | As a shareholder, I want to transfer vested shares to another wallet atomically; unvested shares may not be transferred | P2 | ~ |
+| F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in S-tokens, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | — |
+| F-16 | As a company owner, I want to see the full history of share issuances, vesting events, transfers, buybacks, and forfeitures | P2 | — |
 
-### Intra-Month Contracts
+### Vesting Lifecycle
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-17 | As a company owner, I want to create a forward purchase contract with escrowed S-tokens | P2 | ~ |
-| F-18 | As a company owner, I want to create an escrowed payment released on delivery confirmation | P2 | ~ |
-| F-19 | As a company owner, I want a revenue-sharing agreement routing a % of inbound S-tokens to a partner | P2 | ~ |
-| F-20 | As a company owner, I want to see all active intra-month contracts | P2 | ~ |
-| F-21 | As a company owner, I want to confirm delivery to release escrowed tokens | P2 | ~ |
+| F-23 | As a participant, I want to claim my vested share tranches each month as they unlock so I can see and use my earned equity | P2 | — |
+| F-24 | As a participant, I want to receive V-token dividends on both my vested and unvested shares from the first month I hold them | P2 | — |
+| F-25 | As a company secretary, I want to forfeit a departing participant's unvested shares — returning them to the company for reallocation — in a single transaction | P2 | — |
+| F-26 | As a participant, I want to see my vesting schedule: which tranches have vested, which are upcoming, and what V-token dividends I have received | P2 | — |
+
+### Intra-Month Contracts — Superseded
+
+> **F-17–F-21 are superseded.** Forward purchase contracts, escrowed payments, and revenue-sharing agreements were removed from the economic model in v16. Company cashflow timing is handled by V-token reserves (redeem V→S when expenditure precedes revenue). Commitments are handled by fixed-obligation A-tokens (§3.5 AToken.sol). These user stories are retained as historical record only.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| F-17 | ~~As a company owner, I want to create a forward purchase contract with escrowed S-tokens~~ | ~~P2~~ | Superseded |
+| F-18 | ~~As a company owner, I want to create an escrowed payment released on delivery confirmation~~ | ~~P2~~ | Superseded |
+| F-19 | ~~As a company owner, I want a revenue-sharing agreement routing a % of inbound S-tokens to a partner~~ | ~~P2~~ | Superseded |
+| F-20 | ~~As a company owner, I want to see all active intra-month contracts~~ | ~~P2~~ | Superseded |
+| F-21 | ~~As a company owner, I want to confirm delivery to release escrowed tokens~~ | ~~P2~~ | Superseded |
 
 ### Assets & Land
 
@@ -144,11 +158,13 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-27 | As a citizen registering a company, I want the registration flow to deploy a company smart contract so the company has its own on-chain wallet address — not just a ledger entry | P1 | ✓ |
 | F-28 | As a company owner, I want to share the company wallet address so customers can pay us directly via colony.send() without knowing anything about our internal equity structure | P1 | ✓ |
 
-*F-08: Auto-conversion is a smart contract concern; manual convertToV() call available now.*
-*F-11: distributeVDividend() is implemented on CompanyImplementation; UI button wired.*
-*F-15: proposeShareTransfer() on CompanyImplementation; full two-party flow not yet built.*
-*F-17–F-21: Contracts tab shows empty list; no on-chain intra-month contract yet.*
-*F-22–F-26: AssetRegistry.sol is written and ready to deploy; no UI built yet.*
+*F-08: Auto-conversion is a smart contract concern — requires Colony.sol v2 epoch advance trigger. Manual convertToV() call available in deployed v1 contracts.*
+*F-11: Current deployed v1 `distributeVDividend()` distributes the **entire** V balance. v17 model requires FD to declare a specific amount via `declareDividend(uint256 vAmount)` — requires CompanyImplementation v2 (beacon upgrade).*
+*F-13: Current v1 equity register reads internal `equityHolders[]` / `equityStakes[]` arrays on CompanyImplementation. v2 will read from AToken.sol equity pairs — shows vested vs unvested split per holder.*
+*F-14/F-14a/F-23–F-26: Require AToken.sol (§3.5) and CompanyImplementation v2. Not yet deployed.*
+*F-15: Current v1 proposeShareTransfer() on CompanyImplementation; full two-party approval flow. v2 replaces with AToken.transferEquity() — enforces vested-only transfer at contract level.*
+*F-17–F-21: Superseded — intra-month contracts removed in v16 design decision. V-token reserve handles cashflow; A-token bilateral framework handles commitment. No contract to build.*
+*F-22 (asset registration): AssetRegistry.sol written (pre-unification). Will be superseded by AToken.sol unilateral asset form; no separate UI built yet.*
 *F-27–F-28: Completed April 2026. CompanyFactory deploys BeaconProxy instances of CompanyImplementation via UpgradeableBeacon. Company wallet address used as route param.*
 
 ---
@@ -261,6 +277,17 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-22 | As MCC chair, I want to transfer the MCC O-token to my elected successor immediately after the annual election so they have full operational authority from day one of their term | P1 | — |
 | M-23 | As any citizen, I want to see who currently holds the MCC O-token so I know who is authorised to act as MCC chair on-chain | P1 | — |
 
+### MCC Office-Term Equity
+
+MCC equity is an office-term instrument. Board members receive shares on election and have them
+redeemed at NAV when their term ends. The O-token is a pure identity token — it carries no equity.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| M-24 | As an incoming MCC board member, I want to receive a fresh allotment of MCC equity shares at the start of my term — sized to my board role — so I am commercially aligned with MCC performance from day one | P2 | — |
+| M-25 | As a departing MCC board member (whether by election, resignation, or recall), I want the Fisc to automatically redeem all my MCC shares at current NAV and pay the proceeds to my wallet in V-tokens so no MCC equity accumulates in the hands of former directors | P2 | — |
+| M-26 | As any citizen, I want to see the current MCC equity register — who holds what stake and when it was issued — so I can verify that the board's commercial interest is properly constituted | P2 | — |
+
 *M-01–M-03: Fully on-chain via MCCServices contract.*
 *M-04: Revenue MTD tracked on-chain via MCCBilling.totalRevenueMTD(); increments when Chair/FD confirms payment.*
 *M-06: Bills set and read on-chain via MCCBilling.setBill() / getBills().*
@@ -367,49 +394,53 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 
 ## Role 7 — Asset Owner
 
-Any citizen or company wallet that has registered a physical asset (A-token) or
-claimed surface land (L-token) via the AssetRegistry contract. Both assets are
-ERC-721 tokens; A-tokens transfer freely between owners, L-tokens change hands
-only via force-purchase at the declared Harberger price.
+Any citizen or company wallet that has registered a physical asset or land parcel as an A-token
+via the Fisc. All owned assets — including surface land — are unilateral A-tokens registered
+in AToken.sol. The separate L-token type was retired in v15; land parcels are unilateral A-tokens
+whose founding constitution specifies Harberger rules (applies on Mars, not on Earth colonies with
+pre-existing private land).
 
-### Physical Assets (A-tokens)
+Registration threshold: declared value > 500 S-token equivalent, weight > 50 kg, or autonomous
+AI capability. Below threshold, possession implies ownership with no on-chain record needed.
 
-Registration is required when: declared S-equivalent value > 500 S, weight > 50 kg,
-or the asset has autonomous AI capability. Below those thresholds, possession
-implies ownership with no on-chain record needed.
-
-| # | Story | Priority | Status |
-|---|-------|----------|--------|
-| A-01 | As a citizen, I want to register a physical asset (robot, vehicle, AI hardware) on-chain so that ownership is verifiable by any party | P2 | — |
-| A-02 | As an asset owner, I want to transfer an A-token to another citizen or company wallet so that ownership changes are recorded on-chain | P2 | — |
-| A-03 | As any citizen, I want to browse the public asset registry and see all registered assets, their owners, declared values, and weight | P2 | — |
-| A-04 | As an asset owner, I want to see all A-tokens registered to my wallet with their details on a single page | P2 | — |
-
-*A-01: threshold check: valueSTokens > 500 × 10^18 OR weightKg > 50 OR hasAutonomousAI. Below threshold, no registration required.*
-*A-02: uses AssetRegistry.transferAsset(tokenId, to) — standard ERC-721 transferFrom is blocked.*
-*A-01–A-04: AssetRegistry.sol written; not yet deployed; no UI built.*
-
-### Harberger Land (L-tokens)
-
-Surface land operates under Harberger taxation. The owner always has a publicly
-declared price; anyone may force-purchase at that price at any time. The stewardship
-fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasury.
+### Physical Assets
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| A-05 | As a citizen, I want to claim an unclaimed surface parcel by declaring a V-token value and paying the first epoch's stewardship fee | P2 | — |
-| A-06 | As a land owner, I want to update my declared value at any time, which also updates the force-purchase price and future fee amount | P2 | — |
-| A-07 | As a land owner, I want to see my outstanding stewardship fees and pay them in V-tokens before accruing more epochs of arrears | P2 | — |
+| A-01 | As a citizen, I want to register a physical asset (robot, vehicle, AI hardware) on-chain as a unilateral A-token so that ownership is verifiable by any party | P2 | — |
+| A-02 | As an asset owner, I want to transfer an A-token to another citizen or company wallet, with the agreed transfer price recorded on-chain as the new declared value | P2 | — |
+| A-03 | As any citizen, I want to browse the public A-token registry and see all registered assets, their owners, declared values, and weight | P2 | — |
+| A-04 | As an asset owner, I want to see all A-tokens registered to my wallet — assets, equity positions, and obligations — in a single portfolio view | P2 | — |
+
+*A-01–A-04: Require AToken.sol (§3.5). Not yet deployed. AssetRegistry.sol is a prior single-purpose contract that will be superseded by AToken.sol's unilateral asset form.*
+
+### Harberger Land (A-tokens — Harberger variant)
+
+Surface land in founding-constitution Harberger colonies (Mars) is a unilateral A-token with additional
+Harberger rules enforced by the Fisc: declared value, force-purchase right, and monthly stewardship fee.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| A-05 | As a citizen, I want to claim an unclaimed surface parcel by declaring a V-token value and paying the first epoch's stewardship fee (0.5% of declared value) — registering a Harberger A-token | P2 | — |
+| A-06 | As a land owner, I want to update my declared land value at any time, which also updates the force-purchase price and future stewardship fee | P2 | — |
+| A-07 | As a land owner, I want to see my outstanding stewardship fees and pay them in V-tokens before accruing arrears | P2 | — |
 | A-08 | As any citizen, I want to browse all land parcels with their declared values so I can identify land available for force-purchase | P2 | — |
-| A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the current owner cannot refuse | P2 | — |
+| A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the Fisc executes the transfer atomically; the current owner cannot refuse | P2 | — |
 | A-10 | As a land owner, I want to see a warning on my dashboard when I have unpaid stewardship epochs outstanding | P2 | — |
-| A-11 | As a land owner, I want to see the ownership and valuation history of my parcel (LandPurchased, LandValueUpdated events) | P3 | — |
+| A-11 | As a land owner, I want to see the ownership and valuation history of my parcel | P3 | — |
 
-*A-05: claimLand(name, description, declaredValueV, currentEpoch) — pulls first-epoch fee via ERC-20 transferFrom.*
-*A-06: updateLandValue — owner only; does not charge a fee at time of change.*
-*A-07: paystewardship(tokenId, currentEpoch) — fee = 0.5% × declaredValueV × epochsDue.*
-*A-09: purchaseLand(tokenId) — buyer pays declaredValueV in V-tokens; NFT transfers immediately.*
-*A-05–A-11: AssetRegistry.sol written; not yet deployed; no UI built.*
+*A-05–A-11: Require AToken.sol with Harberger variant support. Not yet deployed.*
+*Stewardship fee: 0.5% × declaredValueV × epochsDue, paid in V-tokens to colony treasury.*
+
+### Secured Obligations (A-token fixed-obligation form)
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| A-12 | As a citizen or company, I want to create a secured fixed-obligation by pledging an A-token as collateral held in Fisc escrow, so I can borrow beyond the unsecured UBI cap | P2 | — |
+| A-13 | As a creditor, I want to see collateral A-tokens escrowed against obligations I hold, with a clear view of what I receive if the obligor defaults | P2 | — |
+| A-14 | As any citizen, I want to see the Fisc escrow registry — which collateral tokens are pledged against which obligations — so the system is fully transparent | P2 | — |
+
+*A-12–A-14: Require AToken.sol escrow sub-registry. Not yet deployed.*
 
 ---
 
@@ -417,15 +448,18 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 70 | 45% |
-| ~ Partial / UI mock | 27 | 17% |
-| — Not built | 59 | 38% |
-| **Total** | **156** | |
+| ✓ Done (on-chain) | 70 | 41% |
+| ~ Partial / UI mock | 27 | 16% |
+| — Not built | 59 | 35% |
+| Superseded | 5 | 3% |
+| New (v13, not yet built) | 10 | 6% |
+| **Total** | **171** | |
 
 *v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*
 *v10 updates (15 April 2026): F-27, F-28, OS-01–OS-03 marked ✓ — CompanyFactory + OToken.sol deployed and wired. Company accounts (double-entry), activity log, and getLogs pagination fix also shipped.*
 *v11 updates (16 April 2026): All mock data removed from frontend. Pages read from chain or show clean empty states. Footnotes updated to reflect actual state. CompanyFactory corrected to BeaconProxy (not EIP-1167). Guardian and contracts features note they have UI but no on-chain contract.*
 *v12 updates (17 April 2026): N-07, N-10, N-11 marked ✓ — ColonyRegistry deployed at 0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d. Directory.jsx reads registry live; falls back to contracts.json + localStorage. EIP-1167 → BeaconProxy corrected in on-chain table. Colony auto-registration and directory-from-registry rows updated to ✓ Live. N-07/P-01 removed from Remaining P1 gaps. Footnotes for N-04/N-07/N-10/N-11 updated with registry address and 18-step deploy details.*
+*v13 updates (18 April 2026): Economic model updated to reflect v16/v17 mars_colony_economy.md. F-08 footnote clarified (requires Colony.sol v2). F-11 reworked — FD declares specific V amount rather than distributing entire V balance; F-11a added. F-13 updated — equity register shows vested vs unvested split. F-14/F-14a added — vesting shares and open shares. F-15 updated — vested-only transfer; F-15a added (buyback). F-16 updated (full event history). F-17–F-21 marked Superseded — intra-month contracts removed from economic model; replaced by V-token reserve + A-token bilateral framework. Vesting Lifecycle stories added (F-23–F-26). MCC Office-Term Equity stories added (M-24–M-26). C-31 updated — L-tokens retired, all assets are A-tokens. A-12–A-14 added (secured obligation stories). Role 7 rewritten — L-tokens retired, land is a Harberger-variant A-token; AssetRegistry.sol superseded by AToken.sol. On-chain table updated (AToken, vesting, FD dividend, intra-month superseded). F-22 (old asset registration) footnote updated to note AssetRegistry.sol superseded by AToken.sol.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 
@@ -456,14 +490,17 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | O-token issuance (org NFT) | OToken.sol | ✓ Live |
 | Company accounts (double-entry journal) | Colony event queries | ✓ Live |
 | Activity log (ops/audit) | Supabase via /api/log | ✓ Live |
-| Asset registration (A-tokens) | AssetRegistry.registerAsset() | Not deployed |
-| Harberger land claims (L-tokens) | AssetRegistry.claimLand() | Not deployed |
+| Asset registration (physical A-tokens) | AToken.registerAsset() | Not deployed — AToken.sol planned (§3.5) |
+| Harberger land claims (land A-tokens) | AToken — Harberger variant | Not deployed — AToken.sol planned (§3.5); L-token type retired |
+| Secured obligation (fixed-obligation A-tokens) | AToken.issueObligationPair() | Not deployed |
+| Vesting equity (paired equity A-tokens) | AToken.issueEquityPair() | Not deployed |
+| FD dividend declaration | CompanyImplementation.declareDividend() | Not deployed — v1 distributes all V; v2 requires beacon upgrade |
 | Protocol infrastructure fee accrual | Colony.pendingProtocolFee + send() | ✓ Live (contracts compiled; new colonies only) |
 | Protocol fee settlement | Colony.settleProtocol() payable | ✓ Live (contracts compiled; new colonies only) |
 | Colony auto-registration | ColonyRegistry.register() | ✓ Live (step 18 of CreateColony deploy flow) |
 | Colony directory from registry | ColonyRegistry.getAll() | ✓ Live (0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d) |
 | MCC revenue by service | — | Not built — MCCBilling tracks total only; per-service breakdown needs service-level billing |
-| Intra-month contracts | — | Not built — Contracts tab shows empty list |
+| Intra-month contracts | — | **Superseded** — replaced by V-token reserve + A-token bilateral framework (v16 design decision) |
 | Guardian management | — | UI built, starts empty; no on-chain guardian contract |
 | Share trading (buy side) | — | Not built |
 
@@ -475,8 +512,25 @@ fee (0.5% of declared value per epoch) is paid in V-tokens to the colony treasur
 | M-05 | MCC revenue by service | MCCBilling tracks total only; per-service breakdown needs service-level billing |
 | M-07 | Auto-deduct MCC bills at month end | Manual confirm flow currently; needs epoch-triggered auto-collection |
 | M-20 | Replace MCC Chair via referendum | MCCTreasury roles currently founder-controlled; governance vote not yet wired |
+| F-08 | Auto S→V company conversion at epoch | Manual convertToV() workaround; requires Colony.sol v2 |
+| F-11 | FD dividend declaration | v1 distributes entire V balance; v2 `declareDividend(uint256)` requires CompanyImplementation beacon upgrade |
+
+### v2 contract blockers (AToken.sol system)
+
+The following stories are blocked until AToken.sol is deployed and CompanyImplementation v2 is released via beacon upgrade:
+
+| Blocked stories | Description |
+|----------------|-------------|
+| F-13 (partial) | Equity register vested/unvested split |
+| F-14, F-14a | Vesting and open share issuance |
+| F-15a | Share buyback |
+| F-16 | Full share history (vesting events) |
+| F-23–F-26 | Vesting lifecycle (claim, dividend on unvested, forfeit, schedule view) |
+| M-24–M-26 | MCC office-term equity |
+| A-01–A-14 | All A-token asset, land, and obligation stories |
+| C-31 | A-token portfolio view |
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v12*
-*Last updated: 17 April 2026*
+*SPICE Colony · User Stories & Requirements Spec · v13*
+*Last updated: 18 April 2026*

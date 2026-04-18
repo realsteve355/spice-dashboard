@@ -148,6 +148,15 @@ transferVDividend(address to, uint256)  // company wallets only
     emits VDividendPaid(from indexed, to indexed, amount)
 
 advanceEpoch()                        // founder only, monthly
+    // Current (v1): advances SToken + VToken epoch counters only
+    // Target (v2, requires AToken.sol):
+    //   1. For each liability A-token (obligation) due this epoch:
+    //        AToken.settleObligationEpoch(liabilityTokenId)
+    //        → deducts from obligor, transfers to creditor, or seizes collateral on default
+    //   2. Issue UBI to all citizens (existing behaviour)
+    //   3. Destroy all unspent S-tokens (existing behaviour via SToken.advanceEpoch)
+    //   4. Unlock vesting tranches for all equity A-tokens whose vestingEpoch == currentEpoch
+    //      (pull-based — holders call AToken.claimVestedTranche(); epoch advance just emits signal)
     emits EpochAdvanced
 
 pendingProtocolFee() → uint256        // accrued ETH owed to protocol
@@ -186,6 +195,8 @@ companyCount() → uint256
 
 Smart-contract wallet for each company (deployed as BeaconProxy). Holds S and V tokens.
 
+**Current interface (v1 — deployed):**
+
 ```
 initialize(colony, name, secretary, holders[], stakes[])  // called once by factory
 name()           → string
@@ -197,16 +208,200 @@ getEquityTable() → (address[] holders, uint256[] stakes)   // stakes in bps
 
 pay(address to, uint256 amount, string note)    // secretary only → Colony.send()
 convertToV(uint256 amount)                      // secretary only → Colony.saveToVCompany()
-distributeVDividend()                           // secretary only → Colony.transferVDividend() per holder
+distributeVDividend()                           // secretary only — distributes entire V balance pro-rata
 
-proposeShareTransfer(address to, uint256 newStake)   // secretary only — initiates transfer
+proposeShareTransfer(address to, uint256 newStake)   // secretary/CEO/FD — two-party approval flow
+approveShareTransfer(uint256 proposalId)
+cancelShareTransfer(uint256 proposalId)
 ```
+
+**Target interface (v2 — required for v17 economic model):**
+
+> These changes require a new `CompanyImplementation` beacon upgrade. All existing company
+> proxies can be migrated simultaneously via `beacon.upgradeTo(newImpl)`.
+
+```
+// Equity issuance (replaces initialize stakes[])
+issueVestingShares(
+    address participant,
+    uint256 totalStakeBps,
+    uint256 numTranches,          // 1–12; month-numTranches tranche is 1.5× standard
+    uint256 bonusMultiplierBps    // final tranche bonus factor in bps (e.g. 15000 = 1.5×)
+)  // secretary only → AToken.issueEquityPair() with vesting schedule
+
+issueOpenShares(
+    address investor,
+    uint256 stakeBps              // no vesting — immediate full ownership
+)  // secretary only → AToken.issueEquityPair() without vesting
+
+// Vesting lifecycle (called by participant)
+claimVestedTranche(uint256 aTokenId)   // unlocks next tranche if epoch ≥ trancheEpoch
+                                        // → unvested → vested; transferable from that point
+
+// Forfeiture (called by secretary on participant departure)
+forfeitUnvestedShares(address participant)  // burns all unvested tranches; returns bps to company pool
+
+// Dividend declaration (replaces distributeVDividend)
+declareDividend(uint256 vAmount)       // FD or secretary — declares specific V amount
+                                        // distributes vAmount pro-rata to ALL holders (vested + unvested)
+                                        // remainder stays in V reserve
+
+// Share transfers (for vested shares only — AToken enforces)
+transferShares(uint256 aTokenId, address to, uint256 bps)  // holder only; reverts if unvested
+buybackShares(uint256 aTokenId, uint256 bps)               // secretary only; pays NAV in S; cancels A-token
+
+// NAV helper
+shareNAV(uint256 stakeBps) → uint256   // company V reserve × stakeBps / 10000
+
+// Existing operations (unchanged)
+pay(address to, uint256 amount, string note)   // secretary only
+convertToV(uint256 amount)                     // secretary only
+changeSecretary(address newSecretary)          // secretary only
+appointOfficer(string role, address addr)      // secretary only
+removeOfficer(string role)                     // secretary only
+```
+
+> **Equity storage in v2:** The internal `equityHolders[]` + `equityStakes[]` arrays are replaced
+> by reads from AToken.sol. The company contract stores a `companyATokenId` (liability A-token ID).
+> `getEquityTable()` reads from `IAToken.getEquityTokensOf(companyWallet)`.
+
+> **MCC office-term equity:** MCC companies include an additional call path:
+> `redeemDirectorShares(address exDirector)` — callable by Colony on board election/recall.
+> Pays current NAV in V-tokens to the departing director; cancels their A-tokens. Incoming
+> directors call `issueOpenShares()` or `issueVestingShares()` via the Colony governance flow.
 
 > **O-token note:** The O-token is minted to the company contract address, not the secretary's
 > wallet. It is a soulbound identity badge for the organisation. The secretary role is a plain
 > address field inside the company contract, changeable by the current secretary.
 
-### 3.5 OToken.sol — Org Token
+### 3.5 AToken.sol — Economic Claims Registry
+
+**Planned contract — not yet deployed.** The AToken contract is the Fisc's registry of all
+economic claims. Every significant ownership right and financial obligation in the colony is
+recorded here. Colony.sol is the sole caller for state-changing functions — citizens and
+companies cannot interact with AToken directly.
+
+Three forms of A-token, each with different rules enforced at the contract level:
+
+```
+// ── Form 1: Unilateral asset ─────────────────────────────────────────────────
+// A physical object owned outright — robot, vehicle, land parcel.
+// No counterparty. Yield is zero. Value = last transfer price.
+
+registerAsset(
+    address   holder,
+    uint256   valueSTokens,         // declared value at registration
+    uint256   weightKg,             // 0 if not applicable
+    bool      hasAutonomousAI,      // triggers mandatory registration below threshold
+    uint256   depreciationBps       // monthly depreciation rate; 0 = none
+) → uint256 tokenId
+
+transferAsset(
+    uint256 tokenId,
+    address to,
+    uint256 newValueSTokens         // price agreed; becomes new declared value
+)
+
+updateDepreciation(
+    uint256 tokenId,
+    uint256 newDepreciationBps      // company assets only; secretary via Colony
+)
+
+currentValue(uint256 tokenId) → uint256   // declared value minus applied depreciation
+
+// ── Form 2: Paired equity ────────────────────────────────────────────────────
+// Company share. Fisc creates two tokens simultaneously.
+// Asset token = held by shareholder (stakeBps, companyWallet, vesting state)
+// Liability token = held by company contract (aggregate distribution obligation)
+
+issueEquityPair(
+    address   company,
+    address   shareholder,
+    uint256   totalStakeBps,
+    uint256[] vestingEpochs,        // epoch number when each tranche vests; empty = immediate
+    uint256[] vestingAmountsBps     // bps unlocked per tranche; must sum to totalStakeBps
+) → (uint256 assetTokenId, uint256 liabilityTokenId)
+
+claimVestedTranche(
+    uint256 assetTokenId            // shareholder calls; unlocks tranches whose epoch has passed
+) → uint256 vestedBps              // bps newly vested this call
+
+forfeitUnvestedShares(
+    uint256 assetTokenId            // Colony only; burns unvested tranches; returns bps
+) → uint256 forfeitedBps
+
+transferEquity(
+    uint256 assetTokenId,
+    address to,
+    uint256 bps                     // vested only — reverts if bps exceeds vested amount
+)
+
+cancelEquity(
+    uint256 assetTokenId,
+    uint256 bps                     // buyback — Colony only; reduces liability token; increases NAV
+)
+
+// ── Form 3: Paired fixed-obligation ─────────────────────────────────────────
+// Bilateral payment agreement. Fisc creates two tokens simultaneously.
+// Asset token = held by creditor (payment entitlement)
+// Liability token = held by obligor (payment schedule)
+// Unsecured: Fisc enforces UBI cap at creation.
+// Secured: collateral A-token held in Fisc escrow.
+
+issueObligationPair(
+    address  creditor,
+    address  obligor,
+    uint256  monthlyAmountS,        // S-token payment per epoch
+    uint256  totalEpochs,           // number of payment periods
+    uint256  collateralTokenId      // 0 = unsecured; > 0 = pledged collateral asset tokenId
+) → (uint256 assetTokenId, uint256 liabilityTokenId)
+
+settleObligationEpoch(
+    uint256 liabilityTokenId        // Colony.advanceEpoch() calls before UBI issuance
+)   // deducts monthlyAmountS from obligor; transfers to creditor;
+    // if insufficient funds and unsecured → UBI cap should prevent this (never happens)
+    // if insufficient funds and secured → triggers seizeCollateral
+
+seizeCollateral(
+    uint256 liabilityTokenId        // Colony only; on default with secured obligation
+)   // transfers collateral A-token from escrow to creditor
+    // marks obligation as defaulted
+
+// ── Escrow ───────────────────────────────────────────────────────────────────
+
+escrowedCollateral(uint256 liabilityTokenId) → uint256   // collateral tokenId, 0 if unsecured
+isInEscrow(uint256 tokenId) → bool
+
+// ── Views ────────────────────────────────────────────────────────────────────
+
+getToken(uint256 tokenId) → (
+    uint8   form,                   // 1=unilateral, 2=equity asset, 3=equity liability,
+                                    // 4=obligation asset, 5=obligation liability
+    address holder,
+    address counterparty,           // address(0) for unilateral
+    uint256 stakeBps,               // equity only
+    uint256 value,                  // current value (depreciation applied)
+    bool    isVested                // equity asset tokens only
+)
+
+getEquityTokensOf(address holder) → uint256[]   // asset equity token IDs
+getObligationsOf(address holder) → (uint256[] assets, uint256[] liabilities)
+getNetWorth(address holder) → (uint256 positiveV, uint256 liabilityV)
+    // Σ(positive A-token values) − Σ(liability A-token values) in S-token equivalent
+```
+
+> **Gas model:** Settlement of all obligation epochs in `Colony.advanceEpoch()` is a push-based
+> model — the Fisc iterates all outstanding liability tokens. At colony scale (tens to low hundreds
+> of obligations) this is manageable. At large scale, consider a pull-based claim model or
+> a settlement queue. This is noted in §10 Future Architecture.
+
+> **UBI cap enforcement (unsecured obligations):** At `issueObligationPair()` time, AToken.sol
+> reads the obligor's total existing monthly obligation (sum of all unsecured liability tokens'
+> `monthlyAmountS`) and reverts if `existingTotal + monthlyAmountS > 1000 × 1e18` (UBI floor).
+> Citizens cannot accumulate unsecured obligations beyond their guaranteed UBI. Companies
+> have no UBI and therefore no UBI cap — they must use secured obligations.
+
+### 3.6 OToken.sol — Org Token
 
 ERC-721 role-bound NFT. One per organisation (company, MCC, cooperative, civic).
 
@@ -218,13 +413,13 @@ ownerOf(uint256)  → address
 
 OrgType: `0=Company, 1=MCC, 2=Cooperative, 3=Civic`
 
-### 3.6 GToken.sol — Governance NFT
+### 3.7 GToken.sol — Governance NFT
 
 - ERC-721, soulbound
 - On-chain SVG metadata
 - `tokenOf(address)` → token ID (0 if none)
 
-### 3.7 SToken.sol / VToken.sol
+### 3.8 SToken.sol / VToken.sol
 
 - ERC-20, 18 decimals
 - Colony-authorised mint/burn/transfer
@@ -426,11 +621,13 @@ No backend required for payments. Transaction details travel in the URL.
 | S-token | ERC-20 | 18 | Minted by Colony on UBI claim |
 | V-token | ERC-20 | 18 | Minted by Colony on saveToV() |
 | G-token | ERC-721 | — | Soulbound, one per citizen |
-| O-token | ERC-721 | — | Soulbound to org contract, one per organisation |
+| O-token | ERC-721 | — | Soulbound to org contract address, one per organisation |
+| A-token | Custom registry | — | Fisc-registered economic claims — see §3.5. Not yet deployed. |
 
 **UBI:** 1,000 S per citizen per epoch. First tranche on join().
 **Savings cap:** 200 S→V per epoch for citizens. No cap for companies.
-**V dividend:** Company secretary calls distributeVDividend() → pro-rata to equity holders.
+**V dividend:** FD or secretary calls `declareDividend(uint256 vAmount)` → distributes declared amount pro-rata to all equity holders (vested and unvested). Remainder stays in V reserve. Current deployed implementation distributes the entire V balance (v1 behaviour — see §3.4).
+**Equity:** Company shares are A-token pairs (§3.5). Participant equity vests over 1–12 monthly tranches; month-N tranche is larger (commitment bonus). Unvested shares receive dividends, cannot be transferred. Vested shares are permanently transferable. Not yet deployed — current v1 stores equity as internal arrays in CompanyImplementation.
 **Protocol fee:** Each Colony.send() accrues 0.000001 ETH to pendingProtocolFee. MCC settles monthly via settleProtocol().
 
 ---
@@ -517,9 +714,13 @@ manually registered via `spice.zpc.finance`.
 | RPC staleness post-tx | Balances stale ~1.5s after transaction | refresh() has 1500ms delay; manual ↻ button |
 | MetaMask only | iOS users need MetaMask in-app browser | Add WalletConnect v2 |
 | Guardian management UI, no contract | Guardian page exists but has no on-chain equivalent | Deploy Guardian.sol; wire UI |
-| Intra-month contracts UI, no contract | Contracts tab shows empty list | Deploy IntraMonthContracts.sol |
+| ~~Intra-month contracts UI, no contract~~ | **Superseded** — removed from economic model (v16). Forward purchase, escrow, and revenue-sharing instruments replaced by V-token reserve + A-token bilateral framework. Contracts tab can be repurposed for A-token obligation view. | No new contract needed |
 | Inheritance designation UI stub | Profile page shows placeholder; not on-chain | Add to Colony.sol or separate contract |
-| V dividend distribution is manual | Secretary must call distributeVDividend() | Automate via epoch advance trigger |
+| V dividend distribution (v1) distributes entire V balance | Conflicts with v17 model (FD should declare a specific amount) | Deploy CompanyImplementation v2 with `declareDividend(uint256 vAmount)`; beacon upgrade all companies |
+| Equity stored as internal arrays (v1) | Conflicts with v17 A-token model; equity is not on-chain verifiable via registry | Deploy AToken.sol; deploy CompanyImplementation v2; migrate equity to A-token pairs |
+| AToken.sol not deployed | No on-chain A-token registry; physical assets, secured obligations, vesting equity all unavailable | Deploy AToken.sol (§3.5); integrate with Colony.sol v2 and CompanyImplementation v2 |
+| Colony.sol epoch advance (v1) does not settle obligations | A-token obligation settlement requires epoch advance to iterate liability tokens pre-UBI | Colony.sol v2 — add obligation settlement loop to advanceEpoch(); new deploy required |
+| MCC office-term equity not implemented | Board compensation via permanent equity; no auto-redemption on term end | CompanyImplementation v2 `redeemDirectorShares()` + Colony governance integration |
 | Governance contract not in deploy script | Votes.sol compiled; not wired to deploy.js | Add to deploy sequence, set govAddress in contracts.json |
 | No mainnet | Testnet only | Audit → Base mainnet |
 | Supabase activity log has no auth | Anyone with the anon key can insert | Add row-level security or switch to service key |
@@ -528,6 +729,22 @@ manually registered via `spice.zpc.finance`.
 ---
 
 ## 10. Future Architecture
+
+### Core v2 contracts (required for v17 economic model)
+
+- **AToken.sol** — Fisc economic claims registry. Three forms: unilateral asset, paired equity, paired fixed-obligation. Escrow sub-registry for secured obligations. See §3.5 for full spec. Replaces AssetRegistry.sol as the unified ownership layer.
+- **CompanyImplementation v2** — replaces internal equity arrays with AToken reads; adds `declareDividend(uint256 vAmount)`, vesting issuance (`issueVestingShares`, `issueOpenShares`), `forfeitUnvestedShares`, `buybackShares`, `redeemDirectorShares` for MCC office-term. Beacon upgrade — all existing companies upgrade simultaneously.
+- **Colony.sol v2** — advanceEpoch settles all liability A-token obligations before UBI issuance; adds escrow integration (`seizeCollateral`, `releaseEscrow`); wires AToken.sol address. New colony deploy required (Colony.sol is not proxy-upgradeable in v1).
+
+### Gas model decision (open — required before AToken deploy)
+
+Two settlement models for obligation epoch advance:
+- **Push-based (current plan):** Colony.advanceEpoch() iterates all outstanding liability tokens. Simple, deterministic. Acceptable at colony scale (tens to low hundreds of obligations). Above ~500 obligations, gas cost of a single advanceEpoch() call may exceed block gas limit.
+- **Pull-based:** advanceEpoch() emits a settlement signal. Obligors (or anyone) call `AToken.claimSettlement(liabilityTokenId)` per obligation. Gas cost is O(1) per call. Requires a grace period mechanism for defaults.
+
+Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model for mainnet scale. Architect the AToken contract to support both patterns.
+
+### Infrastructure
 
 - **WalletConnect v2** — broader wallet support, removes MetaMask dependency
 - **React Native** — NFC tap-to-pay, push notifications
@@ -538,6 +755,7 @@ manually registered via `spice.zpc.finance`.
 
 ---
 
-*SPICE Colony · Technical Architecture · v4*
-*Last updated: 17 April 2026*
+*SPICE Colony · Technical Architecture · v5*
+*Last updated: 18 April 2026*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
+*v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
