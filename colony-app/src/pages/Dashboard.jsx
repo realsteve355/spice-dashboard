@@ -768,6 +768,18 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* Assets & Obligations */}
+        <div
+          onClick={() => navigate(`/colony/${slug}/assets`)}
+          style={{ ...card, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <div>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>ASSETS & OBLIGATIONS</div>
+            <div style={{ fontSize: 12, color: C.sub }}>Register physical assets · create payment obligations</div>
+          </div>
+          <span style={{ fontSize: 18, color: C.faint, marginLeft: 12 }}>›</span>
+        </div>
+
         {/* Transactions */}
         <div id="tx-history" style={{ ...card, marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>RECENT TRANSACTIONS</div>
