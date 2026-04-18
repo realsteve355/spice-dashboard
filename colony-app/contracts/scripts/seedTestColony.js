@@ -23,10 +23,10 @@ const hre = require("hardhat");
 // ── Addresses — update these after each fresh deploy ─────────────────────────
 // Run `npx hardhat run scripts/deploy.js --network baseSepolia` first,
 // then copy the printed addresses here.
-const COLONY_ADDRESS    = "0xDA59FDfD658d031C337CD339b6afA87F62e022e8";
-const BILLING_ADDRESS   = "0x5EB4783D5F28f163e39C9ea61256e4466A5DB056";
-const SERVICES_ADDRESS  = "0xc9Adff7Ac56EF2c38401c1f887769Ce1d3D419d9";
-const COMPANY_FACTORY   = "0x922d51C0b0fbC8770b0E309f5B401eC75c8260cd";
+const COLONY_ADDRESS    = "0x98fC096EAF9b41CD1EC5729fdF25dd5ef3EdADCB";
+const BILLING_ADDRESS   = "0xf87efe21Caf11DBD66F481919455f27A44BfE6E8";
+const SERVICES_ADDRESS  = "0xeA2C3Ac08E1202492b2a381F152580Ae6fD731E4";
+const COMPANY_FACTORY   = "0xD06Da6df8948AebF47Fd6d6A626f30D4BcCaC84a";
 
 const CITIZENS = {
   Steve: "0x92378C9b6e556C695F91eB6675E142d7114C43BC",
