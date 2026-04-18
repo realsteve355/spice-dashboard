@@ -125,7 +125,10 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
 <div class="topbar">
   <div class="topbar-title">SPICE PROTOCOL ADMIN</div>
   <div class="topbar-right">
+    <span id="net-badge" class="badge badge-net" style="display:none">Base Sepolia</span>
+    <span id="addr-chip" class="addr-chip" style="display:none"></span>
     <span id="role-badge" class="badge" style="display:none"></span>
+    <button class="btn-connect" id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
   </div>
 </div>
 
@@ -303,9 +306,10 @@ async function connectWallet() {
     provider = new ethers.BrowserProvider(window.ethereum);
     signer   = await provider.getSigner();
 
-    document.getElementById("addr-chip").style.display = "inline";
-    document.getElementById("addr-chip").textContent   = wallet.slice(0,8)+"…"+wallet.slice(-6);
-    document.getElementById("net-badge").style.display = "inline";
+    document.getElementById("addr-chip").style.display  = "inline";
+    document.getElementById("addr-chip").textContent    = wallet.slice(0,8)+"…"+wallet.slice(-6);
+    document.getElementById("net-badge").style.display  = "inline";
+    document.getElementById("connect-btn").style.display = "none";
 
     const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, provider);
     const ownerAddr = await reg.owner();
