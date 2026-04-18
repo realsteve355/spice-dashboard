@@ -34,7 +34,7 @@ const MCC_BILLING_ABI = [
 ]
 
 const COMPANY_FACTORY_ABI = [
-  "function getCompaniesOf(address) view returns (uint256[])",
+  "function companyCount() view returns (uint256)",
   "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
 ]
 
@@ -214,17 +214,19 @@ export default function Dashboard() {
     let cancelled = false
     async function load() {
       try {
-        const ids = await factory.getCompaniesOf(address)
-        const companies = await Promise.all(ids.map(async id => {
-          const [name, wallet] = await factory.getCompany(id)
-          let isSecretary = false
-          try {
-            const companyContract = new ethers.Contract(wallet, COMPANY_IMPL_ABI, rpc)
-            const secretary = await companyContract.secretary()
-            isSecretary = secretary.toLowerCase() === address.toLowerCase()
-          } catch {}
-          return { id: Number(id), name, wallet, isSecretary }
-        }))
+        const count = Number(await factory.companyCount())
+        const companies = await Promise.all(
+          Array.from({ length: count }, (_, i) => i).map(async id => {
+            const [name, wallet] = await factory.getCompany(id)
+            let isSecretary = false
+            try {
+              const companyContract = new ethers.Contract(wallet, COMPANY_IMPL_ABI, rpc)
+              const secretary = await companyContract.secretary()
+              isSecretary = secretary.toLowerCase() === address.toLowerCase()
+            } catch {}
+            return { id, name, wallet, isSecretary }
+          })
+        )
         if (!cancelled) setMyCompanies(companies)
       } catch (e) {
         console.warn('[Dashboard] load companies failed:', e?.message || e)
