@@ -163,7 +163,12 @@ A bilateral payment agreement — a hire-purchase arrangement, an advance agains
 - An **asset A-token** held by the recipient — entitles the holder to receive fixed periodic payments
 - A **liability A-token** held by the obligor — records the obligation to pay on schedule
 
-**Settlement priority:** The Fisc settles all liability A-token obligations before crediting monthly UBI. An obligation within the UBI amount therefore cannot be defaulted — payment is automatic before the citizen receives their net balance. The Fisc will not create a liability A-token if it would push the citizen's total monthly obligations beyond their guaranteed ability to pay (the UBI floor of 1,000 S per month). Structural default is impossible for any obligation the Fisc was willing to register.
+**Settlement priority:** The Fisc settles all liability A-token obligations before crediting monthly UBI. An obligation within the UBI amount therefore cannot be defaulted — payment is automatic before the citizen receives their net balance. The Fisc will not create an unsecured liability A-token if it would push the citizen's total monthly obligations beyond their guaranteed ability to pay (the UBI floor of 1,000 S per month). Structural default is impossible for any unsecured obligation the Fisc was willing to register.
+
+**Secured obligations**
+A fixed-obligation A-token may be secured by collateral. The borrower pledges one or more asset A-tokens at the time the obligation is created. The Fisc transfers the pledged tokens to an escrow register held under the Fisc's authority — the borrower cannot sell or transfer them while the obligation remains outstanding. On full settlement, the Fisc returns the collateral to the borrower. On default (a missed payment that cannot be deducted automatically), the Fisc transfers the collateral A-token directly to the creditor.
+
+Secured obligations may be created for any amount, provided the pledged collateral covers the obligation's declared value. The UBI cap applies only to unsecured fixed-obligation A-tokens. A citizen or company may take on a secured obligation of any scale if they hold sufficient A-token collateral to pledge against it.
 
 This is not fractional reserve banking. Paired A-tokens do not create new S or V tokens — they are commitments to redistribute tokens that will exist when payment falls due. The monthly reset operates identically regardless of what obligations exist.
 
@@ -298,9 +303,9 @@ The company may repurchase shares from any holder at any time at current market 
 
 MCC is a company governed by the same token rules as every other company. It exists to provide essential infrastructure — the services every citizen depends on that cannot safely be left to market competition.
 
-The board are the shareholders. They own MCC commercially and receive its profits. Citizens do not own MCC in the commercial sense — they hold a **Governance Token (G-token)** that gives them democratic oversight without economic ownership.
+The board are the shareholders for the duration of their term. They own MCC commercially during their term and receive its profits as dividends. MCC equity is an **office-term instrument** — it does not accumulate permanently. When a board member's term ends (whether by election cycle, resignation, or recall), the Fisc automatically redeems their MCC shares at current NAV, paying in V-tokens. Incoming board members receive a fresh share issuance at the start of their term. A director who serves consecutive terms holds their shares throughout; redemption occurs only when they finally leave the board. Citizens do not own MCC in the commercial sense — they hold a **Governance Token (G-token)** that gives them democratic oversight without economic ownership.
 
-MCC holds one **O-token** (Organisation Token), initially issued to the colony founder. The O-token is held by the designated MCC chair and transfers to their successor when the role changes. It authorises the holder to perform on-chain MCC operations — advancing the monthly epoch, updating service prices, distributing dividends — without requiring the founding private key. The O-token makes the MCC's institutional authority transferable and transparent, rather than permanently locked to one person.
+MCC holds one **O-token** (Organisation Token), initially issued to the colony founder. The O-token is held by the designated MCC chair and transfers to their successor when the role changes. It authorises the holder to perform on-chain MCC operations — advancing the monthly epoch, updating service prices, distributing dividends — without requiring the founding private key. The O-token is a pure identity and authority token — it carries no equity and confers no economic rights. The MCC's institutional authority is therefore transferable and transparent, with no confusion between administrative control and commercial ownership.
 
 | | |
 |---|---|
@@ -349,7 +354,9 @@ This is market accountability with democratic enforcement. The board behaves lik
 | Medical Director | AI diagnostics, health emergency response |
 | Citizen Representative | Voice of non-entrepreneurial citizens |
 
-Board members serve **one-year terms**, elected annually by citizen shareholders. The **automatic recall trigger** activates when the standard citizen MCC bill rises more than 20% above its 12-month rolling average in any single month. When triggered, the Fisc initiates a colony-wide recall referendum automatically — no petition required.
+Board members serve **one-year terms**, elected annually by G-token holders. Board compensation comes through MCC equity dividends paid during their term. When a term ends — whether by election cycle, resignation, or recall — the Fisc automatically redeems all outgoing directors' MCC shares at current NAV, paying in V-tokens. Incoming directors receive fresh issuance. No MCC equity accumulates with former directors.
+
+The **automatic recall trigger** activates when the standard citizen MCC bill rises more than 20% above its 12-month rolling average in any single month. When triggered, the Fisc initiates a colony-wide recall referendum automatically — no petition required.
 
 ---
 
@@ -395,6 +402,7 @@ All significant ownership is recorded on the Fisc blockchain. Ownership is enfor
 |---|---|
 | Wallets | S-token and V-token balances, full transaction history |
 | Claims | All A-tokens — physical assets, land parcels, equity positions, bilateral obligations — with current holder, declared value, and transfer history |
+| Escrow | Collateral A-tokens pledged against secured fixed-obligation agreements — held by the Fisc until the obligation is fully settled (returned to borrower) or defaulted (transferred to creditor) |
 
 ### 7.3 Physical Asset Ownership
 
@@ -438,8 +446,10 @@ The following require a blockchain referendum of 80% of all registered citizens 
 | 8 | MCC asset protection | MCC infrastructure may not be privatised |
 | 9 | Company freedom | No licence required beyond Fisc registration |
 | 10 | Fisc autonomy | The Fisc may not be placed under MCC or company control |
+| 11 | Citizen A-token protection | Citizen positive A-tokens may not be confiscated by any authority, public or private. Liability A-tokens voluntarily created by the citizen are not protected. |
+| 12 | Fractional reserve prohibition | Only the Fisc may mint S-tokens or V-tokens. No private entity may create new monetary tokens by any mechanism, including lending, debt issuance, or securitisation. |
 
-Only the Fisc can mint S-tokens. Fractional reserve banking — the mechanism by which conventional banks expand the money supply by lending more than they hold — is therefore mechanically impossible. No private bank can create new S-tokens.
+Only the Fisc can mint S-tokens. Fractional reserve banking — the mechanism by which conventional banks expand the money supply by lending more than they hold — is therefore mechanically impossible. No private bank can create new S-tokens. This prohibition is now a formal constitutional protection (see row 12 above) requiring an 80% referendum to amend.
 
 **Citizen V-token expiry:** Citizen V-tokens expire 100 years after their mint date. The Fisc tracks the mint date of every V-token batch. This is long enough that tokens saved from birth outlast any realistic lifespan, but prevents indefinite dynastic accumulation across multiple generations. At the 100-year mark, unexpired tokens are destroyed automatically.
 
@@ -485,6 +495,11 @@ The following questions were open in earlier versions and are now resolved:
 | Obligation cap | The Fisc will not register a liability A-token that would push the holder's total monthly S-token obligations beyond their guaranteed UBI (1,000 S/month). Structural default is impossible for any Fisc-registered obligation. |
 | Harberger rules for land | Harberger mechanism is a property of colony founding conditions, specified in the founding constitution. Not hardcoded into the A-token type. Applies on Mars and equivalent new-land colonies. Does not apply in Earth colonies where land is pre-existing private property. |
 | Depreciation on physical A-tokens | Company-owned physical A-tokens may carry a declared depreciation schedule registered at acquisition. Fisc applies this to book value for accounting and net worth. No automatic monetary operation is triggered. |
+| Company obligation cap | Companies may take on fixed-obligation A-tokens secured by pledged collateral A-tokens held in Fisc escrow. Secured obligations have no cap — the collateral is the protection against default. Unsecured obligations for citizens remain capped at the UBI floor (1,000 S/month). |
+| Insolvency on death | On a citizen's death, the Fisc discharges outstanding obligations in priority order before distributing to heirs: (1) MCC outstanding bills first; (2) fixed-obligation creditors satisfied pro-rata from remaining assets; (3) remainder distributed per registered inheritance designation. A citizen cannot bequeath more than they own. |
+| MCC board compensation | MCC equity is an office-term instrument. Board members hold MCC shares during their term and receive dividends. When a term ends — by election cycle, resignation, or recall — the Fisc automatically redeems all their MCC shares at current NAV, paying in V-tokens. Incoming directors receive fresh issuance. No MCC equity accumulates with former directors. |
+| O-token and equity | The O-token is a pure identity and authority token — it carries no equity and confers no economic rights. MCC commercial ownership is held as A-token equity (office-term shares), not through the O-token. The O-token is to organisation identity as the G-token is to citizen identity. |
+| Constitutional protections added (v17) | Part 8 now includes: Protection 11 (citizen positive A-tokens may not be confiscated) and Protection 12 (fractional reserve prohibition formalised as a constitutional protection requiring 80% referendum to amend). |
 
 ---
 
@@ -799,7 +814,8 @@ This section will be elaborated in a separate Phase 2 document.
 
 ---
 
-*Mars Colony Economy · Token & Governance System · Working Document — Version 16*
+*Mars Colony Economy · Token & Governance System · Working Document — Version 17*
 *v14 changes: full five-token system introduced (Part 1 table + Sections 1.6–1.8); O-token added to Part 2 entities table; O-token paragraph added to Part 5.1 (MCC); three new resolved decisions added to Part 9 (O-token, org voting, company wallet).*
 *v15 changes: A-token redesigned as unified economic claim token (asset or liability). L-tokens retired — land parcels are A-tokens. Three A-token forms: unilateral asset, paired equity, paired fixed-obligation. Company equity moved from internal data structure to paired A-tokens (shareholder holds asset token; company holds single liability token; Fisc settles automatically). Fixed-obligation A-tokens permitted — not fractional reserve banking. Obligation cap: Fisc will not register liability exceeding UBI floor. Harberger mechanism relocated from token type to founding constitution (Mars yes, Earth no). Depreciation schedule added for company physical assets. G/O identity parallel made explicit. Part 3.1, Part 4.3, Part 6 (Fisc responsibilities), Part 7.2 (registries), Part 7.4 (land), Part 9 (resolved decisions) all updated.*
 *v16 changes: No-wages principle established — companies do not pay ongoing S-token compensation; participants receive vesting equity only. Founding Philosophy updated with post-scarcity framing. Vesting share model: fungible, monthly tranches 1–12, month-12 bonus, unvested shares pay dividends but are non-transferable, forfeited on departure. Share value = NAV (company V reserve / total shares). Dividends declared by FD monthly, moved to distribution wallet, Fisc distributes. Buybacks at market value. Sole trader defined. Part 6.1 intra-month contracting replaced — superseded by V reserve + A-token bilateral framework. Part 9 updated with five new resolved decisions.*
+*v17 changes: Four open design questions closed. §1.8: secured obligation mechanism added — borrower pledges collateral A-token to Fisc escrow; transferred to creditor on default, returned on settlement; secured obligations not subject to UBI cap. Part 5.1: MCC equity reframed as office-term instrument — Fisc auto-redeems shares at NAV on term end; incoming directors receive fresh issuance; O-token confirmed as pure identity token with no equity. Part 5.4: board compensation note added. Part 7.2: escrow registry added. Part 8: Protection 11 (citizen A-token confiscation protection) and Protection 12 (fractional reserve prohibition formalised as constitutional protection) added. Part 9: six new resolved decisions.*
