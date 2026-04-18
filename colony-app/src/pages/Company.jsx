@@ -75,23 +75,58 @@ export default function Company() {
         if (cancelled) return
 
         const [holders, totalStakes, vestedStakes] = equityResult
+        console.log('[Company] getEquityTable raw:',
+          'holders:', Array.from(holders),
+          'totalStakes:', Array.from(totalStakes).map(x => x.toString()),
+          'vestedStakes:', Array.from(vestedStakes).map(x => x.toString()),
+        )
         const totalOutstandingBps = holders.reduce((sum, _, i) => sum + Number(totalStakes[i]), 0)
 
         // Load equity assetIds from AToken so Secretary can forfeit/buyback
+        // Also cross-check vestedBps directly from AToken.getVestingStake for accuracy
         const aTokenAddr = deployedContracts?.colonies?.[slug]?.aToken
         let equityAssetIds = holders.map(() => null)
+        let perTokenVested = vestedStakes.map(v => Number(v))  // default from getEquityTable
         if (aTokenAddr && holders.length > 0) {
           const aToken = new ethers.Contract(aTokenAddr, ATOKEN_ABI, rpc)
-          equityAssetIds = await Promise.all(holders.map(async (holderAddr) => {
+          // For each holder entry, find their assetId for this company and read vestedBps directly
+          const perEntryIds = await Promise.all(holders.map(async (holderAddr) => {
             try {
               const tokenIds = await aToken.tokensOf(holderAddr)
+              // Return ALL matching token IDs for this holder+company (may be multiple)
+              const matching = []
               for (const id of tokenIds) {
-                const [, , company] = await aToken.getVestingStake(id)
-                if (company.toLowerCase() === companyId.toLowerCase()) return id.toString()
+                const [totalBps, vestedBps, company] = await aToken.getVestingStake(id)
+                if (company.toLowerCase() === companyId.toLowerCase()) {
+                  console.log(`[Company] AToken.getVestingStake(${id}): total=${totalBps}, vested=${vestedBps}, company=${company}`)
+                  matching.push({ id: id.toString(), totalBps: Number(totalBps), vestedBps: Number(vestedBps) })
+                }
               }
+              return matching
             } catch {}
-            return null
+            return []
           }))
+          // perEntryIds[i] = array of {id, totalBps, vestedBps} matching entries for holders[i]
+          // We need to match each equity table row to the correct assetId.
+          // Strategy: for each row i, among matching tokens for holders[i], pick the one
+          // whose totalBps matches totalStakes[i]. This handles duplicate holders correctly.
+          const usedIds = new Set()
+          equityAssetIds = holders.map((_, i) => {
+            const rowTotal = Number(totalStakes[i])
+            const candidates = perEntryIds[i]
+            const match = candidates.find(c => c.totalBps === rowTotal && !usedIds.has(c.id))
+              || candidates.find(c => !usedIds.has(c.id))  // fallback: first unused
+            if (match) { usedIds.add(match.id); return match.id }
+            return null
+          })
+          // Override vestedBps with directly-read values from AToken (more reliable)
+          perTokenVested = holders.map((_, i) => {
+            const rowTotal = Number(totalStakes[i])
+            const candidates = perEntryIds[i]
+            const id = equityAssetIds[i]
+            const match = candidates.find(c => c.id === id) || candidates.find(c => c.totalBps === rowTotal)
+            return match ? match.vestedBps : Number(vestedStakes[i])
+          })
         }
 
         if (cancelled) return
@@ -105,7 +140,7 @@ export default function Company() {
             wallet:    addr,
             label:     addr.slice(0, 6) + '…' + addr.slice(-4),
             totalBps:  Number(totalStakes[i]),
-            vestedBps: Number(vestedStakes[i]),
+            vestedBps: perTokenVested[i],
             pct:       totalOutstandingBps > 0
                          ? Number(totalStakes[i]) / totalOutstandingBps * 100
                          : 0,
