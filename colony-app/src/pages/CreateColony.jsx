@@ -199,6 +199,19 @@ export default function CreateColony() {
         'Deploy CompanyImplementation', () =>
         deployContract('CompanyImplementation', ARTIFACTS.CompanyImplementation.abi, ARTIFACTS.CompanyImplementation.bytecode, freshSigner)
       )
+
+      // Wait until CompanyImplementation code is visible on the RPC before deploying
+      // the beacon — OZ v5 UpgradeableBeacon checks implementation.code.length on-chain
+      // and Base Sepolia's load-balanced RPC can lag by 1-2 blocks.
+      await run('Confirming CompanyImplementation on-chain', async () => {
+        for (let i = 0; i < 15; i++) {
+          const code = await freshProvider.getCode(implAddr)
+          if (code !== '0x') return
+          await new Promise(r => setTimeout(r, 2000))
+        }
+        throw new Error('CompanyImplementation code not visible after 30s — RPC may be lagging, please retry')
+      })
+
       const { addr: beaconAddr } = await run(
         'Deploy UpgradeableBeacon', () =>
         deployContract('UpgradeableBeacon', ARTIFACTS.UpgradeableBeacon.abi, ARTIFACTS.UpgradeableBeacon.bytecode, freshSigner, implAddr, deployer)
