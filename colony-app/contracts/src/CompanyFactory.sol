@@ -5,14 +5,23 @@ import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "./Colony.sol";
 
-interface ICompanyImpl {
+interface ICompanyInitV2 {
+    // v2 initialize — no equity in constructor; issued separately via Colony
     function initialize(
         address colony,
         string  calldata name,
-        address secretary,
-        address[] calldata holders,
-        uint256[] calldata stakes
+        address secretary
     ) external;
+}
+
+interface IColonyV2 {
+    function issueFoundingEquity(
+        address   company,
+        address   holder,
+        uint256   stakeBps,
+        uint256[] calldata vestingEpochs,
+        uint256[] calldata trancheBps
+    ) external returns (uint256 assetId, uint256 liabilityId);
 }
 
 /**
@@ -22,17 +31,18 @@ interface ICompanyImpl {
  * Each organisation is a BeaconProxy clone of CompanyImplementation.
  * The beacon owner can upgrade all organisations simultaneously with one transaction.
  *
- * Deploying an organisation:
+ * Deploying an organisation (v2):
  *   1. Deploys a BeaconProxy pointing at the shared UpgradeableBeacon
- *   2. Calls initialize() on the proxy — wires colony, name, secretary, equity table
- *   3. Mints an O-token to the organisation's contract address (not the secretary)
- *   4. Registers the organisation wallet with Colony so it can call Colony.send()
- *   5. Records the organisation in this factory's directory
+ *   2. Calls initialize(colony, name, secretary) — no equity in init
+ *   3. Mints an O-token to the organisation contract address (soulbound identity badge)
+ *   4. Registers the organisation wallet with Colony
+ *   5. Issues founding equity via Colony.issueFoundingEquity() for each holder
+ *   6. Records the organisation in the factory directory
  *
- * The O-token is the organisation's soulbound identity badge — held permanently
- * by the organisation contract. It is not an authority key. The secretary role
- * is stored as an address inside the organisation contract and changed via
- * CompanyImplementation.changeSecretary().
+ * Equity is recorded in AToken (via Colony.issueFoundingEquity); this factory
+ * no longer passes equity arrays to initialize(). Colony.issueFoundingEquity()
+ * uses factory-only access so equity can be issued before the company wallet
+ * is fully wired.
  *
  * Upgrade path:
  *   The UpgradeableBeacon is deployed separately and owned by the deployer wallet.
@@ -54,13 +64,10 @@ contract CompanyFactory {
     // ── State ────────────────────────────────────────────────────────────────
 
     Colony  public colony;
-    address public oToken;           // OToken contract address
-    address public beacon;           // UpgradeableBeacon address
+    address public oToken;   // OToken contract address
+    address public beacon;   // UpgradeableBeacon address
 
     CompanyRecord[] private _companies;
-
-    // equity holder address → IDs of organisations where they hold equity
-    mapping(address => uint256[]) private _companiesOf;
 
     // ── Events ───────────────────────────────────────────────────────────────
 
@@ -101,18 +108,21 @@ contract CompanyFactory {
     /**
      * @notice Deploy a new organisation and register it with the colony.
      *
-     * The caller becomes the founding secretary. Equity holders are set
-     * at deploy time — use CompanyImplementation.proposeShareTransfer() to
-     * change ownership after deployment.
+     * The caller becomes the founding secretary. Founding equity is issued
+     * via Colony.issueFoundingEquity() — all equity state is stored in AToken.
+     *
+     * Founding shares are typically issued with no vesting schedule (fully
+     * vested at issuance). The Secretary may later issue participant shares
+     * with vesting via CompanyImplementation.issueVestingShares().
      *
      * @param name           Organisation display name
-     * @param equityHolders  Initial equity holder addresses
+     * @param equityHolders  Founding equity holder addresses
      * @param equityStakes   Stakes in basis points (must sum to 10000)
      * @param orgType        0=Company, 1=MCC, 2=Cooperative, 3=Civic
      * @return companyId     Index in the factory directory
      */
     function deployCompany(
-        string   calldata name,
+        string    calldata name,
         address[] calldata equityHolders,
         uint256[] calldata equityStakes,
         uint8              orgType
@@ -125,22 +135,33 @@ contract CompanyFactory {
         for (uint256 i = 0; i < equityStakes.length; i++) total += equityStakes[i];
         require(total == 10000, "CompanyFactory: stakes must sum to 10000 bps");
 
-        // 1. Build initialisation calldata
+        // 1. Deploy BeaconProxy — v2 initialize takes only colony, name, secretary
         bytes memory initData = abi.encodeCall(
-            ICompanyImpl.initialize,
-            (address(colony), name, msg.sender, equityHolders, equityStakes)
+            ICompanyInitV2.initialize,
+            (address(colony), name, msg.sender)
         );
-
-        // 2. Deploy BeaconProxy — initialization runs immediately inside the constructor
         address wallet = address(new BeaconProxy(beacon, initData));
 
-        // 3. Mint O-token to the organisation wallet (soulbound identity badge)
+        // 2. Mint O-token to the organisation wallet (soulbound identity badge)
         uint256 tokenId = colony.mintOrgToken(wallet, name, orgType);
 
-        // 4. Register wallet with Colony so it can call Colony.send()
+        // 3. Register wallet with Colony so it can call Colony.send(), etc.
         colony.registerCompanyWallet(wallet);
 
-        // 5. Record in directory
+        // 4. Issue founding equity for each holder (fully vested — no vesting schedule)
+        //    All equity state stored in AToken via Colony.issueFoundingEquity().
+        IColonyV2 col = IColonyV2(address(colony));
+        for (uint256 i = 0; i < equityHolders.length; i++) {
+            col.issueFoundingEquity(
+                wallet,
+                equityHolders[i],
+                equityStakes[i],
+                new uint256[](0),  // no vesting schedule — immediate full vest
+                new uint256[](0)
+            );
+        }
+
+        // 5. Record in factory directory
         companyId = _companies.length;
         _companies.push(CompanyRecord({
             name:         name,
@@ -149,11 +170,6 @@ contract CompanyFactory {
             oTokenId:     tokenId,
             registeredAt: block.timestamp
         }));
-
-        // Index equity holders for Dashboard "My Companies" lookup
-        for (uint256 i = 0; i < equityHolders.length; i++) {
-            _companiesOf[equityHolders[i]].push(companyId);
-        }
 
         emit CompanyDeployed(companyId, wallet, name, msg.sender, tokenId);
     }
@@ -173,16 +189,5 @@ contract CompanyFactory {
     ) {
         CompanyRecord storage c = _companies[id];
         return (c.name, c.wallet, c.founder, c.oTokenId, c.registeredAt);
-    }
-
-    /**
-     * @notice Returns company IDs where a wallet held equity at registration time.
-     * @dev    This index is set at deploy time and does not update when shares
-     *         are transferred via proposeShareTransfer(). To find all current
-     *         holders of a company, read ShareTransferExecuted events from the
-     *         company contract.
-     */
-    function getCompaniesOf(address wallet) external view returns (uint256[] memory) {
-        return _companiesOf[wallet];
     }
 }

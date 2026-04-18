@@ -5,37 +5,43 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @title CompanyImplementation
- * @notice Template for SPICE colony organisations (companies, MCC, cooperatives, civic).
+ * @notice v2 — Template for SPICE colony organisations (companies, MCC, cooperatives, civic).
  *
  * Each organisation is deployed as a BeaconProxy pointing to this template.
  * The beacon owner can upgrade all organisations simultaneously with one tx.
  *
- * Three named roles (stored as plain addresses — not tokens):
- *   Secretary  — mandatory. Day-to-day ops. Appoints/removes CEO and FD.
- *   CEO        — optional. Must co-approve share transfers.
- *   FD         — optional. Must co-approve share transfers.
+ * Equity is managed entirely via AToken.sol (the Fisc economic claims registry).
+ * This contract holds NO equity state — it reads and mutates equity exclusively
+ * through Colony, which relays all calls to AToken.
  *
- * If neither CEO nor FD is appointed, the Secretary alone approves share transfers.
- * The proposer's own approval is implicit — they need not call approveShareTransfer
- * separately if they happen to be one of the required approvers.
+ * Three named roles (plain addresses — not tokens):
+ *   Secretary  — mandatory; day-to-day operations; may issue shares and declare dividends
+ *   CEO        — optional
+ *   FD         — optional; may also declare dividends
  *
  * The O-token for this organisation is held by the organisation contract address
- * itself (not by the secretary). It is a soulbound identity badge, not an
- * authority key. Secretary authority is proved by msg.sender == secretary.
+ * itself (not the secretary). It is a soulbound identity badge.
+ * Secretary authority is proved by msg.sender == secretary.
  *
- * Secretary-gated operations:
- *   pay(to, amount, note)        — send S-tokens to any address
- *   convertToV(amount)           — convert S → V (no monthly cap for orgs)
- *   distributeVDividend()        — distribute entire V balance pro-rata to equity holders
- *   appointOfficer(role, addr)   — set CEO or FD address
- *   removeOfficer(role)          — clear CEO or FD
- *   changeSecretary(newAddr)     — hand secretary role to another address
+ * Equity issuance (Secretary):
+ *   issueVestingShares(holder, stakeBps, vestingEpochs, trancheBps)
+ *     — participant shares; unvested tranches forfeited on departure
+ *   issueOpenShares(investor, stakeBps)
+ *     — investor shares; immediately fully vested, freely transferable
  *
- * Any equity holder:
- *   proposeShareTransfer(to, basisPoints) — propose transferring own equity
+ * Equity lifecycle (Secretary):
+ *   declareDividend(vAmount)     — distribute V pro-rata to ALL holders (vested + unvested)
+ *   forfeitShares(assetId)       — cancel unvested tranches for a departing participant
+ *   buybackShares(assetId, bps, priceS) — buy back equity at agreed S-token price
  *
- * Required approvers (captured at proposal time):
- *   approveShareTransfer(proposalId) — CEO / FD / Secretary (whoever is required)
+ * Governance (Colony only):
+ *   redeemDirectorShares(exDirector) — redeem ALL equity at NAV on term end (MCC use)
+ *
+ * Share transfers are executed by citizens calling Colony.transferEquity() directly.
+ * No two-party proposal flow is required (proposal mechanism removed in v2).
+ *
+ * No-wages principle: companies do not pay ongoing S-token wages. Compensation for
+ * participants = equity dividends only. Sole traders transact separately.
  */
 
 interface IColony {
@@ -44,10 +50,35 @@ interface IColony {
     function transferVDividend(address to, uint256 amount) external;
     function sToken() external view returns (address);
     function vToken() external view returns (address);
+    function aToken() external view returns (address);
+    function issueEquity(
+        address company,
+        address holder,
+        uint256 stakeBps,
+        uint256[] calldata vestingEpochs,
+        uint256[] calldata trancheBps
+    ) external returns (uint256 assetId, uint256 liabilityId);
+    function forfeitEquity(uint256 assetId) external returns (uint256 forfeitedBps);
+    function cancelEquity(uint256 assetId, uint256 bps) external;
 }
 
 interface IERC20Minimal {
     function balanceOf(address account) external view returns (uint256);
+}
+
+interface IAToken {
+    function getEquityTable(address company) external view returns (
+        address[] memory holders,
+        uint256[] memory totalStakeBps,
+        uint256[] memory vestedStakeBps
+    );
+    function tokensOf(address holder) external view returns (uint256[] memory);
+    function getTokenHolder(uint256 id) external view returns (address);
+    function getVestingStake(uint256 assetId) external view returns (
+        uint256 totalStakeBps,
+        uint256 vestedBps,
+        address company
+    );
 }
 
 contract CompanyImplementation is Initializable {
@@ -61,49 +92,18 @@ contract CompanyImplementation is Initializable {
     address public ceo;
     address public fd;
 
-    address[] public equityHolders;
-    uint256[] public equityStakes;   // basis points; must sum to 10000
-
-    struct ShareTransferProposal {
-        address from;
-        address to;
-        uint256 basisPoints;
-        address approver1;   // required approver (captured at proposal time)
-        address approver2;   // second required approver; address(0) if only one needed
-        bool    approved1;
-        bool    approved2;
-        bool    executed;
-        bool    cancelled;
-        uint256 expiresAt;   // block.timestamp + 30 days
-    }
-
-    mapping(uint256 => ShareTransferProposal) public proposals;
-    uint256 public nextProposalId;
-
     // ── Events ───────────────────────────────────────────────────────────────
 
     event PaymentMade(address indexed to, uint256 amount, string note);
     event ConvertedToV(uint256 amount);
-    event DividendDistributed(uint256 totalAmount, uint256 holderCount);
+    event DividendDeclared(uint256 vAmount, uint256 holderCount);
+    event SharesIssued(address indexed holder, uint256 stakeBps, bool hasVesting);
+    event SharesForfeited(uint256 indexed assetId, uint256 forfeitedBps);
+    event SharesBoughtBack(uint256 indexed assetId, uint256 bps, uint256 priceS);
+    event DirectorSharesRedeemed(address indexed exDirector, uint256 totalVPaid);
     event OfficerAppointed(string role, address indexed addr);
     event OfficerRemoved(string role);
     event SecretaryChanged(address indexed from, address indexed to);
-    event ShareTransferProposed(
-        uint256 indexed proposalId,
-        address indexed from,
-        address indexed to,
-        uint256 basisPoints,
-        address approver1,
-        address approver2
-    );
-    event ShareTransferApproved(uint256 indexed proposalId, address indexed approver);
-    event ShareTransferExecuted(
-        uint256 indexed proposalId,
-        address indexed from,
-        address indexed to,
-        uint256 basisPoints
-    );
-    event ShareTransferCancelled(uint256 indexed proposalId);
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -116,35 +116,24 @@ contract CompanyImplementation is Initializable {
 
     /**
      * @notice Called once by BeaconProxy on deployment via CompanyFactory.
+     *         Equity is NOT set here — CompanyFactory calls Colony.issueFoundingEquity()
+     *         separately for each founding holder after the proxy is deployed and wired.
+     *
      * @param _colony     Colony contract address
      * @param _name       Organisation display name
-     * @param _secretary  Founding secretary — the registering citizen
-     * @param _holders    Initial equity holder addresses
-     * @param _stakes     Stakes in basis points (must sum to 10000)
+     * @param _secretary  Founding secretary (the registering citizen)
      */
     function initialize(
         address _colony,
         string  calldata _name,
-        address _secretary,
-        address[] calldata _holders,
-        uint256[] calldata _stakes
+        address _secretary
     ) external initializer {
         require(_colony    != address(0), "Company: zero colony");
         require(_secretary != address(0), "Company: zero secretary");
-        require(_holders.length > 0,      "Company: no holders");
-        require(_holders.length == _stakes.length, "Company: length mismatch");
 
         colony    = _colony;
         name      = _name;
         secretary = _secretary;
-
-        uint256 total = 0;
-        for (uint256 i = 0; i < _holders.length; i++) {
-            equityHolders.push(_holders[i]);
-            equityStakes.push(_stakes[i]);
-            total += _stakes[i];
-        }
-        require(total == 10000, "Company: stakes must sum to 10000 bps");
     }
 
     // ── Modifiers ────────────────────────────────────────────────────────────
@@ -154,12 +143,22 @@ contract CompanyImplementation is Initializable {
         _;
     }
 
+    modifier onlySecretaryOrFD() {
+        require(msg.sender == secretary || msg.sender == fd, "Company: not secretary or FD");
+        _;
+    }
+
+    modifier onlyColony() {
+        require(msg.sender == colony, "Company: not Colony");
+        _;
+    }
+
     // ── Officer management ───────────────────────────────────────────────────
 
     /**
-     * @notice Appoint a CEO or FD. Only the secretary may call.
+     * @notice Appoint a CEO or FD. Secretary only.
      * @param role  "CEO" or "FD"
-     * @param addr  Address of the new officer
+     * @param addr  New officer address
      */
     function appointOfficer(string calldata role, address addr) external onlySecretary {
         require(addr != address(0), "Company: zero address");
@@ -171,7 +170,7 @@ contract CompanyImplementation is Initializable {
     }
 
     /**
-     * @notice Remove a CEO or FD role. Only the secretary may call.
+     * @notice Remove a CEO or FD. Secretary only.
      * @param role  "CEO" or "FD"
      */
     function removeOfficer(string calldata role) external onlySecretary {
@@ -183,8 +182,7 @@ contract CompanyImplementation is Initializable {
     }
 
     /**
-     * @notice Transfer the secretary role to another address.
-     *         Only the current secretary may call.
+     * @notice Transfer the secretary role to another address. Secretary only.
      */
     function changeSecretary(address newSecretary) external onlySecretary {
         require(newSecretary != address(0), "Company: zero address");
@@ -192,10 +190,12 @@ contract CompanyImplementation is Initializable {
         secretary = newSecretary;
     }
 
-    // ── Secretary operations ─────────────────────────────────────────────────
+    // ── Financial operations ─────────────────────────────────────────────────
 
     /**
      * @notice Send S-tokens from this organisation wallet to any address.
+     *         Used for purchasing goods and services. Not wages — no ongoing
+     *         employment relationship is created by this payment.
      */
     function pay(address to, uint256 amount, string calldata note) external onlySecretary {
         IColony(colony).send(to, amount, note);
@@ -203,213 +203,287 @@ contract CompanyImplementation is Initializable {
     }
 
     /**
-     * @notice Convert organisation S-tokens to V-tokens. No monthly cap.
+     * @notice Convert organisation S-tokens to V-tokens. No monthly cap for orgs.
      */
     function convertToV(uint256 amount) external onlySecretary {
         IColony(colony).saveToVCompany(amount);
         emit ConvertedToV(amount);
     }
 
-    /**
-     * @notice Distribute the entire V-token balance pro-rata to equity holders.
-     *         Secretary calls at end of each earnings period (typically monthly).
-     */
-    function distributeVDividend() external onlySecretary {
-        uint256 total = IERC20Minimal(IColony(colony).vToken()).balanceOf(address(this));
-        require(total > 0, "Company: no V-tokens to distribute");
+    // ── Equity issuance ──────────────────────────────────────────────────────
 
-        for (uint256 i = 0; i < equityHolders.length; i++) {
-            uint256 share = (total * equityStakes[i]) / 10000;
+    /**
+     * @notice Issue participant shares with a monthly vesting schedule.
+     *         Unvested shares receive dividends from day one but cannot be transferred.
+     *         Unvested shares are forfeited via forfeitShares() if the participant
+     *         stops contributing. Vested shares are permanent and freely transferable.
+     *
+     *         Convention: the month-12 tranche should be larger than earlier tranches
+     *         (commitment bonus). The Secretary sets the schedule at issuance.
+     *
+     * @param holder        Participant wallet
+     * @param stakeBps      Total stake in basis points
+     * @param vestingEpochs Colony epoch at which each tranche unlocks
+     * @param trancheBps    Basis points per tranche; must sum to stakeBps
+     */
+    function issueVestingShares(
+        address   holder,
+        uint256   stakeBps,
+        uint256[] calldata vestingEpochs,
+        uint256[] calldata trancheBps
+    ) external onlySecretary {
+        require(holder != address(0),   "Company: zero holder");
+        require(stakeBps > 0,           "Company: zero stake");
+        require(vestingEpochs.length > 0, "Company: use issueOpenShares for immediate vest");
+
+        IColony(colony).issueEquity(
+            address(this), holder, stakeBps, vestingEpochs, trancheBps
+        );
+        emit SharesIssued(holder, stakeBps, true);
+    }
+
+    /**
+     * @notice Issue investor shares with immediate full vest.
+     *         Freely transferable from the moment of issuance.
+     *
+     * @param investor  Investor wallet
+     * @param stakeBps  Stake in basis points
+     */
+    function issueOpenShares(address investor, uint256 stakeBps) external onlySecretary {
+        require(investor != address(0), "Company: zero investor");
+        require(stakeBps > 0,           "Company: zero stake");
+
+        // Empty vesting arrays = immediate full vest (AToken.issueEquity convention)
+        IColony(colony).issueEquity(
+            address(this), investor, stakeBps, new uint256[](0), new uint256[](0)
+        );
+        emit SharesIssued(investor, stakeBps, false);
+    }
+
+    // ── Dividend declaration ─────────────────────────────────────────────────
+
+    /**
+     * @notice Declare a V-token dividend. Secretary or FD may call.
+     *
+     *         Distributes vAmount of V pro-rata to ALL equity holders
+     *         in proportion to their total stake (vested + unvested).
+     *         Unvested shares receive dividends — this is the primary compensation
+     *         mechanism for participants under the no-wages model.
+     *
+     *         The company must hold at least vAmount V before calling.
+     *
+     * @param vAmount  V-tokens to distribute (18 dec)
+     */
+    function declareDividend(uint256 vAmount) external onlySecretaryOrFD {
+        require(vAmount > 0, "Company: zero dividend");
+
+        IColony col = IColony(colony);
+        uint256 vBal = IERC20Minimal(col.vToken()).balanceOf(address(this));
+        require(vBal >= vAmount, "Company: insufficient V balance");
+
+        IAToken at = IAToken(col.aToken());
+        (address[] memory holders, uint256[] memory stakes,) = at.getEquityTable(address(this));
+
+        uint256 count = holders.length;
+        require(count > 0, "Company: no equity holders");
+
+        uint256 totalOutstanding = 0;
+        for (uint256 i = 0; i < count; i++) {
+            totalOutstanding += stakes[i];
+        }
+        require(totalOutstanding > 0, "Company: zero outstanding equity");
+
+        for (uint256 i = 0; i < count; i++) {
+            if (stakes[i] == 0) continue;
+            uint256 share = (vAmount * stakes[i]) / totalOutstanding;
             if (share > 0) {
-                IColony(colony).transferVDividend(equityHolders[i], share);
+                col.transferVDividend(holders[i], share);
             }
         }
 
-        emit DividendDistributed(total, equityHolders.length);
+        emit DividendDeclared(vAmount, count);
     }
 
-    // ── Share transfer proposals ─────────────────────────────────────────────
+    // ── Equity lifecycle ─────────────────────────────────────────────────────
 
     /**
-     * @notice Propose transferring some or all of your equity stake to another address.
+     * @notice Forfeit all unvested tranches for a departing participant.
+     *         Secretary calls when a participant stops contributing.
+     *         Vested shares are unaffected and remain with the holder permanently.
+     *         The forfeited bps become available for reallocation by the Secretary.
      *
-     * Required approvers are captured at proposal time (current CEO/FD/Secretary).
-     * The proposer's own approval is implicit if they are one of the required approvers.
-     * Auto-executes immediately if approvals are already satisfied.
-     *
-     * @param to           Recipient (may be a new or existing equity holder)
-     * @param basisPoints  Amount to transfer in basis points (100 = 1%)
-     * @return proposalId
+     * @param assetId  The participant's EQUITY_ASSET token ID
      */
-    function proposeShareTransfer(
-        address to,
-        uint256 basisPoints
-    ) external returns (uint256 proposalId) {
-        require(to != address(0), "Company: zero address");
-        require(basisPoints > 0,  "Company: zero amount");
+    function forfeitShares(uint256 assetId) external onlySecretary {
+        IAToken at = IAToken(IColony(colony).aToken());
+        (,, address tokenCompany) = at.getVestingStake(assetId);
+        require(tokenCompany == address(this), "Company: token not for this company");
 
-        uint256 fromIdx = _holderIndex(msg.sender);
-        require(fromIdx < equityHolders.length,         "Company: not an equity holder");
-        require(basisPoints <= equityStakes[fromIdx],   "Company: insufficient stake");
+        uint256 forfeitedBps = IColony(colony).forfeitEquity(assetId);
+        emit SharesForfeited(assetId, forfeitedBps);
+    }
 
-        // Determine required approvers at time of proposal
-        address a1;
-        address a2;
-        if (ceo != address(0) && fd != address(0)) {
-            a1 = ceo; a2 = fd;
-        } else if (ceo != address(0)) {
-            a1 = ceo;
-        } else if (fd != address(0)) {
-            a1 = fd;
-        } else {
-            a1 = secretary;
+    /**
+     * @notice Buy back vested equity from a holder at a secretary-specified S-token price.
+     *         The Secretary agrees the price off-chain (shareNAV() provides a V-token
+     *         reference value; market price may differ). Company pays priceS S-tokens to
+     *         the holder; the equity is cancelled. Reducing total outstanding bps
+     *         increases NAV per remaining share.
+     *
+     * @param assetId  The holder's EQUITY_ASSET token ID
+     * @param bps      Vested basis points to buy back (must not exceed vestedBps)
+     * @param priceS   S-tokens to pay the holder (18 dec)
+     */
+    function buybackShares(
+        uint256 assetId,
+        uint256 bps,
+        uint256 priceS
+    ) external onlySecretary {
+        require(bps > 0,    "Company: zero bps");
+        require(priceS > 0, "Company: zero price");
+
+        IColony col = IColony(colony);
+        IAToken at  = IAToken(col.aToken());
+
+        address holder = at.getTokenHolder(assetId);
+        require(holder != address(0), "Company: token has no holder");
+
+        (,, address tokenCompany) = at.getVestingStake(assetId);
+        require(tokenCompany == address(this), "Company: token not for this company");
+
+        uint256 sBal = IERC20Minimal(col.sToken()).balanceOf(address(this));
+        require(sBal >= priceS, "Company: insufficient S balance");
+
+        col.send(holder, priceS, "share buyback");
+        col.cancelEquity(assetId, bps);
+
+        emit SharesBoughtBack(assetId, bps, priceS);
+    }
+
+    /**
+     * @notice Redeem ALL equity held by an ex-director at current V NAV.
+     *         Called by Colony governance when an MCC board member's term ends.
+     *         Pays V-tokens at NAV for the director's full stake (vested + unvested).
+     *         Unvested tranches are forfeited first; vested are then cancelled.
+     *
+     *         NAV per bps = vBalance × bps / totalOutstandingBps
+     *
+     *         The incoming director's fresh equity is issued separately via
+     *         issueVestingShares() after this call.
+     *
+     * @param exDirector  The departing director's wallet address
+     */
+    function redeemDirectorShares(address exDirector) external onlyColony {
+        require(exDirector != address(0), "Company: zero address");
+
+        IColony col = IColony(colony);
+        IAToken at  = IAToken(col.aToken());
+
+        // Build equity table to compute total outstanding bps
+        (address[] memory holders, uint256[] memory stakes,) = at.getEquityTable(address(this));
+        uint256 totalOutstanding = 0;
+        for (uint256 i = 0; i < holders.length; i++) {
+            totalOutstanding += stakes[i];
+        }
+        require(totalOutstanding > 0, "Company: zero outstanding equity");
+
+        // Scan exDirector's held tokens for equity in this company
+        uint256[] memory held = at.tokensOf(exDirector);
+        uint256 validCount = 0;
+        uint256[] memory tempIds    = new uint256[](held.length);
+        uint256[] memory tempBps    = new uint256[](held.length); // full stake (for NAV)
+        uint256[] memory tempVested = new uint256[](held.length); // vested bps (for cancel)
+
+        for (uint256 i = 0; i < held.length; i++) {
+            (uint256 totalBps, uint256 vestedBps, address tokenCompany) =
+                at.getVestingStake(held[i]);
+            if (tokenCompany == address(this) && totalBps > 0) {
+                tempIds[validCount]    = held[i];
+                tempBps[validCount]    = totalBps;
+                tempVested[validCount] = vestedBps;
+                validCount++;
+            }
+        }
+        require(validCount > 0, "Company: exDirector holds no equity here");
+
+        // Snapshot V balance before any transfers (NAV computed at this moment)
+        uint256 vBal = IERC20Minimal(col.vToken()).balanceOf(address(this));
+        uint256 totalVPaid = 0;
+
+        for (uint256 i = 0; i < validCount; i++) {
+            // Pay NAV in V for full stake (vested + unvested — director is redeemed, not forfeited)
+            uint256 navV = (vBal * tempBps[i]) / totalOutstanding;
+            if (navV > 0) {
+                col.transferVDividend(exDirector, navV);
+                totalVPaid += navV;
+            }
+
+            // Forfeit unvested tranches (makes vestedBps == totalStakeBps)
+            if (tempBps[i] > tempVested[i]) {
+                col.forfeitEquity(tempIds[i]);
+            }
+
+            // Cancel the vested portion
+            if (tempVested[i] > 0) {
+                col.cancelEquity(tempIds[i], tempVested[i]);
+            }
         }
 
-        // Proposer's approval is implicit
-        bool app1 = (msg.sender == a1);
-        bool app2 = (a2 != address(0) && msg.sender == a2);
-
-        proposalId = nextProposalId++;
-        ShareTransferProposal storage p = proposals[proposalId];
-        p.from        = msg.sender;
-        p.to          = to;
-        p.basisPoints = basisPoints;
-        p.approver1   = a1;
-        p.approver2   = a2;
-        p.approved1   = app1;
-        p.approved2   = app2;
-        p.executed    = false;
-        p.cancelled   = false;
-        p.expiresAt   = block.timestamp + 30 days;
-
-        emit ShareTransferProposed(proposalId, msg.sender, to, basisPoints, a1, a2);
-
-        _tryExecute(proposalId);
-    }
-
-    /**
-     * @notice Approve a pending share transfer proposal.
-     *         Caller must be one of the required approvers captured at proposal time.
-     */
-    function approveShareTransfer(uint256 proposalId) external {
-        ShareTransferProposal storage p = proposals[proposalId];
-        require(!p.executed,                         "Company: already executed");
-        require(!p.cancelled,                        "Company: cancelled");
-        require(block.timestamp <= p.expiresAt,      "Company: proposal expired");
-        require(
-            msg.sender == p.approver1 || msg.sender == p.approver2,
-            "Company: not a required approver"
-        );
-
-        if (msg.sender == p.approver1) p.approved1 = true;
-        if (msg.sender == p.approver2) p.approved2 = true;
-
-        emit ShareTransferApproved(proposalId, msg.sender);
-        _tryExecute(proposalId);
-    }
-
-    /**
-     * @notice Cancel a pending share transfer proposal.
-     *         Only the proposer may cancel.
-     */
-    function cancelShareTransfer(uint256 proposalId) external {
-        ShareTransferProposal storage p = proposals[proposalId];
-        require(!p.executed,            "Company: already executed");
-        require(!p.cancelled,           "Company: already cancelled");
-        require(msg.sender == p.from,   "Company: not the proposer");
-        p.cancelled = true;
-        emit ShareTransferCancelled(proposalId);
+        emit DirectorSharesRedeemed(exDirector, totalVPaid);
     }
 
     // ── Views ────────────────────────────────────────────────────────────────
 
+    /**
+     * @notice V-token NAV for a given basis point stake.
+     *         Reference value for buybacks and equity valuation.
+     *         Market price may differ from NAV on growth expectations.
+     *
+     *         share value = company V reserve × (stakeBps / totalOutstandingBps)
+     *
+     * @param stakeBps  Basis points to value
+     * @return navV     V-tokens at current NAV (0 if no equity outstanding)
+     */
+    function shareNAV(uint256 stakeBps) external view returns (uint256 navV) {
+        IAToken at = IAToken(IColony(colony).aToken());
+        (, uint256[] memory stakes,) = at.getEquityTable(address(this));
+
+        uint256 totalOutstanding = 0;
+        for (uint256 i = 0; i < stakes.length; i++) {
+            totalOutstanding += stakes[i];
+        }
+        if (totalOutstanding == 0) return 0;
+
+        uint256 vBal = IERC20Minimal(IColony(colony).vToken()).balanceOf(address(this));
+        navV = (vBal * stakeBps) / totalOutstanding;
+    }
+
+    /// @notice S-token balance of this organisation.
     function sBalance() external view returns (uint256) {
         return IERC20Minimal(IColony(colony).sToken()).balanceOf(address(this));
     }
 
+    /// @notice V-token balance of this organisation.
     function vBalance() external view returns (uint256) {
         return IERC20Minimal(IColony(colony).vToken()).balanceOf(address(this));
     }
 
+    /**
+     * @notice Full equity table for this company — all current holders with total
+     *         and vested stake in basis points. Reads directly from AToken.
+     *         Replaces the v1 getEquityTable() which read internal arrays.
+     */
     function getEquityTable() external view returns (
         address[] memory holders,
-        uint256[] memory stakes
+        uint256[] memory totalStakeBps,
+        uint256[] memory vestedStakeBps
     ) {
-        return (equityHolders, equityStakes);
+        return IAToken(IColony(colony).aToken()).getEquityTable(address(this));
     }
 
+    /// @notice Number of current equity holders for this company.
     function holderCount() external view returns (uint256) {
-        return equityHolders.length;
-    }
-
-    function getProposal(uint256 proposalId) external view returns (
-        address from,
-        address to,
-        uint256 basisPoints,
-        address approver1,
-        address approver2,
-        bool    approved1,
-        bool    approved2,
-        bool    executed,
-        bool    cancelled,
-        uint256 expiresAt
-    ) {
-        ShareTransferProposal storage p = proposals[proposalId];
-        return (
-            p.from, p.to, p.basisPoints,
-            p.approver1, p.approver2,
-            p.approved1, p.approved2,
-            p.executed, p.cancelled, p.expiresAt
-        );
-    }
-
-    // ── Internal ─────────────────────────────────────────────────────────────
-
-    function _tryExecute(uint256 proposalId) internal {
-        ShareTransferProposal storage p = proposals[proposalId];
-        bool ready = p.approved1 && (p.approver2 == address(0) || p.approved2);
-        if (!ready) return;
-
-        p.executed = true;
-        _doTransferShares(p.from, p.to, p.basisPoints);
-        emit ShareTransferExecuted(proposalId, p.from, p.to, p.basisPoints);
-    }
-
-    function _doTransferShares(address from, address to, uint256 basisPoints) internal {
-        uint256 fromIdx = _holderIndex(from);
-        require(fromIdx < equityHolders.length,       "Company: from not a holder");
-        require(basisPoints <= equityStakes[fromIdx], "Company: stake changed");
-
-        equityStakes[fromIdx] -= basisPoints;
-
-        uint256 toIdx = _holderIndex(to);
-        if (toIdx < equityHolders.length) {
-            equityStakes[toIdx] += basisPoints;
-        } else {
-            equityHolders.push(to);
-            equityStakes.push(basisPoints);
-        }
-
-        // Remove zero-stake holder
-        if (equityStakes[fromIdx] == 0) {
-            _removeHolder(fromIdx);
-        }
-    }
-
-    function _holderIndex(address addr) internal view returns (uint256) {
-        for (uint256 i = 0; i < equityHolders.length; i++) {
-            if (equityHolders[i] == addr) return i;
-        }
-        return equityHolders.length; // not found sentinel
-    }
-
-    function _removeHolder(uint256 idx) internal {
-        uint256 last = equityHolders.length - 1;
-        if (idx != last) {
-            equityHolders[idx] = equityHolders[last];
-            equityStakes[idx]  = equityStakes[last];
-        }
-        equityHolders.pop();
-        equityStakes.pop();
+        (address[] memory holders,,) = IAToken(IColony(colony).aToken()).getEquityTable(address(this));
+        return holders.length;
     }
 }
