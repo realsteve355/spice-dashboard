@@ -5,9 +5,10 @@ import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { useWallet } from '../App'
 
-// Colony contract — for send() (personal wallet → company)
+// Colony contract — for send() and citizen checks
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
+  "function isCitizen(address) view returns (bool)",
 ]
 const COLONY_EVENTS_ABI = [
   "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
@@ -237,8 +238,25 @@ export default function Company() {
   const [issuingShares,   setIssuingShares]  = useState(false)
   const [issueType,       setIssueType]      = useState('open')
   const [issueHolder,     setIssueHolder]    = useState('')
+  const [issueHolderError, setIssueHolderError] = useState(null)
   const [issueStakeBps,   setIssueStakeBps]  = useState('')
   const [issueVestMonths, setIssueVestMonths] = useState('12')
+
+  async function checkIssueHolder(wallet) {
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.colony || !ethers.isAddress(wallet)) {
+      setIssueHolderError(wallet ? 'Invalid address' : null)
+      return
+    }
+    try {
+      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
+      const ok     = await colony.isCitizen(wallet)
+      setIssueHolderError(ok ? null : 'Not a citizen of this colony')
+    } catch {
+      setIssueHolderError(null)
+    }
+  }
   const [actionPending,   setActPending]     = useState(false)
   const [actionError,     setActError]       = useState(null)
   const [actionDone,      setActDone]        = useState(null)
@@ -288,7 +306,7 @@ export default function Company() {
 
   async function handleIssueShares() {
     const co = companyContract()
-    if (!co || !issueHolder || !issueStakeBps) return
+    if (!co || !issueHolder || !issueStakeBps || issueHolderError) return
     setActPending(true); setActError(null); setActDone(null)
     try {
       const bps = Number(issueStakeBps)
@@ -544,7 +562,12 @@ export default function Company() {
                         ? 'Immediately transferable. Suitable for investors paying S-tokens upfront.'
                         : 'Earned in monthly tranches. Unvested shares forfeit if the participant stops contributing.'}
                     </div>
-                    <CField label="Holder address" value={issueHolder} onChange={setIssueHolder} placeholder="0x…" />
+                    <CField label="Holder address" value={issueHolder}
+                      onChange={v => { setIssueHolder(v); setIssueHolderError(null) }}
+                      onBlur={() => checkIssueHolder(issueHolder)}
+                      placeholder="0x…"
+                      error={issueHolderError}
+                    />
                     <CField label="Stake in basis points (10000 = 100%)" value={issueStakeBps} onChange={setIssueStakeBps} placeholder="e.g. 2000 = 20%" type="number" />
                     {issueType === 'vesting' && (
                       <CField label="Vesting period (months, equal tranches)" value={issueVestMonths} onChange={setIssueVestMonths} placeholder="12" type="number" />
@@ -555,8 +578,8 @@ export default function Company() {
                       </button>
                       <button
                         onClick={handleIssueShares}
-                        disabled={actionPending || !issueHolder || !issueStakeBps}
-                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
+                        disabled={actionPending || !issueHolder || !issueStakeBps || !!issueHolderError}
+                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps || !!issueHolderError) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Issuing…' : 'Issue shares →'}
                       </button>
@@ -926,17 +949,19 @@ function ContractsTab({ contracts, isOwner, companyId }) {
   )
 }
 
-function CField({ label, value, onChange, placeholder, type }) {
+function CField({ label, value, onChange, onBlur, placeholder, type, error }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>{label.toUpperCase()}</div>
       <input
-        style={{ ...inlineInput, width: '100%' }}
+        style={{ ...inlineInput, width: '100%', borderColor: error ? C.red : undefined }}
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
         type={type || 'text'}
       />
+      {error && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{error}</div>}
     </div>
   )
 }
