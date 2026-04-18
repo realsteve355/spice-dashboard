@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 /**
  * @title AToken
  * @notice Fisc economic claims registry.
@@ -9,6 +13,11 @@ pragma solidity ^0.8.25;
  * is recorded here as an A-token. Colony is the sole caller for all
  * state-changing functions — citizens and companies reach AToken only
  * through Colony.
+ *
+ * Inherits ERC-721 so A-tokens are real NFTs visible in MetaMask and on
+ * Basescan. Public transfer/approval functions are blocked — all transfers
+ * must go through Colony (transferAsset, transferEquity, issueObligation,
+ * etc.) to maintain protocol invariants.
  *
  * ┌─────────────────────────────────────────────────────────────────────┐
  * │  Form 1 — UNILATERAL                                                │
@@ -34,7 +43,7 @@ pragma solidity ^0.8.25;
  * │  Unsecured: UBI cap enforced at creation for citizen obligors.      │
  * └─────────────────────────────────────────────────────────────────────┘
  */
-contract AToken {
+contract AToken is ERC721 {
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -145,9 +154,10 @@ contract AToken {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    constructor(address _colony) {
+    constructor(address _colony) ERC721("SPICE A-Token", "ATOKE") {
         require(_colony != address(0), "AToken: zero colony");
         colony = _colony;
+        nextId = 1;  // start at 1 — avoids zero-ID ambiguity in external tooling
     }
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -155,6 +165,99 @@ contract AToken {
     modifier onlyColony() {
         require(msg.sender == colony, "AToken: only Colony");
         _;
+    }
+
+    // ── ERC-721 overrides — block direct transfers ────────────────────────────
+    //
+    // All legitimate transfers must go through Colony (transferAsset,
+    // transferEquity, etc.) which enforces protocol invariants. The
+    // internal super._mint / super._transfer / super._burn calls below
+    // bypass these overrides, so Colony-mediated operations work normally.
+
+    function transferFrom(address, address, uint256) public pure override {
+        revert("AToken: use Colony.transferAsset or Colony.transferEquity");
+    }
+
+    function safeTransferFrom(address, address, uint256, bytes memory) public pure override {
+        revert("AToken: use Colony.transferAsset or Colony.transferEquity");
+    }
+
+    function approve(address, uint256) public pure override {
+        revert("AToken: approvals disabled - use Colony");
+    }
+
+    function setApprovalForAll(address, bool) public pure override {
+        revert("AToken: approvals disabled - use Colony");
+    }
+
+    // ── ERC-721 metadata ──────────────────────────────────────────────────────
+
+    /**
+     * @notice On-chain JSON metadata for any A-token.
+     *         Returns a data URI so no off-chain hosting is required.
+     *         Reverts for non-existent or burned tokens.
+     */
+    function tokenURI(uint256 id) public view override returns (string memory) {
+        _requireOwned(id);
+
+        Token storage t = tokens[id];
+        string memory formStr = _formName(t.form);
+
+        string memory attrs = string.concat(
+            '[{"trait_type":"Form","value":"', formStr, '"},',
+            '{"trait_type":"Active","value":"', t.active ? "true" : "false", '"},',
+            '{"trait_type":"Holder","value":"', Strings.toHexString(uint256(uint160(t.holder)), 20), '"}'
+        );
+
+        if (t.form == Form.EQUITY_ASSET) {
+            VestingData storage v = vestingData[id];
+            attrs = string.concat(attrs,
+                ',{"trait_type":"Total Stake (bps)","value":"', Strings.toString(v.totalStakeBps), '"}',
+                ',{"trait_type":"Vested (bps)","value":"', Strings.toString(v.vestedBps), '"}',
+                ',{"trait_type":"Company","value":"', Strings.toHexString(uint256(uint160(v.company)), 20), '"}'
+            );
+        } else if (t.form == Form.UNILATERAL) {
+            AssetData storage a = assetData[id];
+            attrs = string.concat(attrs,
+                ',{"trait_type":"Value (S)","value":"', Strings.toString(a.valueSTokens / 1e18), '"}',
+                ',{"trait_type":"Weight (kg)","value":"', Strings.toString(a.weightKg), '"}',
+                ',{"trait_type":"Has Autonomous AI","value":"', a.hasAutonomousAI ? "true" : "false", '"}'
+            );
+        } else if (t.form == Form.OBLIGATION_LIABILITY) {
+            ObligationData storage ob = obligationData[id];
+            attrs = string.concat(attrs,
+                ',{"trait_type":"Monthly Amount (S)","value":"', Strings.toString(ob.monthlyAmountS / 1e18), '"}',
+                ',{"trait_type":"Total Epochs","value":"', Strings.toString(ob.totalEpochs), '"}',
+                ',{"trait_type":"Epochs Paid","value":"', Strings.toString(ob.epochsPaid), '"}'
+            );
+        } else if (t.form == Form.OBLIGATION_ASSET) {
+            // counterparty on OBLIGATION_ASSET is the obligor
+            attrs = string.concat(attrs,
+                ',{"trait_type":"Obligor","value":"', Strings.toHexString(uint256(uint160(t.counterparty)), 20), '"}'
+            );
+        }
+
+        attrs = string.concat(attrs, ']');
+
+        string memory json = string.concat(
+            '{"name":"A-Token #', Strings.toString(id), '",',
+            '"description":"SPICE Colony A-Token - ', formStr, '",',
+            '"attributes":', attrs, '}'
+        );
+
+        return string.concat(
+            "data:application/json;base64,",
+            Base64.encode(bytes(json))
+        );
+    }
+
+    function _formName(Form form) internal pure returns (string memory) {
+        if (form == Form.UNILATERAL)           return "UNILATERAL";
+        if (form == Form.EQUITY_ASSET)         return "EQUITY_ASSET";
+        if (form == Form.EQUITY_LIABILITY)     return "EQUITY_LIABILITY";
+        if (form == Form.OBLIGATION_ASSET)     return "OBLIGATION_ASSET";
+        if (form == Form.OBLIGATION_LIABILITY) return "OBLIGATION_LIABILITY";
+        return "UNKNOWN";
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -184,7 +287,7 @@ contract AToken {
         require(holder != address(0),                                  "AToken: zero holder");
         require(valueSTokens > 500 * 1e18 || weightKg > 50 || hasAI, "AToken: below registration threshold");
 
-        id = _mint(Form.UNILATERAL, holder, address(0), 0);
+        id = _createToken(Form.UNILATERAL, holder, address(0), 0);
         assetData[id] = AssetData({
             valueSTokens:      valueSTokens,
             weightKg:          weightKg,
@@ -212,7 +315,7 @@ contract AToken {
         require(to != address(0),          "AToken: zero recipient");
 
         address from = t.holder;
-        _transfer(id, from, to);
+        _moveToken(id, from, to);
         assetData[id].valueSTokens = newValueS;
         emit AssetTransferred(id, from, to, newValueS);
     }
@@ -269,7 +372,7 @@ contract AToken {
         }
 
         liabilityId = _findOrCreateEquityLiability(company);
-        assetId     = _mint(Form.EQUITY_ASSET, holder, company, liabilityId);
+        assetId     = _createToken(Form.EQUITY_ASSET, holder, company, liabilityId);
 
         bool hasVesting = vestingEpochs.length > 0;
         vestingData[assetId] = VestingData({
@@ -376,7 +479,7 @@ contract AToken {
         if (v.totalStakeBps == 0) _deactivate(assetId);
 
         // Issue a new fully-vested token for the recipient (no vesting schedule)
-        newAssetId = _mint(Form.EQUITY_ASSET, to, company, liabilityId);
+        newAssetId = _createToken(Form.EQUITY_ASSET, to, company, liabilityId);
         vestingData[newAssetId] = VestingData({
             totalStakeBps: bps,
             vestedBps:     bps,
@@ -469,8 +572,8 @@ contract AToken {
         }
 
         // Mint the paired tokens
-        liabilityId = _mint(Form.OBLIGATION_LIABILITY, obligor,  creditor, 0);
-        assetId     = _mint(Form.OBLIGATION_ASSET,     creditor, obligor,  liabilityId);
+        liabilityId = _createToken(Form.OBLIGATION_LIABILITY, obligor,  creditor, 0);
+        assetId     = _createToken(Form.OBLIGATION_ASSET,     creditor, obligor,  liabilityId);
         tokens[liabilityId].linkedId = assetId;
 
         obligationData[liabilityId] = ObligationData({
@@ -550,7 +653,7 @@ contract AToken {
         uint256 colId = ob.collateralId;
 
         // Transfer collateral from obligor to creditor
-        _transfer(colId, tokens[colId].holder, creditor);
+        _moveToken(colId, tokens[colId].holder, creditor);
         escrowedFor[colId]     = 0;
         collateralFor[liabilityId] = 0;
 
@@ -681,7 +784,11 @@ contract AToken {
     // Internal helpers
     // ══════════════════════════════════════════════════════════════════════════
 
-    function _mint(
+    /**
+     * @dev Create a new A-token record and register it as an ERC-721 token.
+     *      Renamed from _mint to avoid shadowing ERC721._mint.
+     */
+    function _createToken(
         Form    form,
         address holder,
         address counterparty,
@@ -696,19 +803,30 @@ contract AToken {
             active:       true
         });
         _addToHeld(holder, id);
+        super._mint(holder, id);  // register ERC-721 ownership
     }
 
-    function _transfer(uint256 id, address from, address to) internal {
+    /**
+     * @dev Move an A-token from one holder to another and update ERC-721 ownership.
+     *      Renamed from _transfer to avoid shadowing ERC721._transfer.
+     */
+    function _moveToken(uint256 id, address from, address to) internal {
         _removeFromHeld(from, id);
         tokens[id].holder = to;
         _addToHeld(to, id);
+        super._transfer(from, to, id);  // update ERC-721 ownership record
     }
 
+    /**
+     * @dev Deactivate a token, removing it from the holder index and burning
+     *      the ERC-721 record so ownerOf() reverts for the burned ID.
+     */
     function _deactivate(uint256 id) internal {
         if (!tokens[id].active) return;
         address holder = tokens[id].holder;
         tokens[id].active = false;
         _removeFromHeld(holder, id);
+        super._burn(id);  // burn ERC-721 record
     }
 
     function _findOrCreateEquityLiability(address company) internal returns (uint256) {
@@ -721,7 +839,7 @@ contract AToken {
             }
         }
         // First equity issuance for this company — create the liability token
-        return _mint(Form.EQUITY_LIABILITY, company, address(0), 0);
+        return _createToken(Form.EQUITY_LIABILITY, company, address(0), 0);
     }
 
     function _indexCompanyEquity(address company, uint256 assetId) internal {

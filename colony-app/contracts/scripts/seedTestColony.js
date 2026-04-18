@@ -23,10 +23,10 @@ const hre = require("hardhat");
 // ── Addresses — update these after each fresh deploy ─────────────────────────
 // Run `npx hardhat run scripts/deploy.js --network baseSepolia` first,
 // then copy the printed addresses here.
-const COLONY_ADDRESS    = "0x98fC096EAF9b41CD1EC5729fdF25dd5ef3EdADCB";
-const BILLING_ADDRESS   = "0xf87efe21Caf11DBD66F481919455f27A44BfE6E8";
-const SERVICES_ADDRESS  = "0xeA2C3Ac08E1202492b2a381F152580Ae6fD731E4";
-const COMPANY_FACTORY   = "0xD06Da6df8948AebF47Fd6d6A626f30D4BcCaC84a";
+const COLONY_ADDRESS    = "0xDc546810b73b499DB79a0DF2A662170660Bf3902";
+const BILLING_ADDRESS   = "0x1a98fD10c6133Aa6C2468588BCc0d9C723AFeef6";
+const SERVICES_ADDRESS  = "0x04905cDE3b2446150Af32Ae11Cf4b83eE4680C7B";
+const COMPANY_FACTORY   = "0x474F310B0069B572E720c5FB7c8777B77B42D46e";
 
 const CITIZENS = {
   Steve: "0x92378C9b6e556C695F91eB6675E142d7114C43BC",
@@ -207,7 +207,7 @@ async function main() {
     console.log(`   ${name.padEnd(6)} ${hre.ethers.formatUnits(bal, 18)} S`);
   }
   console.log("\nNext steps:");
-  console.log("  • Any citizen not yet joined: visit app.zpc.finance/colony/daves-colony-2");
+  console.log("  • Any citizen not yet joined: visit app.zpc.finance/colony/daves-colony");
   console.log("  • Re-run this script after they join to send them tokens + set bills");
 }
 
