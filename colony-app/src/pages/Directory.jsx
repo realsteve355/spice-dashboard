@@ -38,7 +38,7 @@ export default function Directory() {
 
     const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC)
     const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider)
-    registry.getAll()
+    registry.getActive()
       .then(async (addresses) => {
         if (addresses.length === 0) { setRegistryColonies([]); return }
         const entries = await Promise.all(
