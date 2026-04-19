@@ -193,7 +193,7 @@ async function main() {
 
   // ── 12-13. AToken — Fisc economic claims registry ────────────────────────
   console.log("\n── AToken ──────────────────────────────────────────────────────");
-  const { addr: aTokenAddr } = await deploy("AToken", colonyAddr);
+  const { addr: aTokenAddr } = await deploy("AToken", colonyAddr, COLONY_NAME);
 
   const setATx = await colonyC.setAToken(aTokenAddr, await gasOpts());
   await setATx.wait();

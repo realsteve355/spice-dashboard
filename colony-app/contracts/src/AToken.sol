@@ -91,6 +91,7 @@ contract AToken is ERC721 {
     // ── State ─────────────────────────────────────────────────────────────────
 
     address public colony;
+    string  public colonyName;
     uint256 public nextId;
 
     mapping(uint256 => Token)          public tokens;
@@ -157,10 +158,11 @@ contract AToken is ERC721 {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    constructor(address _colony) ERC721("SPICE A-Token", "ATOKE") {
+    constructor(address _colony, string memory _colonyName) ERC721("SPICE A-Token", "ATOKE") {
         require(_colony != address(0), "AToken: zero colony");
-        colony = _colony;
-        nextId = 1;  // start at 1 — avoids zero-ID ambiguity in external tooling
+        colony     = _colony;
+        colonyName = _colonyName;
+        nextId     = 1;  // start at 1 — avoids zero-ID ambiguity in external tooling
     }
 
     // ── Access control ────────────────────────────────────────────────────────
@@ -246,27 +248,95 @@ contract AToken is ERC721 {
 
         attrs = string.concat(attrs, ']');
 
-        // For UNILATERAL assets, prefer "Label · NNN S" as the NFT name
+        // For UNILATERAL assets, prefer "Label · NNN S" as the NFT name and generate an SVG
         string memory tokenName;
+        string memory image;
         if (t.form == Form.UNILATERAL) {
             string memory lbl2 = assetLabel[id];
             string memory valStr = Strings.toString(assetData[id].valueSTokens / 1e18);
             tokenName = bytes(lbl2).length > 0
                 ? string.concat(lbl2, unicode' \u00B7 ', valStr, ' S')
                 : string.concat('Asset #', Strings.toString(id), unicode' \u00B7 ', valStr, ' S');
+            image = string.concat(
+                '"image":"data:image/svg+xml;base64,',
+                Base64.encode(bytes(_assetSVG(id, lbl2, valStr))),
+                '",'
+            );
         } else {
             tokenName = string.concat('A-Token #', Strings.toString(id));
+            image = '';
         }
 
         string memory json = string.concat(
             '{"name":"', tokenName, '",',
             '"description":"SPICE Colony A-Token - ', formStr, '",',
+            image,
             '"attributes":', attrs, '}'
         );
 
         return string.concat(
             "data:application/json;base64,",
             Base64.encode(bytes(json))
+        );
+    }
+
+    /**
+     * @dev Generate an on-chain SVG card for a UNILATERAL asset token.
+     *      Matches the GToken visual language: dark background, gold border, monospace.
+     */
+    function _assetSVG(
+        uint256 id,
+        string memory lbl,
+        string memory valStr
+    ) internal view returns (string memory) {
+        AssetData storage a = assetData[id];
+        bool hasLbl = bytes(lbl).length > 0;
+
+        // Bottom badge row: weight and/or AI
+        string memory badges = '';
+        if (a.weightKg > 0 && a.hasAutonomousAI) {
+            badges = string.concat(
+                '<text x="200" y="340" font-family="monospace" font-size="11" fill="#555" text-anchor="middle" letter-spacing="2">',
+                Strings.toString(a.weightKg), ' kg  &middot;  AI</text>'
+            );
+        } else if (a.weightKg > 0) {
+            badges = string.concat(
+                '<text x="200" y="340" font-family="monospace" font-size="11" fill="#555" text-anchor="middle" letter-spacing="2">',
+                Strings.toString(a.weightKg), ' kg</text>'
+            );
+        } else if (a.hasAutonomousAI) {
+            badges = '<text x="200" y="340" font-family="monospace" font-size="11" fill="#555" text-anchor="middle" letter-spacing="2">AUTONOMOUS AI</text>';
+        }
+
+        string memory idStr = string.concat('#', Strings.toString(id));
+
+        return string.concat(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">',
+            '<rect width="400" height="400" fill="#0a0a0a"/>',
+            '<rect x="20" y="20" width="360" height="360" fill="none" stroke="#B8860B" stroke-width="1" rx="8"/>',
+            // Colony name at top
+            '<text x="200" y="76" font-family="monospace" font-size="13" fill="#B8860B" text-anchor="middle" letter-spacing="4">',
+            colonyName,
+            '</text>',
+            // Large "A" watermark
+            '<text x="200" y="232" font-family="monospace" font-size="140" fill="#B8860B" text-anchor="middle" opacity="0.08">A</text>',
+            // Asset label (name) or "PHYSICAL ASSET" if none
+            '<text x="200" y="252" font-family="monospace" font-size="',
+            hasLbl ? '15' : '11',
+            '" fill="#ffffff" text-anchor="middle">',
+            hasLbl ? lbl : 'PHYSICAL ASSET',
+            '</text>',
+            // Value
+            '<text x="200" y="300" font-family="monospace" font-size="32" fill="#B8860B" text-anchor="middle">',
+            valStr, ' S',
+            '</text>',
+            // Badges row
+            badges,
+            // Token ID
+            '<text x="200" y="368" font-family="monospace" font-size="11" fill="#333" text-anchor="middle" letter-spacing="4">',
+            idStr,
+            '</text>',
+            '</svg>'
         );
     }
 
