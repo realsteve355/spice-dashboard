@@ -142,7 +142,7 @@ function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
   "function getAll() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
