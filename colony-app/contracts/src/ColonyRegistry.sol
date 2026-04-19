@@ -28,6 +28,14 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  *   - Per-colony override: _colonyFeeOverride[colony] — 0 = use global
  *   - getFeeForColony(colony) — what Colony.send() calls
  *
+ * Founder revenue share:
+ *   - Global default: founderShareBps (2500 = 25%) — of the fee, sent to founder wallet
+ *   - Per-colony override: _founderShareOverride[colony] — 0 = use global
+ *   - Founder wallet: entries[colony].founder unless overridden via _founderWalletOverride
+ *   - getFeeSplit(colony, amount) → (protocolAmt, founderAmt, founderWallet)
+ *   - Colony.settleProtocol() calls getFeeSplit and splits payment accordingly
+ *   - Founder wallet changes are owner-only (support call to spice.zpc.finance)
+ *
  * Colony management:
  *   - register(colony, name, slug)  — called at deploy time; mints C-token to colony
  *   - deregister(colony)            — owner soft-removes colony; burns C-token
@@ -44,6 +52,7 @@ contract ColonyRegistry is ERC721 {
     address public owner;
     address public protocolTreasury;
     uint256 public feePerTx;                          // global default (ETH wei)
+    uint256 public founderShareBps = 2500;            // 25% of fee → founder wallet (basis points)
 
     uint256 private _nextTokenId = 1;
 
@@ -60,8 +69,10 @@ contract ColonyRegistry is ERC721 {
     mapping(address => ColonyEntry)  public  entries;
     mapping(string  => address)      public  slugToColony;
     mapping(address => bool)         public  deregistered;
-    mapping(uint256 => address)      public  tokenIdToColony;  // O(1) tokenURI lookup
-    mapping(address => uint256)      private _colonyFeeOverride; // 0 = use global
+    mapping(uint256 => address)      public  tokenIdToColony;      // O(1) tokenURI lookup
+    mapping(address => uint256)      private _colonyFeeOverride;   // 0 = use global
+    mapping(address => uint256)      private _founderShareOverride; // basis points; 0 = use global
+    mapping(address => address)      private _founderWalletOverride; // address(0) = use entries.founder
 
     event ColonyRegistered(address indexed colony, string slug, address indexed founder, uint256 tokenId);
     event ColonyDeregistered(address indexed colony, uint256 tokenId);
@@ -69,6 +80,9 @@ contract ColonyRegistry is ERC721 {
     event ColonyFeeSet(address indexed colony, uint256 fee);
     event FeeUpdated(uint256 newFeePerTx);
     event TreasuryUpdated(address newTreasury);
+    event FounderShareBpsUpdated(uint256 newBps);
+    event ColonyFounderShareSet(address indexed colony, uint256 bps);
+    event FounderWalletUpdated(address indexed colony, address newWallet);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "ColonyRegistry: not owner");
@@ -231,6 +245,87 @@ contract ColonyRegistry is ERC721 {
     function setFeePerTx(uint256 fee) external onlyOwner {
         feePerTx = fee;
         emit FeeUpdated(fee);
+    }
+
+    // ── Founder revenue share ─────────────────────────────────────────────────
+
+    /**
+     * @notice Returns the effective founder share (in basis points) for a colony.
+     *         Per-colony override takes precedence; falls back to global founderShareBps.
+     */
+    function getColonyFounderShare(address colony) external view returns (uint256) {
+        uint256 override_ = _founderShareOverride[colony];
+        return override_ > 0 ? override_ : founderShareBps;
+    }
+
+    /**
+     * @notice Returns the wallet that founder fees are sent to.
+     *         Per-colony override takes precedence; falls back to entries[colony].founder.
+     */
+    function getFounderWallet(address colony) external view returns (address) {
+        address override_ = _founderWalletOverride[colony];
+        return override_ != address(0) ? override_ : entries[colony].founder;
+    }
+
+    /**
+     * @notice Compute how a fee amount should be split between protocol and founder.
+     * @param colony    The colony paying the fee.
+     * @param amount    Total fee amount (in ETH wei).
+     * @return protocolAmt  Amount sent to protocolTreasury.
+     * @return founderAmt   Amount sent to founder wallet (0 if wallet == address(0)).
+     * @return founderWallet Address to send the founder portion to.
+     */
+    function getFeeSplit(address colony, uint256 amount)
+        external view
+        returns (uint256 protocolAmt, uint256 founderAmt, address founderWallet)
+    {
+        uint256 shareBps = _founderShareOverride[colony] > 0
+            ? _founderShareOverride[colony]
+            : founderShareBps;
+
+        founderWallet = _founderWalletOverride[colony] != address(0)
+            ? _founderWalletOverride[colony]
+            : entries[colony].founder;
+
+        // If founder wallet is the zero address or the colony itself, send everything to protocol
+        if (founderWallet == address(0) || founderWallet == colony) {
+            return (amount, 0, founderWallet);
+        }
+
+        founderAmt  = (amount * shareBps) / 10_000;
+        protocolAmt = amount - founderAmt;
+    }
+
+    /**
+     * @notice Update the global default founder share. Max 50% (5000 bps).
+     *         Applies to all colonies that do not have a per-colony override.
+     */
+    function setFounderShareBps(uint256 bps) external onlyOwner {
+        require(bps <= 5000, "ColonyRegistry: share cannot exceed 50%");
+        founderShareBps = bps;
+        emit FounderShareBpsUpdated(bps);
+    }
+
+    /**
+     * @notice Set a per-colony founder share override. Pass 0 to revert to global.
+     *         Max 50% (5000 bps).
+     */
+    function setColonyFounderShare(address colony, uint256 bps) external onlyOwner {
+        require(entries[colony].colony != address(0), "ColonyRegistry: not registered");
+        require(bps <= 5000, "ColonyRegistry: share cannot exceed 50%");
+        _founderShareOverride[colony] = bps;
+        emit ColonyFounderShareSet(colony, bps);
+    }
+
+    /**
+     * @notice Override the founder wallet for a colony.
+     *         Owner-only — founders request this via spice.zpc.finance support.
+     *         Pass address(0) to revert to entries[colony].founder.
+     */
+    function setFounderWallet(address colony, address wallet) external onlyOwner {
+        require(entries[colony].colony != address(0), "ColonyRegistry: not registered");
+        _founderWalletOverride[colony] = wallet;
+        emit FounderWalletUpdated(colony, wallet);
     }
 
     // ── Treasury (script-only — no web UI) ────────────────────────────────────

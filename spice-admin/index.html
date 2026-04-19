@@ -22,8 +22,9 @@ body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8e
 
 .wrap { max-width: 960px; margin: 0 auto; padding: 28px 24px 80px; }
 
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+@media (max-width: 800px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 480px) { .stats { grid-template-columns: repeat(2, 1fr); } }
 .stat { background: #0f1520; border: 1px solid #1e2a42; border-radius: 6px; padding: 14px 16px; }
 .stat-label { font-size: 9px; color: #4a5878; letter-spacing: 0.16em; margin-bottom: 6px; }
 .stat-value { font-size: 20px; font-weight: 700; }
@@ -165,6 +166,11 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
       <div class="stat-value" id="stat-pending" style="color:#eab308;font-size:15px;margin-top:4px">—</div>
       <div class="stat-sub">ETH owed across all colonies</div>
     </div>
+    <div class="stat">
+      <div class="stat-label">FOUNDER SHARE</div>
+      <div class="stat-value" id="stat-founder-share" style="color:#16a34a;font-size:20px">—</div>
+      <div class="stat-sub">default · % of fee</div>
+    </div>
   </div>
 
   <!-- Owner: global fee + register -->
@@ -174,7 +180,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
   </div>
     <div class="card">
       <div class="card-title">OWNER ACTIONS</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
         <!-- Global fee -->
         <div>
           <div class="field">
@@ -190,6 +196,22 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
           </div>
           <div class="err" id="err-global-fee"></div>
           <div class="ok"  id="ok-global-fee">Fee updated ✓</div>
+        </div>
+        <!-- Global founder share -->
+        <div>
+          <div class="field">
+            <label>DEFAULT FOUNDER SHARE (%)</label>
+            <div class="inp-row">
+              <input class="inp" id="inp-global-founder-share" placeholder="e.g. 25" type="number" step="1" min="0" max="50" />
+              <button class="btn btn-gold owner-action" onclick="setGlobalFounderShare()">Update →</button>
+            </div>
+            <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-founder-share"></div>
+          </div>
+          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+            % of the fee sent to the colony founder wallet. Max 50%. Per-colony overrides set in the colony detail drawer.
+          </div>
+          <div class="err" id="err-global-founder-share"></div>
+          <div class="ok"  id="ok-global-founder-share">Founder share updated ✓</div>
         </div>
         <!-- Transfer protocol wallet -->
         <div>
@@ -265,14 +287,20 @@ const REGISTRY_ABI = [
   "function owner() view returns (address)",
   "function protocolTreasury() view returns (address)",
   "function feePerTx() view returns (uint256)",
+  "function founderShareBps() view returns (uint256)",
   "function getActive() view returns (address[])",
   "function getAll() view returns (address[])",
-  "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
+  "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt, uint256 tokenId)",
   "function deregistered(address) view returns (bool)",
   "function colonyFeeOverride(address) view returns (uint256)",
   "function getFeeForColony(address) view returns (uint256)",
+  "function getColonyFounderShare(address) view returns (uint256)",
+  "function getFounderWallet(address) view returns (address)",
   "function setFeePerTx(uint256) external",
   "function setColonyFee(address, uint256) external",
+  "function setFounderShareBps(uint256) external",
+  "function setColonyFounderShare(address, uint256) external",
+  "function setFounderWallet(address, address) external",
   "function register(address, string, string) external",
   "function deregister(address) external",
   "function reregister(address) external",
@@ -289,7 +317,7 @@ const COLONY_ABI = [
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let provider = null, signer = null, wallet = null, isOwner = false;
-let globalFeeWei = 0n, colonies = [], drawerIdx = null;
+let globalFeeWei = 0n, globalFounderShareBps = 2500n, colonies = [], drawerIdx = null;
 
 // ── Wallet ────────────────────────────────────────────────────────────────────
 async function connectWallet() {
@@ -345,16 +373,21 @@ async function loadAll() {
   const prov = provider || new ethers.JsonRpcProvider(RPC);
   const reg  = new ethers.Contract(REGISTRY, REGISTRY_ABI, prov);
   try {
-    const [treasury, feeWei, ownerAddr, allAddrs] = await Promise.all([
+    const [treasury, feeWei, founderBps, ownerAddr, allAddrs] = await Promise.all([
       reg.protocolTreasury(),
       reg.feePerTx(),
+      reg.founderShareBps(),
       reg.owner(),
       reg.getAll(),
     ]);
     globalFeeWei = feeWei;
-    document.getElementById("stat-fee").textContent   = ethers.formatEther(feeWei) + " ETH";
-    document.getElementById("stat-owner").textContent = ownerAddr.slice(0,10)+"…"+ownerAddr.slice(-8);
-    document.getElementById("cur-fee").textContent       = "current: " + ethers.formatEther(feeWei) + " ETH";
+    globalFounderShareBps = founderBps;
+    const founderPct = (Number(founderBps) / 100).toFixed(0) + "%";
+    document.getElementById("stat-fee").textContent           = ethers.formatEther(feeWei) + " ETH";
+    document.getElementById("stat-owner").textContent         = ownerAddr.slice(0,10)+"…"+ownerAddr.slice(-8);
+    document.getElementById("stat-founder-share").textContent = founderPct;
+    document.getElementById("cur-fee").textContent            = "current: " + ethers.formatEther(feeWei) + " ETH";
+    document.getElementById("cur-founder-share").textContent  = "current: " + founderPct + " of fee → founder";
 
     if (!allAddrs.length) {
       document.getElementById("stat-colonies").textContent = "0";
@@ -364,21 +397,25 @@ async function loadAll() {
     }
 
     document.getElementById("colony-list").innerHTML = '<div class="loading">Loading colony data…</div>';
-    const [entriesArr, dereg, overrides, colonyData] = await Promise.all([
+    const [entriesArr, dereg, overrides, founderShares, founderWallets, colonyData] = await Promise.all([
       Promise.all(allAddrs.map(a => reg.entries(a))),
       Promise.all(allAddrs.map(a => reg.deregistered(a).catch(() => false))),
       Promise.all(allAddrs.map(a => reg.colonyFeeOverride(a).catch(() => 0n))),
+      Promise.all(allAddrs.map(a => reg.getColonyFounderShare(a).catch(() => founderBps))),
+      Promise.all(allAddrs.map(a => reg.getFounderWallet(a).catch(() => null))),
       Promise.all(allAddrs.map(a => loadColonyData(a, prov))),
     ]);
 
     colonies = allAddrs.map((addr, i) => ({
-      address:       addr,
-      name:          entriesArr[i].name,
-      slug:          entriesArr[i].slug,
-      founder:       entriesArr[i].founder,
-      registeredAt:  Number(entriesArr[i].registeredAt),
-      deregistered:  dereg[i],
-      feeOverride:   overrides[i],
+      address:            addr,
+      name:               entriesArr[i].name,
+      slug:               entriesArr[i].slug,
+      founder:            entriesArr[i].founder,
+      registeredAt:       Number(entriesArr[i].registeredAt),
+      deregistered:       dereg[i],
+      feeOverride:        overrides[i],
+      founderShareBps:    founderShares[i],
+      founderWallet:      founderWallets[i] || entriesArr[i].founder,
       ...colonyData[i],
     }));
 
@@ -472,6 +509,35 @@ async function openDrawer(sortedIdx) {
       </div>
       <div class="err" id="d-err-fee"></div>
       <div class="ok"  id="d-ok-fee">Rate updated ✓</div>
+    </div>
+
+    <!-- Founder revenue share -->
+    <div style="margin-bottom:14px">
+      <div class="section-hd">FOUNDER REVENUE SHARE</div>
+      ${(() => {
+        const effectiveBps = c.founderShareBps;
+        const isOverride = effectiveBps !== globalFounderShareBps;
+        const pct = (Number(effectiveBps) / 100).toFixed(0);
+        return `
+        <div style="font-size:9px;color:#4a5878;margin-bottom:8px">
+          Effective rate: <span style="color:${isOverride ? "#3b82f6" : "#c8a96e"}">${pct}%${isOverride ? " (per-colony override)" : " (global default)"}</span>
+        </div>
+        <div style="font-size:9px;color:#4a5878;margin-bottom:6px">Founder wallet: <span style="font-family:monospace;color:#8899bb">${c.founderWallet ? c.founderWallet.slice(0,10)+"…"+c.founderWallet.slice(-6) : "—"}</span></div>
+        <div class="inp-row" style="margin-bottom:6px">
+          <input class="inp" id="d-inp-founder-share" placeholder="% override (0–50)"
+            value="${isOverride ? pct : ""}" type="number" step="1" min="0" max="50" />
+          <button class="btn btn-gold btn-sm" onclick="setColonyFounderShare()">Set % →</button>
+          ${isOverride ? `<button class="btn btn-grey btn-sm" onclick="clearColonyFounderShare()">Reset to global</button>` : ""}
+        </div>
+        <div class="inp-row">
+          <input class="inp" id="d-inp-founder-wallet" placeholder="Override founder wallet 0x…" />
+          <button class="btn btn-gold btn-sm" onclick="setFounderWallet()">Update wallet →</button>
+        </div>
+        <div style="font-size:9px;color:#4a5878;margin-top:4px">Wallet changes are permanent until updated again. Founder requests this via support.</div>
+        `;
+      })()}
+      <div class="err" id="d-err-founder"></div>
+      <div class="ok"  id="d-ok-founder">Updated ✓</div>
     </div>
 
     <!-- Deregister / reregister -->
@@ -652,6 +718,67 @@ async function clearColonyFee() {
     renderColonies();
     openDrawer(/* re-open */ [...colonies].sort((a,b)=>b.pendingFeeWei>a.pendingFeeWei?1:-1).findIndex(x=>x.address===c.address));
   } catch(e) { showDrawerErr("fee", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+async function setGlobalFounderShare() {
+  if (!await requireOwner()) return;
+  clearMsg("global-founder-share");
+  const val = document.getElementById("inp-global-founder-share").value.trim();
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0 || num > 50) { showErr("global-founder-share", "Must be 0–50"); return; }
+  try {
+    const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
+    const tx  = await reg.setFounderShareBps(Math.round(num * 100));
+    showPending("global-founder-share", "Confirming…");
+    await tx.wait();
+    globalFounderShareBps = BigInt(Math.round(num * 100));
+    document.getElementById("stat-founder-share").textContent    = num.toFixed(0) + "%";
+    document.getElementById("cur-founder-share").textContent     = "current: " + num.toFixed(0) + "% of fee → founder";
+    showOk("global-founder-share");
+    renderColonies();
+  } catch(e) { showErr("global-founder-share", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+async function setColonyFounderShare() {
+  clearDrawerMsg("founder");
+  const c   = colonies[drawerIdx];
+  const val = document.getElementById("d-inp-founder-share").value.trim();
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0 || num > 50) { showDrawerErr("founder", "Must be 0–50"); return; }
+  try {
+    const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
+    const tx  = await reg.setColonyFounderShare(c.address, Math.round(num * 100));
+    showDrawerPending("founder", "Confirming…");
+    await tx.wait();
+    colonies[drawerIdx].founderShareBps = BigInt(Math.round(num * 100));
+    showDrawerOk("founder");
+  } catch(e) { showDrawerErr("founder", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+async function clearColonyFounderShare() {
+  const c = colonies[drawerIdx];
+  try {
+    const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
+    const tx  = await reg.setColonyFounderShare(c.address, 0n);
+    await tx.wait();
+    colonies[drawerIdx].founderShareBps = globalFounderShareBps;
+    openDrawer([...colonies].sort((a,b)=>b.pendingFeeWei>a.pendingFeeWei?1:-1).findIndex(x=>x.address===c.address));
+  } catch(e) { showDrawerErr("founder", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+async function setFounderWallet() {
+  clearDrawerMsg("founder");
+  const c   = colonies[drawerIdx];
+  const val = document.getElementById("d-inp-founder-wallet").value.trim();
+  if (val && !ethers.isAddress(val)) { showDrawerErr("founder", "Invalid address"); return; }
+  try {
+    const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
+    const tx  = await reg.setFounderWallet(c.address, val || ethers.ZeroAddress);
+    showDrawerPending("founder", "Confirming…");
+    await tx.wait();
+    colonies[drawerIdx].founderWallet = val || c.founder;
+    showDrawerOk("founder");
+  } catch(e) { showDrawerErr("founder", e?.reason || e?.shortMessage || "Failed"); }
 }
 
 async function deregisterColony() {

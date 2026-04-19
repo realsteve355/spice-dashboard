@@ -291,7 +291,7 @@ own root directory, not the repo root.
 - **No mock data** — all state reads from chain; pages show clean empty states when no data
 
 **Contract addresses (Base Sepolia):**
-- ColonyRegistry: `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` (global ERC-721 registry — each colony gets a soulbound C-token)
+- ColonyRegistry: `0x2c82B62Cf3b258D95a8b5bf4F2658D0D509C9FF8` (global ERC-721 registry — each colony gets a soulbound C-token)
 - Dave's Colony (Colony contract): `0xDc546810b73b499DB79a0DF2A662170660Bf3902`
 - Full per-colony addresses: `colony-app/src/data/contracts.json` (token-address cache only — not the colony directory)
 - ABIs + bytecodes for deploy: `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded)

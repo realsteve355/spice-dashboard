@@ -8,6 +8,8 @@ import "./VToken.sol";
 interface IColonyRegistry {
     function getFeeForColony(address colony) external view returns (uint256);
     function protocolTreasury()             external view returns (address);
+    function getFeeSplit(address colony, uint256 amount)
+        external view returns (uint256 protocolAmt, uint256 founderAmt, address founderWallet);
 }
 
 // Minimal interface — Colony only needs to call mint() on OToken
@@ -137,6 +139,7 @@ contract Colony {
     event Redeemed(address indexed citizen, uint256 amount);
     event Sent(address indexed from, address indexed to, uint256 amount, string note);
     event ProtocolFeeSettled(uint256 amount, address treasury);
+    event FounderSharePaid(address indexed colony, uint256 amount, address indexed founderWallet);
     event CompanyWalletRegistered(address indexed wallet);
     event VDividendPaid(address indexed from, address indexed to, uint256 amount);
     event ObligationSettled(uint256 indexed liabilityId, address obligor, address creditor, uint256 amount);
@@ -317,8 +320,23 @@ contract Colony {
 
         pendingProtocolFee = 0;
 
-        address treasury = IColonyRegistry(registry).protocolTreasury();
-        (bool ok,) = treasury.call{value: amount}("");
+        IColonyRegistry reg = IColonyRegistry(registry);
+        (uint256 protocolAmt, uint256 founderAmt, address founderWallet) =
+            reg.getFeeSplit(address(this), amount);
+
+        address treasury = reg.protocolTreasury();
+
+        // Send founder share (if any)
+        if (founderAmt > 0 && founderWallet != address(0) && founderWallet != address(this)) {
+            (bool fok,) = founderWallet.call{value: founderAmt}("");
+            require(fok, "Colony: founder transfer failed");
+            emit FounderSharePaid(address(this), founderAmt, founderWallet);
+        } else {
+            // No valid founder wallet — route everything to protocol
+            protocolAmt = amount;
+        }
+
+        (bool ok,) = treasury.call{value: protocolAmt}("");
         require(ok, "Colony: transfer failed");
 
         if (msg.value > amount) {
@@ -326,7 +344,7 @@ contract Colony {
             require(r, "Colony: refund failed");
         }
 
-        emit ProtocolFeeSettled(amount, treasury);
+        emit ProtocolFeeSettled(protocolAmt, treasury);
     }
 
     // ── Company wallet support ────────────────────────────────────────────────
