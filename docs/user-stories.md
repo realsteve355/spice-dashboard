@@ -336,10 +336,10 @@ A citizen deploying a new colony.
 
 *N-04: Deploy wizard at app.zpc.finance/create runs an 18-step guided flow: 17 contract deploys/wires (GToken, SToken, VToken, Colony, ownership transfers, OToken, CompanyImpl, UpgradeableBeacon, CompanyFactory, MCCBilling, MCCServices) + step 18: registry.register() (non-fatal). Pre-flight: network check (84532), balance check (≥0.005 ETH), slug availability check via slugToColony().*
 *N-06: Invite URL copyable; QR not yet generated.*
-*N-07: Directory reads from ColonyRegistry (0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d) on-chain; falls back to contracts.json + localStorage['spice_user_colonies'].*
+*N-07: Directory.jsx reads ColonyRegistry (0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68) on-chain exclusively — no contracts.json or localStorage fallbacks. The registry is the single source of truth.*
 *N-09: app.zpc.finance/create — name input, MetaMask connect, 18-step deploy, success screen with colony URL.*
-*N-10: ColonyRegistry deployed at 0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d on Base Sepolia. REGISTRY_ADDRESS set in CreateColony.jsx and Directory.jsx.*
-*N-11: CreateColony.jsx step 18 calls registry.register(colonyAddr, name, slug) — non-fatal (colony saved to localStorage first, so it is usable even if registration fails).*
+*N-10: ColonyRegistry redeployed as ERC-721 at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 (19 April 2026). REGISTRY_ADDRESS updated in CreateColony.jsx, Directory.jsx, spice-admin/config.js, and all deploy scripts.*
+*N-11: CreateColony.jsx step 18 calls registry.register(colonyAddr, name, slug) — non-fatal. Mints a soulbound C-token to the Colony contract address. If registration fails, the colony is not yet in the directory and can be manually registered via spice.zpc.finance.*
 
 ---
 
@@ -355,6 +355,7 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | P-01 | As the protocol, I want a single on-chain registry that records every deployed colony (address, name, slug, founder, timestamp) so the directory is always accurate | P1 | ✓ |
+| P-01a | As the protocol, I want each registered colony to receive a soulbound ERC-721 C-token minted to its Colony contract address, so the registry is the canonical on-chain source of truth with no off-chain sync required | P1 | ✓ |
 | P-02 | As the protocol, I want to update the fee-per-transaction rate at any time without redeploying any colony contract | P1 | ✓ |
 | P-03 | As the protocol, I want to update the protocol treasury address without touching any colony contract | P1 | ✓ |
 | P-04 | As the protocol, I want only the registry owner to be able to change fee rates and treasury address | P1 | ✓ |
@@ -385,7 +386,7 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | P-09 | As the protocol, I want fee settlements to be recorded as on-chain events (ProtocolFeeSettled) for auditability | P1 | ✓ |
 | P-10 | As the protocol, I want colonies deployed before the registry existed (no registry address) to skip fee accrual gracefully | P1 | ✓ |
 
-*P-01–P-04: ColonyRegistry.sol — new version (with per-colony fee override + deregister/reregister) compiled; needs redeployment to replace 0x5f7b7Bfe21204793Fc89e768313e45dFeA1bc417 on Base Sepolia.*
+*P-01–P-04, P-01a: ColonyRegistry.sol redeployed as ERC-721 at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 (19 April 2026). Each register() call mints a soulbound C-token ("SPICE Colony" / "COLONY") to the Colony contract address. Deregister burns it; reregister remints with the same token ID. tokenURI() returns on-chain JSON metadata. ownerOf(tokenId) == Colony contract (not founder EOA) — the colony cannot be orphaned by key loss.*
 *P-05–P-10: Colony.send() increments pendingProtocolFee += registry.getFeeForColony(address(this)) (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
 *P-11–P-20: spice.zpc.finance — standalone HTML, no build step, ethers.js CDN. Separate Vercel project at spice-admin/. Stats load read-only on page open; owner actions require wallet connect. Colony list sorted by pending fee descending. Treasury address set only via scripts/setTreasury.js (not web UI). Per-colony fee override and deregister/reregister in colony detail drawer.*
 *Fee model rationale: ETH-denominated (real-world value), monthly billing via MCC (not per-tx skim), MCC is accountable for payment — citizens see it as an infrastructure bill, not a tax on every send.*
@@ -465,6 +466,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 *v11 updates (16 April 2026): All mock data removed from frontend. Pages read from chain or show clean empty states. Footnotes updated to reflect actual state. CompanyFactory corrected to BeaconProxy (not EIP-1167). Guardian and contracts features note they have UI but no on-chain contract.*
 *v12 updates (17 April 2026): N-07, N-10, N-11 marked ✓ — ColonyRegistry deployed at 0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d. Directory.jsx reads registry live; falls back to contracts.json + localStorage. EIP-1167 → BeaconProxy corrected in on-chain table. Colony auto-registration and directory-from-registry rows updated to ✓ Live. N-07/P-01 removed from Remaining P1 gaps. Footnotes for N-04/N-07/N-10/N-11 updated with registry address and 18-step deploy details.*
 *v13 updates (18 April 2026): Economic model updated to reflect v16/v17 mars_colony_economy.md. F-08 footnote clarified (requires Colony.sol v2). F-11 reworked — FD declares specific V amount rather than distributing entire V balance; F-11a added. F-13 updated — equity register shows vested vs unvested split. F-14/F-14a added — vesting shares and open shares. F-15 updated — vested-only transfer; F-15a added (buyback). F-16 updated (full event history). F-17–F-21 marked Superseded — intra-month contracts removed from economic model; replaced by V-token reserve + A-token bilateral framework. Vesting Lifecycle stories added (F-23–F-26). MCC Office-Term Equity stories added (M-24–M-26). C-31 updated — L-tokens retired, all assets are A-tokens. A-12–A-14 added (secured obligation stories). Role 7 rewritten — L-tokens retired, land is a Harberger-variant A-token; AssetRegistry.sol superseded by AToken.sol. On-chain table updated (AToken, vesting, FD dividend, intra-month superseded). F-22 (old asset registration) footnote updated to note AssetRegistry.sol superseded by AToken.sol.*
+*v14 updates (19 April 2026): C-token (ERC-721) added to ColonyRegistry — P-01a added. ColonyRegistry redeployed at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 as ERC-721. Directory.jsx now reads registry exclusively (no contracts.json / localStorage fallbacks). N-07/N-10/N-11/P-01 footnotes updated. P-01a footnote added. On-chain table: colony auto-registration row updated to reflect C-token mint.*
 
 ### On-chain vs mock — what is genuinely live on Base Sepolia
 

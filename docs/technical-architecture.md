@@ -41,7 +41,7 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   ├── src/
 │   │   ├── App.jsx               # Router, WalletCtx, on-chain data loader
 │   │   ├── pages/
-│   │   │   ├── Directory.jsx     # Colony list (registry on-chain + contracts.json + localStorage)
+│   │   │   ├── Directory.jsx     # Colony list (ColonyRegistry on-chain only — single source of truth)
 │   │   │   ├── ColonyPage.jsx    # Public colony page + join flow + company directory
 │   │   │   ├── Dashboard.jsx     # Citizen dashboard — balances, tx history, actions
 │   │   │   ├── Admin.jsx         # MCC admin — services, citizens, billing
@@ -59,7 +59,7 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   ├── utils/
 │   │   │   └── logger.js         # Fire-and-forget activity logger → /api/log
 │   │   └── data/
-│   │       ├── contracts.json        # Deployed contract addresses (source of truth for known colonies)
+│   │       ├── contracts.json        # Deployed contract addresses (token-address cache for known colonies; not used for colony discovery)
 │   │       └── deployArtifacts.js    # 215KB lazy-loaded ABIs + bytecodes for 10 contracts (used by CreateColony.jsx)
 │   ├── api/
 │   │   └── log.js                # Serverless function — writes to Supabase activity_log
@@ -87,8 +87,13 @@ Deployed on **Base Sepolia** (chain ID 84532).
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
-| ColonyRegistry | `0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d` | Global directory — all deployed colonies register here |
+| ColonyRegistry | `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` | Global directory — ERC-721 C-token registry; all deployed colonies register here |
 
+> ERC-721 collection: "SPICE Colony" / "COLONY". Each `register()` mints a soulbound C-token to the Colony
+> contract address. `deregister()` burns it; `reregister()` remints with the same token ID. `tokenURI()` returns
+> on-chain JSON metadata (name, slug, address, founder, registration date). `ownerOf(tokenId)` == Colony contract —
+> not the founder's EOA — so the colony cannot be orphaned by key loss.
+>
 > Admin panel: `spice.zpc.finance` (spice-admin/) — read-only stats without wallet; owner actions require MetaMask.
 > Owner functions: update fee rate, update treasury address, per-colony fee override, deregister/reregister colony.
 
@@ -465,9 +470,9 @@ WalletCtx {
 }
 ```
 
-**Colony sources:** `contracts.json` (known colonies) + `localStorage['spice_user_colonies']`
-(user-deployed colonies). `contracts.json` always takes priority — localStorage entries
-with matching IDs are silently ignored.
+**Colony sources:** ColonyRegistry on-chain only. `contracts.json` and `localStorage['spice_user_colonies']`
+are no longer used for colony discovery. `contracts.json` is retained as a token-address cache for
+known colonies (sToken/vToken/gToken lookup); it is not the primary source for the directory.
 
 **No mock fallback.** All citizen and MCC status checks are on-chain only. Pages that need
 chain data show a loading state or "not a citizen" message — never stale mock data.
@@ -618,6 +623,7 @@ No backend required for payments. Transaction details travel in the URL.
 | G-token | ERC-721 | — | Soulbound, one per citizen |
 | O-token | ERC-721 | — | Soulbound to org contract address, one per organisation |
 | A-token | ERC-721 (OZ v5) | — | Fisc-registered economic claims — see §3.5. Name: "SPICE A-Token", symbol: "ATOKE". Public transfers blocked; Colony-mediated only. On-chain tokenURI. |
+| C-token | ERC-721 (OZ v5) | — | Colony identity token. Name: "SPICE Colony", symbol: "COLONY". Minted to Colony contract address by ColonyRegistry on register(). Soulbound. Burned on deregister(), reminted on reregister(). ownerOf(id) == Colony contract — cannot be orphaned by key loss. On-chain tokenURI with name/slug/address/founder/date. |
 
 **UBI:** 1,000 S per citizen per epoch. First tranche on join().
 **Savings cap:** 200 S→V per epoch for citizens. No cap for companies.
@@ -655,12 +661,12 @@ use paths relative to the project root.
 ### app.zpc.finance (colony app)
 - Build: `npm run build` in `colony-app/`
 - `vercel.json`: catch-all rewrite to `/`, excludes `/api/*`
-- Colony list sources (priority order): ColonyRegistry on-chain → `contracts.json` → `localStorage['spice_user_colonies']`
-- Final dedup pass in `Directory.jsx`: deduplicate by slug AND address AND name (catches same colony registered under different slugs)
+- Colony list source: ColonyRegistry on-chain only — no `contracts.json` or `localStorage` fallbacks
+- `contracts.json` retained as a token-address lookup cache (sToken/vToken/gToken per colony slug)
 
 ### spice.zpc.finance (protocol admin)
 - **No build step** — `spice-admin/index.html` is served as static HTML with ethers.js loaded from CDN
-- `spice-admin/config.js` contains ColonyRegistry address (`0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d`)
+- `spice-admin/config.js` contains ColonyRegistry address (`0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68`)
 - Stats (colony count, fee rate, total pending fees, treasury address) load read-only on page open
 - Owner actions (update fee, update treasury, per-colony overrides) require MetaMask connect
 
@@ -747,12 +753,13 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 - **The Graph** — event indexer, removes getLogs pagination workaround
 - **Guardian.sol** — on-chain minor wallet management with automatic 18th-birthday transfer
 - **Governance beacon upgrade** — transfer UpgradeableBeacon ownership to Governance.sol
-- **ColonyRegistry v2** — add per-colony fee override + deregister/reregister (contract written; needs redeployment)
+- **~~ColonyRegistry v2~~** — ✓ **Deployed 19 April 2026.** ColonyRegistry redeployed as ERC-721 at `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68`. Per-colony fee override, deregister/reregister, and soulbound C-token all live.
 
 ---
 
-*SPICE Colony · Technical Architecture · v6*
-*Last updated: 18 April 2026*
+*SPICE Colony · Technical Architecture · v7*
+*Last updated: 19 April 2026*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*
+*v7 changes (19 April 2026): ColonyRegistry redeployed as ERC-721 (§3.1 rewritten) — address 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68. Each register() mints a soulbound C-token ("SPICE Colony"/"COLONY") to the Colony contract address; deregister() burns it; reregister() remints same token ID; tokenURI() returns on-chain JSON. C-token design rationale: ownerOf == Colony contract (not founder EOA), so colony cannot be orphaned by key loss. Directory.jsx updated to read registry exclusively — contracts.json and localStorage no longer colony sources. Token table updated — C-token added. Repository structure comments updated. Future Architecture: ColonyRegistry v2 marked deployed.*

@@ -7,7 +7,7 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 
 // On-chain registry — makes colonies discoverable to all users on all devices
-const REGISTRY_ADDRESS = '0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39'
+const REGISTRY_ADDRESS = '0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68'
 const REGISTRY_ABI = [
   'function register(address colony, string calldata name, string calldata slug) external',
 ]

@@ -8,7 +8,7 @@ window.SPICE_CONFIG = {
 
   // The ColonyRegistry smart contract on Base Sepolia.
   // Only update this if you run scripts/deployRegistry.js again.
-  registry: "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39",
+  registry: "0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68",
 
   // Network — do not change
   chainId:  84532,

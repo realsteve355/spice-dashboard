@@ -291,22 +291,23 @@ own root directory, not the repo root.
 - **No mock data** — all state reads from chain; pages show clean empty states when no data
 
 **Contract addresses (Base Sepolia):**
-- ColonyRegistry: `0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d` (global, all colonies register here)
-- Dave's Colony (Colony contract): `0xa4bCadeE7263AE5a26D921fD39453699B5D20A8b`
-- Full per-colony addresses: `colony-app/src/data/contracts.json`
+- ColonyRegistry: `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` (global ERC-721 registry — each colony gets a soulbound C-token)
+- Dave's Colony (Colony contract): `0xDc546810b73b499DB79a0DF2A662170660Bf3902`
+- Full per-colony addresses: `colony-app/src/data/contracts.json` (token-address cache only — not the colony directory)
 - ABIs + bytecodes for deploy: `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded)
+
+**C-token model:** Each `register()` call mints a soulbound ERC-721 C-token to the Colony contract address
+(not the founder's EOA). `ownerOf(tokenId)` == Colony contract — the colony cannot be orphaned by key loss.
+`deregister()` burns it; `reregister()` remints with the same token ID. On-chain tokenURI with metadata JSON.
 
 **Colony deploy flow** (`CreateColony.jsx`): 18-step guided wizard.
 Pre-flight: network (84532) + balance (≥0.005 ETH) + slug availability.
 Steps 1–17: deploy 10 contracts + wiring (each MetaMask confirmation).
 Step 17.5: save to localStorage (colony usable from here).
-Step 18 (non-fatal): `ColonyRegistry.register(colonyAddr, name, slug)`.
+Step 18 (non-fatal): `ColonyRegistry.register(colonyAddr, name, slug)` — mints C-token.
 
-**Directory colony sources** (priority order):
-1. ColonyRegistry on-chain (`getAll()` + `entries(addr)`)
-2. `contracts.json` (manually curated known colonies)
-3. `localStorage['spice_user_colonies']` (user-deployed, not yet in registry)
-Final dedup pass: by slug AND address AND name — catches same colony under different slugs.
+**Directory colony source:** ColonyRegistry on-chain only (`getActive()` + `entries(addr)`).
+`contracts.json` and `localStorage['spice_user_colonies']` are no longer used for colony discovery.
 
 **Event queries:** use raw `provider.getLogs()` + `Interface.parseLog()` — never
 `contract.queryFilter()` (triggers LavaMoat intrinsics errors in MetaMask).
@@ -317,8 +318,8 @@ Final dedup pass: by slug AND address AND name — catches same colony under dif
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
 Config: `spice-admin/config.js` (ColonyRegistry address).
 
-**Full technical reference:** `docs/technical-architecture.md` (v5)
-**Full requirements spec:** `docs/user-stories.md` (v13)
+**Full technical reference:** `docs/technical-architecture.md` (v7)
+**Full requirements spec:** `docs/user-stories.md` (v14)`
 
 ---
 

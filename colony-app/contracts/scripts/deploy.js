@@ -39,7 +39,7 @@ const COLONY_TICKER = "DC";
 
 // ColonyRegistry — global protocol directory (0x7c95b0C0d38F... on Base Sepolia)
 // Used in step 16 to register the new colony; failure is non-fatal.
-const COLONY_REGISTRY = "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39";
+const COLONY_REGISTRY = "0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68";
 const REGISTRY_ABI = [
   "function register(address colony, string name, string slug) external",
   "function slugToColony(string) view returns (address)",

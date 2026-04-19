@@ -1,6 +1,6 @@
 const hre = require("hardhat");
 
-const REGISTRY = "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39";
+const REGISTRY = "0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68";
 const COLONY   = "0xDc546810b73b499DB79a0DF2A662170660Bf3902";
 const NAME     = "Dave's Colony";
 const SLUG     = "daves-colony";

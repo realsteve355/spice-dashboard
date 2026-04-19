@@ -196,58 +196,6 @@ export default function App() {
       }
     }
 
-    // User-deployed colonies saved in localStorage
-    const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-    for (const [colonyId, info] of Object.entries(userColonies)) {
-      if (CONTRACTS.colonies[colonyId]) continue  // already loaded above
-      try {
-        const colonyContract = new ethers.Contract(info.address, COLONY_ABI, readProv)
-        const [sAddr, vAddr, gAddr, citizen, colonyName] = await Promise.all([
-          colonyContract.sToken(),
-          colonyContract.vToken(),
-          colonyContract.gToken(),
-          colonyContract.isCitizen(addr),
-          colonyContract.colonyName(),
-        ])
-        const sToken = new ethers.Contract(sAddr, ERC20_ABI,  readProv)
-        const vToken = new ethers.Contract(vAddr, ERC20_ABI,  readProv)
-        const gToken = new ethers.Contract(gAddr, ERC721_ABI, readProv)
-        const [sRaw, vRaw, gId, sSym, vSym] = await Promise.all([
-          sToken.balanceOf(addr),
-          vToken.balanceOf(addr),
-          gToken.tokenOf(addr),
-          sToken.symbol(),
-          vToken.symbol(),
-        ])
-        const citizenName = citizen ? await colonyContract.citizenName(addr) : ''
-        const founderAddr2 = await colonyContract.founder()
-        result[colonyId] = {
-          sBalance:     Math.floor(Number(ethers.formatEther(sRaw))),
-          vBalance:     Math.floor(Number(ethers.formatEther(vRaw))),
-          gTokenId:     Number(gId),
-          isCitizen:    citizen,
-          citizenName,
-          colonyName,
-          colonyAddress: info.address,
-          sTokenAddr:   sAddr,
-          vTokenAddr:   vAddr,
-          gTokenAddr:   gAddr,
-          sSymbol:      sSym,
-          vSymbol:      vSym,
-          isFounder:    founderAddr2.toLowerCase() === addr.toLowerCase(),
-          founderAddr:  founderAddr2,
-        }
-        // Cache token addresses in localStorage so augmentedContracts has them on next render
-        const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-        if (stored[colonyId]) {
-          stored[colonyId] = { ...stored[colonyId], sToken: sAddr, vToken: vAddr, gToken: gAddr }
-          localStorage.setItem('spice_user_colonies', JSON.stringify(stored))
-        }
-      } catch (e) {
-        console.warn('[loadOnChainData] user colony failed for', colonyId, '— old/dead contract, skipping:', e?.message || e)
-      }
-    }
-
     setOnChain(result)
     setOnChainLoading(false)
   }, [])
@@ -294,39 +242,15 @@ export default function App() {
   }, [connect])
 
   const isCitizenOf = (id) => {
-    // If colony has a real contract (contracts.json or localStorage), always use on-chain data
-    const userColonies = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-    if (CONTRACTS.colonies[id] || userColonies[id]) return onChain[id]?.isCitizen === true
-    // No contract — no on-chain data, not a citizen
+    // Colony data comes from contracts.json (known colonies) — on-chain status from onChain state
+    if (CONTRACTS.colonies[id]) return onChain[id]?.isCitizen === true
     return false
   }
 
-  // Augment CONTRACTS with user-deployed colonies so pages can look up colony addresses.
-  // Memoized so the reference is stable across renders — prevents useEffects that depend
-  // on `contracts` from firing on every render (localStorage is read once per onChain update).
-  const augmentedContracts = useMemo(() => {
-    const userColoniesStored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
-    return {
-      ...CONTRACTS,
-      colonies: {
-        ...CONTRACTS.colonies,
-        ...Object.fromEntries(
-          Object.entries(userColoniesStored)
-            .filter(([id]) => !CONTRACTS.colonies[id])  // contracts.json takes priority — never override
-            .map(([id, info]) => [id, {
-              colony:       info.address,
-              sToken:       info.sToken,
-              vToken:       info.vToken,
-              gToken:       info.gToken,
-              mccTreasury:  info.mccTreasury,
-              mccServices:  info.mccServices,
-              mccBilling:   info.mccBilling,
-            }])
-        ),
-      },
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onChain])  // onChain changes after loadOnChainData, which is when localStorage may have been updated
+  // contracts.json is the token-address lookup for known colonies.
+  // Colony discovery is handled by the ColonyRegistry (Directory.jsx reads it directly).
+  // TODO: replace contracts.json with registry-derived token addresses once multi-colony is needed.
+  const augmentedContracts = useMemo(() => CONTRACTS, [])  // stable reference
 
   const ctx = {
     address,
