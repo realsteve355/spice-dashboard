@@ -32,3 +32,6 @@ deployment-steps.txt
 docs/colony.db
 deploy.zip
 spice-claude-code-v2.zip
+
+# Sensitive local files
+pwd.txt
