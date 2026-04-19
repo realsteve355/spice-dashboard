@@ -23,6 +23,7 @@ const COLONY_ABI = [
   "function transferAsset(uint256, address, uint256) external",
   "function currentEpoch() view returns (uint256)",
   "function isCitizen(address) view returns (bool)",
+  "function citizenName(address) view returns (string)",
 ]
 
 const GOVERNANCE_ABI = [
@@ -52,6 +53,7 @@ export default function Assets() {
   const [myOwed,       setMyOwed]       = useState([])   // OBLIGATION_LIABILITY — I owe
   const [myLent,       setMyLent]       = useState([])   // OBLIGATION_ASSET — owed to me
   const [pendingProps, setPendingProps] = useState([])   // obligation proposals awaiting my signature
+  const [nameMap,      setNameMap]      = useState({})   // address → citizen name
   const [reloadKey,    setReloadKey]    = useState(0)
 
   useEffect(() => {
@@ -130,6 +132,21 @@ export default function Assets() {
 
         if (!cancelled) { setMyAssets(assets); setMyOwed(owed); setMyLent(lent) }
 
+        // Fetch citizen names for all counterparty addresses in obligations
+        const counterparties = [...new Set([
+          ...owed.map(o => o.creditor),
+          ...lent.map(l => l.obligor),
+        ].map(a => a.toLowerCase()))]
+        if (counterparties.length > 0) {
+          try {
+            const nameEntries = await Promise.all(
+              counterparties.map(async a => [a, await colony.citizenName(a).catch(() => '')])
+            )
+            const map = Object.fromEntries(nameEntries.filter(([, n]) => n))
+            if (!cancelled) setNameMap(map)
+          } catch {}
+        }
+
         // Load pending obligation proposals from Governance
         if (cfg.governance && address) {
           try {
@@ -205,6 +222,8 @@ export default function Assets() {
             owed={myOwed}
             lent={myLent}
             pendingProps={pendingProps}
+            assets={myAssets}
+            nameMap={nameMap}
             cfg={cfg}
             address={address}
             signer={signer}
@@ -441,7 +460,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
 
 // ── Obligations tab ───────────────────────────────────────────────────────────
 
-function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCitizen, onReload }) {
+function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, cfg, address, signer, isCitizen, onReload }) {
   const [proposing,  setProposing]  = useState(false)
   const [actPending, setActPending] = useState(false)
   const [actError,   setActError]   = useState(null)
@@ -566,7 +585,7 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
         {owed.length === 0 ? (
           <div style={{ fontSize: 12, color: C.faint }}>No active payment obligations.</div>
         ) : owed.map((o, i) => (
-          <ObligRow key={o.id} ob={o} perspective="obligor" last={i === owed.length - 1} />
+          <ObligRow key={o.id} ob={o} perspective="obligor" last={i === owed.length - 1} assets={assets} nameMap={nameMap} />
         ))}
       </div>
 
@@ -581,7 +600,7 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
         {lent.length === 0 ? (
           <div style={{ fontSize: 12, color: C.faint }}>No active payment entitlements.</div>
         ) : lent.map((l, i) => (
-          <ObligRow key={l.id} ob={l} perspective="creditor" last={i === lent.length - 1} />
+          <ObligRow key={l.id} ob={l} perspective="creditor" last={i === lent.length - 1} assets={assets} nameMap={nameMap} />
         ))}
       </div>
 
@@ -643,11 +662,21 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
   )
 }
 
-function ObligRow({ ob, perspective, last }) {
+function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
   const counterpartyLabel = perspective === 'obligor' ? 'creditor' : 'obligor'
   const counterparty      = perspective === 'obligor' ? ob.creditor : ob.obligor
   const pct = ob.totalEpochs > 0 ? ob.epochsPaid / ob.totalEpochs : 0
   const statusColor = ob.defaulted ? C.red : ob.epochsPaid >= ob.totalEpochs ? C.faint : C.green
+
+  const cpName = nameMap[counterparty?.toLowerCase()]
+  const collateralAsset = ob.collateralId && ob.collateralId !== '0'
+    ? assets.find(a => a.id === ob.collateralId)
+    : null
+  const collateralLabel = collateralAsset
+    ? `${collateralAsset.name || `asset #${ob.collateralId}`} · ${collateralAsset.currentValue} S (locked)`
+    : ob.collateralId && ob.collateralId !== '0'
+      ? `asset #${ob.collateralId} (locked)`
+      : 'unsecured'
 
   return (
     <div style={{
@@ -658,11 +687,10 @@ function ObligRow({ ob, perspective, last }) {
         <div>
           <div style={{ fontSize: 12, color: C.text }}>
             {counterpartyLabel}: {counterparty.slice(0,6)}…{counterparty.slice(-4)}
+            {cpName && <span style={{ color: C.sub }}> · {cpName}</span>}
           </div>
           <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
-            ID {ob.id} {ob.collateralId && ob.collateralId !== '0'
-              ? `· secured on asset #${ob.collateralId} (locked)`
-              : '· unsecured'}
+            ID {ob.id} · {collateralLabel}
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
