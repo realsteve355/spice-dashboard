@@ -114,13 +114,14 @@ export default function Assets() {
 
           } else if (t.form === FORM_OBLIGATION_ASSET) {
             try {
-              const [obligor, creditor, monthly, total, paid,, defaulted] =
+              const [obligor, creditor, monthly, total, paid, colId, defaulted] =
                 await aToken.getObligation(t.linkedId)
               lent.push({
                 id: t.id, liabilityId: t.linkedId, creditor, obligor,
                 monthly:    Math.floor(Number(ethers.formatEther(monthly))),
                 totalEpochs: Number(total),
                 epochsPaid:  Number(paid),
+                collateralId: colId.toString(),
                 defaulted,
               })
             } catch {}
@@ -659,7 +660,9 @@ function ObligRow({ ob, perspective, last }) {
             {counterpartyLabel}: {counterparty.slice(0,6)}…{counterparty.slice(-4)}
           </div>
           <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
-            ID {ob.id} {ob.collateralId && ob.collateralId !== '0' ? '· secured' : '· unsecured'}
+            ID {ob.id} {ob.collateralId && ob.collateralId !== '0'
+              ? `· secured on asset #${ob.collateralId} (locked)`
+              : '· unsecured'}
           </div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
