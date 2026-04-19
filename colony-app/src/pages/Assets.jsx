@@ -37,7 +37,8 @@ function saveAssetName(colonyAddr, tokenId, name) {
 
 export default function Assets() {
   const { slug } = useParams()
-  const { address, signer, contracts } = useWallet()
+  const { address, signer, contracts, isCitizenOf } = useWallet()
+  const isCitizen = isCitizenOf(slug)
 
   const [tab,       setTab]       = useState('assets')
   const [loading,   setLoading]   = useState(true)
@@ -162,6 +163,7 @@ export default function Assets() {
             address={address}
             signer={signer}
             slug={slug}
+            isCitizen={isCitizen}
             onReload={reload}
           />
         ) : (
@@ -171,6 +173,7 @@ export default function Assets() {
             cfg={cfg}
             address={address}
             signer={signer}
+            isCitizen={isCitizen}
             onReload={reload}
           />
         )}
@@ -181,7 +184,18 @@ export default function Assets() {
 
 // ── Assets tab ────────────────────────────────────────────────────────────────
 
-function AssetsTab({ assets, cfg, address, signer, slug, onReload }) {
+function NotACitizenBanner() {
+  return (
+    <div style={{
+      border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px',
+      marginBottom: 10, fontSize: 12, color: C.sub, background: C.white,
+    }}>
+      You are not a citizen of this colony. Join the colony to register assets and create obligations.
+    </div>
+  )
+}
+
+function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) {
   const [registering,  setRegistering]  = useState(false)
   const [transferring, setTransferring] = useState(null)  // assetId or null
   const [actPending,   setActPending]   = useState(false)
@@ -332,7 +346,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, onReload }) {
       </div>
 
       {/* Register form */}
-      <div style={card}>
+      {!isCitizen ? <NotACitizenBanner /> : <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: registering ? 12 : 0 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REGISTER AN ASSET</div>
           <button onClick={() => setRegistering(v => !v)} style={{ ...ghostBtn, fontSize: 10 }}>
@@ -385,14 +399,14 @@ function AssetsTab({ assets, cfg, address, signer, slug, onReload }) {
             </button>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }
 
 // ── Obligations tab ───────────────────────────────────────────────────────────
 
-function ObligationsTab({ owed, lent, cfg, address, signer, onReload }) {
+function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload }) {
   const [creating,   setCreating]   = useState(false)
   const [actPending, setActPending] = useState(false)
   const [actError,   setActError]   = useState(null)
@@ -471,7 +485,7 @@ function ObligationsTab({ owed, lent, cfg, address, signer, onReload }) {
       </div>
 
       {/* Create obligation */}
-      <div style={card}>
+      {!isCitizen ? <NotACitizenBanner /> : <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: creating ? 12 : 0 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>CREATE OBLIGATION</div>
           <button onClick={() => setCreating(v => !v)} style={{ ...ghostBtn, fontSize: 10 }}>
@@ -523,7 +537,7 @@ function ObligationsTab({ owed, lent, cfg, address, signer, onReload }) {
             </button>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }
