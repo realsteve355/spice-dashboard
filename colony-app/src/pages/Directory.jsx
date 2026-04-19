@@ -8,7 +8,7 @@ import { C } from '../theme'
 
 // ColonyRegistry deployed on Base Sepolia
 // Set to address(0) until registry is deployed — falls back to localStorage + contracts.json
-const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d"
+const REGISTRY_ADDRESS = "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39"
 const REGISTRY_ABI = [
   "function getAll() view returns (address[])",
   "function getActive() view returns (address[])",

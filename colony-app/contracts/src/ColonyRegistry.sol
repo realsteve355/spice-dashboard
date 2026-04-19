@@ -95,20 +95,27 @@ contract ColonyRegistry {
     }
 
     /**
-     * @notice Soft-remove a colony from getAll(). Does not delete on-chain data.
+     * @notice Soft-remove a colony from getAll(). Clears its slug so it can be reused.
      */
     function deregister(address colony) external onlyOwner {
         require(entries[colony].colony != address(0), "ColonyRegistry: not registered");
         deregistered[colony] = true;
+        slugToColony[entries[colony].slug] = address(0);  // free the slug for reuse
         emit ColonyDeregistered(colony);
     }
 
     /**
-     * @notice Restore a deregistered colony.
+     * @notice Restore a deregistered colony. Re-claims its original slug.
+     *         Reverts if the slug was taken by another colony in the meantime.
      */
     function reregister(address colony) external onlyOwner {
         require(deregistered[colony], "ColonyRegistry: not deregistered");
+        require(
+            slugToColony[entries[colony].slug] == address(0),
+            "ColonyRegistry: slug taken by another colony"
+        );
         deregistered[colony] = false;
+        slugToColony[entries[colony].slug] = colony;  // restore slug mapping
         emit ColonyReregistered(colony);
     }
 

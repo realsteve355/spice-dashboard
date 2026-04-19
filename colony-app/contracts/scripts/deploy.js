@@ -37,9 +37,9 @@ const path = require("path");
 const COLONY_NAME   = "Dave's Colony";
 const COLONY_TICKER = "DC";
 
-// ColonyRegistry — global protocol directory (0x9d26CAB7bbe... on Base Sepolia)
+// ColonyRegistry — global protocol directory (0x7c95b0C0d38F... on Base Sepolia)
 // Used in step 16 to register the new colony; failure is non-fatal.
-const COLONY_REGISTRY = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const COLONY_REGISTRY = "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39";
 const REGISTRY_ABI = [
   "function register(address colony, string name, string slug) external",
   "function slugToColony(string) view returns (address)",

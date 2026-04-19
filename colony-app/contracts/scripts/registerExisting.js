@@ -10,7 +10,7 @@
  */
 const hre = require("hardhat");
 
-const REGISTRY_ADDRESS = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const REGISTRY_ADDRESS = "0x7c95b0C0d38F2c8a8d0af51014B778bbF1859c39";
 
 // Add any colony you want to retroactively register here.
 // slug must be unique in the registry.
