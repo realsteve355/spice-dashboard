@@ -21,9 +21,15 @@ const ATOKEN_ABI = [
 const COLONY_ABI = [
   "function registerAsset(string, uint256, uint256, bool, uint256) external returns (uint256)",
   "function transferAsset(uint256, address, uint256) external",
-  "function issueObligation(address, address, uint256, uint256, uint256) external returns (uint256, uint256)",
   "function currentEpoch() view returns (uint256)",
   "function isCitizen(address) view returns (bool)",
+]
+
+const GOVERNANCE_ABI = [
+  "function proposeObligation(address,address,uint256,uint256,uint256) external returns (uint256)",
+  "function signObligation(uint256) external",
+  "function pendingSignaturesFor(address) view returns (uint256[])",
+  "function obligations(uint256) view returns (address,address,address,uint256,uint256,uint256,uint256,bool,bool,bool)",
 ]
 
 // localStorage key for off-chain asset names: { "colonyAddr:tokenId": "name" }
@@ -40,12 +46,13 @@ export default function Assets() {
   const { address, signer, contracts, isCitizenOf } = useWallet()
   const isCitizen = isCitizenOf(slug)
 
-  const [tab,       setTab]       = useState('assets')
-  const [loading,   setLoading]   = useState(true)
-  const [myAssets,  setMyAssets]  = useState([])
-  const [myOwed,    setMyOwed]    = useState([])   // OBLIGATION_LIABILITY — I owe
-  const [myLent,    setMyLent]    = useState([])   // OBLIGATION_ASSET — owed to me
-  const [reloadKey, setReloadKey] = useState(0)
+  const [tab,          setTab]          = useState('assets')
+  const [loading,      setLoading]      = useState(true)
+  const [myAssets,     setMyAssets]     = useState([])
+  const [myOwed,       setMyOwed]       = useState([])   // OBLIGATION_LIABILITY — I owe
+  const [myLent,       setMyLent]       = useState([])   // OBLIGATION_ASSET — owed to me
+  const [pendingProps, setPendingProps] = useState([])   // obligation proposals awaiting my signature
+  const [reloadKey,    setReloadKey]    = useState(0)
 
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
@@ -121,6 +128,32 @@ export default function Assets() {
         }))
 
         if (!cancelled) { setMyAssets(assets); setMyOwed(owed); setMyLent(lent) }
+
+        // Load pending obligation proposals from Governance
+        if (cfg.governance && address) {
+          try {
+            const gov = new ethers.Contract(cfg.governance, GOVERNANCE_ABI, rpc)
+            const ids = await gov.pendingSignaturesFor(address)
+            const props = await Promise.all(ids.map(async id => {
+              const r = await gov.obligations(id)
+              return {
+                id: id.toString(),
+                proposer:       r[0],
+                creditor:       r[1],
+                obligor:        r[2],
+                monthly:        Math.floor(Number(ethers.formatEther(r[3]))),
+                totalEpochs:    Number(r[4]),
+                collateralId:   r[5].toString(),
+                expiresAt:      Number(r[6]),
+                creditorSigned: r[7],
+                obligorSigned:  r[8],
+              }
+            }))
+            if (!cancelled) setPendingProps(props)
+          } catch (e) {
+            console.warn('[Assets] governance load failed:', e?.message || e)
+          }
+        }
       } catch (e) {
         console.warn('[Assets] load failed:', e?.message || e)
       }
@@ -170,6 +203,7 @@ export default function Assets() {
           <ObligationsTab
             owed={myOwed}
             lent={myLent}
+            pendingProps={pendingProps}
             cfg={cfg}
             address={address}
             signer={signer}
@@ -406,29 +440,30 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
 
 // ── Obligations tab ───────────────────────────────────────────────────────────
 
-function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload }) {
-  const [creating,   setCreating]   = useState(false)
+function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCitizen, onReload }) {
+  const [proposing,  setProposing]  = useState(false)
   const [actPending, setActPending] = useState(false)
   const [actError,   setActError]   = useState(null)
   const [actDone,    setActDone]    = useState(null)
+  const [signing,    setSigning]    = useState(null)  // id being signed
 
-  // Create form
+  // Propose form
   const [myRole,    setMyRole]    = useState('creditor')  // 'creditor' or 'obligor'
   const [otherAddr, setOtherAddr] = useState('')
   const [monthly,   setMonthly]   = useState('')
   const [epochs,    setEpochs]    = useState('')
   const [collatId,  setCollatId]  = useState('')
 
-  const canCreate = ethers.isAddress(otherAddr) && Number(monthly) > 0 && Number(epochs) > 0
+  const canPropose = ethers.isAddress(otherAddr) && Number(monthly) > 0 && Number(epochs) > 0
 
-  async function handleCreate() {
-    if (!signer || !cfg?.colony || !canCreate) return
+  async function handlePropose() {
+    if (!signer || !cfg?.governance || !canPropose) return
     setActPending(true); setActError(null); setActDone(null)
     try {
-      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const gov      = new ethers.Contract(cfg.governance, GOVERNANCE_ABI, signer)
       const creditor = myRole === 'creditor' ? address : otherAddr
       const obligor  = myRole === 'obligor'  ? address : otherAddr
-      const tx = await colony.issueObligation(
+      const tx = await gov.proposeObligation(
         creditor,
         obligor,
         ethers.parseEther(String(monthly)),
@@ -436,14 +471,29 @@ function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload 
         BigInt(Number(collatId) || 0),
       )
       await tx.wait()
-      setActDone(`Obligation created: ${monthly} S/month × ${epochs} months`)
-      setCreating(false)
+      setActDone(`Proposal submitted — the other party must sign to activate.`)
+      setProposing(false)
       setOtherAddr(''); setMonthly(''); setEpochs(''); setCollatId('')
       onReload()
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
     setActPending(false)
+  }
+
+  async function handleSign(id) {
+    if (!signer || !cfg?.governance) return
+    setSigning(id); setActError(null); setActDone(null)
+    try {
+      const gov = new ethers.Contract(cfg.governance, GOVERNANCE_ABI, signer)
+      const tx  = await gov.signObligation(BigInt(id))
+      await tx.wait()
+      setActDone(`Obligation signed. It is now active.`)
+      onReload()
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setSigning(null)
   }
 
   const totalOwed = owed.reduce((s, o) => s + o.monthly, 0)
@@ -453,6 +503,54 @@ function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload 
     <div>
       {actDone  && <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✓ {actDone}</div>}
       {actError && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{actError}</div>}
+
+      {/* Pending signatures */}
+      {pendingProps.length > 0 && (
+        <div style={{ ...card, borderColor: C.gold }}>
+          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>
+            AWAITING YOUR SIGNATURE
+          </div>
+          {pendingProps.map((p, i) => {
+            const isCreditor = p.creditor.toLowerCase() === address?.toLowerCase()
+            const counterparty = isCreditor ? p.obligor : p.creditor
+            const role = isCreditor ? 'creditor (receive)' : 'obligor (pay)'
+            const expiry = new Date(p.expiresAt * 1000).toLocaleDateString()
+            const isLast = i === pendingProps.length - 1
+            return (
+              <div key={p.id} style={{
+                paddingBottom: isLast ? 0 : 12, marginBottom: isLast ? 0 : 12,
+                borderBottom: isLast ? 'none' : `1px solid ${C.border}`,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12,
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, color: C.text }}>
+                    {p.monthly} S/month × {p.totalEpochs} months
+                    {p.collateralId !== '0' && ` · secured`}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
+                    Your role: {role}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
+                    Counterparty: {counterparty.slice(0,6)}…{counterparty.slice(-4)}
+                    {' · '}expires {expiry}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
+                    Proposed by: {p.proposer.slice(0,6)}…{p.proposer.slice(-4)}
+                    {' · '}ID #{p.id}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleSign(p.id)}
+                  disabled={signing === p.id}
+                  style={{ ...actionBtn(C.gold), opacity: signing === p.id ? 0.4 : 1, whiteSpace: 'nowrap' }}
+                >
+                  {signing === p.id ? 'Signing…' : 'Sign →'}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* I owe */}
       <div style={card}>
@@ -484,20 +582,20 @@ function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload 
         ))}
       </div>
 
-      {/* Create obligation */}
+      {/* Propose obligation */}
       {!isCitizen ? <NotACitizenBanner /> : <div style={card}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: creating ? 12 : 0 }}>
-          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>CREATE OBLIGATION</div>
-          <button onClick={() => setCreating(v => !v)} style={{ ...ghostBtn, fontSize: 10 }}>
-            {creating ? 'Cancel' : '+ New'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: proposing ? 12 : 0 }}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>PROPOSE OBLIGATION</div>
+          <button onClick={() => setProposing(v => !v)} style={{ ...ghostBtn, fontSize: 10 }}>
+            {proposing ? 'Cancel' : '+ New'}
           </button>
         </div>
 
-        {creating && (
+        {proposing && (
           <div>
             <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
-              A fixed-payment agreement between two parties. Settled automatically at each epoch advance.
-              Citizen obligors are capped at 1000 S/month total unsecured obligations.
+              Submit a loan proposal. The other party must sign separately for it to take effect.
+              Both creditor and obligor must consent before any obligation is created.
             </div>
 
             {/* Role toggle */}
@@ -529,11 +627,11 @@ function ObligationsTab({ owed, lent, cfg, address, signer, isCitizen, onReload 
             />
 
             <button
-              onClick={handleCreate}
-              disabled={actPending || !canCreate}
-              style={{ ...actionBtn(C.gold), width: '100%', opacity: (actPending || !canCreate) ? 0.4 : 1 }}
+              onClick={handlePropose}
+              disabled={actPending || !canPropose}
+              style={{ ...actionBtn(C.gold), width: '100%', opacity: (actPending || !canPropose) ? 0.4 : 1 }}
             >
-              {actPending ? 'Creating…' : 'Create obligation →'}
+              {actPending ? 'Proposing…' : 'Submit proposal →'}
             </button>
           </div>
         )}

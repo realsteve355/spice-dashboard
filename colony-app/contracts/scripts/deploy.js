@@ -204,6 +204,15 @@ async function main() {
   const { addr: billingAddr  } = await deploy("MCCBilling",  colonyAddr);
   const { addr: servicesAddr } = await deploy("MCCServices", colonyAddr);
 
+  // ── 16. Governance ────────────────────────────────────────────────────────
+  console.log("\n── Governance ──────────────────────────────────────────────────");
+  // Founder holds all three MCC roles initially
+  const { addr: govAddr } = await deploy("Governance", colonyAddr, deployer.address, deployer.address, deployer.address);
+
+  const setGovTx = await colonyC.setGovernance(govAddr, await gasOpts());
+  await setGovTx.wait();
+  console.log("colony.setGovernance ✓");
+
   // ── Write addresses ───────────────────────────────────────────────────────
   // Strip apostrophes before slugifying so "Dave's" → "daves" not "dave-s"
   const slug = COLONY_NAME.toLowerCase().replace(/'/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -230,6 +239,7 @@ async function main() {
     companyFactory: factoryAddr,
     mccBilling:     billingAddr,
     mccServices:    servicesAddr,
+    governance:     govAddr,
   };
 
   fs.writeFileSync(contractsPath, JSON.stringify(existing, null, 2));

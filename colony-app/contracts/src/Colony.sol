@@ -6,6 +6,10 @@ import "./SToken.sol";
 import "./VToken.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+interface IGovernance {
+    function ceoActive() external view returns (bool);
+}
+
 interface IColonyRegistry {
     function getFeeForColony(address colony) external view returns (uint256);
     function protocolTreasury()             external view returns (address);
@@ -125,9 +129,14 @@ contract Colony is Initializable {
 
     // ── Citizens ──────────────────────────────────────────────────────────────
 
-    mapping(address => bool)   public isCitizen;
-    mapping(address => string) public citizenName;
+    mapping(address => bool)    public isCitizen;
+    mapping(address => string)  public citizenName;
+    mapping(address => uint256) public dateOfBirth; // Unix timestamp
     address[] public citizens;
+
+    // ── Governance ────────────────────────────────────────────────────────────
+
+    address public governance;
 
     // Company wallets registered by CompanyFactory — may call Colony.send() etc.
     mapping(address => bool) public isCompanyWallet;
@@ -206,6 +215,11 @@ contract Colony is Initializable {
         _;
     }
 
+    modifier onlyGovernance() {
+        require(msg.sender == governance, "Colony: not governance");
+        _;
+    }
+
     modifier requireAToken() {
         require(aToken != address(0), "Colony: AToken not set");
         _;
@@ -244,19 +258,30 @@ contract Colony is Initializable {
         companyFactory = _factory;
     }
 
+    /**
+     * @notice Set the Governance contract. Founder only. Call once after deploy.
+     */
+    function setGovernance(address _governance) external {
+        require(msg.sender == founder,      "Colony: only founder");
+        require(_governance != address(0),  "Colony: zero address");
+        governance = _governance;
+    }
+
     // ── Citizen actions ───────────────────────────────────────────────────────
 
     /**
      * @notice Join the colony. Mints a G-token and issues first UBI immediately.
      *         Can only join once. Name is stored on-chain and may be updated later.
      */
-    function join(string calldata name) external {
-        require(!isCitizen[msg.sender], "Colony: already a citizen");
+    function join(string calldata name, uint256 dob) external {
+        require(!isCitizen[msg.sender],   "Colony: already a citizen");
         require(bytes(name).length > 0,   "Colony: name required");
         require(bytes(name).length <= 64, "Colony: name too long");
+        require(dob > 0 && dob < block.timestamp, "Colony: invalid date of birth");
 
         isCitizen[msg.sender]   = true;
         citizenName[msg.sender] = name;
+        dateOfBirth[msg.sender] = dob;
         citizens.push(msg.sender);
 
         uint256 tokenId = gToken.mint(msg.sender, name);
@@ -578,18 +603,17 @@ contract Colony is Initializable {
      * @param totalEpochs     Number of payment periods
      * @param collateralId    0 = unsecured; asset A-token ID = secured
      */
-    function issueObligation(
+    /**
+     * @notice Create an obligation on behalf of Governance, after both parties
+     *         have signed the proposal. Only the Governance contract may call.
+     */
+    function issueObligationGov(
         address creditor,
         address obligor,
         uint256 monthlyAmountS,
         uint256 totalEpochs,
         uint256 collateralId
-    ) external requireAToken onlyCitizenOrCompany returns (uint256 assetId, uint256 liabilityId) {
-        require(
-            msg.sender == creditor || msg.sender == obligor,
-            "Colony: caller must be creditor or obligor"
-        );
-        // UBI cap: 1000 S/month for citizen obligors (unsecured only; AToken enforces)
+    ) external requireAToken onlyGovernance returns (uint256 assetId, uint256 liabilityId) {
         uint256 maxMonthlyS = (isCitizen[obligor] && collateralId == 0) ? 1000 * 1e18 : 0;
         (assetId, liabilityId) = IAToken(aToken).issueObligation(
             creditor, obligor, monthlyAmountS, totalEpochs, collateralId, maxMonthlyS
@@ -632,6 +656,12 @@ contract Colony is Initializable {
      */
     function advanceEpoch() external {
         require(msg.sender == founder, "Colony: only founder");
+        // If governance is wired and CEO term has expired, freeze epoch advance
+        // until a new CEO is elected. Citizens see no UBI — forcing an election.
+        if (governance != address(0)) {
+            (bool ok) = IGovernance(governance).ceoActive();
+            require(ok, "Colony: CEO term expired - elect a new CEO to resume");
+        }
 
         // ── 1. Settle all active obligation A-tokens ─────────────────────────
         if (aToken != address(0)) {

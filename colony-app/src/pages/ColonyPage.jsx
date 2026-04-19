@@ -8,7 +8,7 @@ import { logInfo, logError } from '../utils/logger'
 const RPC = 'https://sepolia.base.org'
 
 const COLONY_ABI = [
-  "function join(string) external",
+  "function join(string, uint256) external",
   "function isCitizen(address) view returns (bool)",
   "function colonyName() view returns (string)",
   "function citizenCount() view returns (uint256)",
@@ -84,6 +84,7 @@ export default function ColonyPage() {
   const [showConstitution, setShowConstitution] = useState(false)
   const [joining, setJoining]     = useState(false)
   const [citizenName, setName]    = useState('')
+  const [dob, setDob]             = useState('')   // YYYY-MM-DD string from date input
   const [accepted, setAccepted]   = useState(false)
   const [joined, setJoined]       = useState(false)
   const [txPending, setTxPending] = useState(false)
@@ -224,7 +225,8 @@ export default function ColonyPage() {
       const freshSigner = await new ethers.BrowserProvider(window.ethereum).getSigner()
       const walletAddr  = await freshSigner.getAddress()
       const colonyContract = new ethers.Contract(contractAddress, COLONY_ABI, freshSigner)
-      const tx = await colonyContract.join(citizenName.trim())
+      const dobTs = dob ? Math.floor(new Date(dob).getTime() / 1000) : 0
+      const tx = await colonyContract.join(citizenName.trim(), BigInt(dobTs))
       // Show success as soon as MetaMask confirms submission — don't block on mining
       logInfo('colony.joined', { colony: slug, address: walletAddr, meta: { name: citizenName.trim() } })
       setJoining(false)
@@ -317,7 +319,7 @@ export default function ColonyPage() {
             }}>
               {CONSTITUTION_TEXT}
             </div>
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ marginBottom: 10 }}>
               <label style={{ display: 'block', fontSize: 11, color: C.sub, marginBottom: 6 }}>
                 Your citizen name (stored on-chain)
               </label>
@@ -327,6 +329,24 @@ export default function ColonyPage() {
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Alice Smith"
                 maxLength={64}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '10px 12px', fontSize: 12,
+                  border: `1px solid ${C.border}`, borderRadius: 6,
+                  fontFamily: 'inherit', color: C.text, background: C.bg,
+                  outline: 'none',
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 11, color: C.sub, marginBottom: 6 }}>
+                Date of birth (required — used for voting eligibility)
+              </label>
+              <input
+                type="date"
+                value={dob}
+                onChange={e => setDob(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   padding: '10px 12px', fontSize: 12,
@@ -356,8 +376,8 @@ export default function ColonyPage() {
               </button>
               <button
                 onClick={handleSign}
-                disabled={!accepted || txPending || !citizenName.trim()}
-                style={{ ...btn(accepted && citizenName.trim() ? C.gold : C.faint), flex: 2, opacity: accepted && citizenName.trim() && !txPending ? 1 : 0.5 }}
+                disabled={!accepted || txPending || !citizenName.trim() || !dob}
+                style={{ ...btn(accepted && citizenName.trim() && dob ? C.gold : C.faint), flex: 2, opacity: accepted && citizenName.trim() && dob && !txPending ? 1 : 0.5 }}
               >
                 {txPending ? 'Waiting for confirmation...' : 'Sign & Join →'}
               </button>

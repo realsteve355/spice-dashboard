@@ -41,6 +41,7 @@ const CONTRACTS = [
   ["AToken",                 "AToken.sol/AToken.json",                                               true],
   ["MCCBilling",             "MCCBilling.sol/MCCBilling.json",                                       true],
   ["MCCServices",            "MCCServices.sol/MCCServices.json",                                     true],
+  ["Governance",             "Governance.sol/Governance.json",                                       true],
 ];
 
 function load(name, relPath, withBytecode, baseDir) {
