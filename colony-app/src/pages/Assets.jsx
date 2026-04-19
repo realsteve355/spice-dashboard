@@ -445,7 +445,8 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
   const [actPending, setActPending] = useState(false)
   const [actError,   setActError]   = useState(null)
   const [actDone,    setActDone]    = useState(null)
-  const [signing,    setSigning]    = useState(null)  // id being signed
+  const [signing,    setSigning]    = useState(null)   // id being signed
+  const [signedIds,  setSignedIds]  = useState(() => new Set()) // optimistic removal
 
   // Propose form
   const [myRole,    setMyRole]    = useState('creditor')  // 'creditor' or 'obligor'
@@ -488,6 +489,7 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
       const gov = new ethers.Contract(cfg.governance, GOVERNANCE_ABI, signer)
       const tx  = await gov.signObligation(BigInt(id))
       await tx.wait()
+      setSignedIds(prev => { const s = new Set(prev); s.add(id); return s })
       setActDone(`Obligation signed. It is now active.`)
       onReload()
     } catch (e) {
@@ -505,17 +507,17 @@ function ObligationsTab({ owed, lent, pendingProps, cfg, address, signer, isCiti
       {actError && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{actError}</div>}
 
       {/* Pending signatures */}
-      {pendingProps.length > 0 && (
+      {pendingProps.filter(p => !signedIds.has(p.id)).length > 0 && (
         <div style={{ ...card, borderColor: C.gold }}>
           <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>
             AWAITING YOUR SIGNATURE
           </div>
-          {pendingProps.map((p, i) => {
+          {pendingProps.filter(p => !signedIds.has(p.id)).map((p, i, arr) => {
             const isCreditor = p.creditor.toLowerCase() === address?.toLowerCase()
             const counterparty = isCreditor ? p.obligor : p.creditor
             const role = isCreditor ? 'creditor (receive)' : 'obligor (pay)'
             const expiry = new Date(p.expiresAt * 1000).toLocaleDateString()
-            const isLast = i === pendingProps.length - 1
+            const isLast = i === arr.length - 1
             return (
               <div key={p.id} style={{
                 paddingBottom: isLast ? 0 : 12, marginBottom: isLast ? 0 : 12,
