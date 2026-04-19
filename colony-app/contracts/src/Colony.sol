@@ -131,7 +131,7 @@ contract Colony is Initializable {
 
     mapping(address => bool)    public isCitizen;
     mapping(address => string)  public citizenName;
-    mapping(address => uint256) public dateOfBirth; // Unix timestamp
+    mapping(address => uint256) public dateOfBirth; // birth year (e.g. 1985)
     address[] public citizens;
 
     // ── Governance ────────────────────────────────────────────────────────────
@@ -277,7 +277,7 @@ contract Colony is Initializable {
         require(!isCitizen[msg.sender],   "Colony: already a citizen");
         require(bytes(name).length > 0,   "Colony: name required");
         require(bytes(name).length <= 64, "Colony: name too long");
-        require(dob > 0 && dob < block.timestamp, "Colony: invalid date of birth");
+        require(dob >= 1900 && dob <= 2100, "Colony: invalid birth year");
 
         isCitizen[msg.sender]   = true;
         citizenName[msg.sender] = name;

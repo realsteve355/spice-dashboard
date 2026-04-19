@@ -225,8 +225,8 @@ export default function ColonyPage() {
       const freshSigner = await new ethers.BrowserProvider(window.ethereum).getSigner()
       const walletAddr  = await freshSigner.getAddress()
       const colonyContract = new ethers.Contract(contractAddress, COLONY_ABI, freshSigner)
-      const dobTs = dob ? Math.floor(new Date(dob).getTime() / 1000) : 0
-      const tx = await colonyContract.join(citizenName.trim(), BigInt(dobTs))
+      const dobYear = dob ? new Date(dob).getFullYear() : 0
+      const tx = await colonyContract.join(citizenName.trim(), BigInt(dobYear))
       // Show success as soon as MetaMask confirms submission — don't block on mining
       logInfo('colony.joined', { colony: slug, address: walletAddr, meta: { name: citizenName.trim() } })
       setJoining(false)

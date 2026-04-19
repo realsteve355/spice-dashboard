@@ -43,7 +43,6 @@ contract Governance {
     uint256 public constant TIMELOCK          = 7 days;
     uint256 public constant TERM              = 365 days;
     uint256 public constant OBLIGATION_EXPIRY = 30 days;
-    uint256 public constant MIN_VOTING_AGE    = 18 * 365 days; // approximate
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -135,8 +134,11 @@ contract Governance {
 
     function _isEligibleVoter(address a) internal view returns (bool) {
         if (!colony.isCitizen(a)) return false;
-        uint256 dob = colony.dateOfBirth(a);
-        return dob > 0 && block.timestamp >= dob + MIN_VOTING_AGE;
+        uint256 birthYear = colony.dateOfBirth(a);
+        if (birthYear == 0) return false;
+        // Approximate current year from Unix timestamp
+        uint256 currentYear = 1970 + block.timestamp / 365 days;
+        return currentYear >= birthYear + 18;
     }
 
     // ── MCC role views ────────────────────────────────────────────────────────

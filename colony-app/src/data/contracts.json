@@ -4,20 +4,20 @@
   "colonies": {
     "daves-colony": {
       "name": "Dave's Colony",
-      "colony": "0xe771B745c2f2D2e73cfecb0a4c07Bd589b51140C",
-      "colonyImpl": "0xef6D66e10bC131d5cCc6b70447127670fb244cCE",
-      "gToken": "0x81D05d596AB0A0aC6c7Fe160F20CD64DceFd04EF",
-      "sToken": "0x75c0da9D41Aa87cD981badBE48b33bbDbc0E0E1F",
-      "vToken": "0xd032AB54032817595E16440b56B0815AeE7a4C56",
-      "oToken": "0xa6a9f196E99CB308Ede3b64Ab25514213E26f7A5",
-      "aToken": "0xaB1176C6e6777969cE6FB2193Be06c8B7360D30d",
-      "companyImpl": "0x974f157Fb8fD3F6cA9e6BB42A21bb25a16f44BEb",
-      "companyBeacon": "0xA5f9c4A9f5Db05901E89721aDB6C9e0A7300FA7e",
-      "companyFactory": "0x14DeD604406793c7e5752747d4Ce4BA9d50433DA",
-      "mccBilling": "0xDc625Cd740eaCE2FCcDca24B5A885534AAdb44b2",
-      "mccServices": "0xa3bc83F291B06Eea322e1230d8877Ef804A25603",
-      "governance": "0xF4bc1dca1Dd4d5BB6e4a71d6B0Cc283Ea69B93bd"
+      "colony": "0x9aa1a5Be35f9e2029607cb92340366F3923351ab",
+      "colonyImpl": "0x8bA4264726e653b248932FBDeB5ecEe8C3D02b2A",
+      "gToken": "0x5A3A4509e37CB8ad70753F761d1d08c0df3cc2d9",
+      "sToken": "0x87e74A013AAC4092177bbD9b752B72C663Aa80C5",
+      "vToken": "0xCC8d519b07686c076681e7451495285cca65C58e",
+      "oToken": "0x919Cb9c0F900D764AE5a016124f3c2B7d2907EAA",
+      "aToken": "0xe116805e3608B0F4fbF13b0BD536A51DA128F828",
+      "companyImpl": "0x84D3DaD88Be41055Ff275060582b257C48D5F555",
+      "companyBeacon": "0xd641DB672619dddD2fa4D2e55b8223F3A3804d5C",
+      "companyFactory": "0x0093DeD8368F299C1DC238aa8BAfCA16315D300D",
+      "mccBilling": "0x768146323141C4aA1146804fc521200F4CcE14b1",
+      "mccServices": "0x92391eB2BB873e95B42DACCdc1951Ac98aFB829c",
+      "governance": "0x2A224eF954fa15C648f9923fdEB78A7CcA7640Ad"
     }
   },
-  "colonyBeacon": "0xC1583a887CC07541867a9Eb1277877BEEAbe08dC"
+  "colonyBeacon": "0x776108b237067E71FC1366f87415A34516E6F921"
 }
