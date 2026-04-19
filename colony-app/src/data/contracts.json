@@ -4,19 +4,19 @@
   "colonies": {
     "daves-colony": {
       "name": "Dave's Colony",
-      "colony": "0xa882818baF5F5BFeE452f66e52914597eE6e2710",
-      "colonyImpl": "0xc0e402250b991137E1Cd5A03C1b7DCDD6b3fE9B4",
-      "gToken": "0xe431e4c34Dd846d5AE0Fdd685EB83CF46ffC9bE5",
-      "sToken": "0x188667105EAeaBAD17aD765746015B291686E0d6",
-      "vToken": "0x2d108ff7606FAE78D099c6F5dDbBa689D0d2100b",
-      "oToken": "0xB7990eF3Def7c58f38eb91C6930bd29aa98B59e2",
-      "aToken": "0xF56Fdb43CAa2ECED8761Ff2B8f1c8d955E1ed5e3",
-      "companyImpl": "0xF4A2A32715a87AB8D1B4B0BaACc8F537Bc7d4cC0",
-      "companyBeacon": "0x67732CF20E4C538868382C2223F1Ffa95daFCB9B",
-      "companyFactory": "0x0019D6B30CA14C9cB6ed15a46aD481b0a2C2F3a6",
-      "mccBilling": "0xF10ff19A27B38C8fdCc7278A468E9E2330c5299A",
-      "mccServices": "0x5A45AA624da88588DC0CaA36CEc2c661D0Db4c0F"
+      "colony": "0x17FD0a408cFE22481B5Ea5C045F3495D5E277D36",
+      "colonyImpl": "0x85BbF334419c5B4E9DAeCD282fEb33eFb82FcBfC",
+      "gToken": "0xdCf42BEe8da6F0400f8D2677f23897f67e003Be1",
+      "sToken": "0x9D6cf6AfaB33b1537fbCb079D6fb276b8C8e6017",
+      "vToken": "0xc3f768055B75d898cC9c3b0377a2C6549cd07FD1",
+      "oToken": "0xCD310702cE2D4B3e7892643D5C3eB67F969b92A6",
+      "aToken": "0x4Fe81F8ADEC3079FddF04A95C72DaE3D7fFcFf5D",
+      "companyImpl": "0xF113bCE7238dbDC4B9f36F2Cabf7f44E4E04D6a1",
+      "companyBeacon": "0x463df6d43Da206bf23753b8D19f7012F520ad448",
+      "companyFactory": "0x183AA36F4837d46f676976707cE5c6C3c0A932d3",
+      "mccBilling": "0x89853Fc3b5f53443331966505716169d19C8eA2d",
+      "mccServices": "0xa3aAaD0162B84B5af967F440091e75Af03bfb104"
     }
   },
-  "colonyBeacon": "0xa20E122DdFeA07D6baFeBA755400901C314D9a54"
+  "colonyBeacon": "0xE845d4f1d6043738212176533523ed7A0B7891c1"
 }

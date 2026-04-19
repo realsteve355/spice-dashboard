@@ -19,6 +19,9 @@ contract GToken is ERC721, Ownable {
     // tokenId → issued timestamp
     mapping(uint256 => uint256) public issuedAt;
 
+    // tokenId → citizen name (stored at mint)
+    mapping(uint256 => string) public citizenName;
+
     constructor(string memory _colonyName, string memory _ticker)
         ERC721(string.concat(_ticker, " Governance"), string.concat("G-", _ticker))
         Ownable(msg.sender)
@@ -29,9 +32,10 @@ contract GToken is ERC721, Ownable {
     /**
      * @notice Mint a G-token to a new citizen. Only the Colony contract (owner) can call.
      */
-    function mint(address to) external onlyOwner returns (uint256 tokenId) {
+    function mint(address to, string calldata name) external onlyOwner returns (uint256 tokenId) {
         tokenId = nextTokenId++;
         issuedAt[tokenId] = block.timestamp;
+        citizenName[tokenId] = name;
         _mint(to, tokenId);
     }
 
@@ -65,7 +69,9 @@ contract GToken is ERC721, Ownable {
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_ownerOf(tokenId) != address(0), "GToken: nonexistent token");
 
-        string memory idStr = string.concat('#', _padded(tokenId));
+        string memory idStr   = string.concat('#', _padded(tokenId));
+        string memory cName   = citizenName[tokenId];
+        bool          hasName = bytes(cName).length > 0;
 
         string memory svg = string.concat(
             '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">',
@@ -76,16 +82,27 @@ contract GToken is ERC721, Ownable {
             '</text>',
             '<text x="200" y="232" font-family="monospace" font-size="140" fill="#B8860B" text-anchor="middle" opacity="0.08">G</text>',
             '<text x="200" y="268" font-family="monospace" font-size="11" fill="#555" text-anchor="middle" letter-spacing="3">GOVERNANCE TOKEN</text>',
-            '<text x="200" y="318" font-family="monospace" font-size="38" fill="#ffffff" text-anchor="middle">',
+            hasName
+                ? string.concat('<text x="200" y="304" font-family="monospace" font-size="16" fill="#ffffff" text-anchor="middle">', cName, '</text>')
+                : '',
+            '<text x="200" y="', hasName ? '338' : '318', '" font-family="monospace" font-size="38" fill="#B8860B" text-anchor="middle">',
             idStr,
             '</text>',
             '<text x="200" y="368" font-family="monospace" font-size="10" fill="#333" text-anchor="middle" letter-spacing="5">SPICE PROTOCOL</text>',
             '</svg>'
         );
 
+        string memory attrs = string.concat(
+            '[{"trait_type":"Colony","value":"', colonyName, '"},',
+            '{"trait_type":"Token ID","value":"', Strings.toString(tokenId), '"}',
+            hasName ? string.concat(',{"trait_type":"Citizen","value":"', cName, '"}') : '',
+            ']'
+        );
+
         string memory json = string.concat(
-            '{"name":"G-Token ', idStr, '",',
+            '{"name":"', hasName ? string.concat(cName, unicode' \u00B7 ', colonyName) : string.concat('G-Token ', idStr), '",',
             '"description":"Governance token for ', colonyName, '. Soulbound, non-transferable.",',
+            '"attributes":', attrs, ',',
             '"image":"data:image/svg+xml;base64,', Base64.encode(bytes(svg)), '"}'
         );
 

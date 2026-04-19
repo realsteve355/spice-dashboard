@@ -19,7 +19,7 @@ const ATOKEN_ABI = [
 ]
 
 const COLONY_ABI = [
-  "function registerAsset(uint256, uint256, bool, uint256) external returns (uint256)",
+  "function registerAsset(string, uint256, uint256, bool, uint256) external returns (uint256)",
   "function transferAsset(uint256, address, uint256) external",
   "function issueObligation(address, address, uint256, uint256, uint256) external returns (uint256, uint256)",
   "function currentEpoch() view returns (uint256)",
@@ -211,6 +211,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, onReload }) {
     try {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
       const tx = await colony.registerAsset(
+        rName.trim(),
         ethers.parseEther(String(rValueNum || 0)),
         BigInt(rWtNum),
         rAI,

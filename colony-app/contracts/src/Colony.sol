@@ -51,6 +51,7 @@ interface IAToken {
     // Assets
     function registerAsset(
         address holder,
+        string  calldata label,
         uint256 valueSTokens,
         uint256 weightKg,
         bool    hasAI,
@@ -258,7 +259,7 @@ contract Colony is Initializable {
         citizenName[msg.sender] = name;
         citizens.push(msg.sender);
 
-        uint256 tokenId = gToken.mint(msg.sender);
+        uint256 tokenId = gToken.mint(msg.sender, name);
         sToken.issueUbi(msg.sender);
 
         emit CitizenJoined(msg.sender, tokenId, name);
@@ -535,13 +536,14 @@ contract Colony is Initializable {
      * @return id  New unilateral A-token ID
      */
     function registerAsset(
+        string  calldata label,
         uint256 valueSTokens,
         uint256 weightKg,
         bool    hasAI,
         uint256 depreciationBps
     ) external requireAToken onlyCitizenOrCompany returns (uint256 id) {
         id = IAToken(aToken).registerAsset(
-            msg.sender, valueSTokens, weightKg, hasAI, depreciationBps, sToken.currentEpoch()
+            msg.sender, label, valueSTokens, weightKg, hasAI, depreciationBps, sToken.currentEpoch()
         );
         emit AssetRegistered(id, msg.sender, valueSTokens);
     }

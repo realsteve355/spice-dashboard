@@ -115,6 +115,9 @@ contract AToken is ERC721 {
     mapping(uint256 => uint256) public escrowedFor;    // collateralId → liabilityId
     mapping(uint256 => uint256) public collateralFor;  // liabilityId → collateralId
 
+    // asset label stored at registration (UNILATERAL tokens only)
+    mapping(uint256 => string) public assetLabel;
+
     // ── Events ────────────────────────────────────────────────────────────────
 
     event AssetRegistered(uint256 indexed id, address indexed holder, uint256 valueSTokens);
@@ -223,6 +226,10 @@ contract AToken is ERC721 {
                 ',{"trait_type":"Weight (kg)","value":"', Strings.toString(a.weightKg), '"}',
                 ',{"trait_type":"Has Autonomous AI","value":"', a.hasAutonomousAI ? "true" : "false", '"}'
             );
+            string memory lbl = assetLabel[id];
+            if (bytes(lbl).length > 0) {
+                attrs = string.concat(attrs, ',{"trait_type":"Label","value":"', lbl, '"}');
+            }
         } else if (t.form == Form.OBLIGATION_LIABILITY) {
             ObligationData storage ob = obligationData[id];
             attrs = string.concat(attrs,
@@ -239,8 +246,20 @@ contract AToken is ERC721 {
 
         attrs = string.concat(attrs, ']');
 
+        // For UNILATERAL assets, prefer "Label · NNN S" as the NFT name
+        string memory tokenName;
+        if (t.form == Form.UNILATERAL) {
+            string memory lbl2 = assetLabel[id];
+            string memory valStr = Strings.toString(assetData[id].valueSTokens / 1e18);
+            tokenName = bytes(lbl2).length > 0
+                ? string.concat(lbl2, unicode' \u00B7 ', valStr, ' S')
+                : string.concat('Asset #', Strings.toString(id), unicode' \u00B7 ', valStr, ' S');
+        } else {
+            tokenName = string.concat('A-Token #', Strings.toString(id));
+        }
+
         string memory json = string.concat(
-            '{"name":"A-Token #', Strings.toString(id), '",',
+            '{"name":"', tokenName, '",',
             '"description":"SPICE Colony A-Token - ', formStr, '",',
             '"attributes":', attrs, '}'
         );
@@ -278,6 +297,7 @@ contract AToken is ERC721 {
      */
     function registerAsset(
         address holder,
+        string  calldata label,
         uint256 valueSTokens,
         uint256 weightKg,
         bool    hasAI,
@@ -295,6 +315,7 @@ contract AToken is ERC721 {
             depreciationBps:   depreciationBps,
             registrationEpoch: currentEpoch
         });
+        if (bytes(label).length > 0) assetLabel[id] = label;
         emit AssetRegistered(id, holder, valueSTokens);
     }
 
