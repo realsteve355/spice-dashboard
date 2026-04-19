@@ -37,6 +37,14 @@ const path = require("path");
 const COLONY_NAME   = "Dave's Colony";
 const COLONY_TICKER = "DC";
 
+// ColonyRegistry — global protocol directory (0x9d26CAB7bbe... on Base Sepolia)
+// Used in step 16 to register the new colony; failure is non-fatal.
+const COLONY_REGISTRY = "0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d";
+const REGISTRY_ABI = [
+  "function register(address colony, string name, string slug) external",
+  "function slugToColony(string) view returns (address)",
+];
+
 // Gas override — high enough to bump any stuck pending tx from a previous run
 // Nonce is managed explicitly from the on-chain CONFIRMED state so we
 // overwrite any stuck pending transactions from previous failed runs.
@@ -164,7 +172,8 @@ async function main() {
   const { addr: servicesAddr } = await deploy("MCCServices", colonyAddr);
 
   // ── Write addresses ───────────────────────────────────────────────────────
-  const slug = COLONY_NAME.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  // Strip apostrophes before slugifying so "Dave's" → "daves" not "dave-s"
+  const slug = COLONY_NAME.toLowerCase().replace(/'/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   // Merge into existing contracts.json — preserves other colonies across redeploys
   const contractsPath = path.join(__dirname, "../../src/data/contracts.json");
@@ -213,6 +222,23 @@ export const COLONY_APP_HOST  = "https://app.zpc.finance";
   const coloniesPath = path.join(__dirname, "../../../src/data/colonies.js");
   fs.writeFileSync(coloniesPath, coloniesJs);
   console.log("✓ src/data/colonies.js updated");
+
+  // ── 16. Register with ColonyRegistry (non-fatal) ─────────────────────────
+  console.log("\n── ColonyRegistry ──────────────────────────────────────────────");
+  try {
+    const registry = new hre.ethers.Contract(COLONY_REGISTRY, REGISTRY_ABI, deployer);
+    const existing_slug = await registry.slugToColony(slug);
+    if (existing_slug !== hre.ethers.ZeroAddress) {
+      console.log(`SKIP — slug "${slug}" already registered at ${existing_slug}`);
+    } else {
+      const regTx = await registry.register(colonyAddr, COLONY_NAME, slug, await gasOpts());
+      await regTx.wait();
+      console.log(`colony registered in ColonyRegistry as "${slug}" ✓`);
+    }
+  } catch (e) {
+    console.warn("ColonyRegistry.register failed (non-fatal):", e.reason || e.shortMessage || e.message);
+    console.warn("Register manually at spice.zpc.finance");
+  }
 
   console.log("\n── Done ─────────────────────────────────────────────────────────");
   console.log(JSON.stringify(existing, null, 2));
