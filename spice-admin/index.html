@@ -462,7 +462,7 @@ function renderColonies() {
           <div class="col-name">${esc(c.name)} ${c.deregistered ? '<span class="badge badge-dereg" style="font-size:8px;margin-left:6px">REMOVED</span>' : ""}</div>
           <div class="col-meta">${esc(c.slug)} · ${c.citizenCount} citizen${c.citizenCount!==1?"s":""} · registered ${date}</div>
         </div>
-        <div style="text-align:right;font-size:9px;color:#4a5878;font-family:monospace">${c.founder.slice(0,8)}…${c.founder.slice(-6)}</div>
+        <div style="text-align:right;font-size:9px;color:#4a5878;font-family:monospace">${(c.founderWallet||c.founder).slice(0,8)}…${(c.founderWallet||c.founder).slice(-6)}</div>
         <span class="fee-pill ${custom?"custom":""}">rate: ${effFee} ETH${custom?" (custom)":""}</span>
         <span class="fee-pill ${hasFee?"":"zero"}">${feeStr} pending</span>
       </div>
@@ -489,7 +489,7 @@ async function openDrawer(sortedIdx) {
     </div>
 
     ${kv("Colony contract", alink(c.address))}
-    ${kv("Founder",         alink(c.founder))}
+    ${kv("Founder wallet",  alink(c.founderWallet || c.founder))}
     ${kv("Citizens",        c.citizenCount)}
     ${kv("Registered",      date)}
     ${kv("Pending fee",     fee > 0 ? fee.toFixed(6) + " ETH" : "0 ETH")}
@@ -777,7 +777,9 @@ async function setFounderWallet() {
     showDrawerPending("founder", "Confirming…");
     await tx.wait();
     colonies[drawerIdx].founderWallet = val || c.founder;
-    showDrawerOk("founder");
+    renderColonies();
+    const sortedIdx = [...colonies].sort((a,b)=>b.pendingFeeWei>a.pendingFeeWei?1:-1).findIndex(x=>x.address===c.address);
+    openDrawer(sortedIdx);
   } catch(e) { showDrawerErr("founder", e?.reason || e?.shortMessage || "Failed"); }
 }
 
