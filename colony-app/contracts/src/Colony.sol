@@ -4,6 +4,7 @@ pragma solidity ^0.8.25;
 import "./GToken.sol";
 import "./SToken.sol";
 import "./VToken.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 interface IColonyRegistry {
     function getFeeForColony(address colony) external view returns (uint256);
@@ -102,7 +103,7 @@ interface ICompanyImpl {
  *   obligation, visible as a line item on the monthly MCC infrastructure bill.
  *   The MCC Fisc calls settleProtocol() monthly to pay the protocol treasury.
  */
-contract Colony {
+contract Colony is Initializable {
 
     // ── Core tokens ───────────────────────────────────────────────────────────
 
@@ -154,24 +155,36 @@ contract Colony {
     event ObligationCreated(uint256 indexed assetId, uint256 indexed liabilityId, address creditor, address obligor);
 
     /**
+     * @dev Locks the implementation contract so it cannot be initialized directly.
+     *      All colonies are deployed as BeaconProxy instances — call initialize() on
+     *      the proxy, not the implementation.
+     */
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize a new colony proxy. Called exactly once via BeaconProxy
+     *         constructor when a new colony is deployed.
+     *
      * @param _name     Colony display name
-     * @param _registry ColonyRegistry address — pass address(0) if deploying without registry
-     * @param _gToken   Pre-deployed GToken address (ownership must be transferred to Colony after)
+     * @param _registry ColonyRegistry address (pass address(0) to skip fee tracking)
+     * @param _gToken   Pre-deployed GToken address (ownership transferred to Colony after)
      * @param _sToken   Pre-deployed SToken address
      * @param _vToken   Pre-deployed VToken address
      *
-     * Tokens are deployed separately to keep Colony's constructor gas cost low and
-     * each contract independently verifiable on Basescan.
-     * After deploying Colony, call transferOwnership(colonyAddr) on each token contract,
-     * then call setOToken(), setAToken(), and setCompanyFactory().
+     * Tokens are deployed separately so each contract is independently verifiable
+     * on Basescan. After initialize(), call transferOwnership(colonyAddr) on each
+     * token, then setOToken(), setAToken(), and setCompanyFactory().
      */
-    constructor(
+    function initialize(
         string memory _name,
         address _registry,
         address _gToken,
         address _sToken,
         address _vToken
-    ) {
+    ) external initializer {
         colonyName = _name;
         founder    = msg.sender;
         registry   = _registry;

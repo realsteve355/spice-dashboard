@@ -53,6 +53,7 @@ contract ColonyRegistry is ERC721 {
     address public protocolTreasury;
     uint256 public feePerTx;                          // global default (ETH wei)
     uint256 public founderShareBps = 2500;            // 25% of fee → founder wallet (basis points)
+    address public colonyBeacon;                      // UpgradeableBeacon for Colony proxies (set after first deploy)
 
     uint256 private _nextTokenId = 1;
 
@@ -83,6 +84,7 @@ contract ColonyRegistry is ERC721 {
     event FounderShareBpsUpdated(uint256 newBps);
     event ColonyFounderShareSet(address indexed colony, uint256 bps);
     event FounderWalletUpdated(address indexed colony, address newWallet);
+    event ColonyBeaconUpdated(address newBeacon);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "ColonyRegistry: not owner");
@@ -337,6 +339,23 @@ contract ColonyRegistry is ERC721 {
         require(treasury != address(0), "ColonyRegistry: zero address");
         protocolTreasury = treasury;
         emit TreasuryUpdated(treasury);
+    }
+
+    // ── Colony beacon ─────────────────────────────────────────────────────────
+
+    /**
+     * @notice Set the UpgradeableBeacon that all Colony proxies point to.
+     *         Called once after deploying the ColonyBeacon.
+     *         CreateColony reads this address so users always deploy against the
+     *         current beacon — no hardcoded address in the frontend.
+     *
+     * To upgrade all colonies simultaneously:
+     *   beacon.upgradeTo(newColonyImplementationAddress)
+     */
+    function setColonyBeacon(address beacon) external onlyOwner {
+        require(beacon != address(0), "ColonyRegistry: zero address");
+        colonyBeacon = beacon;
+        emit ColonyBeaconUpdated(beacon);
     }
 
     // ── Ownership ─────────────────────────────────────────────────────────────

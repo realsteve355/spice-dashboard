@@ -171,6 +171,12 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
       <div class="stat-value" id="stat-founder-share" style="color:#16a34a;font-size:20px">—</div>
       <div class="stat-sub">default · % of fee</div>
     </div>
+    <div class="stat" style="grid-column: span 5">
+      <div class="stat-label">COLONY BEACON</div>
+      <div id="stat-colony-beacon" style="font-size:10px;color:#8899bb;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
+      <div id="stat-colony-impl" style="font-size:9px;color:#4a5878;margin-top:3px;word-break:break-all;font-family:monospace"></div>
+      <div class="stat-sub" style="margin-top:4px">UpgradeableBeacon — upgrades all colony proxies simultaneously</div>
+    </div>
   </div>
 
   <!-- Owner: global fee + register -->
@@ -258,6 +264,49 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
       <div class="err" id="err-reg"></div>
       <div class="ok"  id="ok-reg">Colony registered ✓</div>
     </div>
+
+    <!-- Colony beacon upgrade -->
+    <div class="card">
+      <div class="card-title">COLONY IMPLEMENTATION UPGRADE</div>
+      <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:14px">
+        All colony contracts are BeaconProxy instances pointing at a single UpgradeableBeacon.
+        Upgrading the beacon's implementation upgrades every colony simultaneously — no re-registration needed.
+        Deploy a new Colony implementation, verify it on Basescan, then enter its address below.
+        <strong style="color:#ef4444"> This is a protocol-level action and cannot be undone.</strong>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div class="field">
+            <label>NEW COLONY IMPLEMENTATION ADDRESS</label>
+            <div class="inp-row">
+              <input class="inp" id="inp-colony-impl" placeholder="0x… new ColonyImplementation" />
+              <button class="btn btn-red owner-action" onclick="upgradeColonyBeacon()">Upgrade all →</button>
+            </div>
+          </div>
+          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+            Calls beacon.upgradeTo(newImpl). All existing colony proxies instantly use the new logic.
+            New colonies deployed via the wizard will also use the new implementation.
+          </div>
+          <div class="err" id="err-colony-upgrade"></div>
+          <div class="ok"  id="ok-colony-upgrade">All colonies upgraded ✓</div>
+        </div>
+        <div>
+          <div class="field">
+            <label>SET COLONY BEACON ADDRESS IN REGISTRY</label>
+            <div class="inp-row">
+              <input class="inp" id="inp-colony-beacon" placeholder="0x… UpgradeableBeacon" />
+              <button class="btn btn-gold owner-action" onclick="setColonyBeacon()">Set →</button>
+            </div>
+          </div>
+          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+            Updates the beacon address stored in the registry. New colonies read this address from the registry.
+            Use after deploying a fresh beacon (e.g. a new colony suite for a separate upgrade track).
+          </div>
+          <div class="err" id="err-colony-beacon"></div>
+          <div class="ok"  id="ok-colony-beacon">Beacon updated ✓</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Colony list -->
@@ -301,6 +350,8 @@ const REGISTRY_ABI = [
   "function setFounderShareBps(uint256) external",
   "function setColonyFounderShare(address, uint256) external",
   "function setFounderWallet(address, address) external",
+  "function colonyBeacon() view returns (address)",
+  "function setColonyBeacon(address) external",
   "function register(address, string, string) external",
   "function deregister(address) external",
   "function reregister(address) external",
@@ -313,6 +364,11 @@ const COLONY_ABI = [
   "function citizenCount() view returns (uint256)",
   "function colonyName() view returns (string)",
   "event ProtocolFeeSettled(uint256 amount, address treasury)",
+];
+
+const BEACON_ABI = [
+  "function implementation() view returns (address)",
+  "function upgradeTo(address newImplementation) external",
 ];
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -373,11 +429,12 @@ async function loadAll() {
   const prov = provider || new ethers.JsonRpcProvider(RPC);
   const reg  = new ethers.Contract(REGISTRY, REGISTRY_ABI, prov);
   try {
-    const [treasury, feeWei, founderBps, ownerAddr, allAddrs] = await Promise.all([
+    const [treasury, feeWei, founderBps, ownerAddr, beaconAddr, allAddrs] = await Promise.all([
       reg.protocolTreasury(),
       reg.feePerTx(),
       reg.founderShareBps(),
       reg.owner(),
+      reg.colonyBeacon().catch(() => ethers.ZeroAddress),
       reg.getAll(),
     ]);
     globalFeeWei = feeWei;
@@ -388,6 +445,18 @@ async function loadAll() {
     document.getElementById("stat-founder-share").textContent = founderPct;
     document.getElementById("cur-fee").textContent            = "current: " + ethers.formatEther(feeWei) + " ETH";
     document.getElementById("cur-founder-share").textContent  = "current: " + founderPct + " of fee → founder";
+
+    // Colony beacon
+    if (beaconAddr && beaconAddr !== ethers.ZeroAddress) {
+      document.getElementById("stat-colony-beacon").textContent = beaconAddr;
+      try {
+        const beacon = new ethers.Contract(beaconAddr, BEACON_ABI, prov);
+        const implAddr = await beacon.implementation();
+        document.getElementById("stat-colony-impl").textContent = "impl: " + implAddr;
+      } catch {}
+    } else {
+      document.getElementById("stat-colony-beacon").textContent = "not set — deploy colony first";
+    }
 
     if (!allAddrs.length) {
       document.getElementById("stat-colonies").textContent = "0";
@@ -811,6 +880,56 @@ async function reregisterColony() {
     renderColonies();
     await loadAll();
   } catch(e) { showDrawerErr("reg", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+// ── Colony beacon management ──────────────────────────────────────────────────
+async function upgradeColonyBeacon() {
+  if (!await requireOwner()) return;
+  clearMsg("colony-upgrade");
+  const newImpl = document.getElementById("inp-colony-impl").value.trim();
+  if (!ethers.isAddress(newImpl)) { showErr("colony-upgrade", "Invalid address"); return; }
+
+  // Read current beacon from registry
+  const reg        = new ethers.Contract(REGISTRY, REGISTRY_ABI, provider);
+  const beaconAddr = await reg.colonyBeacon().catch(() => null);
+  if (!beaconAddr || beaconAddr === ethers.ZeroAddress) {
+    showErr("colony-upgrade", "No colony beacon set in registry"); return;
+  }
+
+  if (!confirm(
+    `Upgrade ALL colony contracts to new implementation:\n${newImpl}\n\n` +
+    `Beacon: ${beaconAddr}\n\nThis cannot be undone. Confirm?`
+  )) return;
+
+  try {
+    const beacon = new ethers.Contract(beaconAddr, BEACON_ABI, signer);
+    const tx     = await beacon.upgradeTo(newImpl);
+    showPending("colony-upgrade", "Confirming…");
+    await tx.wait();
+    document.getElementById("stat-colony-impl").textContent = "impl: " + newImpl;
+    showOk("colony-upgrade");
+  } catch(e) { showErr("colony-upgrade", e?.reason || e?.shortMessage || "Failed"); }
+}
+
+async function setColonyBeacon() {
+  if (!await requireOwner()) return;
+  clearMsg("colony-beacon");
+  const val = document.getElementById("inp-colony-beacon").value.trim();
+  if (!ethers.isAddress(val)) { showErr("colony-beacon", "Invalid address"); return; }
+  try {
+    const reg = new ethers.Contract(REGISTRY, REGISTRY_ABI, signer);
+    const tx  = await reg.setColonyBeacon(val);
+    showPending("colony-beacon", "Confirming…");
+    await tx.wait();
+    document.getElementById("stat-colony-beacon").textContent = val;
+    showOk("colony-beacon");
+    // Read and display new impl
+    try {
+      const beacon  = new ethers.Contract(val, BEACON_ABI, provider);
+      const implAddr = await beacon.implementation();
+      document.getElementById("stat-colony-impl").textContent = "impl: " + implAddr;
+    } catch {}
+  } catch(e) { showErr("colony-beacon", e?.reason || e?.shortMessage || "Failed"); }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

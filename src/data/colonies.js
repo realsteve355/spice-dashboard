@@ -3,7 +3,7 @@
 // Re-run the deploy script to update after a fresh deploy.
 
 export const COLONIES = [
-  { id: "daves-colony", slug: "daves-colony", address: "0xDc546810b73b499DB79a0DF2A662170660Bf3902" },
+  { id: "daves-colony", slug: "daves-colony", address: "0xa882818baF5F5BFeE452f66e52914597eE6e2710" },
 ];
 
 export const BASE_SEPOLIA_RPC = "https://sepolia.base.org";

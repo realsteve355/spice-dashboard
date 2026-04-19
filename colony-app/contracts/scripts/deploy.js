@@ -39,10 +39,12 @@ const COLONY_TICKER = "DC";
 
 // ColonyRegistry — global protocol directory (0x7c95b0C0d38F... on Base Sepolia)
 // Used in step 16 to register the new colony; failure is non-fatal.
-const COLONY_REGISTRY = "0x2c82B62Cf3b258D95a8b5bf4F2658D0D509C9FF8";
+const COLONY_REGISTRY = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
   "function register(address colony, string name, string slug) external",
   "function slugToColony(string) view returns (address)",
+  "function setColonyBeacon(address beacon) external",
+  "function colonyBeacon() view returns (address)",
 ];
 
 // Gas override — high enough to bump any stuck pending tx from a previous run
@@ -93,16 +95,47 @@ async function main() {
   const { contract: sTokenC, addr: sTokenAddr } = await deploy("SToken", COLONY_TICKER);
   const { contract: vTokenC, addr: vTokenAddr } = await deploy("VToken", COLONY_TICKER);
 
-  // ── 4. Colony ─────────────────────────────────────────────────────────────
-  console.log("\n── Colony ──────────────────────────────────────────────────────");
-  const { contract: colonyC, addr: colonyAddr } = await deploy(
-    "Colony",
+  // ── 4. Colony — implementation + beacon + proxy ───────────────────────────
+  console.log("\n── Colony (beacon proxy) ────────────────────────────────────────");
+
+  // 4a. Colony implementation — no constructor args (uses initialize())
+  const { addr: colonyImplAddr } = await deploy("Colony");
+
+  // 4b. ColonyBeacon — owned by deployer; all colonies point here
+  //     To upgrade all colonies: beacon.upgradeTo(newColonyImplAddress)
+  const { addr: colonyBeaconAddr } = await deploy(
+    "UpgradeableBeacon",
+    colonyImplAddr,
+    deployer.address
+  );
+
+  // 4c. BeaconProxy — this IS the colony; calls initialize() via delegatecall
+  const colonyInterface = new hre.ethers.Interface([
+    "function initialize(string,address,address,address,address)"
+  ]);
+  const colonyInitData = colonyInterface.encodeFunctionData("initialize", [
     COLONY_NAME,
-    hre.ethers.ZeroAddress,  // no ColonyRegistry
+    COLONY_REGISTRY,   // wire registry from day 1 so fees are tracked
     gTokenAddr,
     sTokenAddr,
-    vTokenAddr
-  );
+    vTokenAddr,
+  ]);
+
+  const BeaconProxyFactory = await hre.ethers.getContractFactory("BeaconProxy");
+  const proxyContract = await BeaconProxyFactory.deploy(colonyBeaconAddr, colonyInitData, await gasOpts());
+  const proxyReceipt  = await proxyContract.deploymentTransaction().wait(1);
+  if (proxyReceipt.status === 0) throw new Error("Colony BeaconProxy deploy reverted");
+  if (!["hardhat","localhost"].includes(hre.network.name)) {
+    await new Promise(r => setTimeout(r, 3000));
+  }
+  const colonyAddr = proxyReceipt.contractAddress ?? await proxyContract.getAddress();
+  const colonyCode = await hre.ethers.provider.getCode(colonyAddr);
+  if (colonyCode === "0x") throw new Error(`Colony proxy: no code at ${colonyAddr}`);
+  console.log(`${"Colony (proxy)".padEnd(24)} ${colonyAddr}  (${(colonyCode.length - 2) / 2} bytes)`);
+
+  // Attach Colony ABI to proxy address for wiring calls below
+  const ColonyFactory = await hre.ethers.getContractFactory("Colony");
+  const colonyC = ColonyFactory.attach(colonyAddr).connect(deployer);
 
   // ── 5. Transfer token ownership to Colony ─────────────────────────────────
   console.log("\n── Token ownership → Colony ────────────────────────────────────");
@@ -182,9 +215,11 @@ async function main() {
 
   existing.network = hre.network.name;
   existing.chainId = hre.network.config.chainId;
+  existing.colonyBeacon = colonyBeaconAddr;  // shared across all colonies
   existing.colonies[slug] = {
     name:           COLONY_NAME,
     colony:         colonyAddr,
+    colonyImpl:     colonyImplAddr,
     gToken:         gTokenAddr,
     sToken:         sTokenAddr,
     vToken:         vTokenAddr,
@@ -223,10 +258,25 @@ export const COLONY_APP_HOST  = "https://app.zpc.finance";
   fs.writeFileSync(coloniesPath, coloniesJs);
   console.log("✓ src/data/colonies.js updated");
 
-  // ── 16. Register with ColonyRegistry (non-fatal) ─────────────────────────
+  // ── 16. Register with ColonyRegistry + set colony beacon (non-fatal) ───────
   console.log("\n── ColonyRegistry ──────────────────────────────────────────────");
   try {
     const registry = new hre.ethers.Contract(COLONY_REGISTRY, REGISTRY_ABI, deployer);
+
+    // Set colony beacon if not already set (or overwrite if this is a redeploy)
+    try {
+      const currentBeacon = await registry.colonyBeacon();
+      if (currentBeacon.toLowerCase() !== colonyBeaconAddr.toLowerCase()) {
+        const beaconTx = await registry.setColonyBeacon(colonyBeaconAddr, await gasOpts());
+        await beaconTx.wait();
+        console.log(`colonyBeacon → ${colonyBeaconAddr} ✓`);
+      } else {
+        console.log(`colonyBeacon already set ✓`);
+      }
+    } catch (e) {
+      console.warn("setColonyBeacon failed (non-fatal):", e.reason || e.shortMessage || e.message);
+    }
+
     const existing_slug = await registry.slugToColony(slug);
     if (existing_slug !== hre.ethers.ZeroAddress) {
       console.log(`SKIP — slug "${slug}" already registered at ${existing_slug}`);
@@ -236,8 +286,8 @@ export const COLONY_APP_HOST  = "https://app.zpc.finance";
       console.log(`colony registered in ColonyRegistry as "${slug}" ✓`);
     }
   } catch (e) {
-    console.warn("ColonyRegistry.register failed (non-fatal):", e.reason || e.shortMessage || e.message);
-    console.warn("Register manually at spice.zpc.finance");
+    console.warn("ColonyRegistry step failed (non-fatal):", e.reason || e.shortMessage || e.message);
+    console.warn("Register manually at spice.zpc.finance and set colony beacon via admin.");
   }
 
   console.log("\n── Done ─────────────────────────────────────────────────────────");

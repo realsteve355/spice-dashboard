@@ -7,9 +7,11 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 
 // On-chain registry — makes colonies discoverable to all users on all devices
-const REGISTRY_ADDRESS = '0x2c82B62Cf3b258D95a8b5bf4F2658D0D509C9FF8'
+const REGISTRY_ADDRESS = '0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a'
 const REGISTRY_ABI = [
   'function register(address colony, string calldata name, string calldata slug) external',
+  'function slugToColony(string) view returns (address)',
+  'function colonyBeacon() view returns (address)',
 ]
 
 const FIXED_PARAMS = [
@@ -124,15 +126,19 @@ export default function CreateColony() {
         return
       }
 
-      // Check slug availability before spending any gas
-      const registryRead = new ethers.Contract(
-        REGISTRY_ADDRESS,
-        ['function slugToColony(string) view returns (address)'],
-        freshProvider
-      )
-      const existingAddr = await registryRead.slugToColony(slug)
+      // Check slug availability and read colony beacon before spending any gas
+      const registryRead = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, freshProvider)
+      const [existingAddr, colonyBeaconAddr] = await Promise.all([
+        registryRead.slugToColony(slug),
+        registryRead.colonyBeacon(),
+      ])
       if (existingAddr !== ethers.ZeroAddress) {
         setDeployError(`The name "${name}" is already taken in the global directory (slug: "${slug}"). Please go back and choose a different colony name.`)
+        setDeploying(false)
+        return
+      }
+      if (colonyBeaconAddr === ethers.ZeroAddress) {
+        setDeployError('Colony beacon not configured on the protocol registry. Contact the SPICE protocol admin at spice.zpc.finance.')
         setDeploying(false)
         return
       }
@@ -153,12 +159,19 @@ export default function CreateColony() {
         deployContract('VToken', ARTIFACTS.VToken.abi, ARTIFACTS.VToken.bytecode, freshSigner, ticker)
       )
 
-      // ── 4. Colony ─────────────────────────────────────────────────────────────
-      const { contract: colonyC, addr: colonyAddr } = await run(
+      // ── 4. Colony — deploy as BeaconProxy pointing at the shared implementation ─
+      // All colonies share one ColonyBeacon. Upgrade all colonies: beacon.upgradeTo(newImpl).
+      const colonyInitData = new ethers.Interface([
+        'function initialize(string,address,address,address,address)'
+      ]).encodeFunctionData('initialize', [name, REGISTRY_ADDRESS, gTokenAddr, sTokenAddr, vTokenAddr])
+
+      const { addr: colonyAddr } = await run(
         'Deploy Colony (Fisc)', () =>
-        deployContract('Colony', ARTIFACTS.Colony.abi, ARTIFACTS.Colony.bytecode, freshSigner,
-          name, zero, gTokenAddr, sTokenAddr, vTokenAddr)
+        deployContract('BeaconProxy', ARTIFACTS.BeaconProxy.abi, ARTIFACTS.BeaconProxy.bytecode,
+          freshSigner, colonyBeaconAddr, colonyInitData)
       )
+      // Attach Colony ABI to proxy address for all subsequent wiring calls
+      const colonyC = new ethers.Contract(colonyAddr, ARTIFACTS.Colony.abi, freshSigner)
 
       // ── 5. Transfer token ownership to Colony ─────────────────────────────────
       await run('Transfer GToken ownership to Colony', async () => {

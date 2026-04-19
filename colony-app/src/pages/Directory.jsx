@@ -9,7 +9,7 @@ import { C } from '../theme'
 // Each registered colony holds a soulbound C-token (ERC-721) minted to its
 // Colony contract address. This is the canonical list. contracts.json and
 // localStorage are no longer used as colony sources.
-const REGISTRY_ADDRESS = "0x2c82B62Cf3b258D95a8b5bf4F2658D0D509C9FF8"
+const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a"
 const REGISTRY_ABI = [
   "function getActive() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt, uint256 tokenId)",
