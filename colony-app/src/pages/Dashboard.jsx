@@ -4,6 +4,7 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { useWallet } from '../App'
+import { resolveNames, namedAddr } from '../utils/addrLabel'
 
 // Compute epoch display values from current date
 function getEpochDisplay() {
@@ -172,16 +173,25 @@ export default function Dashboard() {
           if (b) blockMap[n] = b.timestamp
         }))
         const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+
+        // Resolve names for all counterparty addresses
+        const counterpartyAddrs = [
+          ...sentFrom.map(e => String(e.parsed.args[1])),
+          ...sentTo.map(e => String(e.parsed.args[0])),
+          ...dividends.map(e => String(e.parsed.args[0])),
+        ]
+        const nameMap = await resolveNames(counterpartyAddrs, cfg.colony).catch(() => ({}))
+
         const rows = []
         for (const e of sentFrom) {
           const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
-          const to  = e.parsed.args[1]
-          rows.push({ type: 'sent',     label: e.parsed.args[3] || `To ${to.slice(0,6)}…${to.slice(-4)}`,         amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const to  = String(e.parsed.args[1])
+          rows.push({ type: 'sent',     label: e.parsed.args[3] || `To ${namedAddr(to, nameMap)}`,         amount: -amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of sentTo) {
           const amt  = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
-          const from = e.parsed.args[0]
-          rows.push({ type: 'received', label: e.parsed.args[3] || `From ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const from = String(e.parsed.args[0])
+          rows.push({ type: 'received', label: e.parsed.args[3] || `From ${namedAddr(from, nameMap)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         for (const e of ubis) {
           const amt = Math.floor(Number(ethers.formatEther(e.parsed.args[1])))
@@ -197,8 +207,8 @@ export default function Dashboard() {
         }
         for (const e of dividends) {
           const amt  = Math.floor(Number(ethers.formatEther(e.parsed.args[2])))
-          const from = e.parsed.args[0]
-          rows.push({ type: 'dividend', label: `V dividend from ${from.slice(0,6)}…${from.slice(-4)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
+          const from = String(e.parsed.args[0])
+          rows.push({ type: 'dividend', label: `V dividend from ${namedAddr(from, nameMap)}`, amount: +amt, date: fmtDate(blockMap[e.blockNumber]), blockNumber: e.blockNumber })
         }
         rows.sort((a, b) => b.blockNumber - a.blockNumber)
         setTxHistory(rows)

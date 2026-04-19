@@ -4,6 +4,7 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { C } from '../theme'
+import { resolveNames, namedAddr } from '../utils/addrLabel'
 
 const MCC_SERVICES_ABI = [
   "function getServices() view returns (uint256[], string[], string[], string[])",
@@ -68,6 +69,146 @@ export default function Admin() {
     || JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')[slug]?.address
 
   const [tab, setTab]               = useState('overview')
+
+  // ── Ledger state ──
+  const [ledgerRows,    setLedgerRows]    = useState(null)  // null = not yet loaded
+  const [ledgerLoading, setLedgerLoading] = useState(false)
+
+  useEffect(() => {
+    if (tab !== 'ledger' || !colonyAddr) return
+    if (ledgerRows !== null) return  // already loaded
+    setLedgerLoading(true)
+    const rpc = new ethers.JsonRpcProvider(RPC)
+    const iface = new ethers.Interface([
+      "event UbiClaimed(address indexed citizen, uint256 amount, uint256 epoch)",
+      "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
+      "event ObligationSettled(uint256 indexed liabilityId, address obligor, address creditor, uint256 amount)",
+      "event ObligationDefaulted(uint256 indexed liabilityId, address obligor)",
+      "event AssetRegistered(uint256 indexed id, address indexed holder, uint256 valueSTokens)",
+      "event VDividendPaid(address indexed from, address indexed to, uint256 amount)",
+      "event ProtocolFeeSettled(uint256 amount, address treasury)",
+      "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
+    ])
+    const topics = {
+      UbiClaimed:        ethers.id('UbiClaimed(address,uint256,uint256)'),
+      Sent:              ethers.id('Sent(address,address,uint256,string)'),
+      ObligationSettled: ethers.id('ObligationSettled(uint256,address,address,uint256)'),
+      ObligationDefaulted: ethers.id('ObligationDefaulted(uint256,address)'),
+      AssetRegistered:   ethers.id('AssetRegistered(uint256,address,uint256)'),
+      VDividendPaid:     ethers.id('VDividendPaid(address,address,uint256)'),
+      ProtocolFeeSettled:ethers.id('ProtocolFeeSettled(uint256,address)'),
+      CitizenJoined:     ethers.id('CitizenJoined(address,uint256,string)'),
+    }
+    const allTopics = Object.values(topics)
+    let cancelled = false
+
+    async function loadLedger() {
+      try {
+        const latest = await rpc.getBlockNumber()
+        const FROM   = Math.max(0, latest - 50000)
+        const CHUNK  = 2000
+        const raw = []
+        for (let from = FROM; from <= latest; from += CHUNK) {
+          const logs = await rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: Math.min(from + CHUNK - 1, latest) })
+          raw.push(...logs)
+        }
+        // Parse all known events
+        const parsed = raw.flatMap(log => {
+          if (!allTopics.includes(log.topics[0])) return []
+          try { return [{ log, parsed: iface.parseLog(log) }] } catch { return [] }
+        })
+        // Block timestamps
+        const blocks = [...new Set(parsed.map(e => e.log.blockNumber))]
+        const blockMap = {}
+        await Promise.all(blocks.map(async n => {
+          const b = await rpc.getBlock(n); if (b) blockMap[n] = b.timestamp
+        }))
+        const fmtDate = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+        // Collect all addresses for name resolution
+        const addrs = new Set()
+        parsed.forEach(({ parsed: p }) => {
+          if (!p) return
+          const a = p.args
+          switch (p.name) {
+            case 'UbiClaimed':        addrs.add(String(a[0])); break
+            case 'Sent':              addrs.add(String(a[0])); addrs.add(String(a[1])); break
+            case 'ObligationSettled': addrs.add(String(a[1])); addrs.add(String(a[2])); break
+            case 'ObligationDefaulted': addrs.add(String(a[1])); break
+            case 'AssetRegistered':   addrs.add(String(a[1])); break
+            case 'VDividendPaid':     addrs.add(String(a[0])); addrs.add(String(a[1])); break
+            case 'CitizenJoined':     addrs.add(String(a[0])); break
+            default: break
+          }
+        })
+        const nm = await resolveNames([...addrs], colonyAddr).catch(() => ({}))
+        // Build rows
+        const rows = parsed.map(({ log, parsed: p }) => {
+          if (!p) return null
+          const date = fmtDate(blockMap[log.blockNumber])
+          const a    = p.args
+          const S    = v => Math.floor(Number(ethers.formatEther(v)))
+          switch (p.name) {
+            case 'UbiClaimed': return {
+              date, type: 'UBI', typeColor: C.gold,
+              description: `UBI — ${namedAddr(String(a[0]), nm)}`,
+              debit: 'UBI Expense', credit: namedAddr(String(a[0]), nm),
+              amount: S(a[1]), unit: 'S', blockNumber: log.blockNumber,
+            }
+            case 'CitizenJoined': return {
+              date, type: 'Join', typeColor: C.gold,
+              description: `${String(a[2]) || namedAddr(String(a[0]), nm)} joined`,
+              debit: 'Citizens', credit: 'Colony',
+              amount: null, unit: '', blockNumber: log.blockNumber,
+            }
+            case 'Sent': return {
+              date, type: 'Payment', typeColor: C.green,
+              description: a[3] || `${namedAddr(String(a[0]), nm)} → ${namedAddr(String(a[1]), nm)}`,
+              debit: namedAddr(String(a[0]), nm), credit: namedAddr(String(a[1]), nm),
+              amount: S(a[2]), unit: 'S', blockNumber: log.blockNumber,
+            }
+            case 'ObligationSettled': return {
+              date, type: 'Obligation', typeColor: '#3b82f6',
+              description: `${namedAddr(String(a[1]), nm)} → ${namedAddr(String(a[2]), nm)}`,
+              debit: namedAddr(String(a[1]), nm), credit: namedAddr(String(a[2]), nm),
+              amount: S(a[3]), unit: 'S', blockNumber: log.blockNumber,
+            }
+            case 'ObligationDefaulted': return {
+              date, type: 'Default', typeColor: '#ef4444',
+              description: `Default — ${namedAddr(String(a[1]), nm)}`,
+              debit: 'Bad Debt', credit: namedAddr(String(a[1]), nm),
+              amount: null, unit: '', blockNumber: log.blockNumber,
+            }
+            case 'AssetRegistered': return {
+              date, type: 'Asset', typeColor: C.gold,
+              description: `Asset registered — ${namedAddr(String(a[1]), nm)}`,
+              debit: 'Asset Registry', credit: namedAddr(String(a[1]), nm),
+              amount: S(a[2]), unit: 'S', blockNumber: log.blockNumber,
+            }
+            case 'VDividendPaid': return {
+              date, type: 'V Div', typeColor: '#8b5cf6',
+              description: `${namedAddr(String(a[0]), nm)} → ${namedAddr(String(a[1]), nm)}`,
+              debit: 'V Savings Pool', credit: namedAddr(String(a[1]), nm),
+              amount: S(a[2]), unit: 'V', blockNumber: log.blockNumber,
+            }
+            case 'ProtocolFeeSettled': return {
+              date, type: 'Fee', typeColor: C.sub,
+              description: 'Protocol fee settled',
+              debit: 'Protocol Fees', credit: 'Treasury',
+              amount: parseFloat(ethers.formatEther(a[0])).toFixed(6), unit: 'ETH', blockNumber: log.blockNumber,
+            }
+            default: return null
+          }
+        }).filter(Boolean).sort((a, b) => b.blockNumber - a.blockNumber)
+
+        if (!cancelled) { setLedgerRows(rows); setLedgerLoading(false) }
+      } catch (e) {
+        console.warn('[Admin] ledger load failed:', e?.message || e)
+        if (!cancelled) { setLedgerRows([]); setLedgerLoading(false) }
+      }
+    }
+    loadLedger()
+    return () => { cancelled = true }
+  }, [tab, colonyAddr, ledgerRows])
 
   // ── Services state ──
   const [addingService, setAdding]  = useState(false)
@@ -390,7 +531,7 @@ export default function Admin() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
-          {['overview', 'services', 'citizens', 'billing'].map(t => (
+          {['overview', 'services', 'citizens', 'billing', 'ledger'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
               border: 'none', color: tab === t ? C.bg : C.sub,
@@ -770,6 +911,62 @@ export default function Admin() {
                 })}
               </>
             )}
+          </div>
+        )}
+
+        {/* ── Ledger ── */}
+        {tab === 'ledger' && (
+          <div>
+            <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12 }}>
+              Double-entry journal of all colony financial events. Each row shows what was debited and credited.
+            </div>
+            {ledgerLoading && (
+              <div style={{ textAlign: 'center', padding: 32, fontSize: 12, color: C.faint }}>Loading journal…</div>
+            )}
+            {!ledgerLoading && ledgerRows !== null && ledgerRows.length === 0 && (
+              <div style={{ ...card, fontSize: 12, color: C.faint }}>No financial events recorded yet.</div>
+            )}
+            {!ledgerLoading && ledgerRows && ledgerRows.length > 0 && (
+              <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+                {/* Header */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '70px 56px 1fr 1fr 1fr 72px',
+                  gap: 0, padding: '8px 12px',
+                  background: '#f8f7f4', borderBottom: `1px solid ${C.border}`,
+                  fontSize: 9, color: C.faint, letterSpacing: '0.08em',
+                }}>
+                  <div>DATE</div>
+                  <div>TYPE</div>
+                  <div>DESCRIPTION</div>
+                  <div>DEBIT</div>
+                  <div>CREDIT</div>
+                  <div style={{ textAlign: 'right' }}>AMOUNT</div>
+                </div>
+                {ledgerRows.map((row, i) => (
+                  <div key={i} style={{
+                    display: 'grid', gridTemplateColumns: '70px 56px 1fr 1fr 1fr 72px',
+                    gap: 0, padding: '9px 12px',
+                    borderBottom: i < ledgerRows.length - 1 ? `1px solid ${C.border}` : 'none',
+                    background: i % 2 === 0 ? C.white : '#fafaf8',
+                  }}>
+                    <div style={{ fontSize: 10, color: C.faint }}>{row.date}</div>
+                    <div style={{ fontSize: 9, fontWeight: 600, color: row.typeColor, letterSpacing: '0.04em' }}>{row.type}</div>
+                    <div style={{ fontSize: 11, color: C.text, paddingRight: 8 }}>{row.description}</div>
+                    <div style={{ fontSize: 10, color: '#ef4444', paddingRight: 8 }}>{row.debit}</div>
+                    <div style={{ fontSize: 10, color: C.green, paddingRight: 8 }}>{row.credit}</div>
+                    <div style={{ fontSize: 11, fontWeight: 500, color: C.text, textAlign: 'right' }}>
+                      {row.amount != null ? `${row.amount} ${row.unit}` : '—'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button
+              onClick={() => setLedgerRows(null)}
+              style={{ marginTop: 10, padding: '6px 14px', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10, color: C.sub, cursor: 'pointer' }}
+            >
+              Refresh
+            </button>
           </div>
         )}
 

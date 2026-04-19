@@ -4,6 +4,7 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { useWallet } from '../App'
+import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 
 // Colony contract — for send() and citizen checks
 const COLONY_ABI = [
@@ -130,6 +131,8 @@ export default function Company() {
         }
 
         if (cancelled) return
+        // Resolve citizen names for equity holders
+        const holderNameMap = await resolveNames(holders, cfg.colony).catch(() => ({}))
         setChainCo({
           name,
           secretary:          secretary.toLowerCase(),
@@ -138,7 +141,7 @@ export default function Company() {
           totalOutstandingBps,
           equity:             holders.map((addr, i) => ({
             wallet:    addr,
-            label:     addr.slice(0, 6) + '…' + addr.slice(-4),
+            label:     namedAddr(addr, holderNameMap),
             totalBps:  Number(totalStakes[i]),
             vestedBps: perTokenVested[i],
             pct:       totalOutstandingBps > 0
@@ -217,13 +220,22 @@ export default function Company() {
         const fmtDate = ts => ts
           ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
           : ''
+        // Resolve citizen names for counterparties in this tx set
+        const cpAddrs = [
+          ...received.map(e => String(e.parsed.args[0])),
+          ...sent.map(e => String(e.parsed.args[1])),
+          ...dividends.map(e => String(e.parsed.args[1])),
+        ]
+        const txNameMap = await resolveNames(cpAddrs, cfg.colony).catch(() => ({}))
+
         const rows = [
           ...received.map(e => ({
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'revenue',
             description: e.parsed.args[3] || 'Payment received',
-            counterparty: e.parsed.args[0],
+            counterparty: String(e.parsed.args[0]),
+            counterpartyName: txNameMap[String(e.parsed.args[0]).toLowerCase()] || null,
             dr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
             cr: null,
           })),
@@ -232,7 +244,8 @@ export default function Company() {
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'expense',
             description: e.parsed.args[3] || 'Payment sent',
-            counterparty: e.parsed.args[1],
+            counterparty: String(e.parsed.args[1]),
+            counterpartyName: txNameMap[String(e.parsed.args[1]).toLowerCase()] || null,
             dr: null,
             cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
@@ -241,7 +254,7 @@ export default function Company() {
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'convert',
             description: 'S → V conversion',
-            counterparty: null,
+            counterparty: null, counterpartyName: null,
             dr: null,
             cr: Math.floor(Number(ethers.formatEther(e.parsed.args[1]))),
           })),
@@ -249,8 +262,9 @@ export default function Company() {
             hash: e.transactionHash, blockNumber: e.blockNumber,
             date: fmtDate(blockMap[e.blockNumber]),
             type: 'dividend',
-            description: `V dividend → ${String(e.parsed.args[1]).slice(0,6)}…${String(e.parsed.args[1]).slice(-4)}`,
-            counterparty: e.parsed.args[1],
+            description: `V dividend → ${namedAddr(String(e.parsed.args[1]), txNameMap)}`,
+            counterparty: String(e.parsed.args[1]),
+            counterpartyName: txNameMap[String(e.parsed.args[1]).toLowerCase()] || null,
             dr: null,
             cr: Math.floor(Number(ethers.formatEther(e.parsed.args[2]))),
           })),
@@ -707,7 +721,7 @@ export default function Company() {
                       <div style={{ width: 10, height: 10, borderRadius: '50%', background: equityColor(i), flexShrink: 0, marginTop: 2 }} />
                       <div>
                         <div style={{ fontSize: 12, color: C.text }}>{e.label}</div>
-                        <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{e.wallet}</div>
+                        <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{shortAddr(e.wallet)}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
@@ -842,7 +856,7 @@ export default function Company() {
                         <div style={{ fontSize: 12, color: C.text }}>{tx.description}</div>
                         <div style={{ fontSize: 10, color: C.faint, marginTop: 1, fontFamily: 'monospace' }}>
                           {tx.date}
-                          {tx.counterparty && ` · ${tx.counterparty.slice(0,6)}…${tx.counterparty.slice(-4)}`}
+                          {tx.counterparty && ` · ${tx.counterpartyName ? `${shortAddr(tx.counterparty)} · ${tx.counterpartyName}` : shortAddr(tx.counterparty)}`}
                         </div>
                       </div>
                       <div style={{ fontSize: 12, fontWeight: 500, color: C.green, textAlign: 'right', minWidth: 56, alignSelf: 'center' }}>
