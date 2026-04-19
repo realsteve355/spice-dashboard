@@ -144,7 +144,7 @@ function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
 
 const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
-  "function getAll() view returns (address[])",
+  "function getActive() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
 ];
 
@@ -170,7 +170,7 @@ export default function Home() {
       try {
         const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
         const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider);
-        const addresses = await registry.getAll();
+        const addresses = await registry.getActive();
         if (!addresses.length) return;
         const entries = await Promise.all(addresses.map(a => registry.entries(a)));
         const list = entries
