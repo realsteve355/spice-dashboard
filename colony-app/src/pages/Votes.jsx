@@ -44,6 +44,7 @@ function electionStatus(e, nowSec) {
 async function fetchCitizens(colonyAddr) {
   const rpc     = new ethers.JsonRpcProvider(LOG_RPC)
   const toBlock = await rpc.getBlockNumber()
+  console.log('[fetchCitizens] toBlock:', toBlock, 'colony:', colonyAddr)
   const CHUNK   = 9000
   const map     = {}
   // Sequential chunks — avoids rate limiting on parallel requests
@@ -66,9 +67,13 @@ async function fetchCitizens(colonyAddr) {
       }
       // Stop early if we found citizens and have gone back far enough
       if (Object.keys(map).length > 0 && i >= 3) break
-    } catch { /* chunk failed — continue */ }
+    } catch (err) {
+      console.warn('[fetchCitizens] chunk', i, 'failed:', err?.message || err)
+    }
   }
-  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+  const result = Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+  console.log('[fetchCitizens] found:', result.map(c => c.name))
+  return result
 }
 
 export default function Votes() {
@@ -466,26 +471,36 @@ export default function Votes() {
         {nomElecId && (
           <div style={{ background: C.white, border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
             <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE A CANDIDATE</div>
-            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Candidate</div>
-            <select
-              value={nomCandidate}
-              onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
-              style={selectStyle}
-            >
-              <option value="" style={{ background: C.bg, color: C.faint }}>— select a citizen —</option>
-              {citizens
-                .filter(c => {
-                  // Exclude already-nominated candidates
-                  const elec = elecs.find(e => e.id === nomElecId)
-                  return !elec?.candidates.some(cd => cd.address.toLowerCase() === c.address.toLowerCase())
-                })
-                .map(c => (
-                  <option key={c.address} value={c.address} style={{ background: C.bg, color: C.text }}>
-                    {c.name} · {shortAddr(c.address)}
-                  </option>
-                ))
-              }
-            </select>
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>
+              Candidate {citizens.length === 0 && <span style={{ color: C.faint }}>(enter address — citizen list loading)</span>}
+            </div>
+            {citizens.length > 0 ? (
+              <select
+                value={nomCandidate}
+                onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
+                style={selectStyle}
+              >
+                <option value="" style={{ background: '#f9f9f9', color: '#aaa' }}>— select a citizen —</option>
+                {citizens
+                  .filter(c => {
+                    const elec = elecs.find(e => e.id === nomElecId)
+                    return !elec?.candidates.some(cd => cd.address.toLowerCase() === c.address.toLowerCase())
+                  })
+                  .map(c => (
+                    <option key={c.address} value={c.address} style={{ background: '#f9f9f9', color: '#111' }}>
+                      {c.name} · {shortAddr(c.address)}
+                    </option>
+                  ))
+                }
+              </select>
+            ) : (
+              <input
+                value={nomCandidate}
+                onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
+                placeholder="0x… wallet address"
+                style={{ ...selectStyle, outline: 'none', boxSizing: 'border-box' }}
+              />
+            )}
             {actionError && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{actionError}</div>}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={() => { setNomElecId(null); setNomCandidate(''); setActionError(null) }} style={smallBtn(C.border, C.sub)}>
