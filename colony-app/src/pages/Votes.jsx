@@ -188,10 +188,27 @@ export default function Votes() {
     setActionPending(null)
   }
 
+  // Returns the active (non-terminal) election for a given role index, if any
+  function activeElectionForRole(roleIdx) {
+    return byRole[roleIdx]?.find(e => !['EXECUTED', 'FAILED'].includes(e.status))
+  }
+
   async function doNominate() {
     if (!signer || !govAddress) return
     if (!ethers.isAddress(newNom.candidate)) {
       setActionError('Select a candidate')
+      return
+    }
+    // Guard: block if there's already an active election for this role
+    const existing = activeElectionForRole(newNom.role)
+    if (existing) {
+      const isVoting = existing.status === 'VOTING'
+      const closesAt = new Date(existing.votingEndsAt * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      setActionError(
+        isVoting
+          ? `A ${ROLES[newNom.role]} election is still open — voting closes at ${closesAt}. Finalise it first.`
+          : `A ${ROLES[newNom.role]} election is awaiting finalisation. Click "Finalise Election" on that proposal first.`
+      )
       return
     }
     setActionPending('nominate'); setActionError(null)
@@ -261,13 +278,26 @@ export default function Votes() {
             <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Role</div>
             <select
               value={newNom.role}
-              onChange={e => setNewNom(p => ({ ...p, role: Number(e.target.value) }))}
+              onChange={e => { setNewNom(p => ({ ...p, role: Number(e.target.value), candidate: '' })); setActionError(null) }}
               style={selectStyle}
             >
               {ROLES.map((r, i) => (
                 <option key={i} value={i} style={{ background: C.bg, color: C.text }}>{r}</option>
               ))}
             </select>
+            {(() => {
+              const existing = activeElectionForRole(newNom.role)
+              if (!existing) return null
+              const isVoting = existing.status === 'VOTING'
+              const closesAt = new Date(existing.votingEndsAt * 1000).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+              return (
+                <div style={{ fontSize: 11, color: C.red, marginTop: 6, lineHeight: '1.5' }}>
+                  {isVoting
+                    ? `A ${ROLES[newNom.role]} election is already open — voting closes at ${closesAt}. Finalise it before nominating again.`
+                    : `A ${ROLES[newNom.role]} election is awaiting finalisation. Scroll down and click "Finalise Election" first.`}
+                </div>
+              )
+            })()}
 
             <div style={{ fontSize: 11, color: C.faint, marginBottom: 4, marginTop: 12 }}>Candidate</div>
             {citizens.length > 0 ? (
@@ -302,8 +332,8 @@ export default function Votes() {
               </button>
               <button
                 onClick={doNominate}
-                disabled={actionPending === 'nominate' || !newNom.candidate}
-                style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1, opacity: !newNom.candidate ? 0.5 : 1 }}
+                disabled={actionPending === 'nominate' || !newNom.candidate || !!activeElectionForRole(newNom.role)}
+                style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1, opacity: (!newNom.candidate || !!activeElectionForRole(newNom.role)) ? 0.5 : 1 }}
               >
                 {actionPending === 'nominate' ? 'Submitting…' : 'Nominate →'}
               </button>
