@@ -11,8 +11,8 @@ const hre = require("hardhat");
 
 const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 
-const OLD_COLONY = "0x17FD0a408cFE22481B5Ea5C045F3495D5E277D36";
-const NEW_COLONY = "0x66A14e119c079d1df18eC01c20f07634044b72Ab";
+const OLD_COLONY = "0x66A14e119c079d1df18eC01c20f07634044b72Ab";
+const NEW_COLONY = "0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5";
 const NAME       = "Dave's Colony";
 const SLUG       = "daves-colony";
 
@@ -49,13 +49,6 @@ async function main() {
   const newEntry = await registry.entries(NEW_COLONY);
   if (newEntry.colony !== hre.ethers.ZeroAddress) {
     console.log(`NEW colony already registered as slug "${newEntry.slug}" — done`);
-    return;
-  }
-
-  const slugOwner = await registry.slugToColony(SLUG);
-  if (slugOwner !== hre.ethers.ZeroAddress) {
-    console.error(`Slug "${SLUG}" still taken by ${slugOwner} — cannot register`);
-    process.exitCode = 1;
     return;
   }
 

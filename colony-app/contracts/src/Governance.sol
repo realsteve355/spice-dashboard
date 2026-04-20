@@ -26,6 +26,7 @@ pragma solidity ^0.8.25;
 interface IColony {
     function isCitizen(address)   external view returns (bool);
     function dateOfBirth(address) external view returns (uint256);
+    function joinedAt(address)    external view returns (uint256);
     function issueObligationGov(
         address creditor,
         address obligor,
@@ -43,6 +44,7 @@ contract Governance {
     uint256 public constant TIMELOCK          = 7 days;
     uint256 public constant TERM              = 365 days;
     uint256 public constant OBLIGATION_EXPIRY = 30 days;
+    uint256 public constant VOTING_COOLDOWN   = 30 days; // new citizens must wait one epoch before voting
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -138,7 +140,12 @@ contract Governance {
         if (birthYear == 0) return false;
         // Approximate current year from Unix timestamp
         uint256 currentYear = 1970 + block.timestamp / 365 days;
-        return currentYear >= birthYear + 18;
+        if (currentYear < birthYear + 18) return false;
+        // Must have been a citizen for at least one epoch before voting
+        // joinedAt == 0 means citizen predates this field — treat as exempt
+        uint256 joined = colony.joinedAt(a);
+        if (joined > 0 && block.timestamp < joined + VOTING_COOLDOWN) return false;
+        return true;
     }
 
     // ── MCC role views ────────────────────────────────────────────────────────
@@ -164,6 +171,7 @@ contract Governance {
     function nominateForElection(Role role, address candidate) external returns (uint256 id) {
         require(_isCitizen(msg.sender), "Gov: not a citizen");
         require(candidate != address(0), "Gov: zero candidate");
+        require(candidate != msg.sender, "Gov: cannot self-nominate");
 
         // Ensure no active election for this role
         uint256 existing = activeElectionForRole[uint8(role)];

@@ -132,6 +132,7 @@ contract Colony is Initializable {
     mapping(address => bool)    public isCitizen;
     mapping(address => string)  public citizenName;
     mapping(address => uint256) public dateOfBirth; // birth year (e.g. 1985)
+    mapping(address => uint256) public joinedAt;    // Unix timestamp of join
     address[] public citizens;
 
     // ── Governance ────────────────────────────────────────────────────────────
@@ -282,6 +283,7 @@ contract Colony is Initializable {
         isCitizen[msg.sender]   = true;
         citizenName[msg.sender] = name;
         dateOfBirth[msg.sender] = dob;
+        joinedAt[msg.sender]    = block.timestamp;
         citizens.push(msg.sender);
 
         uint256 tokenId = gToken.mint(msg.sender, name);
