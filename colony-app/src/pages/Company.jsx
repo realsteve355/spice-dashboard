@@ -17,7 +17,7 @@ async function fetchColonyCitizens(colonyAddr) {
   const toBlock = await rpc.getBlockNumber()
   const CHUNK   = 9000
   const chunks  = await Promise.all(
-    Array.from({ length: 5 }, (_, i) => {
+    Array.from({ length: 20 }, (_, i) => {
       const to   = toBlock - i * CHUNK
       const from = Math.max(0, to - CHUNK + 1)
       return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
@@ -221,7 +221,7 @@ export default function Company() {
         }
         const CHUNK = 9000
         const chunkResults = await Promise.all(
-          Array.from({ length: 5 }, (_, i) => {
+          Array.from({ length: 20 }, (_, i) => {
             const chunkTo   = toBlock - i * CHUNK
             const chunkFrom = Math.max(0, chunkTo - CHUNK)
             const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
