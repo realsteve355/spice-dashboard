@@ -13,9 +13,9 @@
  *   SUPABASE_ANON_KEY  — anon key (bucket must allow anon INSERT via RLS policy)
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY
-const BUCKET       = 'colony-media'
+const SUPABASE_URL         = process.env.SUPABASE_URL
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY  // bypasses RLS — server-side only
+const BUCKET               = 'colony-media'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -54,17 +54,17 @@ export default async function handler(req, res) {
   const ext  = mimeType === 'image/png' ? 'png' : 'jpg'
   const path = `${colony}/${entityType}/${entityId}.${ext}`
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase env vars not configured' })
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(500).json({ error: 'SUPABASE_URL or SUPABASE_SERVICE_KEY not configured' })
   }
 
-  // Upload to Supabase Storage (x-upsert: true = overwrite existing)
+  // Upload to Supabase Storage using service role key (bypasses RLS)
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`
   const r = await fetch(uploadUrl, {
     method:  'POST',
     headers: {
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'apikey':        SUPABASE_SERVICE_KEY,
       'Content-Type':  mimeType,
       'x-upsert':      'true',
     },
