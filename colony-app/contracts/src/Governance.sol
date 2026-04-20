@@ -5,24 +5,23 @@ pragma solidity ^0.8.25;
  * @title Governance
  * @notice On-chain governance for a SPICE colony.
  *
- * Two proposal types:
+ * MCC_ELECTION — multi-candidate election for CEO / CFO / COO.
+ *   Phase 1 — NOMINATION (15 min testnet / 7 days mainnet):
+ *     Any citizen opens an election. Any citizen may nominate candidates.
+ *     Multiple candidates allowed.
+ *   Phase 2 — VOTING (30 min testnet / 14 days mainnet):
+ *     Citizens aged 18+ who joined before the election opened cast one vote
+ *     for their preferred candidate.
+ *   Finalise: anyone calls finaliseElection() after voting closes.
+ *     Candidate with most votes wins. Ties → election fails.
+ *     If the previous election is expired-but-unfinalised, openElection()
+ *     auto-finalises it before opening the new one — preventing orphaned state.
+ *   Timelock: 5 min testnet / 7 days mainnet, then anyone may execute.
+ *   Term: 1 year.
  *
- *   MCC_ELECTION — multi-candidate election for CEO / CFO / COO.
- *     Phase 1 — NOMINATION (15 min testnet / 7 days mainnet):
- *       Any citizen opens an election for a role. During this window any
- *       citizen may nominate candidates (multiple allowed).
- *     Phase 2 — VOTING (30 min testnet / 14 days mainnet):
- *       Citizens aged 18+ who joined before the election opened cast one
- *       vote for their preferred candidate.
- *     Finalise: anyone calls finaliseElection() after voting closes.
- *       Candidate with most votes wins. Ties → election fails.
- *     Timelock: 10 min testnet / 7 days mainnet, then anyone may execute.
- *     Term: 1 year.
- *
- *   OBLIGATION — any wallet proposes loan terms between creditor and obligor.
- *     Both parties must call signObligation() separately.
- *     On second signature the obligation is created in Colony immediately.
- *     Expires after 30 days if not fully signed.
+ * OBLIGATION — mutual-consent bilateral payment agreement.
+ *   Both parties must call signObligation(). On second signature the obligation
+ *   is created in Colony immediately. Expires after 30 days if not fully signed.
  */
 
 interface IColony {
@@ -42,15 +41,13 @@ contract Governance {
 
     // ── Constants ─────────────────────────────────────────────────────────────
 
-    uint256 public constant NOMINATION_WINDOW =  5 minutes;  // testnet — 7 days on mainnet
-    uint256 public constant VOTING_WINDOW     = 15 minutes;  // testnet — 14 days on mainnet
+    uint256 public constant NOMINATION_WINDOW = 15 minutes;  // testnet — 7 days on mainnet
+    uint256 public constant VOTING_WINDOW     = 30 minutes;  // testnet — 14 days on mainnet
     uint256 public constant TIMELOCK          =  5 minutes;  // testnet — 7 days on mainnet
     uint256 public constant TERM              = 365 days;
     uint256 public constant OBLIGATION_EXPIRY = 30 days;
 
     // ── Types ─────────────────────────────────────────────────────────────────
-
-    enum Role { CEO, CFO, COO }
 
     struct Election {
         uint8   role;
@@ -87,14 +84,14 @@ contract Governance {
 
     uint256 public nextId = 1;
 
-    mapping(uint256 => Election)            public elections;
-    mapping(uint256 => address[])           public electionCandidates;
-    mapping(uint256 => mapping(address => uint256)) public candidateVotes;
-    mapping(uint256 => mapping(address => bool))    public isCandidate;
-    mapping(address => mapping(uint256 => bool))    public hasVoted;
-    mapping(uint8   => uint256)             public activeElectionForRole;
+    mapping(uint256 => Election)                         public elections;
+    mapping(uint256 => address[])                        public electionCandidates;
+    mapping(uint256 => mapping(address => uint256))      public candidateVotes;
+    mapping(uint256 => mapping(address => bool))         public isCandidate;
+    mapping(address => mapping(uint256 => bool))         public hasVoted;
+    mapping(uint8   => uint256)                          public activeElectionForRole;
 
-    mapping(uint256 => ObligationProposal)  public obligations;
+    mapping(uint256 => ObligationProposal)               public obligations;
 
     // ── Events ────────────────────────────────────────────────────────────────
 
@@ -137,6 +134,48 @@ contract Governance {
         return true;
     }
 
+    /**
+     * @dev Internal finalise logic — shared between finaliseElection() and
+     *      the auto-finalise path in openElection().
+     */
+    function _doFinalise(uint256 electionId) internal {
+        Election storage e = elections[electionId];
+        address[] storage candidates = electionCandidates[electionId];
+
+        if (candidates.length == 0) {
+            e.cancelled = true;
+            activeElectionForRole[e.role] = 0;
+            emit ElectionFailed(electionId, e.role, "no candidates");
+            return;
+        }
+
+        address topCandidate = address(0);
+        uint256 topVotes     = 0;
+        bool    tie          = false;
+
+        for (uint256 i = 0; i < candidates.length; i++) {
+            uint256 v = candidateVotes[electionId][candidates[i]];
+            if (v > topVotes) {
+                topVotes     = v;
+                topCandidate = candidates[i];
+                tie          = false;
+            } else if (v == topVotes && topVotes > 0) {
+                tie = true;
+            }
+        }
+
+        if (topVotes == 0 || tie) {
+            e.cancelled = true;
+            activeElectionForRole[e.role] = 0;
+            emit ElectionFailed(electionId, e.role, topVotes == 0 ? "no votes cast" : "tie");
+            return;
+        }
+
+        e.winner         = topCandidate;
+        e.timelockEndsAt = block.timestamp + TIMELOCK;
+        emit ElectionFinalised(electionId, e.role, topCandidate);
+    }
+
     // ── MCC role views ────────────────────────────────────────────────────────
 
     function ceoActive() external view returns (bool) {
@@ -155,19 +194,26 @@ contract Governance {
     /**
      * @notice Any citizen opens a new election for a role.
      *         Only one active election per role at a time.
-     *         Starts a 15-minute nomination window immediately.
+     *         If the previous election's voting window has passed but it hasn't
+     *         been finalised yet, this call auto-finalises it before opening the
+     *         new one — preventing orphaned elections from accumulating.
      */
     function openElection(uint8 role) external returns (uint256 id) {
-        require(role <= 2, "Gov: invalid role");
-        require(colony.isCitizen(msg.sender), "Gov: not a citizen");
+        require(role <= 2,                      "Gov: invalid role");
+        require(colony.isCitizen(msg.sender),   "Gov: not a citizen");
 
         uint256 existing = activeElectionForRole[role];
         if (existing != 0) {
             Election storage ex = elections[existing];
-            require(
-                ex.executed || ex.cancelled || block.timestamp > ex.votingEndsAt,
-                "Gov: election already active"
-            );
+            if (!ex.executed && !ex.cancelled) {
+                // Still in nomination or voting window — block
+                require(
+                    block.timestamp > ex.votingEndsAt,
+                    "Gov: election already active"
+                );
+                // Voting ended but nobody finalised — auto-finalise now
+                _doFinalise(existing);
+            }
         }
 
         id = nextId++;
@@ -208,8 +254,8 @@ contract Governance {
     }
 
     /**
-     * @notice Cast one vote for a candidate. Caller must be a citizen aged 18+
-     *         who joined before this election opened.
+     * @notice Cast one vote for a candidate.
+     *         Caller must be a citizen aged 18+ who joined before this election opened.
      *         Voting is only open after nomination phase closes.
      */
     function vote(uint256 electionId, address candidate) external {
@@ -219,7 +265,7 @@ contract Governance {
         require(block.timestamp > e.nominationEndsAt, "Gov: nomination still open");
         require(block.timestamp <= e.votingEndsAt,    "Gov: voting closed");
         require(isCandidate[electionId][candidate],   "Gov: not a candidate");
-        require(_isEligibleVoter(msg.sender, e.openedAt), "Gov: not eligible");
+        require(_isEligibleVoter(msg.sender, e.openedAt), "Gov: not eligible to vote");
         require(!hasVoted[msg.sender][electionId],    "Gov: already voted");
 
         hasVoted[msg.sender][electionId] = true;
@@ -230,7 +276,7 @@ contract Governance {
 
     /**
      * @notice Finalise an election after voting closes.
-     *         Candidate with most votes wins. On a tie the election fails.
+     *         Candidate with most votes wins. On a tie or no votes the election fails.
      *         If no candidates were nominated the election also fails.
      *         Anyone may call.
      */
@@ -239,42 +285,7 @@ contract Governance {
         require(e.openedBy != address(0),         "Gov: election not found");
         require(block.timestamp > e.votingEndsAt, "Gov: voting still open");
         require(!e.executed && !e.cancelled,      "Gov: already finalised");
-
-        address[] storage candidates = electionCandidates[electionId];
-
-        if (candidates.length == 0) {
-            e.cancelled = true;
-            activeElectionForRole[e.role] = 0;
-            emit ElectionFailed(electionId, e.role, "no candidates");
-            return;
-        }
-
-        // Find candidate with most votes; detect tie
-        address topCandidate = address(0);
-        uint256 topVotes     = 0;
-        bool    tie          = false;
-
-        for (uint256 i = 0; i < candidates.length; i++) {
-            uint256 v = candidateVotes[electionId][candidates[i]];
-            if (v > topVotes) {
-                topVotes     = v;
-                topCandidate = candidates[i];
-                tie          = false;
-            } else if (v == topVotes && topVotes > 0) {
-                tie = true;
-            }
-        }
-
-        if (topVotes == 0 || tie) {
-            e.cancelled = true;
-            activeElectionForRole[e.role] = 0;
-            emit ElectionFailed(electionId, e.role, topVotes == 0 ? "no votes cast" : "tie");
-            return;
-        }
-
-        e.winner         = topCandidate;
-        e.timelockEndsAt = block.timestamp + TIMELOCK;
-        emit ElectionFinalised(electionId, e.role, topCandidate);
+        _doFinalise(electionId);
     }
 
     /**
@@ -301,8 +312,7 @@ contract Governance {
     // ── Role Resignation ─────────────────────────────────────────────────────
 
     /**
-     * @notice Current holder may voluntarily vacate a role.
-     *         Frees the slot for a new election immediately.
+     * @notice Current holder may voluntarily vacate a role immediately.
      */
     function resign(uint8 role) external {
         if (role == 0) {

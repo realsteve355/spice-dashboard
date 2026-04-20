@@ -25,8 +25,6 @@ const GOV_ABI = [
   "function resign(uint8 role) external",
 ]
 
-
-// Status is derived client-side from timestamps
 function electionStatus(e, nowSec) {
   if (e.executed)                                                  return 'EXECUTED'
   if (e.cancelled)                                                 return 'FAILED'
@@ -37,6 +35,36 @@ function electionStatus(e, nowSec) {
   return 'NOMINATING'
 }
 
+// Decode Base Sepolia / MetaMask revert reasons robustly
+function govErr(e) {
+  // Walk every path ethers.js v6 + MetaMask might put the reason
+  const paths = [
+    e?.reason,
+    e?.shortMessage,
+    e?.error?.reason,
+    e?.error?.shortMessage,
+    e?.error?.message,
+    e?.info?.error?.message,
+    e?.data,
+  ]
+  for (const p of paths) {
+    if (typeof p === 'string' && p.length > 0 && !p.startsWith('0x')) {
+      // Strip ethers wrapper text like "execution reverted: "
+      const stripped = p.replace(/^.*execution reverted:\s*/i, '').trim()
+      if (stripped.length > 0 && stripped !== 'execution reverted') return stripped
+    }
+  }
+  // Try to ABI-decode a revert string from hex data
+  if (typeof e?.data === 'string' && e.data.startsWith('0x08c379a0')) {
+    try {
+      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
+        ['string'], '0x' + e.data.slice(10)
+      )
+      if (decoded[0]) return decoded[0]
+    } catch {}
+  }
+  return e?.message || 'Transaction failed'
+}
 
 export default function Votes() {
   const { slug } = useParams()
@@ -55,221 +83,150 @@ export default function Votes() {
   const [actionPending, setActionPending] = useState(null)
   const [actionError,   setActionError]   = useState(null)
 
-  // Opening an election
-  const [openingRole,   setOpeningRole]   = useState(null)  // roleIdx being opened
+  // Nominate form
+  const [nomElecId,    setNomElecId]    = useState(null)
+  const [nomCandidate, setNomCandidate] = useState('')
 
-  // Nominating a candidate
-  const [nomElecId,     setNomElecId]     = useState(null)  // electionId to nominate into
-  const [nomCandidate,  setNomCandidate]  = useState('')
+  const GAS = { gasLimit: 300000 }
 
-  // loadElections — reads only governance state, uses signer provider (always current)
-  // Called after every write tx so stale public RPC lag doesn't hide new state.
-  async function loadElections() {
-    if (!signer || !govAddress) return
-    try {
-      const gov    = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const nowSec = Math.floor(Date.now() / 1000)
-      const holders = await Promise.all([0, 1, 2].map(r => gov.roleHolder(r)))
-      setRoleHolders(holders)
-      const nextId = Number(await gov.nextId())
-      const loaded = []
-      for (let i = 1; i < nextId; i++) {
-        const e = await gov.elections(i)
-        if (e.openedBy === ethers.ZeroAddress) continue
-        const [rawCandidates, myVoted] = await Promise.all([
-          gov.getCandidates(i),
-          address ? gov.hasVoted(address, i) : Promise.resolve(false),
-        ])
-        const candidateData = await Promise.all(
-          rawCandidates.map(async addr => ({
-            address: addr,
-            votes:   Number(await gov.getCandidateVotes(i, addr)),
-          }))
-        )
-        const entry = {
-          id:               i,
-          role:             Number(e.role),
-          openedBy:         e.openedBy,
-          openedAt:         Number(e.openedAt),
-          nominationEndsAt: Number(e.nominationEndsAt),
-          votingEndsAt:     Number(e.votingEndsAt),
-          timelockEndsAt:   Number(e.timelockEndsAt),
-          winner:           e.winner,
-          executed:         e.executed,
-          cancelled:        e.cancelled,
-          candidates:       candidateData,
-          myVoted,
-          myVotedFor:       null,
-        }
-        entry.status = electionStatus(entry, nowSec)
-        loaded.push(entry)
-      }
-      setElecs(prev => {
-        const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
-        return loaded.reverse().map(e => ({
-          ...e,
-          myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
-          myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
+  // ── Data loading ─────────────────────────────────────────────────────────
+
+  async function loadFull(govContract) {
+    const nowSec = Math.floor(Date.now() / 1000)
+    const holders = await Promise.all([0, 1, 2].map(r => govContract.roleHolder(r)))
+    setRoleHolders(holders)
+
+    const nextId = Number(await govContract.nextId())
+    const loaded = []
+    for (let i = 1; i < nextId; i++) {
+      const e = await govContract.elections(i)
+      if (e.openedBy === ethers.ZeroAddress) continue
+      const [rawCandidates, myVoted] = await Promise.all([
+        govContract.getCandidates(i),
+        address ? govContract.hasVoted(address, i) : Promise.resolve(false),
+      ])
+      const candidateData = await Promise.all(
+        rawCandidates.map(async addr => ({
+          address: addr,
+          votes: Number(await govContract.getCandidateVotes(i, addr)),
         }))
-      })
-    } catch (err) {
-      console.warn('loadElections error', err)
+      )
+      const entry = {
+        id:               i,
+        role:             Number(e.role),
+        openedBy:         e.openedBy,
+        openedAt:         Number(e.openedAt),
+        nominationEndsAt: Number(e.nominationEndsAt),
+        votingEndsAt:     Number(e.votingEndsAt),
+        timelockEndsAt:   Number(e.timelockEndsAt),
+        winner:           e.winner,
+        executed:         e.executed,
+        cancelled:        e.cancelled,
+        candidates:       candidateData,
+        myVoted,
+        myVotedFor:       null,
+      }
+      entry.status = electionStatus(entry, nowSec)
+      loaded.push(entry)
     }
+    return loaded.reverse()
   }
 
   async function load() {
     if (!govAddress || !colonyAddr || !provider) { setLoading(false); return }
     try {
-      const rpc    = new ethers.JsonRpcProvider(RPC)
-      const gov    = new ethers.Contract(govAddress, GOV_ABI, rpc)
-      const nowSec = Math.floor(Date.now() / 1000)
-
-      const [holders, citizenList] = await Promise.all([
-        Promise.all([0, 1, 2].map(r => gov.roleHolder(r))),
+      const rpc = new ethers.JsonRpcProvider(RPC)
+      const gov = new ethers.Contract(govAddress, GOV_ABI, rpc)
+      const [loaded, citizenList] = await Promise.all([
+        loadFull(gov),
         fetchCitizens(colonyAddr),
       ])
-      setRoleHolders(holders)
+      setElecs(prev => mergeElecs(prev, loaded))
       setCitizens(citizenList)
-      const nm = Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name]))
-      setNameMap(nm)
-
-      const nextId = Number(await gov.nextId())
-      const loaded = []
-      for (let i = 1; i < nextId; i++) {
-        const e = await gov.elections(i)
-        // Skip obligation slots (openedBy == zero address)
-        if (e.openedBy === ethers.ZeroAddress) continue
-
-        const [rawCandidates, myVoted] = await Promise.all([
-          gov.getCandidates(i),
-          address ? gov.hasVoted(address, i) : Promise.resolve(false),
-        ])
-
-        // Fetch vote counts for each candidate
-        const candidateData = await Promise.all(
-          rawCandidates.map(async addr => ({
-            address: addr,
-            votes:   Number(await gov.getCandidateVotes(i, addr)),
-          }))
-        )
-
-        const entry = {
-          id:               i,
-          role:             Number(e.role),
-          openedBy:         e.openedBy,
-          openedAt:         Number(e.openedAt),
-          nominationEndsAt: Number(e.nominationEndsAt),
-          votingEndsAt:     Number(e.votingEndsAt),
-          timelockEndsAt:   Number(e.timelockEndsAt),
-          winner:           e.winner,
-          executed:         e.executed,
-          cancelled:        e.cancelled,
-          candidates:       candidateData,
-          myVoted,
-          myVotedFor:       null, // we don't store which candidate on-chain easily
-        }
-        entry.status = electionStatus(entry, nowSec)
-        loaded.push(entry)
-      }
-
-      setElecs(prev => {
-        const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
-        return loaded.reverse().map(e => ({
-          ...e,
-          myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
-          myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
-        }))
-      })
+      setNameMap(Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name])))
     } catch (err) {
       console.warn('Votes load error', err)
     }
     setLoading(false)
   }
 
+  // After writes, re-read via signer (MetaMask provider — always current)
+  async function loadAfterWrite() {
+    if (!signer || !govAddress) return
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const loaded = await loadFull(gov)
+      setElecs(prev => mergeElecs(prev, loaded))
+      const holders = await Promise.all([0, 1, 2].map(r => gov.roleHolder(r)))
+      setRoleHolders(holders)
+    } catch (err) {
+      console.warn('loadAfterWrite error', err)
+    }
+  }
+
+  function mergeElecs(prev, next) {
+    const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
+    return next.map(e => ({
+      ...e,
+      myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
+      myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
+    }))
+  }
+
   useEffect(() => { load() }, [govAddress, colonyAddr, provider, address])
 
-  // Recompute statuses every 15s so phase transitions appear without refresh
+  // Refresh statuses every 20s
   useEffect(() => {
     const t = setInterval(() => {
       const nowSec = Math.floor(Date.now() / 1000)
       setElecs(prev => prev.map(e => ({ ...e, status: electionStatus(e, nowSec) })))
-    }, 15000)
+    }, 20000)
     return () => clearInterval(t)
   }, [])
 
-  function govErr(e) {
-    return e?.reason || e?.shortMessage || e?.error?.reason || e?.error?.message || e?.message || 'Transaction failed'
-  }
-
-  const GAS = { gasLimit: 300000 }
+  // ── Actions ───────────────────────────────────────────────────────────────
 
   async function doOpenElection(roleIdx) {
     if (!signer || !govAddress) return
-    setActionPending(`open-${roleIdx}`); setActionError(null); setOpeningRole(null)
+    setActionPending(`open-${roleIdx}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-
-      // If already active (prior tx succeeded but RPC was stale), skip straight to inject
-      let skipSend = false
-      try {
-        await gov.openElection.staticCall(roleIdx)
-      } catch (simErr) {
-        if (govErr(simErr).includes('already active')) { skipSend = true }
-        else throw simErr
+      const tx      = await gov.openElection(roleIdx, GAS)
+      const receipt = await tx.wait()
+      // Parse new election from receipt for optimistic update
+      const iface = new ethers.Interface([
+        "event ElectionOpened(uint256 indexed id, uint8 indexed role, address indexed openedBy)"
+      ])
+      let newId = null
+      for (const log of receipt.logs) {
+        try {
+          const p = iface.parseLog(log)
+          if (p?.name === 'ElectionOpened') { newId = Number(p.args.id); break }
+        } catch {}
       }
-
-      if (skipSend) {
-        await loadElections()
-        setActionPending(null)
-        return
-      }
-
-      if (!skipSend) {
-        const tx      = await gov.openElection(roleIdx, GAS)
-        const receipt = await tx.wait()
-
-        // Parse ElectionOpened from receipt — MetaMask provider is already synced
-        const iface = new ethers.Interface([
-          "event ElectionOpened(uint256 indexed id, uint8 indexed role, address indexed openedBy)"
-        ])
-        let newElecId = null
-        for (const log of receipt.logs) {
-          try {
-            const parsed = iface.parseLog(log)
-            if (parsed?.name === 'ElectionOpened') { newElecId = Number(parsed.args.id); break }
-          } catch {}
-        }
-
-        if (newElecId !== null) {
-          // Read the new election via signer's provider (already on latest block)
-          const e = await gov.elections(newElecId)
-          // Guard: skip if the read came back empty (block not yet visible)
-          if (e.openedBy !== ethers.ZeroAddress) {
-            const nowSec = Math.floor(Date.now() / 1000)
-            const nomEnd = Number(e.nominationEndsAt)
-            const entry  = {
-              id:               newElecId,
-              role:             Number(e.role),
-              openedBy:         e.openedBy,
-              openedAt:         Number(e.openedAt),
-              nominationEndsAt: nomEnd,
-              votingEndsAt:     nomEnd + 15 * 60,  // VOTING_WINDOW fallback
-              timelockEndsAt:   0,
-              winner:           ethers.ZeroAddress,
-              executed:         false,
-              cancelled:        false,
-              candidates:       [],
-              myVoted:          false,
-              myVotedFor:       null,
-            }
-            entry.status = electionStatus(entry, nowSec)
-            setElecs(prev => [entry, ...prev.filter(x => x.id !== newElecId)])
+      if (newId !== null) {
+        const e = await gov.elections(newId)
+        if (e.openedBy !== ethers.ZeroAddress) {
+          const nowSec = Math.floor(Date.now() / 1000)
+          const nomEnd = Number(e.nominationEndsAt)
+          const entry  = {
+            id: newId, role: Number(e.role), openedBy: e.openedBy,
+            openedAt: Number(e.openedAt), nominationEndsAt: nomEnd,
+            votingEndsAt: nomEnd + 30 * 60, timelockEndsAt: 0,
+            winner: ethers.ZeroAddress, executed: false, cancelled: false,
+            candidates: [], myVoted: false, myVotedFor: null,
           }
+          entry.status = electionStatus(entry, nowSec)
+          setElecs(prev => [entry, ...prev.filter(x => x.id !== newId)])
         }
       }
-
-      // Background refresh via public RPC
-      setTimeout(() => load(), 4000)
+      // Also mark any FINALISE_READY election for this role as cancelled (auto-finalised by contract)
+      setElecs(prev => prev.map(e =>
+        e.role === roleIdx && e.status === 'FINALISE_READY'
+          ? { ...e, cancelled: true, status: 'FAILED' }
+          : e
+      ))
+      setTimeout(() => loadAfterWrite(), 3000)
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -278,14 +235,14 @@ export default function Votes() {
 
   async function doNominate() {
     if (!signer || !govAddress || !nomElecId) return
-    if (!ethers.isAddress(nomCandidate)) { setActionError('Select a candidate'); return }
+    if (!ethers.isAddress(nomCandidate)) { setActionError('Enter a valid wallet address'); return }
     setActionPending(`nom-${nomElecId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.nominateCandidate(nomElecId, nomCandidate, GAS)
       await tx.wait()
       setNomElecId(null); setNomCandidate('')
-      await loadElections()
+      await loadAfterWrite()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -300,15 +257,12 @@ export default function Votes() {
       const tx  = await gov.vote(electionId, candidate, GAS)
       await tx.wait()
       setElecs(prev => prev.map(e => e.id === electionId ? {
-        ...e,
-        myVoted:    true,
-        myVotedFor: candidate,
-        candidates: e.candidates.map(c => c.address === candidate
-          ? { ...c, votes: c.votes + 1 }
-          : c
+        ...e, myVoted: true, myVotedFor: candidate,
+        candidates: e.candidates.map(c =>
+          c.address.toLowerCase() === candidate.toLowerCase() ? { ...c, votes: c.votes + 1 } : c
         ),
       } : e))
-      loadElections()
+      loadAfterWrite()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -322,7 +276,7 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.finaliseElection(electionId, GAS)
       await tx.wait()
-      await loadElections()
+      await loadAfterWrite()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -336,7 +290,7 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.executeElection(electionId, GAS)
       await tx.wait()
-      await loadElections()
+      await loadAfterWrite()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -350,48 +304,68 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.resign(roleIdx, GAS)
       await tx.wait()
-      await loadElections()
+      await loadAfterWrite()
     } catch (e) {
       setActionError(govErr(e))
     }
     setActionPending(null)
   }
 
-  const byRole = ROLES.map((_, i) => elecs.filter(e => e.role === i && e.openedBy !== ethers.ZeroAddress))
+  // ── Derived state ─────────────────────────────────────────────────────────
+
+  const byRole = ROLES.map((_, i) =>
+    elecs.filter(e => e.role === i && e.openedBy !== ethers.ZeroAddress)
+  )
 
   const fmtTime = ts => ts
-    ? new Date(ts * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? new Date(ts * 1000).toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      })
     : '—'
+
+  function countdown(ts) {
+    const secs = ts - Math.floor(Date.now() / 1000)
+    if (secs <= 0) return null
+    const m = Math.floor(secs / 60), s = secs % 60
+    const h = Math.floor(m / 60), mm = m % 60
+    if (h > 0) return `${h}h ${mm}m remaining`
+    return `${m}m ${s}s remaining`
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Layout title="Governance" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
-      <div style={{ padding: '16px 16px 0' }}>
+      <div style={{ padding: '16px 16px 40px' }}>
 
-        {/* Header */}
         <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 14 }}>
           {colonyName} · MCC ELECTIONS
         </div>
 
         {/* Current board */}
-        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px', marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>CURRENT MCC BOARD</div>
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>CURRENT MCC BOARD</div>
           {roleHolders.map((rh, i) => {
             const vacant     = !rh || rh.holder === ethers.ZeroAddress
             const expired    = rh && !rh.active && !vacant
-            const holderName = rh && !vacant ? nameMap[rh.holder.toLowerCase()] : null
+            const holderName = rh && !vacant ? (nameMap[rh.holder.toLowerCase()] || shortAddr(rh.holder)) : null
             const expDate    = rh && !vacant
               ? new Date(Number(rh.termEnd) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null
             const isHolder   = rh && !vacant && address && rh.holder.toLowerCase() === address.toLowerCase()
-            const hasActive  = byRole[i]?.some(e => !['EXECUTED','FAILED'].includes(e.status))
+            // Only show "Open election" when no active (non-terminal) election exists for this role
+            const activeElec = byRole[i]?.find(e => !['EXECUTED', 'FAILED'].includes(e.status))
+            const canOpen    = isCitizen && !activeElec
             return (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: i < 2 ? 10 : 0 }}>
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: i < 2 ? 10 : 0, marginBottom: i < 2 ? 10 : 0, borderBottom: i < 2 ? `1px solid ${C.border}` : 'none' }}>
                 <span style={{ fontSize: 11, color: C.faint, minWidth: 36 }}>{ROLES[i]}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  <span style={{ fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub, textAlign: 'right' }}>
-                    {vacant ? 'vacant' : `${holderName || shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
-                  </span>
-                  {isCitizen && !hasActive && (
+                <div style={{ flex: 1, padding: '0 12px', fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub }}>
+                  {vacant ? 'vacant'
+                    : `${holderName} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {canOpen && (
                     <button
                       onClick={() => doOpenElection(i)}
                       disabled={!!actionPending}
@@ -415,30 +389,27 @@ export default function Votes() {
           })}
         </div>
 
+        {/* Error */}
         {actionError && (
-          <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{actionError}</div>
+          <div style={{ background: '#fff5f5', border: `1px solid ${C.red}`, borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: C.red }}>
+            {actionError}
+          </div>
         )}
 
         {loading && (
           <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>Loading elections…</div>
         )}
 
-        {!loading && elecs.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>
-            No elections yet. Click "Open election" next to a role above to start one.
-          </div>
-        )}
-
-        {/* Nominate candidate modal */}
+        {/* Nominate form */}
         {nomElecId && (
-          <div style={{ background: C.white, border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
+          <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
             <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE A CANDIDATE</div>
-            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Candidate</div>
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 6 }}>Select citizen</div>
             {citizens.length > 0 && (
               <select
                 value={nomCandidate}
                 onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
-                style={{ ...selectStyle, marginBottom: 6 }}
+                style={{ ...selectStyle, marginBottom: 8 }}
               >
                 <option value="">— select a citizen —</option>
                 {citizens
@@ -448,7 +419,7 @@ export default function Votes() {
                   })
                   .map(c => (
                     <option key={c.address} value={c.address}>
-                      {c.name} · {shortAddr(c.address)}
+                      {c.name}
                     </option>
                   ))
                 }
@@ -457,17 +428,16 @@ export default function Votes() {
             <input
               value={nomCandidate}
               onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
-              placeholder={citizens.length > 0 ? 'or paste address directly…' : '0x… wallet address'}
-              style={{ ...selectStyle, outline: 'none', boxSizing: 'border-box' }}
+              placeholder={citizens.length > 0 ? 'or paste wallet address…' : '0x… wallet address'}
+              style={{ ...selectStyle, outline: 'none', boxSizing: 'border-box', background: C.white }}
             />
             {actionError && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{actionError}</div>}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={() => { setNomElecId(null); setNomCandidate(''); setActionError(null) }} style={smallBtn(C.border, C.sub)}>
-                Cancel
-              </button>
+              <button onClick={() => { setNomElecId(null); setNomCandidate(''); setActionError(null) }}
+                style={smallBtn(C.border, C.sub)}>Cancel</button>
               <button
                 onClick={doNominate}
-                disabled={actionPending === `nom-${nomElecId}` || !nomCandidate}
+                disabled={!!actionPending || !nomCandidate}
                 style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1, opacity: !nomCandidate ? 0.5 : 1 }}
               >
                 {actionPending === `nom-${nomElecId}` ? 'Submitting…' : 'Nominate →'}
@@ -476,98 +446,167 @@ export default function Votes() {
           </div>
         )}
 
-        {/* Elections grouped by role */}
-        {!loading && byRole.map((roleElecs, roleIdx) => {
+        {/* Elections per role */}
+        {!loading && ROLES.map((roleName, roleIdx) => {
+          const roleElecs = byRole[roleIdx]
           if (roleElecs.length === 0) return null
-          const hasOpen = roleElecs.some(e => !['EXECUTED','FAILED'].includes(e.status))
+
+          // Active = any non-terminal election
+          const active  = roleElecs.find(e => !['EXECUTED', 'FAILED'].includes(e.status))
+          // Historical = terminal elections, show collapsed
+          const history = roleElecs.filter(e => ['EXECUTED', 'FAILED'].includes(e.status))
+
           return (
             <div key={roleIdx} style={{ marginBottom: 20 }}>
+              {/* Role header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 8px', letterSpacing: '0.08em' }}>
-                  {ROLES[roleIdx]}
+                <span style={{ fontSize: 10, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 8px', letterSpacing: '0.1em' }}>
+                  {roleName}
                 </span>
                 <div style={{ flex: 1, height: 1, background: C.border }} />
-                <span style={{ fontSize: 10, color: C.faint }}>
-                  {roleElecs.length} election{roleElecs.length !== 1 ? 's' : ''}
-                  {hasOpen ? ' · open' : ''}
-                </span>
               </div>
-              {roleElecs.map(e => (
+
+              {/* Active election card */}
+              {active && (
                 <ElectionCard
-                  key={e.id}
-                  election={e}
+                  election={active}
                   nameMap={nameMap}
                   isCitizen={isCitizen}
                   address={address}
                   actionPending={actionPending}
                   fmtTime={fmtTime}
-                  onNominate={isCitizen && e.status === 'NOMINATING' ? () => { setNomElecId(e.id); setNomCandidate(''); setActionError(null) } : null}
-                  onVote={isCitizen && e.status === 'VOTING' && !e.myVoted ? doVote : null}
-                  onFinalise={e.status === 'FINALISE_READY' ? doFinalise : null}
-                  onExecute={e.status === 'EXECUTE_READY' ? doExecute : null}
+                  countdown={countdown}
+                  citizens={citizens}
+                  onNominate={isCitizen && active.status === 'NOMINATING'
+                    ? () => { setNomElecId(active.id); setNomCandidate(''); setActionError(null) }
+                    : null}
+                  onVote={isCitizen && active.status === 'VOTING' && !active.myVoted ? doVote : null}
+                  onFinalise={active.status === 'FINALISE_READY' ? doFinalise : null}
+                  onExecute={active.status === 'EXECUTE_READY' ? doExecute : null}
                 />
-              ))}
+              )}
+
+              {/* Historical — collapsed */}
+              {history.length > 0 && (
+                <div style={{ marginTop: active ? 6 : 0 }}>
+                  {history.map(e => (
+                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 6, marginBottom: 4, opacity: 0.6 }}>
+                      <span style={{ fontSize: 10, color: e.status === 'EXECUTED' ? C.green : C.red, letterSpacing: '0.06em' }}>
+                        {e.status === 'EXECUTED' ? '✓ ELECTED' : '✗ FAILED'}
+                      </span>
+                      <span style={{ fontSize: 10, color: C.faint }}>
+                        {e.status === 'EXECUTED' && e.winner && e.winner !== ethers.ZeroAddress
+                          ? (nameMap[e.winner.toLowerCase()] || shortAddr(e.winner))
+                          : e.candidates.length === 0 ? 'no candidates'
+                          : 'no votes / tie'}
+                      </span>
+                      <span style={{ fontSize: 10, color: C.faint }}>{fmtTime(e.votingEndsAt)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}
+
+        {!loading && elecs.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>
+            No elections yet. Click "Open election" next to a role above to start one.
+          </div>
+        )}
 
       </div>
     </Layout>
   )
 }
 
-function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fmtTime, onNominate, onVote, onFinalise, onExecute }) {
+// ── Election card ─────────────────────────────────────────────────────────────
+
+function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fmtTime, countdown, citizens, onNominate, onVote, onFinalise, onExecute }) {
   const { id, role, openedBy, nominationEndsAt, votingEndsAt, timelockEndsAt, winner, candidates, myVoted, myVotedFor, status } = election
 
   const statusMeta = {
-    NOMINATING:     { label: 'NOMINATIONS OPEN', color: C.gold   },
-    VOTING:         { label: 'VOTING OPEN',       color: C.green  },
-    FINALISE_READY: { label: 'AWAITING FINALISE', color: C.gold   },
-    TIMELOCK:       { label: 'TIMELOCK',          color: C.blue   },
-    EXECUTE_READY:  { label: 'READY TO EXECUTE',  color: C.purple },
-    EXECUTED:       { label: 'EXECUTED',          color: C.faint  },
-    FAILED:         { label: 'FAILED',            color: C.red    },
-  }[status] || { label: status, color: C.faint }
+    NOMINATING:     { label: 'NOMINATIONS OPEN',  color: C.gold,   bg: '#fffbf0' },
+    VOTING:         { label: 'VOTING OPEN',        color: C.green,  bg: '#f0fff4' },
+    FINALISE_READY: { label: 'VOTING CLOSED',      color: C.sub,    bg: C.white   },
+    TIMELOCK:       { label: 'TIMELOCK',           color: C.blue,   bg: '#f0f8ff' },
+    EXECUTE_READY:  { label: 'READY TO EXECUTE',   color: C.purple, bg: '#f9f0ff' },
+    EXECUTED:       { label: 'EXECUTED',           color: C.green,  bg: C.white   },
+    FAILED:         { label: 'FAILED',             color: C.red,    bg: C.white   },
+  }[status] || { label: status, color: C.faint, bg: C.white }
 
   const openedByName = nameMap[openedBy?.toLowerCase()] || shortAddr(openedBy)
   const totalVotes   = candidates.reduce((s, c) => s + c.votes, 0)
-  const winnerName   = winner && winner !== ethers.ZeroAddress ? (nameMap[winner.toLowerCase()] || shortAddr(winner)) : null
+  const winnerName   = winner && winner !== ethers.ZeroAddress
+    ? (nameMap[winner.toLowerCase()] || shortAddr(winner)) : null
+  const sorted       = [...candidates].sort((a, b) => b.votes - a.votes)
+  const showVoteBars = !['NOMINATING', 'VOTING'].includes(status)
 
-  // Sort candidates by votes descending for display
-  const sorted = [...candidates].sort((a, b) => b.votes - a.votes)
+  // Deadline text
+  const deadlineText = status === 'NOMINATING'
+    ? `Nominations close ${fmtTime(nominationEndsAt)}`
+    : status === 'VOTING'
+    ? `Voting closes ${fmtTime(votingEndsAt)}`
+    : status === 'TIMELOCK'
+    ? `Timelock ends ${fmtTime(timelockEndsAt)}`
+    : status === 'FINALISE_READY'
+    ? `Voting closed ${fmtTime(votingEndsAt)}`
+    : status === 'EXECUTED' && winnerName
+    ? `${winnerName} elected as ${ROLES[role]}`
+    : null
 
-  const isDoneVoting = !['NOMINATING','VOTING'].includes(status)
+  const timer = status === 'NOMINATING' ? countdown(nominationEndsAt)
+    : status === 'VOTING'  ? countdown(votingEndsAt)
+    : status === 'TIMELOCK' ? countdown(timelockEndsAt)
+    : null
 
   return (
-    <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 10 }}>
+    <div style={{ background: statusMeta.bg, border: `1px solid ${statusMeta.color}22`, borderRadius: 8, padding: '14px 16px', marginBottom: 6 }}>
 
-      {/* Status badges */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontSize: 9, color: statusMeta.color, border: `1px solid ${statusMeta.color}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
-          {statusMeta.label}
-        </span>
-        {myVoted && (
-          <span style={{ fontSize: 9, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>VOTED</span>
+      {/* Status + timer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 10, color: statusMeta.color, border: `1px solid ${statusMeta.color}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.08em' }}>
+            {statusMeta.label}
+          </span>
+          {myVoted && (
+            <span style={{ fontSize: 10, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.06em' }}>VOTED</span>
+          )}
+        </div>
+        {timer && (
+          <span style={{ fontSize: 10, color: statusMeta.color, fontVariantNumeric: 'tabular-nums' }}>{timer}</span>
         )}
       </div>
 
-      {/* Opened by + timeline */}
-      <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>
-        Opened by {openedByName}
-        <span style={{ color: C.border }}> · </span>
-        {status === 'NOMINATING'
-          ? <span>nominations close {fmtTime(nominationEndsAt)}</span>
-          : status === 'VOTING'
-          ? <span>voting closes {fmtTime(votingEndsAt)}</span>
-          : status === 'TIMELOCK'
-          ? <span>timelock ends {fmtTime(timelockEndsAt)}</span>
-          : status === 'EXECUTE_READY'
-          ? <span style={{ color: C.purple }}>ready to execute</span>
-          : status === 'EXECUTED'
-          ? <span>executed · {winnerName} elected as {ROLES[role]}</span>
-          : <span>voting closed {fmtTime(votingEndsAt)}</span>
-        }
-      </div>
+      {/* Deadline */}
+      {deadlineText && (
+        <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>
+          {deadlineText}
+        </div>
+      )}
+
+      {/* Phase guidance */}
+      {status === 'NOMINATING' && isCitizen && (
+        <div style={{ fontSize: 11, color: C.sub, marginBottom: 10, lineHeight: 1.5 }}>
+          Nominations are open. Click "+ Nominate" to put a candidate forward.
+          Multiple candidates can be nominated before voting opens.
+        </div>
+      )}
+      {status === 'VOTING' && isCitizen && !myVoted && (
+        <div style={{ fontSize: 11, color: C.sub, marginBottom: 10 }}>
+          Voting is open. Click "Vote" next to your preferred candidate.
+        </div>
+      )}
+      {status === 'FINALISE_READY' && (
+        <div style={{ fontSize: 11, color: C.sub, marginBottom: 10 }}>
+          Voting has closed. Click "Finalise" to count the votes and determine the winner.
+        </div>
+      )}
+      {status === 'EXECUTE_READY' && (
+        <div style={{ fontSize: 11, color: C.sub, marginBottom: 10 }}>
+          Timelock expired. Click "Execute" to install the winner in post.
+        </div>
+      )}
 
       {/* Candidates */}
       {candidates.length === 0 ? (
@@ -577,34 +616,35 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
       ) : (
         <div style={{ marginBottom: 10 }}>
           {sorted.map(c => {
-            const name      = nameMap[c.address.toLowerCase()] || shortAddr(c.address)
-            const isWinner  = winner && c.address.toLowerCase() === winner.toLowerCase()
-            const pct       = totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0
-            const myPick    = myVotedFor && c.address.toLowerCase() === myVotedFor.toLowerCase()
+            const name     = nameMap[c.address.toLowerCase()] || shortAddr(c.address)
+            const isWinner = winner && c.address.toLowerCase() === winner.toLowerCase()
+            const pct      = totalVotes > 0 ? (c.votes / totalVotes) * 100 : 0
+            const myPick   = myVotedFor && c.address.toLowerCase() === myVotedFor.toLowerCase()
             return (
-              <div key={c.address} style={{ marginBottom: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-                  <span style={{ fontSize: 12, color: isWinner ? C.green : C.text, fontWeight: isWinner ? 600 : 400 }}>
-                    {isWinner ? '✓ ' : ''}{name}{myPick ? ' · your vote' : ''}
-                  </span>
-                  {isDoneVoting && (
-                    <span style={{ fontSize: 11, color: C.sub }}>{c.votes} vote{c.votes !== 1 ? 's' : ''}</span>
-                  )}
-                  {status === 'VOTING' && !myVoted && onVote && (
-                    <button
-                      onClick={() => onVote(id, c.address)}
-                      disabled={!!actionPending}
-                      style={{ ...tinyBtn(C.green, '#fff'), opacity: actionPending === `vote-${id}` ? 0.5 : 1 }}
-                    >
-                      {actionPending === `vote-${id}` ? '…' : 'Vote'}
-                    </button>
-                  )}
-                  {status === 'VOTING' && myVoted && (
-                    <span style={{ fontSize: 10, color: C.green }}>voted</span>
-                  )}
+              <div key={c.address} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: isWinner ? C.green : C.text, fontWeight: isWinner ? 600 : 400 }}>
+                      {isWinner ? '✓ ' : ''}{name}
+                    </span>
+                    {myPick && <span style={{ fontSize: 10, color: C.green }}>your vote</span>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {showVoteBars && (
+                      <span style={{ fontSize: 11, color: C.sub }}>{c.votes} vote{c.votes !== 1 ? 's' : ''}</span>
+                    )}
+                    {status === 'VOTING' && !myVoted && onVote && (
+                      <button
+                        onClick={() => onVote(id, c.address)}
+                        disabled={!!actionPending}
+                        style={{ ...tinyBtn(C.green, '#fff'), opacity: actionPending === `vote-${id}` ? 0.5 : 1 }}
+                      >
+                        {actionPending === `vote-${id}` ? '…' : 'Vote'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {/* Vote bar — only after voting closes */}
-                {isDoneVoting && totalVotes > 0 && (
+                {showVoteBars && totalVotes > 0 && (
                   <div style={{ height: 3, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: isWinner ? C.green : C.faint }} />
                   </div>
@@ -614,53 +654,25 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
           })}
           {status === 'VOTING' && (
             <div style={{ fontSize: 10, color: C.faint, marginTop: 4 }}>
-              {totalVotes} vote{totalVotes !== 1 ? 's' : ''} cast · tally hidden until voting closes
+              Vote counts hidden until voting closes.
             </div>
           )}
         </div>
       )}
 
-      {/* Outcome */}
-      {status === 'FAILED' && (
-        <div style={{ fontSize: 11, color: C.red }}>
-          {candidates.length === 0 ? 'Failed — no candidates nominated' :
-           totalVotes === 0 ? 'Failed — no votes cast' :
-           'Failed — tied vote'}
-        </div>
-      )}
-      {status === 'EXECUTED' && winnerName && (
-        <div style={{ fontSize: 11, color: C.green }}>✓ {winnerName} elected as {ROLES[role]}</div>
-      )}
-
-      {/* Add candidate button */}
+      {/* Actions */}
       {status === 'NOMINATING' && onNominate && (
-        <button
-          onClick={onNominate}
-          disabled={!!actionPending}
-          style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 6 }}
-        >
+        <button onClick={onNominate} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 2 }}>
           + Nominate candidate
         </button>
       )}
-
-      {/* Finalise */}
       {status === 'FINALISE_READY' && onFinalise && (
-        <button
-          onClick={() => onFinalise(id)}
-          disabled={!!actionPending}
-          style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 6 }}
-        >
-          {actionPending === `fin-${id}` ? '…' : 'Finalise Election →'}
+        <button onClick={() => onFinalise(id)} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 2 }}>
+          {actionPending === `fin-${id}` ? '…' : 'Finalise →'}
         </button>
       )}
-
-      {/* Execute */}
       {status === 'EXECUTE_READY' && onExecute && (
-        <button
-          onClick={() => onExecute(id)}
-          disabled={!!actionPending}
-          style={{ ...smallBtn(C.purple, '#fff'), marginTop: 6 }}
-        >
+        <button onClick={() => onExecute(id)} disabled={!!actionPending} style={{ ...smallBtn(C.purple, '#fff'), marginTop: 2 }}>
           {actionPending === `exec-${id}` ? '…' : 'Execute →'}
         </button>
       )}
@@ -668,42 +680,28 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
   )
 }
 
-// ── Shared styles ─────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const selectStyle = {
-  width: '100%',
-  padding: '9px 10px',
-  background: '#f9f9f9',
-  color: '#111',
-  border: `1px solid #e2e2e2`,
-  borderRadius: 6,
-  fontSize: 12,
-  fontFamily: "'IBM Plex Mono', monospace",
+  width: '100%', padding: '9px 10px',
+  background: '#f9f9f9', color: '#111',
+  border: '1px solid #e2e2e2', borderRadius: 6,
+  fontSize: 12, fontFamily: "'IBM Plex Mono', monospace",
+  boxSizing: 'border-box',
 }
 
 function tinyBtn(bg, color) {
   return {
-    fontSize: 10,
-    color,
-    background: bg,
-    border: 'none',
-    borderRadius: 4,
-    padding: '3px 8px',
-    cursor: 'pointer',
-    fontFamily: "'IBM Plex Mono', monospace",
-    whiteSpace: 'nowrap',
+    fontSize: 10, color, background: bg,
+    border: 'none', borderRadius: 4, padding: '3px 8px',
+    cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap',
   }
 }
 
 function smallBtn(bg, color) {
   return {
-    padding: '9px 14px',
-    background: bg,
-    color,
-    border: 'none',
-    borderRadius: 6,
-    fontSize: 11,
-    cursor: 'pointer',
-    fontFamily: "'IBM Plex Mono', monospace",
+    padding: '9px 14px', background: bg, color,
+    border: 'none', borderRadius: 6, fontSize: 11,
+    cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
   }
 }

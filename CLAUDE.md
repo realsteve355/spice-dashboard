@@ -293,7 +293,7 @@ own root directory, not the repo root.
 **Contract addresses (Base Sepolia):**
 - ColonyRegistry: `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` (global ERC-721 registry — each colony gets a soulbound C-token)
 - Dave's Colony (Colony contract): `0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5` (redeployed 20 April 2026)
-- Dave's Colony (Governance): `0x7D885120a8766A6B6ce951f3fbf342046c485240` (multi-candidate elections, 20 April 2026)
+- Dave's Colony (Governance): `0xe2af55fe189B18678187eF48eB49b9bA8bF24534` (multi-candidate + auto-finalise + 15/30min windows, 20 April 2026)
 - Full per-colony addresses: `colony-app/src/data/contracts.json` (token-address cache only — not the colony directory)
 - ABIs + bytecodes for deploy: `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded)
 
