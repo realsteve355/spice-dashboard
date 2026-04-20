@@ -20,6 +20,10 @@ const COMPANY_FACTORY_ABI = [
   "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
 ]
 
+const COMPANY_ABI = [
+  "function name() view returns (string)",
+]
+
 import { C } from '../theme'
 
 const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
@@ -178,9 +182,21 @@ export default function ColonyPage() {
         const list = await Promise.all(
           Array.from({ length: count }, (_, i) => factory.getCompany(i))
         )
-        if (!cancelled) setCompanies(list.map(([name, wallet, , , registeredAt], i) => ({
-          id: i, name, wallet, registeredAt: Number(registeredAt),
-        })))
+        // Read live name from each Company contract — factory caches the registration
+        // name and won't reflect renames done via Company.setName()
+        const withLiveNames = await Promise.all(
+          list.map(async ([, wallet, , , registeredAt], i) => {
+            let liveName
+            try {
+              const co = new ethers.Contract(wallet, COMPANY_ABI, prov)
+              liveName = await co.name()
+            } catch {
+              liveName = list[i][0] // fall back to factory name if read fails
+            }
+            return { id: i, name: liveName, wallet, registeredAt: Number(registeredAt) }
+          })
+        )
+        if (!cancelled) setCompanies(withLiveNames)
       } catch (e) {
         console.warn('[ColonyPage] load companies failed:', e?.message || e)
         if (!cancelled) setCompanies([])
