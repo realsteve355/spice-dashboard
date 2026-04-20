@@ -1,10 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { C } from '../theme'
+
+const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
+const CITIZEN_IFACE = new ethers.Interface([
+  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
+])
+
+async function fetchCitizens(colonyAddr) {
+  const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
+  const toBlock = await rpc.getBlockNumber()
+  const CHUNK   = 9000
+  const chunks  = await Promise.all(
+    Array.from({ length: 5 }, (_, i) => {
+      const to   = toBlock - i * CHUNK
+      const from = Math.max(0, to - CHUNK + 1)
+      return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
+    })
+  )
+  const map = {}
+  for (const log of chunks.flat()) {
+    try {
+      const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
+      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
+    } catch {}
+  }
+  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+}
 
 // AToken form codes
 const FORM_UNILATERAL           = 0
@@ -54,7 +80,8 @@ export default function Assets() {
   const [myOwed,       setMyOwed]       = useState([])   // OBLIGATION_LIABILITY — I owe
   const [myLent,       setMyLent]       = useState([])   // OBLIGATION_ASSET — owed to me
   const [pendingProps, setPendingProps] = useState([])   // obligation proposals awaiting my signature
-  const [nameMap,      setNameMap]      = useState({})   // address → citizen name
+  const [nameMap,      setNameMap]      = useState({})   // address.lower → citizen name
+  const [citizens,     setCitizens]     = useState([])   // [{ address, name }]
   const [reloadKey,    setReloadKey]    = useState(0)
 
   useEffect(() => {
@@ -133,20 +160,14 @@ export default function Assets() {
 
         if (!cancelled) { setMyAssets(assets); setMyOwed(owed); setMyLent(lent) }
 
-        // Fetch citizen names for all counterparty addresses in obligations
-        const counterparties = [...new Set([
-          ...owed.map(o => o.creditor),
-          ...lent.map(l => l.obligor),
-        ].map(a => a.toLowerCase()))]
-        if (counterparties.length > 0) {
-          try {
-            const nameEntries = await Promise.all(
-              counterparties.map(async a => [a, await colony.citizenName(a).catch(() => '')])
-            )
-            const map = Object.fromEntries(nameEntries.filter(([, n]) => n))
-            if (!cancelled) setNameMap(map)
-          } catch {}
-        }
+        // Fetch all citizens for name resolution and the obligation picker
+        try {
+          const citizenList = await fetchCitizens(cfg.colony)
+          if (!cancelled) {
+            setCitizens(citizenList)
+            setNameMap(Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name])))
+          }
+        } catch {}
 
         // Load pending obligation proposals from Governance
         if (cfg.governance && address) {
@@ -225,6 +246,7 @@ export default function Assets() {
             pendingProps={pendingProps}
             assets={myAssets}
             nameMap={nameMap}
+            citizens={citizens}
             cfg={cfg}
             address={address}
             signer={signer}
@@ -263,6 +285,8 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
   const [rWt,    setRWt]    = useState('')
   const [rAI,    setRAI]    = useState(false)
   const [rDep,   setRDep]   = useState('0')
+  const [rPhoto, setRPhoto] = useState(null)   // dataUrl for optional asset photo
+  const photoInputRef       = useRef()
 
   // Transfer form state
   const [tTo,    setTTo]    = useState('')
@@ -300,9 +324,19 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
       if (rName.trim() && newId && cfg.colony) {
         saveAssetName(cfg.colony, newId, rName.trim())
       }
+      // Upload photo if one was chosen
+      if (rPhoto && newId) {
+        try {
+          await fetch('/api/media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colony: slug, entityType: 'asset', entityId: newId, dataUrl: rPhoto }),
+          })
+        } catch {}
+      }
       setActDone(`Asset registered${newId ? ` (ID ${newId})` : ''}`)
       setRegistering(false)
-      setRName(''); setRValue(''); setRWt(''); setRAI(false); setRDep('0')
+      setRName(''); setRValue(''); setRWt(''); setRAI(false); setRDep('0'); setRPhoto(null)
       onReload()
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
@@ -455,6 +489,47 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
               </div>
             )}
 
+            {/* Optional photo */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.faint, marginBottom: 6 }}>Photo (optional)</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {rPhoto ? (
+                  <img src={rPhoto} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.border}` }} />
+                ) : (
+                  <div style={{ width: 48, height: 48, borderRadius: 6, border: `1px dashed ${C.border}`, background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: C.faint }} />
+                )}
+                <button onClick={() => photoInputRef.current?.click()} style={{ ...ghostBtn, fontSize: 10 }}>
+                  {rPhoto ? 'Change photo' : 'Add photo'}
+                </button>
+                {rPhoto && (
+                  <button onClick={() => setRPhoto(null)} style={{ fontSize: 10, color: C.red, background: 'none', border: 'none', cursor: 'pointer' }}>
+                    Remove
+                  </button>
+                )}
+                <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                  onChange={async e => {
+                    const file = e.target.files?.[0]; e.target.value = ''
+                    if (!file) return
+                    const reader = new FileReader()
+                    reader.onload = async ev => {
+                      const raw = ev.target.result
+                      const img = new Image()
+                      img.onload = () => {
+                        const scale = Math.min(1, 400 / Math.max(img.width, img.height))
+                        const canvas = document.createElement('canvas')
+                        canvas.width = Math.round(img.width * scale)
+                        canvas.height = Math.round(img.height * scale)
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+                        setRPhoto(canvas.toDataURL('image/jpeg', 0.82))
+                      }
+                      img.src = raw
+                    }
+                    reader.readAsDataURL(file)
+                  }}
+                />
+              </div>
+            </div>
+
             <button
               onClick={handleRegister}
               disabled={actPending || !canRegister}
@@ -471,7 +546,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
 
 // ── Obligations tab ───────────────────────────────────────────────────────────
 
-function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, cfg, address, signer, isCitizen, onReload }) {
+function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, cfg, address, signer, isCitizen, onReload }) {
   const [proposing,  setProposing]  = useState(false)
   const [actPending, setActPending] = useState(false)
   const [actError,   setActError]   = useState(null)
@@ -564,11 +639,11 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, cfg, addres
                     Your role: {role}
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
-                    Counterparty: {counterparty.slice(0,6)}…{counterparty.slice(-4)}
+                    Counterparty: {nameMap[counterparty?.toLowerCase()] || `${counterparty.slice(0,6)}…${counterparty.slice(-4)}`}
                     {' · '}expires {expiry}
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, marginTop: 1 }}>
-                    Proposed by: {p.proposer.slice(0,6)}…{p.proposer.slice(-4)}
+                    Proposed by: {nameMap[p.proposer?.toLowerCase()] || `${p.proposer.slice(0,6)}…${p.proposer.slice(-4)}`}
                     {' · '}ID #{p.id}
                   </div>
                 </div>
@@ -646,10 +721,34 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, cfg, addres
               ))}
             </div>
 
-            <Field
-              label={myRole === 'creditor' ? 'Obligor address (who pays)' : 'Creditor address (who receives)'}
-              value={otherAddr} onChange={setOtherAddr} placeholder="0x…"
-            />
+            {/* Citizen picker — falls back to raw address if no citizen list */}
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>
+                {myRole === 'creditor' ? 'Obligor (who pays)' : 'Creditor (who receives)'}
+              </div>
+              {citizens.filter(c => c.address.toLowerCase() !== address?.toLowerCase()).length > 0 ? (
+                <select
+                  value={otherAddr}
+                  onChange={e => setOtherAddr(e.target.value)}
+                  style={selectStyle}
+                >
+                  <option value="">— select a citizen —</option>
+                  {citizens
+                    .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+                    .map(c => (
+                      <option key={c.address} value={c.address}>
+                        {c.name} · {c.address.slice(0,6)}…{c.address.slice(-4)}
+                      </option>
+                    ))
+                  }
+                </select>
+              ) : (
+                <input
+                  value={otherAddr} onChange={e => setOtherAddr(e.target.value)}
+                  placeholder="0x…" style={inputStyle}
+                />
+              )}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
               <Field label="Monthly amount (S)" value={monthly} onChange={setMonthly} placeholder="e.g. 100" type="number" />
               <Field label="Duration (months)" value={epochs}  onChange={setEpochs}  placeholder="e.g. 12"  type="number" />
@@ -697,8 +796,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <div style={{ fontSize: 12, color: C.text }}>
-            {counterpartyLabel}: {counterparty.slice(0,6)}…{counterparty.slice(-4)}
-            {cpName && <span style={{ color: C.sub }}> · {cpName}</span>}
+            {counterpartyLabel}: {cpName || `${counterparty.slice(0,6)}…${counterparty.slice(-4)}`}
           </div>
           <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
             ID {ob.id} · {collateralLabel}
@@ -765,4 +863,19 @@ const inlineInput = {
   padding: '9px 10px', border: `1px solid ${C.border}`,
   borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
   boxSizing: 'border-box',
+}
+
+const selectStyle = {
+  width: '100%', padding: '9px 10px',
+  background: C.bg, color: C.text,
+  border: `1px solid ${C.border}`, borderRadius: 6,
+  fontSize: 12, fontFamily: "'IBM Plex Mono', monospace",
+}
+
+const inputStyle = {
+  width: '100%', padding: '9px 10px',
+  background: C.bg, color: C.text,
+  border: `1px solid ${C.border}`, borderRadius: 6,
+  fontSize: 12, outline: 'none', boxSizing: 'border-box',
+  fontFamily: "'IBM Plex Mono', monospace",
 }
