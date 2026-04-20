@@ -11,7 +11,7 @@ const RPC   = 'https://base-sepolia-rpc.publicnode.com'
 
 const GOV_ABI = [
   "function nextId() view returns (uint256)",
-  "function elections(uint256) view returns (uint8 role, address candidate, address nominator, uint256 votingEndsAt, uint256 timelockEndsAt, uint256 votesFor, uint256 votesAgainst, bool executed, bool cancelled)",
+  "function elections(uint256) view returns (uint8 role, address candidate, address nominator, uint256 proposedAt, uint256 votingEndsAt, uint256 timelockEndsAt, uint256 votesFor, uint256 votesAgainst, bool executed, bool cancelled)",
   "function hasVoted(address, uint256) view returns (bool)",
   "function activeElections() view returns (uint256[])",
   "function roleHolder(uint8) view returns (address holder, uint256 termEnd, bool active)",

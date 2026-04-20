@@ -34,6 +34,8 @@ const ERC721_ABI = [
 const COLONY_ABI = [
   "function isCitizen(address) view returns (bool)",
   "function citizenName(address) view returns (string)",
+  "function dateOfBirth(address) view returns (uint256)",
+  "function joinedAt(address) view returns (uint256)",
   "function colonyName() view returns (string)",
   "function founder() view returns (address)",
   "function citizenCount() view returns (uint256)",
@@ -178,7 +180,14 @@ export default function App() {
           vToken.symbol(),
         ])
 
-        const name = citizen ? await colony.citizenName(addr) : ''
+        let name = '', dob = 0, joinedTs = 0
+        if (citizen) {
+          ;[name, dob, joinedTs] = await Promise.all([
+            colony.citizenName(addr),
+            colony.dateOfBirth(addr),
+            colony.joinedAt(addr),
+          ])
+        }
 
         result[colonyId] = {
           sBalance:    Math.floor(Number(ethers.formatEther(sRaw))),
@@ -186,6 +195,8 @@ export default function App() {
           gTokenId:    Number(gId),
           isCitizen:   citizen,
           citizenName: name,
+          dateOfBirth: Number(dob),
+          joinedAt:    Number(joinedTs),
           isFounder:   founderAddr.toLowerCase() === addr.toLowerCase(),
           founderAddr,
           sSymbol:     sSym,

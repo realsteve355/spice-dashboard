@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
-
 import { C } from '../theme'
 
 export default function Profile() {
@@ -20,6 +19,18 @@ export default function Profile() {
     </Layout>
   )
 
+  // Voting eligibility (mirrors Governance._isEligibleVoter logic)
+  const currentYear = new Date().getFullYear()
+  const dob         = chain?.dateOfBirth || 0
+  const age         = dob > 0 ? currentYear - dob : null
+  const ageOk       = age !== null && age >= 18
+  const eligible    = ageOk  // per-election entryism check is contract-side
+
+  const joinedAt = chain?.joinedAt || 0
+  const joinedDate = joinedAt > 0
+    ? new Date(joinedAt * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '—'
+
   return (
     <Layout title="My Profile" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
       <div style={{ padding: '16px 16px 0' }}>
@@ -30,20 +41,60 @@ export default function Profile() {
 
           <Row label="Colony"      value={chain?.colonyName || slug} />
           <Div />
-          {chain?.citizenName && <>
-            <Row label="Name"      value={chain.citizenName} />
-            <Div />
-          </>}
+          <Row label="Name"        value={chain?.citizenName || '—'} />
+          <Div />
+          <Row label="Birth year"  value={dob > 0 ? String(dob) : '—'} />
+          <Div />
+          <Row label="Age"         value={age !== null ? `${age} years` : '—'} color={ageOk ? C.green : C.red} />
+          <Div />
+          <Row label="Member since" value={joinedDate} />
+          <Div />
           <Row label="Wallet"      value={address || '—'} mono />
           <Div />
           <Row label="G-token"
             value={chain?.gTokenId > 0 ? `#${String(chain.gTokenId).padStart(4, '0')}` : '—'}
             color={C.purple}
           />
+        </div>
+
+        {/* Balances */}
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>BALANCES</div>
+          <Row label="S balance" value={chain ? `${chain.sBalance.toLocaleString()} S` : '—'} color={C.gold} />
           <Div />
-          <Row label="S balance"   value={chain ? `${chain.sBalance} S` : '—'} color={C.gold} />
-          <Div />
-          <Row label="V balance"   value={chain ? `${chain.vBalance} V` : '—'} color={C.green} />
+          <Row label="V balance" value={chain ? `${chain.vBalance.toLocaleString()} V` : '—'} color={C.green} />
+        </div>
+
+        {/* Voting status */}
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>VOTING STATUS</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <span style={{
+              fontSize: 11,
+              color: eligible ? C.green : C.red,
+              border: `1px solid ${eligible ? C.green : C.red}`,
+              borderRadius: 4, padding: '3px 8px', letterSpacing: '0.08em',
+            }}>
+              {eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
+            </span>
+          </div>
+          {!ageOk && dob > 0 && (
+            <div style={{ fontSize: 11, color: C.red, lineHeight: 1.6 }}>
+              Age requirement: must be 18 or older. Birth year recorded as {dob}.
+            </div>
+          )}
+          {!ageOk && dob === 0 && (
+            <div style={{ fontSize: 11, color: C.red, lineHeight: 1.6 }}>
+              No date of birth on record.
+            </div>
+          )}
+          {ageOk && (
+            <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
+              Eligible to vote in elections that were open before you joined.
+              Elections proposed after you joined require no waiting period — the
+              anti-entryism check is per-election.
+            </div>
+          )}
         </div>
 
         {/* Inheritance — not yet on-chain */}

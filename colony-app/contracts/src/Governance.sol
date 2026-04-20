@@ -44,7 +44,6 @@ contract Governance {
     uint256 public constant TIMELOCK          = 7 days;
     uint256 public constant TERM              = 365 days;
     uint256 public constant OBLIGATION_EXPIRY = 30 days;
-    uint256 public constant VOTING_COOLDOWN   = 30 days; // new citizens must wait one epoch before voting
 
     // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -54,6 +53,7 @@ contract Governance {
         Role    role;
         address candidate;
         address nominator;
+        uint256 proposedAt;     // block.timestamp when nomination was made
         uint256 votingEndsAt;
         uint256 timelockEndsAt; // 0 until passed
         uint256 votesFor;
@@ -134,17 +134,23 @@ contract Governance {
         return colony.isCitizen(a);
     }
 
-    function _isEligibleVoter(address a) internal view returns (bool) {
+    /**
+     * @param a          The voter address.
+     * @param proposedAt block.timestamp when the election was nominated.
+     *                   Anti-entryism: a citizen who joined AFTER an election was
+     *                   proposed may not vote in that election.
+     *                   joinedAt == 0 means the citizen predates the field — exempt.
+     */
+    function _isEligibleVoter(address a, uint256 proposedAt) internal view returns (bool) {
         if (!colony.isCitizen(a)) return false;
         uint256 birthYear = colony.dateOfBirth(a);
         if (birthYear == 0) return false;
         // Approximate current year from Unix timestamp
         uint256 currentYear = 1970 + block.timestamp / 365 days;
         if (currentYear < birthYear + 18) return false;
-        // Must have been a citizen for at least one epoch before voting
-        // joinedAt == 0 means citizen predates this field — treat as exempt
+        // Anti-entryism: must have joined before this election was proposed
         uint256 joined = colony.joinedAt(a);
-        if (joined > 0 && block.timestamp < joined + VOTING_COOLDOWN) return false;
+        if (joined > 0 && joined > proposedAt) return false;
         return true;
     }
 
@@ -188,6 +194,7 @@ contract Governance {
             role:           role,
             candidate:      candidate,
             nominator:      msg.sender,
+            proposedAt:     block.timestamp,
             votingEndsAt:   block.timestamp + VOTING_WINDOW,
             timelockEndsAt: 0,
             votesFor:       0,
@@ -205,9 +212,9 @@ contract Governance {
      *         One vote per citizen per election.
      */
     function vote(uint256 electionId, bool support) external {
-        require(_isEligibleVoter(msg.sender), "Gov: not eligible (citizen 18+ required)");
         ElectionProposal storage e = elections[electionId];
-        require(e.nominator != address(0),         "Gov: election not found");
+        require(e.nominator != address(0), "Gov: election not found");
+        require(_isEligibleVoter(msg.sender, e.proposedAt), "Gov: not eligible (must be citizen 18+ who joined before this election)");
         require(block.timestamp <= e.votingEndsAt, "Gov: voting closed");
         require(!e.cancelled,                      "Gov: election cancelled");
         require(!hasVoted[msg.sender][electionId], "Gov: already voted");
