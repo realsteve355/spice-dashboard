@@ -159,7 +159,8 @@ export default function Company() {
 
         if (cancelled) return
         // Resolve citizen names for equity holders
-        const holderNameMap = await resolveNames(holders, cfg.colony).catch(() => ({}))
+        const colonyAddr = deployedContracts?.colonies?.[slug]?.colony
+        const holderNameMap = await resolveNames(holders, colonyAddr).catch(() => ({}))
         setChainCo({
           name,
           secretary:          secretary.toLowerCase(),
@@ -372,7 +373,7 @@ export default function Company() {
 
   async function handleIssueShares() {
     const co = companyContract()
-    if (!co || !issueHolder || !issueStakeBps || issueHolderError) return
+    if (!co || !issueHolder || !issueStakeBps) return
     setActPending(true); setActError(null); setActDone(null)
     try {
       const bps = Number(issueStakeBps)
