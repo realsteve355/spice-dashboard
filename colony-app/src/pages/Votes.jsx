@@ -350,7 +350,7 @@ export default function Votes() {
 }
 
 function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onFinalise, onExecute }) {
-  const { id, role, candidate, nominator, votesFor, votesAgainst, myVoted, status, timelockEndsAt } = election
+  const { id, role, candidate, nominator, votesFor, votesAgainst, myVoted, status, votingEndsAt, timelockEndsAt } = election
   const totalVotes = votesFor + votesAgainst
 
   const statusMeta = {
@@ -362,7 +362,7 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
     FAILED:         { label: 'FAILED',            color: C.red    },
   }[status] || { label: status, color: C.faint }
 
-  const fmt = ts => new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmt = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 
   const candidateName = nameMap[candidate?.toLowerCase()] || shortAddr(candidate)
   const nominatorName = nameMap[nominator?.toLowerCase()] || shortAddr(nominator)
