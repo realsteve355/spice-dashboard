@@ -388,19 +388,28 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
       </div>
 
       {/* Candidate + tally */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: totalVotes > 0 ? 10 : 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: (status !== 'VOTING' && totalVotes > 0) ? 10 : 0 }}>
         <div>
           <div style={{ fontSize: 14, color: C.text, fontWeight: 500, marginBottom: 3 }}>{candidateName}</div>
           <div style={{ fontSize: 11, color: C.faint }}>Nominated by {nominatorName}</div>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-          <div style={{ fontSize: 12, color: C.green }}>{votesFor} FOR</div>
-          <div style={{ fontSize: 12, color: C.red }}>{votesAgainst} AGAINST</div>
-        </div>
+        {status === 'VOTING' ? (
+          /* During voting: show participation count only — no FOR/AGAINST split */
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+            <div style={{ fontSize: 12, color: C.sub }}>{totalVotes} voted</div>
+            <div style={{ fontSize: 10, color: C.faint }}>tally hidden</div>
+          </div>
+        ) : (
+          /* After voting closes: show full breakdown */
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+            <div style={{ fontSize: 12, color: C.green }}>{votesFor} FOR</div>
+            <div style={{ fontSize: 12, color: C.red }}>{votesAgainst} AGAINST</div>
+          </div>
+        )}
       </div>
 
-      {/* Vote bar */}
-      {totalVotes > 0 && (
+      {/* Vote bar — only shown after voting closes */}
+      {status !== 'VOTING' && totalVotes > 0 && (
         <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', background: C.border, marginBottom: 10 }}>
           <div style={{ width: `${(votesFor / totalVotes) * 100}%`, background: C.green }} />
           <div style={{ width: `${(votesAgainst / totalVotes) * 100}%`, background: C.red }} />
