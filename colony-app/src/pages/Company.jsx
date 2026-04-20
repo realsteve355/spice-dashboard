@@ -1263,10 +1263,29 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
               </div>
             )}
 
-            {/* Paid invoices summary */}
+            {/* Paid invoices — individual entries */}
             {paid.length > 0 && (
-              <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>
-                {paid.length} invoice{paid.length !== 1 ? 's' : ''} paid · {paid.reduce((s, i) => s + i.amount, 0)} S total
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
+                  DELIVERY HISTORY · {paid.reduce((s, i) => s + i.amount, 0)} S paid
+                </div>
+                {paid.map(inv => (
+                  <div key={inv.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '6px 0',
+                    borderBottom: `1px solid ${C.border}`,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: C.sub }}>
+                        #{inv.invoice_number} — {inv.description}
+                      </div>
+                      <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.paid_at || inv.created_at)}</div>
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: C.green, flexShrink: 0, marginLeft: 12 }}>
+                      +{inv.amount} S
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
 

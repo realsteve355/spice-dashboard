@@ -471,6 +471,24 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
       {status === 'VOTING' && myVoted && (
         <div style={{ fontSize: 12, color: C.green, marginTop: 8 }}>✓ Vote recorded on-chain</div>
       )}
+
+      {/* Outcome statement — shown once voting is closed */}
+      {status !== 'VOTING' && totalVotes > 0 && (
+        <div style={{ fontSize: 11, color: C.faint, marginTop: 4, marginBottom: 6 }}>
+          {status === 'EXECUTED' && (
+            <span style={{ color: C.green }}>✓ Passed — {candidateName} elected as {ROLES[role]}</span>
+          )}
+          {status === 'FAILED' && (
+            <span style={{ color: C.red }}>✗ Cancelled</span>
+          )}
+          {['FINALISE_READY','TIMELOCK','EXECUTE_READY'].includes(status) && (
+            votesFor > votesAgainst
+              ? <span style={{ color: C.green }}>Passed ({votesFor} for, {votesAgainst} against) — awaiting execution</span>
+              : <span style={{ color: C.red }}>Failed ({votesFor} for, {votesAgainst} against)</span>
+          )}
+        </div>
+      )}
+
       {status === 'FINALISE_READY' && onFinalise && (
         <button
           onClick={() => onFinalise(id)}
