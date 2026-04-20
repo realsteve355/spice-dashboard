@@ -132,18 +132,22 @@ export default function Votes() {
     return loaded.reverse()
   }
 
+  function applyCitizens(citizenList) {
+    if (citizenList.length > 0) {
+      setCitizens(citizenList)
+      setNameMap(Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name])))
+    }
+  }
+
   async function load() {
     if (!govAddress || !colonyAddr || !provider) { setLoading(false); return }
+    // Fetch citizens independently — a loadFull failure must not suppress citizen names
+    fetchCitizens(colonyAddr).then(applyCitizens).catch(() => {})
     try {
       const rpc = new ethers.JsonRpcProvider(RPC)
       const gov = new ethers.Contract(govAddress, GOV_ABI, rpc)
-      const [loaded, citizenList] = await Promise.all([
-        loadFull(gov),
-        fetchCitizens(colonyAddr),
-      ])
+      const loaded = await loadFull(gov)
       setElecs(prev => mergeElecs(prev, loaded))
-      setCitizens(citizenList)
-      setNameMap(Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name])))
     } catch (err) {
       console.warn('Votes load error', err)
     }
@@ -165,15 +169,29 @@ export default function Votes() {
   }
 
   function mergeElecs(prev, next) {
+    const nextMap = Object.fromEntries(next.map(e => [e.id, e]))
     const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
-    return next.map(e => ({
+    // Update elections we have fresh data for
+    const result = next.map(e => ({
       ...e,
       myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
       myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
     }))
+    // Keep elections from prev that weren't in this read — stale RPC may lag behind
+    for (const e of prev) {
+      if (!nextMap[e.id]) result.push(e)
+    }
+    return result.sort((a, b) => b.id - a.id)
   }
 
   useEffect(() => { load() }, [govAddress, colonyAddr, provider, address])
+
+  // Retry citizen fetch when nominate form opens in case initial load was empty
+  useEffect(() => {
+    if (nomElecId && citizens.length === 0 && colonyAddr) {
+      fetchCitizens(colonyAddr).then(applyCitizens).catch(() => {})
+    }
+  }, [nomElecId])
 
   // Refresh statuses every 20s
   useEffect(() => {
