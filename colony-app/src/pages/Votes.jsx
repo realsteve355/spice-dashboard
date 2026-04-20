@@ -407,7 +407,7 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
     FAILED:         { label: 'FAILED',            color: C.red    },
   }[status] || { label: status, color: C.faint }
 
-  const fmt = ts => ts ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+  const fmt = ts => ts ? new Date(ts * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
 
   const candidateName = nameMap[candidate?.toLowerCase()] || shortAddr(candidate)
   const nominatorName = nameMap[nominator?.toLowerCase()] || shortAddr(nominator)
