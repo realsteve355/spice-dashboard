@@ -181,25 +181,58 @@ export default function Votes() {
     setActionPending(`open-${roleIdx}`); setActionError(null); setOpeningRole(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      // Simulate first — if already active the election was opened by a prior tx,
-      // just refresh to show it rather than erroring
+
+      // If already active (prior tx succeeded but RPC was stale), skip straight to inject
+      let skipSend = false
       try {
         await gov.openElection.staticCall(roleIdx)
       } catch (simErr) {
-        const reason = govErr(simErr)
-        if (reason.includes('already active')) {
-          // Election exists but RPC was stale — just reload
-          await load()
-          setActionPending(null)
-          return
-        }
-        throw simErr
+        if (govErr(simErr).includes('already active')) { skipSend = true }
+        else throw simErr
       }
-      const tx = await gov.openElection(roleIdx, GAS)
-      await tx.wait()
-      // Short delay so RPC has time to index the new block
-      await new Promise(r => setTimeout(r, 1500))
-      await load()
+
+      if (!skipSend) {
+        const tx      = await gov.openElection(roleIdx, GAS)
+        const receipt = await tx.wait()
+
+        // Parse ElectionOpened from receipt — MetaMask provider is already synced
+        const iface = new ethers.Interface([
+          "event ElectionOpened(uint256 indexed id, uint8 indexed role, address indexed openedBy)"
+        ])
+        let newElecId = null
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log)
+            if (parsed?.name === 'ElectionOpened') { newElecId = Number(parsed.args.id); break }
+          } catch {}
+        }
+
+        if (newElecId !== null) {
+          // Read the new election via signer's provider (already on latest block)
+          const e      = await gov.elections(newElecId)
+          const nowSec = Math.floor(Date.now() / 1000)
+          const entry  = {
+            id:               newElecId,
+            role:             Number(e.role),
+            openedBy:         e.openedBy,
+            openedAt:         Number(e.openedAt),
+            nominationEndsAt: Number(e.nominationEndsAt),
+            votingEndsAt:     Number(e.votingEndsAt),
+            timelockEndsAt:   0,
+            winner:           ethers.ZeroAddress,
+            executed:         false,
+            cancelled:        false,
+            candidates:       [],
+            myVoted:          false,
+            myVotedFor:       null,
+          }
+          entry.status = electionStatus(entry, nowSec)
+          setElecs(prev => [entry, ...prev])
+        }
+      }
+
+      // Background refresh — public RPC will catch up eventually
+      setTimeout(() => load(), 3000)
     } catch (e) {
       setActionError(govErr(e))
     }
