@@ -41,27 +41,31 @@ function govErr(e) {
   const paths = [
     e?.reason,
     e?.shortMessage,
+    e?.cause?.reason,
+    e?.cause?.shortMessage,
+    e?.cause?.message,
     e?.error?.reason,
     e?.error?.shortMessage,
     e?.error?.message,
     e?.info?.error?.message,
+    e?.info?.error?.data?.message,   // MetaMask nested path
+    e?.info?.error?.data,
     e?.data,
   ]
   for (const p of paths) {
     if (typeof p === 'string' && p.length > 0 && !p.startsWith('0x')) {
-      // Strip ethers wrapper text like "execution reverted: "
       const stripped = p.replace(/^.*execution reverted:\s*/i, '').trim()
       if (stripped.length > 0 && stripped !== 'execution reverted') return stripped
     }
   }
-  // Try to ABI-decode a revert string from hex data
-  if (typeof e?.data === 'string' && e.data.startsWith('0x08c379a0')) {
-    try {
-      const decoded = ethers.AbiCoder.defaultAbiCoder().decode(
-        ['string'], '0x' + e.data.slice(10)
-      )
-      if (decoded[0]) return decoded[0]
-    } catch {}
+  // Try to ABI-decode a 0x08c379a0 revert string from any hex data field
+  for (const p of [e?.data, e?.info?.error?.data]) {
+    if (typeof p === 'string' && p.startsWith('0x08c379a0')) {
+      try {
+        const decoded = ethers.AbiCoder.defaultAbiCoder().decode(['string'], '0x' + p.slice(10))
+        if (decoded[0]) return decoded[0]
+      } catch {}
+    }
   }
   return e?.message || 'Transaction failed'
 }
@@ -88,6 +92,18 @@ export default function Votes() {
   const [nomCandidate, setNomCandidate] = useState('')
 
   const GAS = { gasLimit: 300000 }
+  const COLONY_ABI_CITIZEN = ["function isCitizen(address) view returns (bool)"]
+
+  // Pre-flight citizen check — gives a clear message before wasting a MetaMask popup
+  async function guardCitizen() {
+    if (!signer || !colonyAddr || !address) return false
+    try {
+      const colony = new ethers.Contract(colonyAddr, COLONY_ABI_CITIZEN, signer)
+      const ok = await colony.isCitizen(address)
+      if (!ok) { setActionError('You are not registered as a citizen of this colony. Join the colony first.'); return false }
+    } catch { /* if the check itself fails, let the tx proceed and show the real error */ }
+    return true
+  }
 
   // ── Data loading ─────────────────────────────────────────────────────────
 
@@ -207,6 +223,7 @@ export default function Votes() {
   async function doOpenElection(roleIdx) {
     if (!signer || !govAddress) return
     setActionPending(`open-${roleIdx}`); setActionError(null)
+    if (!await guardCitizen()) { setActionPending(null); return }
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx      = await gov.openElection(roleIdx, GAS)
@@ -255,6 +272,7 @@ export default function Votes() {
     if (!signer || !govAddress || !nomElecId) return
     if (!ethers.isAddress(nomCandidate)) { setActionError('Enter a valid wallet address'); return }
     setActionPending(`nom-${nomElecId}`); setActionError(null)
+    if (!await guardCitizen()) { setActionPending(null); return }
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.nominateCandidate(nomElecId, nomCandidate, GAS)
