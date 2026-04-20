@@ -67,6 +67,8 @@ function govErr(e) {
       } catch {}
     }
   }
+  // Log full error so we can see the structure in the browser console
+  console.error('[govErr] full error object:', e)
   return e?.message || 'Transaction failed'
 }
 
