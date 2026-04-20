@@ -41,6 +41,7 @@ const COMPANY_FACTORY_ABI = [
 ]
 
 const COMPANY_IMPL_ABI = [
+  "function name() view returns (string)",
   "function secretary() view returns (address)",
   "function getEquityTable() view returns (address[], uint256[], uint256[])",
 ]
