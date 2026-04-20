@@ -205,7 +205,7 @@ export default function Company() {
     const queryAddr = companyId
     if (!queryAddr) return
     setTxLoading(true)
-    const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
+    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
 
     async function load() {
       try {

@@ -6,8 +6,9 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 import { shortAddr } from '../utils/addrLabel'
 
-const ROLES = ['CEO', 'CFO', 'COO']
-const RPC   = 'https://base-sepolia-rpc.publicnode.com'
+const ROLES    = ['CEO', 'CFO', 'COO']
+const RPC      = 'https://base-sepolia-rpc.publicnode.com'
+const LOG_RPC  = 'https://sepolia.base.org'   // official RPC — more reliable for getLogs
 
 const GOV_ABI = [
   "function nextId() view returns (uint256)",
@@ -41,28 +42,31 @@ function electionStatus(e, nowSec) {
 }
 
 async function fetchCitizens(colonyAddr) {
-  const rpc     = new ethers.JsonRpcProvider(RPC)
+  const rpc     = new ethers.JsonRpcProvider(LOG_RPC)
   const toBlock = await rpc.getBlockNumber()
   const CHUNK   = 9000
-  const NUM_CHUNKS = 20  // 20 × 9000 = 180,000 blocks ≈ 4 days on Base Sepolia
-  const chunks  = await Promise.all(
-    Array.from({ length: NUM_CHUNKS }, (_, i) => {
-      const chunkTo   = toBlock - i * CHUNK
-      const chunkFrom = Math.max(0, chunkTo - CHUNK + 1)
-      return rpc.getLogs({
+  const map     = {}
+  // Sequential chunks — avoids rate limiting on parallel requests
+  for (let i = 0; i < 20; i++) {
+    const chunkTo   = toBlock - i * CHUNK
+    const chunkFrom = Math.max(0, chunkTo - CHUNK + 1)
+    if (chunkFrom > chunkTo) break
+    try {
+      const logs = await rpc.getLogs({
         address:   colonyAddr,
         fromBlock: chunkFrom,
         toBlock:   chunkTo,
         topics:    [CITIZEN_JOINED_TOPIC],
-      }).catch(() => [])
-    })
-  )
-  const map = {}
-  for (const log of chunks.flat()) {
-    try {
-      const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
-      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
-    } catch {}
+      })
+      for (const log of logs) {
+        try {
+          const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
+          map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
+        } catch {}
+      }
+      // Stop early if we found citizens and have gone back far enough
+      if (Object.keys(map).length > 0 && i >= 3) break
+    } catch { /* chunk failed — continue */ }
   }
   return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
 }
