@@ -50,6 +50,10 @@ const OTOKEN_ABI = [
   "function ownerOf(uint256) view returns (address)",
 ]
 
+const GOV_ABI_MINI = [
+  "function activeElections() view returns (uint256[])",
+]
+
 import { C } from '../theme'
 
 export default function Dashboard() {
@@ -92,6 +96,7 @@ export default function Dashboard() {
   const [billError,   setBillError]   = useState(null)
   const [billDone,    setBillDone]    = useState(false)
   const [onChainBill, setOnChainBill] = useState(null)  // S whole tokens, or null if not loaded
+  const [openVoteCount, setOpenVoteCount] = useState(null)
 
   const mccBillingAddr  = contracts?.colonies?.[slug]?.mccBilling
   const mccTreasuryAddr = contracts?.colonies?.[slug]?.mccTreasury
@@ -116,6 +121,17 @@ export default function Dashboard() {
       .then(wei => setOnChainBill(Math.floor(Number(ethers.formatEther(wei)))))
       .catch(() => {})
   }, [mccBillingAddr, address])
+
+  // Load live open election count from Governance
+  useEffect(() => {
+    const govAddr = contracts?.colonies?.[slug]?.governance
+    if (!govAddr) return
+    const prov = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
+    new ethers.Contract(govAddr, GOV_ABI_MINI, prov)
+      .activeElections()
+      .then(ids => setOpenVoteCount(ids.length))
+      .catch(() => setOpenVoteCount(0))
+  }, [contracts, slug])
 
   const [txHistory, setTxHistory] = useState(null)  // null = not loaded yet
 
@@ -687,7 +703,7 @@ export default function Dashboard() {
               onClick={() => navigate(`/colony/${slug}/votes`)}
               style={{ fontSize: 12, color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              2 open →
+              {openVoteCount === null ? '…' : openVoteCount} open →
             </span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

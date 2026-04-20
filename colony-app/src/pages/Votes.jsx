@@ -3,208 +3,281 @@ import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
-
 import { C } from '../theme'
+import { shortAddr } from '../utils/addrLabel'
 
-const TYPE_META = {
-  ELECTION:  { label: 'ELECTION',  color: C.purple },
-  DIVIDEND:  { label: 'DIVIDEND',  color: C.gold   },
-  RECALL:    { label: 'RECALL',    color: C.red     },
-  AMENDMENT: { label: 'AMENDMENT', color: C.blue    },
-}
+const ROLES = ['CEO', 'CFO', 'COO']
 
 const GOV_ABI = [
-  "function proposalCount() view returns (uint256)",
-  "function getProposal(uint256) view returns (string, string, uint256, bool)",
-  "function getOptions(uint256) view returns (string[])",
-  "function getVoteCounts(uint256) view returns (uint256[])",
-  "function hasVoted(uint256, address) view returns (bool)",
-  "function vote(uint256, uint256) external",
-  "function createProposal(string, string, string[], uint256) external returns (uint256)",
+  "function nextId() view returns (uint256)",
+  "function elections(uint256) view returns (uint8 role, address candidate, address nominator, uint256 votingEndsAt, uint256 timelockEndsAt, uint256 votesFor, uint256 votesAgainst, bool executed, bool cancelled)",
+  "function hasVoted(address, uint256) view returns (bool)",
+  "function activeElections() view returns (uint256[])",
+  "function roleHolder(uint8) view returns (address holder, uint256 termEnd, bool active)",
+  "function nominateForElection(uint8 role, address candidate) external returns (uint256)",
+  "function vote(uint256 electionId, bool support) external",
+  "function finaliseElection(uint256 electionId) external",
+  "function executeElection(uint256 electionId) external",
 ]
 
+function electionStatus(e, nowSec) {
+  if (e.executed)                               return 'EXECUTED'
+  if (e.cancelled)                              return 'FAILED'
+  if (e.timelockEndsAt > 0 && nowSec >= e.timelockEndsAt) return 'EXECUTE_READY'
+  if (e.timelockEndsAt > 0)                     return 'TIMELOCK'
+  if (nowSec > e.votingEndsAt)                  return 'FINALISE_READY'
+  return 'VOTING'
+}
+
 export default function Votes() {
-  const { slug }  = useParams()
+  const { slug } = useParams()
   const { isCitizenOf, provider, signer, address, contracts, onChain } = useWallet()
 
   const colonyName = onChain?.[slug]?.colonyName || slug
   const isCitizen  = isCitizenOf(slug)
 
-  const [proposals, setProposals] = useState([])
-  const [expanded,  setExpanded]  = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [voting,    setVoting]    = useState(null)   // proposalId being voted on
-  const [voteError, setVoteError] = useState(null)
-  const [creating,  setCreating]  = useState(false)
-  const [newP, setNewP] = useState({ type: 'ELECTION', description: '', options: ['', ''], days: 7 })
-  const [createPending, setCreatePending] = useState(false)
-
   const govAddress = contracts?.colonies?.[slug]?.governance
 
-  async function loadProposals() {
+  const [elecs, setElecs]           = useState([])
+  const [roleHolders, setRoleHolders] = useState([null, null, null])
+  const [loading, setLoading]       = useState(true)
+  const [actionPending, setActionPending] = useState(null)
+  const [actionError, setActionError]   = useState(null)
+  const [nominating, setNominating] = useState(false)
+  const [newNom, setNewNom]         = useState({ role: 0, candidate: '' })
+
+  async function load() {
     if (!govAddress || !provider) { setLoading(false); return }
     try {
-      const gov = new ethers.Contract(govAddress, GOV_ABI, provider)
-      const count = Number(await gov.proposalCount())
+      const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
+      const gov = new ethers.Contract(govAddress, GOV_ABI, rpc)
+      const nowSec = Math.floor(Date.now() / 1000)
+
+      // Load role holders
+      const holders = await Promise.all([0, 1, 2].map(r => gov.roleHolder(r)))
+      setRoleHolders(holders)
+
+      // Load all elections by iterating nextId
+      const nextId = Number(await gov.nextId())
       const loaded = []
-      for (let i = 0; i < count; i++) {
-        const [proposalType, description, deadline, isOpen] = await gov.getProposal(i)
-        const options    = await gov.getOptions(i)
-        const voteCounts = await gov.getVoteCounts(i)
-        const myVoted    = address ? await gov.hasVoted(i, address) : false
-        loaded.push({
+      for (let i = 1; i < nextId; i++) {
+        const e = await gov.elections(i)
+        // If nominator is zero address this slot is an obligation proposal, not an election
+        if (e.nominator === ethers.ZeroAddress) continue
+        const myVoted = address ? await gov.hasVoted(address, i) : false
+        const entry = {
           id: i,
-          proposalType,
-          description,
-          deadline: Number(deadline),
-          isOpen,
-          options,
-          voteCounts: voteCounts.map(Number),
+          role:            Number(e.role),
+          candidate:       e.candidate,
+          nominator:       e.nominator,
+          votingEndsAt:    Number(e.votingEndsAt),
+          timelockEndsAt:  Number(e.timelockEndsAt),
+          votesFor:        Number(e.votesFor),
+          votesAgainst:    Number(e.votesAgainst),
+          executed:        e.executed,
+          cancelled:       e.cancelled,
           myVoted,
-        })
+        }
+        entry.status = electionStatus(entry, nowSec)
+        loaded.push(entry)
       }
-      setProposals(loaded.reverse()) // newest first
-    } catch (e) {
-      console.warn('Failed to load proposals', e)
+      setElecs(loaded.reverse())
+    } catch (err) {
+      console.warn('Votes load error', err)
     }
     setLoading(false)
   }
 
-  useEffect(() => { loadProposals() }, [govAddress, provider, address])
+  useEffect(() => { load() }, [govAddress, provider, address])
 
-  async function castVote(proposalId, optionIndex) {
+  async function doVote(electionId, support) {
     if (!signer || !govAddress) return
-    setVoting(proposalId); setVoteError(null)
+    setActionPending(`vote-${electionId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx = await gov.vote(proposalId, optionIndex)
+      const tx  = await gov.vote(electionId, support)
       await tx.wait()
-      await loadProposals()
+      await load()
     } catch (e) {
-      setVoteError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
-    setVoting(null)
+    setActionPending(null)
   }
 
-  async function createProposal() {
+  async function doFinalise(electionId) {
     if (!signer || !govAddress) return
-    setCreatePending(true)
+    setActionPending(`fin-${electionId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const opts = newP.options.filter(o => o.trim())
-      const tx = await gov.createProposal(newP.type, newP.description, opts, newP.days)
+      const tx  = await gov.finaliseElection(electionId)
       await tx.wait()
-      setCreating(false)
-      setNewP({ type: 'ELECTION', description: '', options: ['', ''], days: 7 })
-      await loadProposals()
+      await load()
     } catch (e) {
-      console.error(e)
+      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
-    setCreatePending(false)
+    setActionPending(null)
   }
 
-  const open   = proposals.filter(p => p.isOpen)
-  const closed = proposals.filter(p => !p.isOpen)
+  async function doExecute(electionId) {
+    if (!signer || !govAddress) return
+    setActionPending(`exec-${electionId}`); setActionError(null)
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const tx  = await gov.executeElection(electionId)
+      await tx.wait()
+      await load()
+    } catch (e) {
+      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActionPending(null)
+  }
+
+  async function doNominate() {
+    if (!signer || !govAddress) return
+    if (!ethers.isAddress(newNom.candidate)) {
+      setActionError('Invalid candidate address')
+      return
+    }
+    setActionPending('nominate'); setActionError(null)
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const tx  = await gov.nominateForElection(newNom.role, newNom.candidate)
+      await tx.wait()
+      setNominating(false)
+      setNewNom({ role: 0, candidate: '' })
+      await load()
+    } catch (e) {
+      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActionPending(null)
+  }
+
+  const openElecs   = elecs.filter(e => !['EXECUTED', 'FAILED'].includes(e.status))
+  const closedElecs = elecs.filter(e =>  ['EXECUTED', 'FAILED'].includes(e.status))
 
   return (
     <Layout title="Governance" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
       <div style={{ padding: '16px 16px 0' }}>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
-            {colonyName} · {proposals.length} proposal{proposals.length !== 1 ? 's' : ''}
+            {colonyName} · MCC ELECTIONS
           </div>
           {isCitizen && (
             <button
-              onClick={() => setCreating(v => !v)}
-              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+              onClick={() => setNominating(v => !v)}
+              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace" }}
             >
-              + Propose
+              + Nominate
             </button>
           )}
         </div>
 
-        {/* Create proposal form */}
-        {creating && (
-          <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW PROPOSAL</div>
+        {/* Current board */}
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '12px 16px', marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>CURRENT MCC BOARD</div>
+          {roleHolders.map((rh, i) => {
+            const vacant  = !rh || rh.holder === ethers.ZeroAddress
+            const expired = rh && !rh.active && !vacant
+            const expDate = rh && !vacant
+              ? new Date(Number(rh.termEnd) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+              : null
+            return (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: i < 2 ? 8 : 0 }}>
+                <span style={{ fontSize: 11, color: C.faint, minWidth: 36 }}>{ROLES[i]}</span>
+                <span style={{ fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub, textAlign: 'right' }}>
+                  {vacant
+                    ? 'vacant'
+                    : `${shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Nominate form */}
+        {nominating && (
+          <div style={{ background: C.white, border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE FOR ELECTION</div>
+
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Role</div>
             <select
-              value={newP.type}
-              onChange={e => setNewP(p => ({ ...p, type: e.target.value }))}
-              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, background: C.white }}
+              value={newNom.role}
+              onChange={e => setNewNom(p => ({ ...p, role: Number(e.target.value) }))}
+              style={{ width: '100%', padding: '9px 10px', background: C.bg, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 12, fontFamily: "'IBM Plex Mono', monospace" }}
             >
-              {['ELECTION','DIVIDEND','RECALL','AMENDMENT'].map(t => <option key={t}>{t}</option>)}
+              {ROLES.map((r, i) => (
+                <option key={i} value={i} style={{ background: C.bg, color: C.text }}>{r}</option>
+              ))}
             </select>
+
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Candidate address</div>
             <input
-              style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, outline: 'none' }}
-              placeholder="Description"
-              value={newP.description}
-              onChange={e => setNewP(p => ({ ...p, description: e.target.value }))}
+              style={{ width: '100%', padding: '9px 10px', background: C.bg, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 12, outline: 'none', fontFamily: "'IBM Plex Mono', monospace", boxSizing: 'border-box' }}
+              placeholder="0x…"
+              value={newNom.candidate}
+              onChange={e => setNewNom(p => ({ ...p, candidate: e.target.value }))}
             />
-            {newP.options.map((opt, i) => (
-              <input
-                key={i}
-                style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 8, outline: 'none' }}
-                placeholder={`Option ${i + 1}`}
-                value={opt}
-                onChange={e => setNewP(p => ({ ...p, options: p.options.map((o, idx) => idx === i ? e.target.value : o) }))}
-              />
-            ))}
-            <button onClick={() => setNewP(p => ({ ...p, options: [...p.options, ''] }))} style={{ fontSize: 11, color: C.faint, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 8 }}>
-              + Add option
-            </button>
+
+            {actionError && (
+              <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{actionError}</div>
+            )}
+
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setCreating(false)} style={smallBtn(C.faint, '#fff', C.border)}>Cancel</button>
-              <button onClick={createProposal} disabled={createPending} style={{ ...smallBtn(C.gold), flex: 1 }}>
-                {createPending ? 'Submitting...' : 'Create Proposal →'}
+              <button onClick={() => { setNominating(false); setActionError(null) }} style={smallBtn(C.border, C.sub)}>
+                Cancel
+              </button>
+              <button onClick={doNominate} disabled={actionPending === 'nominate'} style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1 }}>
+                {actionPending === 'nominate' ? 'Submitting…' : 'Nominate →'}
               </button>
             </div>
           </div>
         )}
 
-        {loading && (
-          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>Loading proposals...</div>
+        {actionError && !nominating && (
+          <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{actionError}</div>
         )}
 
-        {!loading && proposals.length === 0 && (
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>Loading elections…</div>
+        )}
+
+        {!loading && elecs.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: C.faint, fontSize: 12 }}>
-            No proposals yet. The first MCC election is scheduled for January 2027.
+            No elections yet. Citizens may nominate candidates for CEO, CFO, or COO.
           </div>
         )}
 
-        {voteError && (
-          <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{voteError}</div>
-        )}
-
-        {open.length > 0 && (
+        {openElecs.length > 0 && (
           <>
-            <SectionLabel label="OPEN" color={C.green} />
-            {open.map(p => (
-              <ProposalCard
-                key={p.id}
-                proposal={p}
-                expanded={expanded === p.id}
-                onToggle={() => setExpanded(e => e === p.id ? null : p.id)}
-                onVote={(optIdx) => castVote(p.id, optIdx)}
+            <div style={{ fontSize: 10, color: C.green, letterSpacing: '0.12em', marginBottom: 8, marginTop: 4 }}>OPEN</div>
+            {openElecs.map(e => (
+              <ElectionCard
+                key={e.id}
+                election={e}
                 isCitizen={isCitizen}
-                isPending={voting === p.id}
+                actionPending={actionPending}
+                onVote={doVote}
+                onFinalise={doFinalise}
+                onExecute={doExecute}
               />
             ))}
           </>
         )}
 
-        {closed.length > 0 && (
+        {closedElecs.length > 0 && (
           <>
-            <SectionLabel label="CLOSED" color={C.faint} />
-            {closed.map(p => (
-              <ProposalCard
-                key={p.id}
-                proposal={p}
-                expanded={expanded === p.id}
-                onToggle={() => setExpanded(e => e === p.id ? null : p.id)}
+            <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.12em', marginBottom: 8, marginTop: openElecs.length > 0 ? 12 : 4 }}>HISTORY</div>
+            {closedElecs.map(e => (
+              <ElectionCard
+                key={e.id}
+                election={e}
+                isCitizen={false}
+                actionPending={null}
                 onVote={null}
-                isCitizen={isCitizen}
-                isPending={false}
+                onFinalise={null}
+                onExecute={null}
               />
             ))}
           </>
@@ -215,100 +288,116 @@ export default function Votes() {
   )
 }
 
-function ProposalCard({ proposal, expanded, onToggle, onVote, isCitizen, isPending }) {
-  const meta      = TYPE_META[proposal.proposalType] || TYPE_META.ELECTION
-  const totalVotes = proposal.voteCounts.reduce((s, v) => s + v, 0)
-  const deadline   = new Date(proposal.deadline * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+function ElectionCard({ election, isCitizen, actionPending, onVote, onFinalise, onExecute }) {
+  const { id, role, candidate, nominator, votesFor, votesAgainst, myVoted, status, timelockEndsAt } = election
+  const totalVotes = votesFor + votesAgainst
+
+  const statusMeta = {
+    VOTING:         { label: 'VOTING',           color: C.green  },
+    FINALISE_READY: { label: 'AWAITING FINALISE', color: C.gold   },
+    TIMELOCK:       { label: 'TIMELOCK',          color: C.blue   },
+    EXECUTE_READY:  { label: 'READY TO EXECUTE',  color: C.purple },
+    EXECUTED:       { label: 'EXECUTED',          color: C.faint  },
+    FAILED:         { label: 'FAILED',            color: C.red    },
+  }[status] || { label: status, color: C.faint }
+
+  const timelockDate = timelockEndsAt > 0
+    ? new Date(timelockEndsAt * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
 
   return (
-    <div style={{ background: C.white, border: `1px solid ${expanded ? C.gold : C.border}`, borderRadius: 8, marginBottom: 10, overflow: 'hidden' }}>
-      <div onClick={onToggle} style={{ padding: '14px 16px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 9, color: meta.color, border: `1px solid ${meta.color}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
-                {meta.label}
-              </span>
-              {proposal.myVoted && (
-                <span style={{ fontSize: 9, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>VOTED</span>
-              )}
-              {!proposal.isOpen && (
-                <span style={{ fontSize: 9, color: C.faint, border: `1px solid ${C.border}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>CLOSED</span>
-              )}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{proposal.description}</div>
-            <div style={{ fontSize: 11, color: C.faint, marginTop: 3 }}>
-              {proposal.isOpen ? `Closes ${deadline}` : `Closed ${deadline}`} · {totalVotes} vote{totalVotes !== 1 ? 's' : ''}
-            </div>
-          </div>
-          <span style={{ color: C.faint, fontSize: 14, flexShrink: 0 }}>{expanded ? '↑' : '↓'}</span>
+    <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 10 }}>
+
+      {/* Top row: role + status badges */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontSize: 9, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
+          {ROLES[role]}
+        </span>
+        <span style={{ fontSize: 9, color: statusMeta.color, border: `1px solid ${statusMeta.color}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
+          {statusMeta.label}
+        </span>
+        {myVoted && (
+          <span style={{ fontSize: 9, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>VOTED</span>
+        )}
+      </div>
+
+      {/* Candidate + vote tally */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: totalVotes > 0 ? 10 : 0 }}>
+        <div>
+          <div style={{ fontSize: 13, color: C.text, marginBottom: 3 }}>{shortAddr(candidate)}</div>
+          <div style={{ fontSize: 11, color: C.faint }}>Nominated by {shortAddr(nominator)}</div>
         </div>
-        {/* Mini bar */}
-        <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', marginTop: 10, background: '#f0f0f0' }}>
-          {proposal.voteCounts.map((v, i) => (
-            <div key={i} style={{ width: totalVotes > 0 ? `${(v / totalVotes) * 100}%` : 0, background: optColor(i) }} />
-          ))}
+        <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+          <div style={{ fontSize: 12, color: C.green }}>{votesFor} FOR</div>
+          <div style={{ fontSize: 12, color: C.red }}>{votesAgainst} AGAINST</div>
         </div>
       </div>
 
-      {expanded && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: '14px 16px' }}>
-          {proposal.options.map((opt, i) => {
-            const pct = totalVotes > 0 ? Math.round((proposal.voteCounts[i] / totalVotes) * 100) : 0
-            return (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, color: C.text }}>{opt}</span>
-                  <span style={{ fontSize: 12, color: C.faint }}>{proposal.voteCounts[i]} ({pct}%)</span>
-                </div>
-                <div style={{ background: '#f0f0f0', borderRadius: 3, height: 6, overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: optColor(i) }} />
-                </div>
-              </div>
-            )
-          })}
-
-          <div style={{ fontSize: 11, color: C.faint, marginTop: 8, marginBottom: 12 }}>
-            {totalVotes} vote{totalVotes !== 1 ? 's' : ''} cast
-          </div>
-
-          {proposal.isOpen && !proposal.myVoted && isCitizen && (
-            <div>
-              <div style={{ fontSize: 11, color: C.faint, marginBottom: 8 }}>Cast your vote:</div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {proposal.options.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onVote(i)}
-                    disabled={isPending}
-                    style={{ padding: '9px 16px', background: optColor(i), color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 500, opacity: isPending ? 0.5 : 1 }}
-                  >
-                    {isPending ? '...' : opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {proposal.isOpen && proposal.myVoted && (
-            <div style={{ fontSize: 12, color: C.green }}>✓ Vote recorded on-chain</div>
-          )}
-          {proposal.isOpen && !isCitizen && (
-            <div style={{ fontSize: 12, color: C.faint }}>Join the colony to participate in governance.</div>
-          )}
+      {/* Vote bar */}
+      {totalVotes > 0 && (
+        <div style={{ display: 'flex', height: 4, borderRadius: 2, overflow: 'hidden', background: C.border, marginBottom: 10 }}>
+          <div style={{ width: `${(votesFor / totalVotes) * 100}%`, background: C.green }} />
+          <div style={{ width: `${(votesAgainst / totalVotes) * 100}%`, background: C.red }} />
         </div>
+      )}
+
+      {timelockDate && status === 'TIMELOCK' && (
+        <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>Timelock expires {timelockDate}</div>
+      )}
+
+      {/* Action buttons */}
+      {status === 'VOTING' && !myVoted && isCitizen && onVote && (
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button
+            onClick={() => onVote(id, true)}
+            disabled={!!actionPending}
+            style={{ ...smallBtn(C.green, '#fff'), flex: 1 }}
+          >
+            {actionPending === `vote-${id}` ? '…' : 'FOR'}
+          </button>
+          <button
+            onClick={() => onVote(id, false)}
+            disabled={!!actionPending}
+            style={{ ...smallBtn(C.red, '#fff'), flex: 1 }}
+          >
+            {actionPending === `vote-${id}` ? '…' : 'AGAINST'}
+          </button>
+        </div>
+      )}
+      {status === 'VOTING' && myVoted && (
+        <div style={{ fontSize: 12, color: C.green, marginTop: 8 }}>✓ Vote recorded on-chain</div>
+      )}
+      {status === 'FINALISE_READY' && onFinalise && (
+        <button
+          onClick={() => onFinalise(id)}
+          disabled={!!actionPending}
+          style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 10 }}
+        >
+          {actionPending === `fin-${id}` ? '…' : 'Finalise Election →'}
+        </button>
+      )}
+      {status === 'EXECUTE_READY' && onExecute && (
+        <button
+          onClick={() => onExecute(id)}
+          disabled={!!actionPending}
+          style={{ ...smallBtn(C.purple, '#fff'), marginTop: 10 }}
+        >
+          {actionPending === `exec-${id}` ? '…' : 'Execute →'}
+        </button>
       )}
     </div>
   )
 }
 
-function SectionLabel({ label, color }) {
-  return <div style={{ fontSize: 10, color, letterSpacing: '0.12em', marginBottom: 8, marginTop: 4 }}>{label}</div>
-}
-
-function optColor(i) {
-  return ['#B8860B', '#16a34a', '#8b5cf6', '#3b82f6', '#ef4444'][i % 5]
-}
-
-function smallBtn(bg, color = '#fff', border) {
-  return { padding: '9px 14px', background: bg, color, border: border ? `1px solid ${border}` : 'none', borderRadius: 6, fontSize: 11, cursor: 'pointer' }
+function smallBtn(bg, color = C.text, border) {
+  return {
+    padding: '9px 14px',
+    background: bg,
+    color,
+    border: border ? `1px solid ${border}` : 'none',
+    borderRadius: 6,
+    fontSize: 11,
+    cursor: 'pointer',
+    fontFamily: "'IBM Plex Mono', monospace",
+  }
 }
