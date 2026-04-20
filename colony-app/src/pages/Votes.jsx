@@ -181,10 +181,24 @@ export default function Votes() {
     setActionPending(`open-${roleIdx}`); setActionError(null); setOpeningRole(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      // Simulate first to get a real revert reason
-      await gov.openElection.staticCall(roleIdx)
+      // Simulate first — if already active the election was opened by a prior tx,
+      // just refresh to show it rather than erroring
+      try {
+        await gov.openElection.staticCall(roleIdx)
+      } catch (simErr) {
+        const reason = govErr(simErr)
+        if (reason.includes('already active')) {
+          // Election exists but RPC was stale — just reload
+          await load()
+          setActionPending(null)
+          return
+        }
+        throw simErr
+      }
       const tx = await gov.openElection(roleIdx, GAS)
       await tx.wait()
+      // Short delay so RPC has time to index the new block
+      await new Promise(r => setTimeout(r, 1500))
       await load()
     } catch (e) {
       setActionError(govErr(e))
