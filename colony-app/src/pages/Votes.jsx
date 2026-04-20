@@ -90,11 +90,65 @@ export default function Votes() {
   const [nomElecId,     setNomElecId]     = useState(null)  // electionId to nominate into
   const [nomCandidate,  setNomCandidate]  = useState('')
 
+  // loadElections — reads only governance state, uses signer provider (always current)
+  // Called after every write tx so stale public RPC lag doesn't hide new state.
+  async function loadElections() {
+    if (!signer || !govAddress) return
+    try {
+      const gov    = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const nowSec = Math.floor(Date.now() / 1000)
+      const holders = await Promise.all([0, 1, 2].map(r => gov.roleHolder(r)))
+      setRoleHolders(holders)
+      const nextId = Number(await gov.nextId())
+      const loaded = []
+      for (let i = 1; i < nextId; i++) {
+        const e = await gov.elections(i)
+        if (e.openedBy === ethers.ZeroAddress) continue
+        const [rawCandidates, myVoted] = await Promise.all([
+          gov.getCandidates(i),
+          address ? gov.hasVoted(address, i) : Promise.resolve(false),
+        ])
+        const candidateData = await Promise.all(
+          rawCandidates.map(async addr => ({
+            address: addr,
+            votes:   Number(await gov.getCandidateVotes(i, addr)),
+          }))
+        )
+        const entry = {
+          id:               i,
+          role:             Number(e.role),
+          openedBy:         e.openedBy,
+          openedAt:         Number(e.openedAt),
+          nominationEndsAt: Number(e.nominationEndsAt),
+          votingEndsAt:     Number(e.votingEndsAt),
+          timelockEndsAt:   Number(e.timelockEndsAt),
+          winner:           e.winner,
+          executed:         e.executed,
+          cancelled:        e.cancelled,
+          candidates:       candidateData,
+          myVoted,
+          myVotedFor:       null,
+        }
+        entry.status = electionStatus(entry, nowSec)
+        loaded.push(entry)
+      }
+      setElecs(prev => {
+        const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
+        return loaded.reverse().map(e => ({
+          ...e,
+          myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
+          myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
+        }))
+      })
+    } catch (err) {
+      console.warn('loadElections error', err)
+    }
+  }
+
   async function load() {
     if (!govAddress || !colonyAddr || !provider) { setLoading(false); return }
     try {
-      // Prefer the wallet provider (always on latest block) over the public RPC
-      const rpc    = provider || new ethers.JsonRpcProvider(RPC)
+      const rpc    = new ethers.JsonRpcProvider(RPC)
       const gov    = new ethers.Contract(govAddress, GOV_ABI, rpc)
       const nowSec = Math.floor(Date.now() / 1000)
 
@@ -193,7 +247,7 @@ export default function Votes() {
       }
 
       if (skipSend) {
-        await load()
+        await loadElections()
         setActionPending(null)
         return
       }
@@ -238,8 +292,8 @@ export default function Votes() {
         }
       }
 
-      // Background refresh — public RPC will catch up eventually
-      setTimeout(() => load(), 3000)
+      // Background refresh via public RPC
+      setTimeout(() => load(), 4000)
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -255,7 +309,7 @@ export default function Votes() {
       const tx  = await gov.nominateCandidate(nomElecId, nomCandidate, GAS)
       await tx.wait()
       setNomElecId(null); setNomCandidate('')
-      await load()
+      await loadElections()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -278,7 +332,7 @@ export default function Votes() {
           : c
         ),
       } : e))
-      load()
+      loadElections()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -292,7 +346,7 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.finaliseElection(electionId, GAS)
       await tx.wait()
-      await load()
+      await loadElections()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -306,7 +360,7 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.executeElection(electionId, GAS)
       await tx.wait()
-      await load()
+      await loadElections()
     } catch (e) {
       setActionError(govErr(e))
     }
@@ -320,7 +374,7 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.resign(roleIdx, GAS)
       await tx.wait()
-      await load()
+      await loadElections()
     } catch (e) {
       setActionError(govErr(e))
     }
