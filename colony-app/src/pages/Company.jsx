@@ -839,7 +839,15 @@ export default function Company() {
 
         {/* ── Contracts ── */}
         {tab === 'contracts' && (
-          <ContractsTab contracts={[]} isOwner={isEquityHolder} companyId={companyId} />
+          <ContractsTab
+            companyId={companyId}
+            companyName={company.name}
+            isSecretary={isSecretary}
+            slug={slug}
+            signer={signer}
+            address={address}
+            deployedContracts={deployedContracts}
+          />
         )}
 
         {/* ── Transactions ── */}
@@ -921,115 +929,359 @@ export default function Company() {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function ContractsTab({ contracts, isOwner, companyId }) {
-  const [creating, setCreating] = useState(false)
-  const [cType,    setCType]    = useState('forward')
-  const [cContra,  setCContra]  = useState('')
-  const [cAmount,  setCAmount]  = useState('')
-  const [cPct,     setCPct]     = useState('')
-  const [cDate,    setCDate]    = useState('')
-  const [cDesc,    setCDesc]    = useState('')
-  const [localCs,  setLocal]    = useState(contracts)
-  const [expanded, setExpanded] = useState(null)
+const FACTORY_ABI_CO = [
+  "function companyCount() view returns (uint256)",
+  "function getCompany(uint256) view returns (string, address, address, uint256, uint256)",
+]
+const COMPANY_PAY_ABI = [
+  "function pay(address, uint256, string) external",
+]
 
-  const active = localCs.filter(c => c.status === 'active')
-  const closed  = localCs.filter(c => c.status !== 'active')
+function ContractsTab({ companyId, companyName, isSecretary, slug, signer, address, deployedContracts }) {
+  const addr = companyId?.toLowerCase()
 
-  function confirmDelivery(id) {
-    setLocal(cs => cs.map(c => c.id === id ? { ...c, status: 'settled' } : c))
-  }
+  // ── Data loading ───────────────────────────────────────────────────────────
+  const [contracts,    setContracts]    = useState([])
+  const [invoices,     setInvoices]     = useState([])
+  const [companies,    setCompanies]    = useState([])   // other colony companies for buyer picker
+  const [loading,      setLoading]      = useState(true)
+  const [reloadKey,    setReloadKey]    = useState(0)
 
-  function createContract() {
-    const newC = {
-      id: `c-new-${Date.now()}`, type: cType,
-      title: cDesc || `New ${cType} contract`,
-      counterpartyLabel: cContra || 'Counterparty',
-      counterparty: '0x????…????',
-      amount: Number(cAmount) || 0, pct: Number(cPct) || 0,
-      settleDate: cDate || 'End of month',
-      status: 'active', role: 'buyer', description: cDesc, revenueSharedMTD: 0,
+  useEffect(() => {
+    if (!addr || !slug) { setLoading(false); return }
+    setLoading(true)
+    fetch(`/api/contracts?colony=${slug}&companyAddr=${addr}`)
+      .then(r => r.json())
+      .then(({ contracts: cs, invoices: inv }) => {
+        setContracts(cs || [])
+        setInvoices(inv  || [])
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [addr, slug, reloadKey])
+
+  useEffect(() => {
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.companyFactory) return
+    const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const factory = new ethers.Contract(cfg.companyFactory, FACTORY_ABI_CO, rpc)
+    factory.companyCount().then(async count => {
+      const all = await Promise.all(
+        Array.from({ length: Number(count) }, (_, i) =>
+          factory.getCompany(i).then(([name, wallet]) => ({ name, address: wallet.toLowerCase() }))
+        )
+      )
+      setCompanies(all.filter(c => c.address !== addr))
+    }).catch(() => {})
+  }, [slug, deployedContracts, addr])
+
+  // ── Create contract form state ─────────────────────────────────────────────
+  const [creating,  setCreating]  = useState(false)
+  const [cBuyer,    setCBuyer]    = useState('')
+  const [cDesc,     setCDesc]     = useState('')
+  const [cPrice,    setCPrice]    = useState('')
+  const [cSchedule, setCSchedule] = useState('on delivery')
+  const [cEndsAt,   setCEndsAt]   = useState('')
+  const [cSaving,   setCSaving]   = useState(false)
+  const [cError,    setCError]    = useState(null)
+
+  async function handleCreate() {
+    if (!cBuyer || !cDesc) return
+    setCSaving(true); setCError(null)
+    const buyer = companies.find(c => c.address === cBuyer)
+    try {
+      const r = await fetch('/api/contracts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create', colony: slug,
+          sellerAddr: addr, buyerAddr: cBuyer,
+          sellerName: companyName, buyerName: buyer?.name || cBuyer.slice(0, 10),
+          description: cDesc,
+          pricePerDelivery: Number(cPrice) || 0,
+          schedule: cSchedule,
+          endsAt: cEndsAt || null,
+        }),
+      })
+      if (!r.ok) throw new Error((await r.json()).error)
+      setCreating(false)
+      setCBuyer(''); setCDesc(''); setCPrice(''); setCSchedule('on delivery'); setCEndsAt('')
+      setReloadKey(k => k + 1)
+    } catch (e) {
+      setCError(e.message)
     }
-    setLocal(cs => [newC, ...cs])
-    setCreating(false)
-    setCContra(''); setCAmount(''); setCPct(''); setCDate(''); setCDesc('')
+    setCSaving(false)
   }
+
+  // ── Invoice state (per contract) ───────────────────────────────────────────
+  const [invoicing,   setInvoicing]   = useState(null)  // contractId
+  const [invAmt,      setInvAmt]      = useState('')
+  const [invDesc,     setInvDesc]     = useState('')
+  const [invSaving,   setInvSaving]   = useState(false)
+  const [invError,    setInvError]    = useState(null)
+
+  async function handleInvoice(contract) {
+    setInvSaving(true); setInvError(null)
+    try {
+      const r = await fetch('/api/contracts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'invoice', contractId: contract.id,
+          amount: Number(invAmt) || contract.price_per_delivery,
+          description: invDesc || contract.description,
+        }),
+      })
+      if (!r.ok) throw new Error((await r.json()).error)
+      setInvoicing(null); setInvAmt(''); setInvDesc('')
+      setReloadKey(k => k + 1)
+    } catch (e) {
+      setInvError(e.message)
+    }
+    setInvSaving(false)
+  }
+
+  // ── Payment ────────────────────────────────────────────────────────────────
+  const [paying,    setPaying]    = useState(null)   // invoiceId
+  const [payError,  setPayError]  = useState(null)
+
+  async function handlePay(invoice) {
+    if (!signer) return
+    setPaying(invoice.id); setPayError(null)
+    try {
+      const co = new ethers.Contract(companyId, COMPANY_PAY_ABI, signer)
+      const tx = await co.pay(
+        invoice.seller_addr,
+        ethers.parseEther(String(invoice.amount)),
+        `Invoice #${invoice.invoice_number} — ${invoice.description}`,
+      )
+      const receipt = await tx.wait()
+      await fetch('/api/contracts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pay_invoice', invoiceId: invoice.id, txHash: receipt.hash }),
+      })
+      setReloadKey(k => k + 1)
+    } catch (e) {
+      setPayError(invoice.id + ':' + (e?.reason || e?.shortMessage || e.message))
+    }
+    setPaying(null)
+  }
+
+  async function handleStatus(contractId, status) {
+    await fetch('/api/contracts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: status, contractId }),
+    })
+    setReloadKey(k => k + 1)
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  const active = contracts.filter(c => c.status === 'active')
+  const closed = contracts.filter(c => c.status !== 'active')
+
+  const fmtDate = iso => iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+
+  if (loading) return <div style={{ padding: 24, textAlign: 'center', fontSize: 12, color: C.faint }}>Loading…</div>
 
   return (
     <div>
-      <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
-        Intra-month contracts commit S-token flows within the current month.
-        All contracts must settle by month end — unsettled escrow is destroyed with unspent S-tokens.
-      </div>
-
-      {isOwner && !creating && (
+      {/* New contract button — only secretary/seller can initiate */}
+      {isSecretary && !creating && (
         <button onClick={() => setCreating(true)} style={{ ...ghostBtn, width: '100%', marginBottom: 12 }}>
-          + New contract
+          + New supply contract
         </button>
       )}
 
+      {/* Create form */}
       {creating && (
-        <div style={{ ...card, borderColor: C.gold, background: `${C.gold}10`, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW CONTRACT</div>
-          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
-            {['forward','escrow','revenue-share'].map(t => (
-              <button key={t} onClick={() => setCType(t)} style={{
-                flex: 1, padding: '8px 4px',
-                background: cType === t ? C.gold : C.white,
-                color: cType === t ? C.bg : C.sub,
-                border: `1px solid ${cType === t ? C.gold : C.border}`,
-                borderRadius: 6, fontSize: 10, cursor: 'pointer',
-              }}>
-                {t === 'revenue-share' ? 'Rev Share' : t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
+        <div style={{ ...card, borderColor: C.gold, background: `${C.gold}08`, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SUPPLY CONTRACT</div>
+          <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
+            {companyName} is the supplier. Select the buyer company, describe what is being supplied, and set the standard invoice price.
           </div>
-          <div style={{ fontSize: 11, color: C.faint, marginBottom: 12, lineHeight: 1.6 }}>
-            {cType === 'forward'       && 'Buyer pre-commits S-tokens in escrow. Released to seller on delivery confirmation.'}
-            {cType === 'escrow'        && 'Tokens deposited with Fisc, released when a defined condition is met.'}
-            {cType === 'revenue-share' && 'A % of inbound S-token revenue is routed automatically to the counterparty.'}
+
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>BUYER</div>
+            <select style={{ ...inlineInput, width: '100%', fontFamily: "'IBM Plex Mono', monospace" }}
+              value={cBuyer} onChange={e => setCBuyer(e.target.value)}>
+              <option value="">Select company…</option>
+              {companies.map(c => <option key={c.address} value={c.address}>{c.name}</option>)}
+            </select>
           </div>
-          <CField label="Counterparty wallet or name" value={cContra}  onChange={setCContra} placeholder="0x… or company name" />
-          {cType === 'revenue-share'
-            ? <CField label="Revenue share %" value={cPct}    onChange={setCPct}    placeholder="e.g. 15"  type="number" />
-            : <CField label="S-token amount"   value={cAmount} onChange={setCAmount} placeholder="e.g. 200" type="number" />
-          }
-          <CField label="Settlement date (this month)" value={cDate} onChange={setCDate} placeholder="e.g. 25 Apr 2026" />
-          <CField label="Description" value={cDesc} onChange={setCDesc} placeholder="Brief description of the arrangement" />
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button onClick={() => setCreating(false)} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1 }}>Cancel</button>
-            <button onClick={createContract} disabled={!cContra} style={{ ...actionBtn(C.gold), flex: 2, opacity: cContra ? 1 : 0.4 }}>
-              Create on-chain →
+
+          <CField label="What is being supplied" value={cDesc} onChange={setCDesc} placeholder="e.g. Daily delivery of cream buns" />
+          <CField label="Standard price per delivery (S)" value={cPrice} onChange={setCPrice} placeholder="e.g. 50" type="number" />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>SCHEDULE</div>
+              <select style={{ ...inlineInput, width: '100%', fontFamily: "'IBM Plex Mono', monospace" }}
+                value={cSchedule} onChange={e => setCSchedule(e.target.value)}>
+                {['on delivery','daily','weekly','monthly','per batch'].map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            <CField label="Contract end date" value={cEndsAt} onChange={setCEndsAt} placeholder="e.g. 31 May 2026" />
+          </div>
+
+          {cError && <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{cError}</div>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setCreating(false); setCError(null) }} style={{ ...actionBtn(C.faint, C.white), border: `1px solid ${C.border}`, flex: 1 }}>
+              Cancel
+            </button>
+            <button onClick={handleCreate} disabled={cSaving || !cBuyer || !cDesc}
+              style={{ ...actionBtn(C.gold), flex: 2, opacity: (!cBuyer || !cDesc || cSaving) ? 0.4 : 1 }}>
+              {cSaving ? 'Saving…' : 'Create contract →'}
             </button>
           </div>
         </div>
       )}
 
-      {active.length > 0 && (
-        <>
-          <div style={{ fontSize: 10, color: C.green, letterSpacing: '0.1em', marginBottom: 8 }}>ACTIVE</div>
-          {active.map(c => (
-            <ContractCard key={c.id} contract={c} isOwner={isOwner}
-              expanded={expanded === c.id}
-              onToggle={() => setExpanded(e => e === c.id ? null : c.id)}
-              onSettle={() => confirmDelivery(c.id)}
-            />
-          ))}
-        </>
-      )}
+      {/* Active contracts */}
+      {active.map(contract => {
+        const isSeller = contract.seller_addr === addr
+        const isBuyer  = contract.buyer_addr  === addr
+        const contractInvoices = invoices.filter(inv => inv.contract_id === contract.id)
+        const pending  = contractInvoices.filter(inv => inv.status === 'pending')
+        const paid     = contractInvoices.filter(inv => inv.status === 'paid')
+        const isRaisingInvoice = invoicing === contract.id
+
+        return (
+          <div key={contract.id} style={{ ...card, borderColor: C.border }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                  <Badge label="SUPPLY" color={C.gold} />
+                  <Badge label="ACTIVE" color={C.green} />
+                  <Badge label={isSeller ? 'SELLER' : 'BUYER'} color={isSeller ? C.green : '#3b82f6'} />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 500, color: C.text, marginBottom: 2 }}>{contract.description}</div>
+                <div style={{ fontSize: 11, color: C.faint }}>
+                  {isSeller ? `Buyer: ${contract.buyer_name}` : `Supplier: ${contract.seller_name}`}
+                  {' · '}{contract.schedule}
+                  {contract.price_per_delivery > 0 && ` · ${contract.price_per_delivery} S/delivery`}
+                  {contract.ends_at && ` · ends ${fmtDate(contract.ends_at)}`}
+                </div>
+              </div>
+              {isSecretary && (
+                <button onClick={() => handleStatus(contract.id, 'complete')}
+                  style={{ fontSize: 10, color: C.faint, background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0, marginLeft: 8 }}>
+                  Mark complete
+                </button>
+              )}
+            </div>
+
+            {/* Pending invoices — buyer sees these with Pay button */}
+            {pending.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>PENDING INVOICES</div>
+                {pending.map(inv => {
+                  const errKey = `${inv.id}:${inv.description}`
+                  return (
+                    <div key={inv.id} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '8px 10px', background: '#fffbf0', border: `1px solid ${C.gold}40`,
+                      borderRadius: 6, marginBottom: 4,
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: C.text }}>Invoice #{inv.invoice_number} — {inv.description}</div>
+                        <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.created_at)}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.gold }}>{inv.amount} S</div>
+                        {isBuyer && isSecretary && (
+                          <button
+                            onClick={() => handlePay(inv)}
+                            disabled={paying === inv.id}
+                            style={{ ...actionBtn(C.gold), fontSize: 10, padding: '6px 12px', opacity: paying === inv.id ? 0.4 : 1 }}
+                          >
+                            {paying === inv.id ? 'Paying…' : 'Pay →'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+                {payError && payError.startsWith(pending[0]?.id) && (
+                  <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{payError.split(':').slice(1).join(':')}</div>
+                )}
+              </div>
+            )}
+
+            {/* Paid invoices summary */}
+            {paid.length > 0 && (
+              <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>
+                {paid.length} invoice{paid.length !== 1 ? 's' : ''} paid · {paid.reduce((s, i) => s + i.amount, 0)} S total
+              </div>
+            )}
+
+            {/* Raise invoice — seller only */}
+            {isSeller && isSecretary && !isRaisingInvoice && (
+              <button onClick={() => { setInvoicing(contract.id); setInvAmt(String(contract.price_per_delivery || '')); setInvDesc('') }}
+                style={{ ...ghostBtn, width: '100%', fontSize: 10 }}>
+                + Raise invoice
+              </button>
+            )}
+            {isRaisingInvoice && (
+              <div style={{ background: '#f9f9f9', border: `1px solid ${C.border}`, borderRadius: 6, padding: 10 }}>
+                <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 8 }}>RAISE INVOICE</div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  <div style={{ flex: 2 }}>
+                    <input style={{ ...inlineInput, width: '100%' }} placeholder="Delivery note (optional)"
+                      value={invDesc} onChange={e => setInvDesc(e.target.value)} />
+                  </div>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} type="number" placeholder="Amount"
+                      value={invAmt} onChange={e => setInvAmt(e.target.value)} />
+                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>S</span>
+                  </div>
+                </div>
+                {invError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{invError}</div>}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setInvoicing(null); setInvError(null) }} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+                  <button onClick={() => handleInvoice(contract)} disabled={invSaving || !invAmt}
+                    style={{ ...actionBtn(C.gold), flex: 2, opacity: (!invAmt || invSaving) ? 0.4 : 1 }}>
+                    {invSaving ? 'Sending…' : 'Send invoice →'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Closed contracts */}
       {closed.length > 0 && (
-        <>
-          <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 8, marginTop: 8 }}>CLOSED</div>
-          {closed.map(c => (
-            <ContractCard key={c.id} contract={c} isOwner={false}
-              expanded={expanded === c.id}
-              onToggle={() => setExpanded(e => e === c.id ? null : c.id)}
-              onSettle={null}
-            />
-          ))}
-        </>
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>CLOSED</div>
+          {closed.map(contract => {
+            const contractInvoices = invoices.filter(inv => inv.contract_id === contract.id)
+            const total = contractInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0)
+            return (
+              <div key={contract.id} style={{ ...card, opacity: 0.7 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                      <Badge label="SUPPLY" color={C.faint} />
+                      <Badge label={contract.status.toUpperCase()} color={C.faint} />
+                    </div>
+                    <div style={{ fontSize: 12, color: C.sub }}>{contract.description}</div>
+                    <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>
+                      {contract.seller_name} → {contract.buyer_name}
+                    </div>
+                  </div>
+                  {total > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: C.faint, flexShrink: 0, marginLeft: 12 }}>{total} S</div>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
-      {localCs.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 24, color: C.faint, fontSize: 12 }}>No contracts this month.</div>
+
+      {contracts.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 24, color: C.faint, fontSize: 12 }}>
+          No supply contracts yet.{isSecretary ? ' Create one above.' : ''}
+        </div>
       )}
     </div>
   )
@@ -1048,69 +1300,6 @@ function CField({ label, value, onChange, onBlur, placeholder, type, error }) {
         type={type || 'text'}
       />
       {error && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{error}</div>}
-    </div>
-  )
-}
-
-const CONTRACT_META = {
-  forward:         { label: 'FORWARD',    color: '#3b82f6' },
-  escrow:          { label: 'ESCROW',     color: '#8b5cf6' },
-  'revenue-share': { label: 'REV SHARE',  color: '#B8860B' },
-}
-const STATUS_META = {
-  active:    { label: 'ACTIVE',    color: '#16a34a' },
-  settled:   { label: 'SETTLED',   color: '#aaa'    },
-  cancelled: { label: 'CANCELLED', color: '#ef4444' },
-}
-
-function ContractCard({ contract: c, isOwner, expanded, onToggle, onSettle }) {
-  const tmeta = CONTRACT_META[c.type]  || CONTRACT_META.escrow
-  const smeta = STATUS_META[c.status] || STATUS_META.active
-  return (
-    <div style={{ background: C.white, border: `1px solid ${expanded ? C.gold : C.border}`, borderRadius: 8, marginBottom: 8, overflow: 'hidden' }}>
-      <div onClick={onToggle} style={{ padding: '12px 14px', cursor: 'pointer' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
-              <Badge label={tmeta.label} color={tmeta.color} />
-              <Badge label={smeta.label} color={smeta.color} />
-              {c.role && <Badge label={c.role.toUpperCase()} color={C.faint} />}
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: C.text }}>{c.title}</div>
-            <div style={{ fontSize: 11, color: C.faint, marginTop: 2 }}>
-              {c.counterpartyLabel} · Settles {c.settleDate}
-            </div>
-          </div>
-          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
-            {c.type === 'revenue-share'
-              ? <div style={{ fontSize: 13, fontWeight: 500, color: tmeta.color }}>{c.pct}%</div>
-              : <div style={{ fontSize: 13, fontWeight: 500, color: tmeta.color }}>{c.amount} S</div>
-            }
-            <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{expanded ? '↑' : '↓'}</div>
-          </div>
-        </div>
-      </div>
-      {expanded && (
-        <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 14px' }}>
-          <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 10 }}>{c.description}</div>
-          {c.type === 'revenue-share' && c.revenueSharedMTD !== undefined && (
-            <div style={{ fontSize: 12, color: C.gold, marginBottom: 10 }}>
-              Revenue shared month-to-date: {c.revenueSharedMTD} S
-            </div>
-          )}
-          <div style={{ fontSize: 11, color: C.faint, fontFamily: 'monospace', marginBottom: 12 }}>
-            Counterparty: {c.counterparty}
-          </div>
-          {c.status === 'active' && isOwner && c.role === 'buyer' && c.type !== 'revenue-share' && (
-            <button onClick={onSettle} style={{ ...actionBtn(C.green), width: '100%' }}>
-              Confirm delivery & release escrow →
-            </button>
-          )}
-          {c.status === 'settled' && (
-            <div style={{ fontSize: 12, color: C.faint }}>Settled — tokens released.</div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
