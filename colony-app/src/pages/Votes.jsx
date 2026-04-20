@@ -160,8 +160,9 @@ export default function Votes() {
     // Fetch citizens independently — a loadFull failure must not suppress citizen names
     fetchCitizens(colonyAddr).then(applyCitizens).catch(() => {})
     try {
-      const rpc = new ethers.JsonRpcProvider(RPC)
-      const gov = new ethers.Contract(govAddress, GOV_ABI, rpc)
+      // Prefer MetaMask signer (always latest block) over public RPC which can lag by minutes
+      const readProv = signer ?? new ethers.JsonRpcProvider(RPC)
+      const gov = new ethers.Contract(govAddress, GOV_ABI, readProv)
       const loaded = await loadFull(gov)
       setElecs(prev => mergeElecs(prev, loaded))
     } catch (err) {
@@ -200,7 +201,7 @@ export default function Votes() {
     return result.sort((a, b) => b.id - a.id)
   }
 
-  useEffect(() => { load() }, [govAddress, colonyAddr, provider, address])
+  useEffect(() => { load() }, [govAddress, colonyAddr, provider, signer, address])
 
   // Retry citizen fetch when nominate form opens in case initial load was empty
   useEffect(() => {
