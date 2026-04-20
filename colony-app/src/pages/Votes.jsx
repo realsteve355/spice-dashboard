@@ -170,16 +170,22 @@ export default function Votes() {
     return () => clearInterval(t)
   }, [])
 
+  function govErr(e) {
+    return e?.reason || e?.shortMessage || e?.error?.reason || e?.error?.message || e?.message || 'Transaction failed'
+  }
+
+  const GAS = { gasLimit: 300000 }
+
   async function doOpenElection(roleIdx) {
     if (!signer || !govAddress) return
     setActionPending(`open-${roleIdx}`); setActionError(null); setOpeningRole(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.openElection(roleIdx)
+      const tx  = await gov.openElection(roleIdx, GAS)
       await tx.wait()
       await load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
@@ -190,12 +196,12 @@ export default function Votes() {
     setActionPending(`nom-${nomElecId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.nominateCandidate(nomElecId, nomCandidate)
+      const tx  = await gov.nominateCandidate(nomElecId, nomCandidate, GAS)
       await tx.wait()
       setNomElecId(null); setNomCandidate('')
       await load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
@@ -205,7 +211,7 @@ export default function Votes() {
     setActionPending(`vote-${electionId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.vote(electionId, candidate)
+      const tx  = await gov.vote(electionId, candidate, GAS)
       await tx.wait()
       setElecs(prev => prev.map(e => e.id === electionId ? {
         ...e,
@@ -218,7 +224,7 @@ export default function Votes() {
       } : e))
       load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
@@ -228,11 +234,11 @@ export default function Votes() {
     setActionPending(`fin-${electionId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.finaliseElection(electionId)
+      const tx  = await gov.finaliseElection(electionId, GAS)
       await tx.wait()
       await load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
@@ -242,11 +248,11 @@ export default function Votes() {
     setActionPending(`exec-${electionId}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.executeElection(electionId)
+      const tx  = await gov.executeElection(electionId, GAS)
       await tx.wait()
       await load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
@@ -256,11 +262,11 @@ export default function Votes() {
     setActionPending(`resign-${roleIdx}`); setActionError(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.resign(roleIdx)
+      const tx  = await gov.resign(roleIdx, GAS)
       await tx.wait()
       await load()
     } catch (e) {
-      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+      setActionError(govErr(e))
     }
     setActionPending(null)
   }
