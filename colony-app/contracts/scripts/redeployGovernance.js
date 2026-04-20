@@ -41,14 +41,14 @@ async function main() {
   // 1. Deploy new Governance (founder holds all three MCC roles initially)
   process.stdout.write("Deploying Governance… ");
   const Governance = await hre.ethers.getContractFactory("Governance");
-  const gov = await Governance.deploy(COLONY_ADDRESS, deployer.address, deployer.address, deployer.address);
+  const gov = await Governance.deploy(COLONY_ADDRESS, deployer.address, deployer.address, deployer.address, { gasLimit: 3000000n, maxFeePerGas: 10000000n });
   await gov.waitForDeployment();
   const govAddr = await gov.getAddress();
   console.log("✓", govAddr);
 
   // 2. Wire to colony
   process.stdout.write("Wiring colony.setGovernance… ");
-  const tx = await colony.setGovernance(govAddr);
+  const tx = await colony.setGovernance(govAddr, { gasLimit: 100000n, maxFeePerGas: 10000000n });
   await tx.wait();
   console.log("✓");
 
