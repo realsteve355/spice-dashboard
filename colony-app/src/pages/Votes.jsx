@@ -471,36 +471,33 @@ export default function Votes() {
         {nomElecId && (
           <div style={{ background: C.white, border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
             <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE A CANDIDATE</div>
-            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>
-              Candidate {citizens.length === 0 && <span style={{ color: C.faint }}>(enter address — citizen list loading)</span>}
-            </div>
-            {citizens.length > 0 ? (
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Candidate</div>
+            {citizens.length > 0 && (
               <select
                 value={nomCandidate}
                 onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
-                style={selectStyle}
+                style={{ ...selectStyle, marginBottom: 6 }}
               >
-                <option value="" style={{ background: '#f9f9f9', color: '#aaa' }}>— select a citizen —</option>
+                <option value="">— select a citizen —</option>
                 {citizens
                   .filter(c => {
                     const elec = elecs.find(e => e.id === nomElecId)
                     return !elec?.candidates.some(cd => cd.address.toLowerCase() === c.address.toLowerCase())
                   })
                   .map(c => (
-                    <option key={c.address} value={c.address} style={{ background: '#f9f9f9', color: '#111' }}>
+                    <option key={c.address} value={c.address}>
                       {c.name} · {shortAddr(c.address)}
                     </option>
                   ))
                 }
               </select>
-            ) : (
-              <input
-                value={nomCandidate}
-                onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
-                placeholder="0x… wallet address"
-                style={{ ...selectStyle, outline: 'none', boxSizing: 'border-box' }}
-              />
             )}
+            <input
+              value={nomCandidate}
+              onChange={e => { setNomCandidate(e.target.value); setActionError(null) }}
+              placeholder={citizens.length > 0 ? 'or paste address directly…' : '0x… wallet address'}
+              style={{ ...selectStyle, outline: 'none', boxSizing: 'border-box' }}
+            />
             {actionError && <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{actionError}</div>}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={() => { setNomElecId(null); setNomCandidate(''); setActionError(null) }} style={smallBtn(C.border, C.sub)}>
