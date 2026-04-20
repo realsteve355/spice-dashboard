@@ -40,8 +40,8 @@ function electionStatus(e, nowSec) {
   return 'NOMINATING'
 }
 
-async function fetchCitizens(colonyAddr) {
-  const rpc     = new ethers.JsonRpcProvider(RPC)
+async function fetchCitizens(colonyAddr, rpc) {
+  if (!rpc) rpc = new ethers.JsonRpcProvider(RPC)
   const toBlock = await rpc.getBlockNumber()
   const CHUNK   = 9000
   const chunks  = await Promise.all(
@@ -93,13 +93,14 @@ export default function Votes() {
   async function load() {
     if (!govAddress || !colonyAddr || !provider) { setLoading(false); return }
     try {
-      const rpc    = new ethers.JsonRpcProvider(RPC)
+      // Prefer the wallet provider (always on latest block) over the public RPC
+      const rpc    = provider || new ethers.JsonRpcProvider(RPC)
       const gov    = new ethers.Contract(govAddress, GOV_ABI, rpc)
       const nowSec = Math.floor(Date.now() / 1000)
 
       const [holders, citizenList] = await Promise.all([
         Promise.all([0, 1, 2].map(r => gov.roleHolder(r))),
-        fetchCitizens(colonyAddr),
+        fetchCitizens(colonyAddr, rpc),
       ])
       setRoleHolders(holders)
       setCitizens(citizenList)
@@ -189,6 +190,12 @@ export default function Votes() {
       } catch (simErr) {
         if (govErr(simErr).includes('already active')) { skipSend = true }
         else throw simErr
+      }
+
+      if (skipSend) {
+        await load()
+        setActionPending(null)
+        return
       }
 
       if (!skipSend) {
