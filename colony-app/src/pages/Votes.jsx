@@ -193,8 +193,8 @@ export default function Votes() {
     setActionPending(null)
   }
 
-  const openElecs   = elecs.filter(e => !['EXECUTED', 'FAILED'].includes(e.status))
-  const closedElecs = elecs.filter(e =>  ['EXECUTED', 'FAILED'].includes(e.status))
+  // Group elections by role for the "candidates proposed so far" view
+  const byRole = ROLES.map((_, i) => elecs.filter(e => e.role === i))
 
   return (
     <Layout title="Governance" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
@@ -310,41 +310,39 @@ export default function Votes() {
           </div>
         )}
 
-        {openElecs.length > 0 && (
-          <>
-            <div style={{ fontSize: 10, color: C.green, letterSpacing: '0.12em', marginBottom: 8, marginTop: 4 }}>OPEN</div>
-            {openElecs.map(e => (
-              <ElectionCard
-                key={e.id}
-                election={e}
-                nameMap={nameMap}
-                isCitizen={isCitizen}
-                actionPending={actionPending}
-                onVote={doVote}
-                onFinalise={doFinalise}
-                onExecute={doExecute}
-              />
-            ))}
-          </>
-        )}
-
-        {closedElecs.length > 0 && (
-          <>
-            <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.12em', marginBottom: 8, marginTop: openElecs.length > 0 ? 12 : 4 }}>HISTORY</div>
-            {closedElecs.map(e => (
-              <ElectionCard
-                key={e.id}
-                election={e}
-                nameMap={nameMap}
-                isCitizen={false}
-                actionPending={null}
-                onVote={null}
-                onFinalise={null}
-                onExecute={null}
-              />
-            ))}
-          </>
-        )}
+        {/* Role-grouped election history */}
+        {!loading && byRole.map((roleElecs, roleIdx) => {
+          if (roleElecs.length === 0) return null
+          const hasOpen = roleElecs.some(e => !['EXECUTED', 'FAILED'].includes(e.status))
+          return (
+            <div key={roleIdx} style={{ marginBottom: 20 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
+              }}>
+                <span style={{ fontSize: 11, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 8px', letterSpacing: '0.08em' }}>
+                  {ROLES[roleIdx]}
+                </span>
+                <div style={{ flex: 1, height: 1, background: C.border }} />
+                <span style={{ fontSize: 10, color: C.faint }}>
+                  {roleElecs.length} nomination{roleElecs.length !== 1 ? 's' : ''}
+                  {hasOpen ? ' · election open' : ''}
+                </span>
+              </div>
+              {roleElecs.map(e => (
+                <ElectionCard
+                  key={e.id}
+                  election={e}
+                  nameMap={nameMap}
+                  isCitizen={isCitizen}
+                  actionPending={actionPending}
+                  onVote={['EXECUTED', 'FAILED'].includes(e.status) ? null : doVote}
+                  onFinalise={['EXECUTED', 'FAILED'].includes(e.status) ? null : doFinalise}
+                  onExecute={['EXECUTED', 'FAILED'].includes(e.status) ? null : doExecute}
+                />
+              ))}
+            </div>
+          )
+        })}
 
       </div>
     </Layout>
@@ -364,12 +362,31 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
     FAILED:         { label: 'FAILED',            color: C.red    },
   }[status] || { label: status, color: C.faint }
 
-  const timelockDate = timelockEndsAt > 0
-    ? new Date(timelockEndsAt * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : null
+  const fmt = ts => new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
   const candidateName = nameMap[candidate?.toLowerCase()] || shortAddr(candidate)
   const nominatorName = nameMap[nominator?.toLowerCase()] || shortAddr(nominator)
+
+  // Build timeline line
+  const timelineItems = []
+  if (status === 'VOTING') {
+    timelineItems.push({ label: 'voting closes', value: fmt(votingEndsAt), color: C.green })
+  } else {
+    timelineItems.push({ label: 'voting closed', value: fmt(votingEndsAt), color: C.faint })
+  }
+  if (timelockEndsAt > 0) {
+    if (status === 'TIMELOCK') {
+      timelineItems.push({ label: 'timelock ends', value: fmt(timelockEndsAt), color: C.blue })
+    } else {
+      timelineItems.push({ label: 'timelock ended', value: fmt(timelockEndsAt), color: C.faint })
+    }
+  }
+  if (status === 'EXECUTE_READY') {
+    timelineItems.push({ label: 'ready to execute', value: '', color: C.purple })
+  }
+  if (status === 'EXECUTED') {
+    timelineItems.push({ label: 'executed', value: fmt(timelockEndsAt || votingEndsAt), color: C.faint })
+  }
 
   return (
     <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 10 }}>
@@ -416,9 +433,14 @@ function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onF
         </div>
       )}
 
-      {timelockDate && status === 'TIMELOCK' && (
-        <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>Timelock expires {timelockDate}</div>
-      )}
+      {/* Timeline */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px', marginTop: 2, marginBottom: 10 }}>
+        {timelineItems.map((t, i) => (
+          <span key={i} style={{ fontSize: 10, color: t.color }}>
+            {t.label}{t.value ? ` · ${t.value}` : ''}
+          </span>
+        ))}
+      </div>
 
       {/* Action buttons */}
       {status === 'VOTING' && !myVoted && isCitizen && onVote && (
