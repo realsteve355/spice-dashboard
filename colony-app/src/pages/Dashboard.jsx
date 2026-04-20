@@ -437,11 +437,15 @@ export default function Dashboard() {
       <div style={{ padding: '16px 16px 0' }}>
 
         {/* Wallet identity bar */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: C.white, border: `1px solid ${C.border}`,
-          borderRadius: 8, padding: '10px 14px', marginBottom: 12,
-        }}>
+        <div
+          onClick={() => navigate(`/colony/${slug}/profile`)}
+          style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            background: C.white, border: `1px solid ${C.border}`,
+            borderRadius: 8, padding: '10px 14px', marginBottom: 12,
+            cursor: 'pointer',
+          }}
+        >
           <div>
             <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
               {chain?.citizenName || '—'}
@@ -450,13 +454,16 @@ export default function Dashboard() {
               {chain?.citizenName ? 'citizen · ' : ''}{colony.name}
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>
-              {chain?.gTokenId > 0 ? `G#${String(chain.gTokenId).padStart(4,'0')}` : ''}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>
+                {chain?.gTokenId > 0 ? `G#${String(chain.gTokenId).padStart(4,'0')}` : ''}
+              </div>
+              <div style={{ fontSize: 9, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
+                {address ? `${address.slice(0,6)}…${address.slice(-4)}` : ''}
+              </div>
             </div>
-            <div style={{ fontSize: 9, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
-              {address ? `${address.slice(0,6)}…${address.slice(-4)}` : ''}
-            </div>
+            <span style={{ fontSize: 18, color: C.faint }}>›</span>
           </div>
         </div>
 
