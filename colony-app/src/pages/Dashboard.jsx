@@ -42,6 +42,7 @@ const COMPANY_FACTORY_ABI = [
 
 const COMPANY_IMPL_ABI = [
   "function secretary() view returns (address)",
+  "function getEquityTable() view returns (address[], uint256[], uint256[])",
 ]
 
 const OTOKEN_ABI = [
@@ -250,18 +251,25 @@ export default function Dashboard() {
     async function load() {
       try {
         const count = Number(await factory.companyCount())
-        const companies = await Promise.all(
+        const allCompanies = await Promise.all(
           Array.from({ length: count }, (_, i) => i).map(async id => {
             const [name, wallet] = await factory.getCompany(id)
             let isSecretary = false
+            let isEquityHolder = false
             try {
               const companyContract = new ethers.Contract(wallet, COMPANY_IMPL_ABI, rpc)
-              const secretary = await companyContract.secretary()
-              isSecretary = secretary.toLowerCase() === address.toLowerCase()
+              const [secretary, equityResult] = await Promise.all([
+                companyContract.secretary(),
+                companyContract.getEquityTable().catch(() => [[], [], []]),
+              ])
+              const myAddr = address.toLowerCase()
+              isSecretary    = secretary.toLowerCase() === myAddr
+              isEquityHolder = equityResult[0].some(h => h.toLowerCase() === myAddr)
             } catch {}
-            return { id, name, wallet, isSecretary }
+            return { id, name, wallet, isSecretary, isEquityHolder }
           })
         )
+        const companies = allCompanies.filter(co => co.isSecretary || co.isEquityHolder)
         if (!cancelled) setMyCompanies(companies)
       } catch (e) {
         console.warn('[Dashboard] load companies failed:', e?.message || e)
