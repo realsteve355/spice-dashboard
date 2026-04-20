@@ -138,7 +138,14 @@ export default function Votes() {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
       const tx  = await gov.vote(electionId, support)
       await tx.wait()
-      await load()
+      // Optimistic update — don't wait for RPC to propagate the new block
+      setElecs(prev => prev.map(e => e.id === electionId ? {
+        ...e,
+        myVoted:      true,
+        votesFor:     support ? e.votesFor + 1 : e.votesFor,
+        votesAgainst: support ? e.votesAgainst : e.votesAgainst + 1,
+      } : e))
+      load()  // background refresh to sync real chain state
     } catch (e) {
       setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
