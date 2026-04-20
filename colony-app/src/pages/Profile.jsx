@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
+import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { C } from '../theme'
 
@@ -37,7 +38,19 @@ export default function Profile() {
 
         {/* Identity */}
         <div style={card}>
-          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>IDENTITY</div>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 14 }}>IDENTITY</div>
+
+          {/* Profile photo — centred, editable */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+            <EntityImage
+              colony={slug}
+              entityType="citizen"
+              entityId={address?.toLowerCase()}
+              editable
+              size={80}
+              label={chain?.citizenName ? chain.citizenName.slice(0, 2).toUpperCase() : undefined}
+            />
+          </div>
 
           <Row label="Colony"      value={chain?.colonyName || slug} />
           <Div />

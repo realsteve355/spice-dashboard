@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
+import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { C } from '../theme'
 
@@ -344,15 +345,25 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
             borderBottom:  i < assets.length - 1 ? `1px solid ${C.border}` : 'none',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
-                  {a.name || `Asset #${a.id}`}
-                </div>
-                <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
-                  ID {a.id}
-                  {a.weightKg > 0 && ` · ${a.weightKg} kg`}
-                  {a.hasAI && ' · autonomous AI'}
-                  {a.depreciationBps > 0 && ` · ${a.depreciationBps} bps/epoch depreciation`}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <EntityImage
+                  colony={slug}
+                  entityType="asset"
+                  entityId={a.id}
+                  editable
+                  size={36}
+                  label={(a.name || `A${a.id}`).slice(0, 2).toUpperCase()}
+                />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>
+                    {a.name || `Asset #${a.id}`}
+                  </div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>
+                    ID {a.id}
+                    {a.weightKg > 0 && ` · ${a.weightKg} kg`}
+                    {a.hasAI && ' · autonomous AI'}
+                    {a.depreciationBps > 0 && ` · ${a.depreciationBps} bps/epoch depreciation`}
+                  </div>
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>

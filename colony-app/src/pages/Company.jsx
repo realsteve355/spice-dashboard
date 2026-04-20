@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
+import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 
@@ -450,23 +451,35 @@ export default function Company() {
 
         {/* Header card */}
         <div style={card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-            <div style={{ fontSize: 17, fontWeight: 500, color: C.text }}>{company.name}</div>
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
-              {myStake && (
-                <span style={{ fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '2px 8px' }}>
-                  {myStake.pct.toFixed(1)}% EQUITY
-                </span>
-              )}
-              {isSecretary && (
-                <span style={{ fontSize: 10, color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 10, padding: '2px 8px' }}>
-                  SECRETARY
-                </span>
-              )}
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <EntityImage
+              colony={slug}
+              entityType="company"
+              entityId={companyId.toLowerCase()}
+              editable={isSecretary}
+              size={56}
+              label={company.name.slice(0, 2).toUpperCase()}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                <div style={{ fontSize: 17, fontWeight: 500, color: C.text }}>{company.name}</div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
+                  {myStake && (
+                    <span style={{ fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '2px 8px' }}>
+                      {myStake.pct.toFixed(1)}% EQUITY
+                    </span>
+                  )}
+                  {isSecretary && (
+                    <span style={{ fontSize: 10, color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 10, padding: '2px 8px' }}>
+                      SECRETARY
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: C.faint }}>
+                {company.equity.length} shareholder{company.equity.length !== 1 ? 's' : ''} · {companyId.slice(0,8)}…{companyId.slice(-4)}
+              </div>
             </div>
-          </div>
-          <div style={{ fontSize: 11, color: C.faint }}>
-            {company.equity.length} shareholder{company.equity.length !== 1 ? 's' : ''} · {companyId.slice(0,8)}…{companyId.slice(-4)}
           </div>
         </div>
 
