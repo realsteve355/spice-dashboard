@@ -101,6 +101,7 @@ contract CompanyImplementation is Initializable {
     event SharesForfeited(uint256 indexed assetId, uint256 forfeitedBps);
     event SharesBoughtBack(uint256 indexed assetId, uint256 bps, uint256 priceS);
     event DirectorSharesRedeemed(address indexed exDirector, uint256 totalVPaid);
+    event NameChanged(string oldName, string newName);
     event OfficerAppointed(string role, address indexed addr);
     event OfficerRemoved(string role);
     event SecretaryChanged(address indexed from, address indexed to);
@@ -151,6 +152,17 @@ contract CompanyImplementation is Initializable {
     modifier onlyColony() {
         require(msg.sender == colony, "Company: not Colony");
         _;
+    }
+
+    // ── Name ────────────────────────────────────────────────────────────────
+
+    /**
+     * @notice Update the company display name. Secretary only.
+     */
+    function setName(string calldata newName) external onlySecretary {
+        require(bytes(newName).length > 0, "Company: empty name");
+        emit NameChanged(name, newName);
+        name = newName;
     }
 
     // ── Officer management ───────────────────────────────────────────────────

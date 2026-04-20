@@ -59,6 +59,7 @@ const COMPANY_ABI = [
   "function forfeitShares(uint256) external",
   "function buybackShares(uint256, uint256, uint256) external",
   "function shareNAV(uint256) view returns (uint256)",
+  "function setName(string) external",
 ]
 
 // AToken — for reading equity token IDs (assetId lookups for forfeit/buyback)
@@ -307,6 +308,26 @@ export default function Company() {
   }, [tab, deployedContracts, slug, address, companyId, onChain])
 
   // ── Action state ───────────────────────────────────────────────────────────
+  const [renaming,        setRenaming]       = useState(false)
+  const [newName,         setNewName]        = useState('')
+  const [renamePending,   setRenamePending]  = useState(false)
+  const [renameError,     setRenameError]    = useState(null)
+
+  async function handleRename() {
+    if (!signer || !newName.trim()) return
+    setRenamePending(true); setRenameError(null)
+    try {
+      const co = new ethers.Contract(companyId, COMPANY_ABI, signer)
+      const tx = await co.setName(newName.trim())
+      await tx.wait()
+      setRenaming(false); setNewName('')
+      setReloadKey(k => k + 1)
+    } catch (e) {
+      setRenameError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setRenamePending(false)
+  }
+
   const [converting,      setConverting]     = useState(false)
   const [convertAmt,      setConvertAmt]     = useState('')
   const [dividending,     setDiv]            = useState(false)
@@ -496,6 +517,35 @@ export default function Company() {
               <div style={{ fontSize: 11, color: C.faint }}>
                 {company.equity.length} shareholder{company.equity.length !== 1 ? 's' : ''} · {companyId.slice(0,8)}…{companyId.slice(-4)}
               </div>
+              {isSecretary && !renaming && (
+                <button
+                  onClick={() => { setRenaming(true); setNewName(company.name) }}
+                  style={{ fontSize: 10, color: C.faint, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0', marginTop: 4, textAlign: 'left' }}
+                >
+                  Rename company
+                </button>
+              )}
+              {renaming && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      style={{ ...inlineInput, flex: 1, fontSize: 13 }}
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      autoFocus
+                    />
+                    <button onClick={handleRename} disabled={renamePending || !newName.trim()}
+                      style={{ ...actionBtn(C.gold), opacity: (!newName.trim() || renamePending) ? 0.4 : 1 }}>
+                      {renamePending ? '…' : 'Save'}
+                    </button>
+                    <button onClick={() => { setRenaming(false); setRenameError(null) }}
+                      style={{ ...actionBtn(C.faint, C.white), border: `1px solid ${C.border}` }}>
+                      Cancel
+                    </button>
+                  </div>
+                  {renameError && <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{renameError}</div>}
+                </div>
+              )}
             </div>
           </div>
         </div>
