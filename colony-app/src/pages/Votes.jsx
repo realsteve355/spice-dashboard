@@ -40,8 +40,8 @@ function electionStatus(e, nowSec) {
   return 'NOMINATING'
 }
 
-async function fetchCitizens(colonyAddr, rpc) {
-  if (!rpc) rpc = new ethers.JsonRpcProvider(RPC)
+async function fetchCitizens(colonyAddr) {
+  const rpc     = new ethers.JsonRpcProvider(RPC)
   const toBlock = await rpc.getBlockNumber()
   const CHUNK   = 9000
   const chunks  = await Promise.all(
@@ -100,7 +100,7 @@ export default function Votes() {
 
       const [holders, citizenList] = await Promise.all([
         Promise.all([0, 1, 2].map(r => gov.roleHolder(r))),
-        fetchCitizens(colonyAddr, rpc),
+        fetchCitizens(colonyAddr),
       ])
       setRoleHolders(holders)
       setCitizens(citizenList)
