@@ -44,8 +44,9 @@ async function fetchCitizens(colonyAddr) {
   const rpc     = new ethers.JsonRpcProvider(RPC)
   const toBlock = await rpc.getBlockNumber()
   const CHUNK   = 9000
+  const NUM_CHUNKS = 20  // 20 × 9000 = 180,000 blocks ≈ 4 days on Base Sepolia
   const chunks  = await Promise.all(
-    Array.from({ length: 5 }, (_, i) => {
+    Array.from({ length: NUM_CHUNKS }, (_, i) => {
       const chunkTo   = toBlock - i * CHUNK
       const chunkFrom = Math.max(0, chunkTo - CHUNK + 1)
       return rpc.getLogs({
