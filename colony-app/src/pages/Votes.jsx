@@ -189,14 +189,11 @@ export default function Votes() {
 
   function mergeElecs(prev, next) {
     const nextMap = Object.fromEntries(next.map(e => [e.id, e]))
-    const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
-    // Update elections we have fresh data for
-    const result = next.map(e => ({
-      ...e,
-      myVoted:    prevMap[e.id]?.myVoted    || e.myVoted,
-      myVotedFor: prevMap[e.id]?.myVotedFor || e.myVotedFor,
-    }))
-    // Keep elections from prev that weren't in this read — stale RPC may lag behind
+    // Update elections we have fresh data for.
+    // myVoted is ALWAYS taken from the fresh chain read — preserving it from prev
+    // would carry the current account's vote status onto a different MetaMask account.
+    const result = next.map(e => ({ ...e }))
+    // Keep elections from prev that weren't in this read — signer may lag briefly
     for (const e of prev) {
       if (!nextMap[e.id]) result.push(e)
     }
