@@ -270,25 +270,29 @@ export default function Votes() {
 
         if (newElecId !== null) {
           // Read the new election via signer's provider (already on latest block)
-          const e      = await gov.elections(newElecId)
-          const nowSec = Math.floor(Date.now() / 1000)
-          const entry  = {
-            id:               newElecId,
-            role:             Number(e.role),
-            openedBy:         e.openedBy,
-            openedAt:         Number(e.openedAt),
-            nominationEndsAt: Number(e.nominationEndsAt),
-            votingEndsAt:     Number(e.votingEndsAt),
-            timelockEndsAt:   0,
-            winner:           ethers.ZeroAddress,
-            executed:         false,
-            cancelled:        false,
-            candidates:       [],
-            myVoted:          false,
-            myVotedFor:       null,
+          const e = await gov.elections(newElecId)
+          // Guard: skip if the read came back empty (block not yet visible)
+          if (e.openedBy !== ethers.ZeroAddress) {
+            const nowSec = Math.floor(Date.now() / 1000)
+            const nomEnd = Number(e.nominationEndsAt)
+            const entry  = {
+              id:               newElecId,
+              role:             Number(e.role),
+              openedBy:         e.openedBy,
+              openedAt:         Number(e.openedAt),
+              nominationEndsAt: nomEnd,
+              votingEndsAt:     nomEnd + 15 * 60,  // VOTING_WINDOW fallback
+              timelockEndsAt:   0,
+              winner:           ethers.ZeroAddress,
+              executed:         false,
+              cancelled:        false,
+              candidates:       [],
+              myVoted:          false,
+              myVotedFor:       null,
+            }
+            entry.status = electionStatus(entry, nowSec)
+            setElecs(prev => [entry, ...prev.filter(x => x.id !== newElecId)])
           }
-          entry.status = electionStatus(entry, nowSec)
-          setElecs(prev => [entry, ...prev])
         }
       }
 
@@ -381,7 +385,7 @@ export default function Votes() {
     setActionPending(null)
   }
 
-  const byRole = ROLES.map((_, i) => elecs.filter(e => e.role === i))
+  const byRole = ROLES.map((_, i) => elecs.filter(e => e.role === i && e.openedBy !== ethers.ZeroAddress))
 
   const fmtTime = ts => ts
     ? new Date(ts * 1000).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
