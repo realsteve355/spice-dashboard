@@ -31,6 +31,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-30 | As a citizen, I want to see my name, G-token ID, and wallet address prominently on the dashboard so I know which account I am using | P1 | ✓ |
 | C-31 | As a citizen, I want to see all A-tokens registered to my wallet in one portfolio view — assets, equity positions, and bilateral obligations | P2 | ~ |
 
+*C-04/C-04a: DOB stored on-chain as a birth year (e.g. 1985), not a Unix timestamp. Pre-1970 birth years would produce negative Unix timestamps and revert (uint256 underflow). Colony.join() validates 1900 ≤ year ≤ 2100. Frontend passes `new Date(dob).getFullYear()`. Governance age check uses `1970 + block.timestamp / 365 days >= birthYear + 18`.*
 *C-06–C-08: Profile page shows on-chain identity (name, G-token, balances). Inheritance designation form replaced with a stub — on-chain implementation pending.*
 
 ### S-Token (Spending)
@@ -74,7 +75,8 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-28 | As a citizen, I want to see the recall trigger status | P2 | ~ |
 | C-29 | As a citizen, I want to see all open votes and their deadlines | P2 | ✓ |
 
-*C-26: Voting UI works; constitutional amendment proposal type not yet seeded.*
+*C-24/C-25/C-27/C-29: Governance.sol redesigned to multi-candidate plurality model (20 April 2026) at 0x7D885120a8766A6B6ce951f3fbf342046c485240. MCC elections: openElection → nominateCandidate (multiple) → vote(candidate) → finaliseElection → executeElection. Winner = plurality. resign() allows incumbent to vacate immediately. Testnet timing: nomination 5min, voting 15min, timelock 5min. Votes.jsx fully rewritten — open/nominate/vote/finalise/execute/resign all wired. Citizen names shown in nomination dropdown via /api/citizens (GToken contract reads).*
+*C-26: Voting contract live; constitutional amendment proposal type not yet seeded.*
 *C-28: Recall status visible in MCC admin only.*
 
 ---
@@ -257,6 +259,15 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-12 | As an MCC board member, I want to see MCC V-token reserve and profit | P2 | — |
 | M-13 | As an MCC board member, I want to add or remove a board member (subject to G-token vote) | P3 | — |
 
+### MCC Ledger
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| M-27 | As MCC Chair, I want to see a double-entry ledger of all colony financial events — UBI, payments, obligations, dividends, protocol fees, citizen join events — so the MCC can audit the colony economy | P2 | ✓ |
+| M-28 | As MCC Chair, I want the ledger to show human-readable citizen names next to wallet addresses wherever possible | P2 | ✓ |
+
+*M-27/M-28: Ledger tab in Admin.jsx. Fetches last 50k blocks in 2,000-block chunks; parses 8 event types (UbiClaimed, Sent, ObligationSettled, ObligationDefaulted, AssetRegistered, VDividendPaid, ProtocolFeeSettled, CitizenJoined) using ethers.Interface + topic hashes; resolves names via addrLabel.resolveNames(); maps each event to debit/credit accounts in double-entry style.*
+
 ### MCC Treasury & Roles
 
 | # | Story | Priority | Status |
@@ -267,7 +278,7 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-17 | As MCC FD or Chair, I want to withdraw S-tokens from the treasury to a specified address with a reason recorded on-chain | P1 | ✓ |
 | M-18 | As MCC Chair, I want to see all current MCC board role-holders in one panel | P1 | ✓ |
 | M-19 | As MCC Chair, I want the founder to retain emergency Chair powers even if no explicit role is granted, so the colony cannot be locked out | P1 | ✓ |
-| M-20 | As MCC Chair, I want to replace the MCC Chair role via a G-token governance referendum so the founder is not permanent | P2 | — |
+| M-20 | As MCC Chair, I want to replace the MCC Chair (CEO) role via a G-token governance election so the founder is not permanent | P2 | ✓ |
 
 ### O-Token & Succession
 
@@ -288,11 +299,11 @@ redeemed at NAV when their term ends. The O-token is a pure identity token — i
 | M-25 | As a departing MCC board member (whether by election, resignation, or recall), I want the Fisc to automatically redeem all my MCC shares at current NAV and pay the proceeds to my wallet in V-tokens so no MCC equity accumulates in the hands of former directors | P2 | — |
 | M-26 | As any citizen, I want to see the current MCC equity register — who holds what stake and when it was issued — so I can verify that the board's commercial interest is properly constituted | P2 | — |
 
-*M-01–M-03: Fully on-chain via MCCServices contract.*
+*M-01–M-03: Fully on-chain via MCCServices contract. Future: gate price changes to CFO role via Governance.*
 *M-04: Revenue MTD tracked on-chain via MCCBilling.totalRevenueMTD(); increments when Chair/FD confirms payment.*
 *M-06: Bills set and read on-chain via MCCBilling.setBill() / getBills().*
 *M-14–M-19: MCCTreasury contract deployed as part of 4-contract colony creation. Bill payments route to treasury address, not founder wallet.*
-*M-20: Requires governance referendum → future work.*
+*M-20: Governance.sol redesigned (20 April 2026) — multi-candidate plurality model at 0x7D885120a8766A6B6ce951f3fbf342046c485240. openElection / nominateCandidate (multiple per election) / vote(candidate) / finaliseElection / executeElection / resign(). Votes.jsx fully rewritten — all actions wired on-chain → marked ✓.*
 *M-21–M-23: Requires OToken.sol and integration with colony deploy flow. MCC O-token currently not issued; founder controls MCC operations via private key.*
 
 ---
@@ -444,8 +455,8 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | A-13 | As a creditor, I want to see collateral A-tokens escrowed against obligations I hold, with a clear view of what I receive if the obligor defaults | P2 | ~ |
 | A-14 | As any citizen, I want to see the Fisc escrow registry — which collateral tokens are pledged against which obligations — so the system is fully transparent | P2 | — |
 
-*A-12: Obligation creation form in Assets.jsx supports both secured and unsecured. Secured path: user selects a UNILATERAL A-token they own as collateral. AToken.issueObligation() validates escrow and enforces UBI cap.*
-*A-13: Assets.jsx Obligations tab shows creditor's OBLIGATION_ASSET tokens with progress bars; secured obligations display the collateral token ID. Full default-seizure detail view not yet built.*
+*A-12: Obligation creation uses Governance.sol mutual-consent flow: proposer calls `gov.proposeObligation()` (auto-signs their own side); counterparty calls `gov.signObligation()`. On second signature, `Colony.issueObligationGov()` fires automatically. Assets.jsx shows pending proposals awaiting counterparty signature. Collateral is locked in AToken.escrowedFor[] and cannot be transferred until obligation is settled/defaulted.*
+*A-13: Assets.jsx Obligations tab shows creditor's OBLIGATION_ASSET tokens with progress bars; secured obligations display the collateral asset name, current value, and lock status ("locked"). Full default-seizure detail view not yet built.*
 *A-14: Public escrow browse not yet built.*
 
 ---
@@ -491,7 +502,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | MCC roles (FD / Chair) + withdrawal | MCCTreasury.setRole() / withdraw() | ✓ Live |
 | MCC billing — set & confirm bills | MCCBilling.setBill() / recordPayment() | ✓ Live |
 | MCC revenue MTD | MCCBilling.totalRevenueMTD() | ✓ Live |
-| Governance proposals + voting | Governance contract | ✓ Live |
+| Governance elections (open/nominate/vote/finalise/execute/resign) | Governance contract + Votes.jsx | ✓ Live — multi-candidate plurality model; citizen names in dropdown via /api/citizens |
 | Company registration + equity | CompanyFactory + CompanyImplementation (BeaconProxy) | ✓ Live |
 | Company smart-contract wallet | CompanyImplementation | ✓ Live |
 | O-token issuance (org NFT) | OToken.sol | ✓ Live |
@@ -500,7 +511,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | Asset registration (physical A-tokens) | AToken.registerAsset() | ✓ Live — AToken.sol deployed as ERC-721 at 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2 |
 | Asset transfer (A-token → new holder) | AToken.transferAsset() | ✓ Live — Assets.jsx transfer form |
 | Citizen A-token portfolio view | AToken.tokensOf() | ~ Partial — Assets.jsx shows all held tokens; company-held assets not yet in Company.jsx |
-| Obligation creation (unsecured + secured) | AToken.issueObligation() | ~ Partial — Assets.jsx form; epoch settlement requires Colony.sol v2 |
+| Obligation creation (mutual consent) | Governance.proposeObligation / signObligation | ~ Partial — Assets.jsx form via Governance mutual-consent; epoch settlement requires Colony.sol v2 |
 | Harberger land claims (land A-tokens) | AToken — Harberger variant | Not built — unilateral A-token base is live; Harberger rules need Colony.sol + UI extension |
 | Vesting equity (paired equity A-tokens) | AToken.issueEquity() | ~ Partial — AToken.sol deployed; Company.jsx reads vesting state; issuance UI requires CompanyImpl v2 |
 | V dividend in citizen tx history | Colony.VDividendPaid event | ✓ Live — Dashboard shows dividend receipts in transaction feed |
@@ -508,7 +519,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | Protocol infrastructure fee accrual | Colony.pendingProtocolFee + send() | ✓ Live (contracts compiled; new colonies only) |
 | Protocol fee settlement | Colony.settleProtocol() payable | ✓ Live (contracts compiled; new colonies only) |
 | Colony auto-registration | ColonyRegistry.register() | ✓ Live (step 18 of CreateColony deploy flow) |
-| Colony directory from registry | ColonyRegistry.getAll() | ✓ Live (0x9d26CAB7bbe699b30Fa20DC71c99095f58A18e7d) |
+| Colony directory from registry | ColonyRegistry.getActive() | ✓ Live (0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68) |
 | MCC revenue by service | — | Not built — MCCBilling tracks total only; per-service breakdown needs service-level billing |
 | Intra-month contracts | — | **Superseded** — replaced by V-token reserve + A-token bilateral framework (v16 design decision) |
 | Guardian management | — | UI built, starts empty; no on-chain guardian contract |
@@ -521,7 +532,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | C-15 | Forward MCC bill projection | Shows MTD actual; forward estimate needs usage-rate model |
 | M-05 | MCC revenue by service | MCCBilling tracks total only; per-service breakdown needs service-level billing |
 | M-07 | Auto-deduct MCC bills at month end | Manual confirm flow currently; needs epoch-triggered auto-collection |
-| M-20 | Replace MCC Chair via referendum | MCCTreasury roles currently founder-controlled; governance vote not yet wired |
+| ~~M-20~~ | ~~Replace MCC Chair (CEO) via election~~ | ✓ Completed 20 April 2026 — multi-candidate Governance.sol + full Votes.jsx UI |
 | F-08 | Auto S→V company conversion at epoch | Manual convertToV() workaround; requires Colony.sol v2 |
 | F-11 | FD dividend declaration | v1 distributes entire V balance; v2 `declareDividend(uint256)` requires CompanyImplementation beacon upgrade |
 
@@ -542,6 +553,8 @@ AToken.sol is deployed (April 2026). The remaining blockers are **CompanyImpleme
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v14*
-*Last updated: 18 April 2026*
+*SPICE Colony · User Stories & Requirements Spec · v16*
+*Last updated: 20 April 2026*
 *v14 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5). Dave's Colony redeployed (slug: daves-colony). Assets.jsx built — citizen asset registration, transfer, obligation creation, and A-token portfolio view at /colony/:slug/assets. On-chain table updated: asset registration, asset transfer, obligation creation, citizen portfolio, V dividend tx history all live. A-01/A-02/A-04/A-12/A-13 updated to ~ partial. C-31 updated to ~. F-22 updated to ~. C-14 updated to include V dividends. v2 blockers section rewritten: AToken.sol removed as blocker; CompanyImpl v2 and Colony.sol v2 are the remaining blockers with specific story mapping.*
+*v15 changes (19 April 2026): Governance.sol deployed and wired. Dave's Colony redeployed — all addresses updated. Colony.join() updated: birth year DOB (not Unix timestamp) — C-04 note added. Obligation mutual-consent flow: A-12 footnote updated to describe Governance.proposeObligation/signObligation path; direct issueObligation() retired. On-chain table updated: obligation creation row updated for Governance flow; colony directory corrected to getActive(). M-20 updated to ~ partial (Governance.sol live; Votes.jsx UI pending). M-27/M-28 added — MCC double-entry ledger in Admin.jsx (live). C-24/C-25/C-27/C-29 governance footnote updated with Governance contract address and remaining UI gap. addrLabel.js utility (shortAddr, namedAddr, resolveNames) added — names shown next to addresses in Dashboard.jsx, Company.jsx, Assets.jsx. Status summary not recounted (minor net change).*
+*v16 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections. openElection / nominateCandidate (multiple) / vote(candidate) / finaliseElection / executeElection / resign() — complete model change from single-candidate binary vote. New address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated. Votes.jsx fully rewritten for multi-candidate model. /api/citizens.js serverless function added — enumerates citizens via GToken contract reads (no getLogs dependency); citizen names now shown in nomination dropdown. M-20 updated to ✓. On-chain table updated — governance row ✓ live. Remaining P1 gaps — M-20 resolved. C-24/C-25/C-27/C-29 footnote updated.*

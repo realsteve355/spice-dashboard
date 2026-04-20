@@ -18,7 +18,8 @@ Browser (React SPA — app.zpc.finance)
     │       └── Base Sepolia RPC (https://base-sepolia-rpc.publicnode.com)
     │
     ├── Vercel CDN (static hosting + serverless functions)
-    │       └── /api/log  →  Supabase (activity_log table)
+    │       ├── /api/log      →  Supabase (activity_log table)
+    │       └── /api/citizens →  Base Sepolia RPC (GToken contract reads)
     │
     └── PublicNode RPC (read-only event queries — getLogs)
 ```
@@ -57,12 +58,15 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   │   ├── Layout.jsx        # Shell: header, back button, nav
 │   │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
 │   │   ├── utils/
-│   │   │   └── logger.js         # Fire-and-forget activity logger → /api/log
+│   │   │   ├── logger.js         # Fire-and-forget activity logger → /api/log
+│   │   │   ├── addrLabel.js      # Address display helpers: shortAddr, namedAddr, resolveNames
+│   │   │   └── fetchCitizens.js  # Shared utility — GET /api/citizens → [{address,name}] sorted by name
 │   │   └── data/
 │   │       ├── contracts.json        # Deployed contract addresses (token-address cache for known colonies; not used for colony discovery)
 │   │       └── deployArtifacts.js    # 215KB lazy-loaded ABIs + bytecodes for 10 contracts (used by CreateColony.jsx)
 │   ├── api/
-│   │   └── log.js                # Serverless function — writes to Supabase activity_log
+│   │   ├── log.js                # Serverless function — writes to Supabase activity_log
+│   │   └── citizens.js           # Serverless function — enumerates colony citizens via GToken contract reads
 │   ├── contracts/
 │   │   ├── src/                  # Solidity source files (see §3)
 │   │   ├── scripts/deploy.js     # Hardhat deploy script
@@ -97,21 +101,22 @@ Deployed on **Base Sepolia** (chain ID 84532).
 > Admin panel: `spice.zpc.finance` (spice-admin/) — read-only stats without wallet; owner actions require MetaMask.
 > Owner functions: update fee rate, update treasury address, per-colony fee override, deregister/reregister colony.
 
-#### Dave's Colony — primary test colony (`daves-colony`, redeployed 18 April 2026 with ERC-721 AToken)
+#### Dave's Colony — primary test colony (`daves-colony`, redeployed 20 April 2026 with multi-candidate Governance)
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
-| Colony | `0xDc546810b73b499DB79a0DF2A662170660Bf3902` | Main Fisc — entry point for all citizen/company actions |
-| GToken | `0xB497C7E4c1Ae11ba95b2d8fee15D7f4eEd95fd7f` | ERC-721 soulbound governance NFT, one per citizen |
-| SToken | `0x807c56B640307aBD466ed0B3e9E835B9F74Eba66` | ERC-20 spending token (UBI-issued, 18 decimals) |
-| VToken | `0xddd1fB4cddF600b6198fDF829dAf25AC296a83c4` | ERC-20 savings token (18 decimals) |
-| OToken | `0x70E7620654633075517E05d69D8b753F1D6AD640` | ERC-721 org token — one per company/MCC/cooperative |
-| AToken | `0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2` | ERC-721 economic claims registry — see §3.5 |
-| CompanyImpl | `0xCd30e09e804E4A535B75FC292Ea48A62B4E8428e` | Beacon target — all company proxies implement this |
-| CompanyBeacon | `0x7D89a71f6a168B01501a2507705CaF4D758D8c3E` | UpgradeableBeacon — owned by deployer |
-| CompanyFactory | `0x474F310B0069B572E720c5FB7c8777B77B42D46e` | Deploys BeaconProxy per company, registers with Colony |
-| MCCBilling | `0x1a98fD10c6133Aa6C2468588BCc0d9C723AFeef6` | Per-citizen monthly bill tracking |
-| MCCServices | `0x04905cDE3b2446150Af32Ae11Cf4b83eE4680C7B` | MCC service registry (name, billing basis, price) |
+| Colony | `0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5` | Main Fisc — entry point for all citizen/company actions |
+| GToken | `0x08318fC33f0e57a6D196D5a3cF8d443A54C41449` | ERC-721 soulbound governance NFT, one per citizen |
+| SToken | `0x8B9B98cf05C5dC6e43C5b74320B2B858b92D6a04` | ERC-20 spending token (UBI-issued, 18 decimals) |
+| VToken | `0x86bC95CeD14E3fC1782393E63bc22ef142BEe433` | ERC-20 savings token (18 decimals) |
+| OToken | `0x6cE1bD882b7abE3664f31C558F347CDeF1E32138` | ERC-721 org token — one per company/MCC/cooperative |
+| AToken | `0xA85EaF14E3F85007db73Fd7e153009D081FE1B01` | ERC-721 economic claims registry — see §3.5 |
+| CompanyImpl | `0xa961B7C6C593fFf33e63FB091aD2F93e0800FfDf` | Beacon target — all company proxies implement this |
+| CompanyBeacon | `0x1bcacD3007AE3058575E8c35073127F1b1B5bF3C` | UpgradeableBeacon — owned by deployer |
+| CompanyFactory | `0x00a41D63eF6fa60e15f26Dc46d6aad8994042e1a` | Deploys BeaconProxy per company, registers with Colony |
+| MCCBilling | `0x7Ce46f4Ea8263C9038b546e2147939ce021a9e2E` | Per-citizen monthly bill tracking |
+| MCCServices | `0xBD114C69130B43eA782F63C19e6e1ECB9D5B59c7` | MCC service registry (name, billing basis, price) |
+| Governance | `0x7D885120a8766A6B6ce951f3fbf342046c485240` | MCC elections (CEO/CFO/COO) + obligation mutual-consent — see §3.9 |
 
 > Full colony addresses also in `colony-app/src/data/contracts.json` (auto-generated by deploy.js).
 > ABIs + bytecodes for all 10 contracts live in `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded only during colony creation).
@@ -119,9 +124,14 @@ Deployed on **Base Sepolia** (chain ID 84532).
 ### 3.2 Colony.sol — Core Fisc
 
 ```
-join(string name)
+join(string name, uint256 dob)
+    // dob is a birth year (e.g. 1985) — NOT a Unix timestamp.
+    // Validated: 1900 ≤ dob ≤ 2100.
+    // Stored in mapping(address => uint256) public dateOfBirth.
+    // Governance uses year-arithmetic: 1970 + block.timestamp / 365 days >= dob + 18
     → isCitizen[msg.sender] = true
     → citizenName[msg.sender] = name
+    → dateOfBirth[msg.sender] = dob
     → gToken.mint(msg.sender)         // soulbound G-token
     → sToken.issueUbi(msg.sender)     // 1000 S immediately
     emits CitizenJoined, UbiClaimed
@@ -153,7 +163,18 @@ saveToVCompany(uint256)               // company wallets only, no monthly cap
 transferVDividend(address to, uint256)  // company wallets only
     emits VDividendPaid(from indexed, to indexed, amount)
 
+setGovernance(address gov)            // founder only, one-time — wires Governance.sol
+    // Once set, issueObligation() is disabled; only issueObligationGov() callable
+    // by governance contract.
+
+issueObligationGov(                   // onlyGovernance — called by Governance._tryExecute()
+    address creditor, address obligor,
+    uint256 monthlyAmountS, uint256 totalEpochs, uint256 collateralId
+) → (uint256 assetId, uint256 liabilityId)
+
 advanceEpoch()                        // founder only, monthly
+    // If governance is set and governance.ceoActive() == false → reverts
+    //   ("Colony: CEO role vacant — elect a new CEO before advancing epoch")
     // Current (v1): advances SToken + VToken epoch counters only
     // Target (v2, requires AToken.sol):
     //   1. For each liability A-token (obligation) due this epoch:
@@ -425,6 +446,126 @@ OrgType: `0=Company, 1=MCC, 2=Cooperative, 3=Civic`
 - SToken: `issueUbi()`, `colonyTransfer()`, `burn()`
 - VToken: `mint()`, `mintCompany()`, `colonyTransfer()`, `burn()`
 
+### 3.9 Governance.sol — MCC Elections + Obligation Consent
+
+**Deployed 20 April 2026.** Address: `0x7D885120a8766A6B6ce951f3fbf342046c485240` (Dave's Colony).
+Wired to Colony via `Colony.setGovernance()` (one-time, founder only).
+
+**Two proposal types:**
+
+#### MCC Elections (CEO / CFO / COO) — multi-candidate model
+
+Elections proceed in four phases: nomination → voting → timelock → execute.
+
+```
+openElection(uint8 role) → uint256 id
+    // Any citizen may open an election for any role (including occupied roles).
+    // Starts a nomination window.
+    emits ElectionOpened(id indexed, role indexed, openedBy indexed)
+
+nominateCandidate(uint256 electionId, address candidate)
+    // Any citizen may nominate any other citizen during the nomination window.
+    // Multiple candidates allowed per election.
+    // Caller may nominate themselves.
+    emits CandidateNominated(id indexed, candidate indexed)
+
+vote(uint256 electionId, address candidate)
+    // Citizen 18+ only (uses Colony.dateOfBirth — year arithmetic).
+    // One vote per citizen per election; must vote for a nominated candidate.
+    // Called during voting window (after nomination window closes).
+    emits VoteCast(id indexed, voter indexed, candidate indexed)
+
+finaliseElection(uint256 electionId)
+    // Anyone may call after voting window closes.
+    // No candidates → cancelled (FAILED).
+    // One or more candidates → winner = highest vote count; starts timelock.
+    // Tie → first-nominated candidate wins (deterministic tiebreak).
+    emits ElectionFinalised | ElectionCancelled
+
+executeElection(uint256 electionId)
+    // Anyone may call after timelock expires.
+    // Installs winner as role holder for TERM (365 days).
+    emits ElectionExecuted(id indexed, role indexed, winner indexed)
+
+resign(uint8 role)
+    // Incumbent only. Vacates the role immediately with no election.
+    // After resign(), the role is vacant; next election winner fills it.
+    emits Resigned(role indexed, holder indexed)
+```
+
+**Timing constants (testnet — reduced for testing):**
+```solidity
+uint256 public constant NOMINATION_WINDOW =  5 minutes;   // mainnet: 7 days
+uint256 public constant VOTING_WINDOW     = 15 minutes;   // mainnet: 14 days
+uint256 public constant TIMELOCK          =  5 minutes;   // mainnet: 7 days
+uint256 public constant TERM              = 365 days;
+uint256 public constant OBLIGATION_EXPIRY = 30 days;
+```
+
+**Election struct:**
+```solidity
+struct Election {
+    uint8   role;
+    address openedBy;
+    uint256 openedAt;
+    uint256 nominationEndsAt;
+    uint256 votingEndsAt;
+    uint256 timelockEndsAt;    // 0 until finalised with a winner
+    address winner;            // zero address until finalised
+    bool    executed;
+    bool    cancelled;
+}
+```
+
+**CEO vacancy freeze:** `ceoActive()` returns false if CEO slot is vacant or term expired.
+`Colony.advanceEpoch()` calls `IGovernance.ceoActive()` and reverts if false — no UBI
+can be issued until a new CEO is elected and executed.
+
+**Term:** 365 days. On deploy, the colony founder is assigned all three roles with a
+1-year term. Renewal requires a new election before the term expires. Roles may also
+be vacated early via `resign()`.
+
+**Views:**
+```
+roleHolder(uint8) → (address holder, uint256 termEnd, bool active)
+ceoActive()       → bool            // used by Colony.advanceEpoch()
+nextId()          → uint256         // next election ID (IDs start at 1)
+elections(uint256) → Election       // full election struct
+getCandidates(uint256) → address[]  // all nominated candidates for an election
+getCandidateVotes(uint256, address) → uint256
+hasVoted(address, uint256) → bool
+isCandidate(uint256, address) → bool
+```
+
+#### Obligation Mutual Consent
+
+Replaces direct `Colony.issueObligation()`. Both creditor and obligor must consent
+before any obligation is created on-chain.
+
+```
+proposeObligation(
+    address creditor, address obligor,
+    uint256 monthlyAmountS, uint256 totalEpochs,
+    uint256 collateralId        // 0 = unsecured
+) → uint256 id
+    // Caller may be either party or a third-party arranger.
+    // If caller is a party, their signature is auto-applied.
+    // Expires after 30 days if not fully signed.
+    emits ObligationProposed
+
+signObligation(uint256 obligationId)
+    // Creditor or obligor calls to add their consent.
+    // On second signature: Colony.issueObligationGov() is called immediately.
+    emits ObligationSigned, ObligationCreated
+
+pendingSignaturesFor(address party) → uint256[]
+    // Returns all proposal IDs where party still needs to sign.
+```
+
+**Age check for voters:** `1970 + block.timestamp / 365 days >= birthYear + 18`.
+Birth years (stored in `Colony.dateOfBirth`) are epoch years (e.g. 1985), not
+Unix timestamps — this avoids uint256 underflow for pre-1970 dates.
+
 ---
 
 ## 4. Frontend Architecture
@@ -680,11 +821,16 @@ MetaMask-confirmed flow. All ABIs and bytecodes are loaded lazily from `deployAr
 2. Balance check — deployer wallet must hold ≥ 0.005 ETH
 3. Slug availability check — `ColonyRegistry.slugToColony(slug)` must return `address(0)`
 
-**Deploy steps (steps 1–17 — each requires MetaMask confirmation):**
+**Deploy steps (steps 1–18 — each requires MetaMask confirmation):**
 GToken deploy → SToken deploy → VToken deploy → Colony deploy → GToken ownership transfer →
 SToken ownership transfer → VToken ownership transfer → OToken deploy → Colony mint O-token →
 OToken ownership transfer → Colony setOToken → CompanyImpl deploy → UpgradeableBeacon deploy →
-CompanyFactory deploy → Colony setCompanyFactory → MCCBilling deploy → MCCServices deploy
+CompanyFactory deploy → Colony setCompanyFactory → MCCBilling deploy → MCCServices deploy →
+Governance deploy (constructor: colonyAddr, founder×3) → Colony setGovernance(govAddr)
+
+> The deploy script (`scripts/deploy.js`) handles all 18 steps. Governance is step 16:
+> `deploy("Governance", colonyAddr, deployer.address, deployer.address, deployer.address)` →
+> `colonyC.setGovernance(govAddr)`. Governance address is written to `contracts.json` as `governance`.
 
 **Step 17.5:** Save colony to `localStorage['spice_user_colonies']` — done before step 18 so
 the colony is usable even if registry registration fails.
@@ -723,7 +869,8 @@ manually registered via `spice.zpc.finance`.
 | Colony.sol epoch advance (v1) does not settle obligations | AToken obligations exist on-chain but advanceEpoch() does not call markObligationPaid() yet — obligations must be settled manually or wait for Colony.sol v2 | Colony.sol v2 — add obligation settlement loop to advanceEpoch(); new deploy required |
 | Debug console.logs in Company.jsx | [Company] getEquityTable raw + AToken.getVestingStake logs left in after debugging vesting display bug | Remove before next major release |
 | MCC office-term equity not implemented | Board compensation via permanent equity; no auto-redemption on term end | CompanyImplementation v2 `redeemDirectorShares()` + Colony governance integration |
-| Governance contract not in deploy script | Votes.sol compiled; not wired to deploy.js | Add to deploy sequence, set govAddress in contracts.json |
+| Governance testnet timing constants | NOMINATION=5min, VOTING=15min, TIMELOCK=5min. Fine for testing; must be changed for mainnet (7/14/7 days) | Update constants in Governance.sol before mainnet deploy |
+| Citizen enumeration relies on GToken loop | /api/citizens.js calls ownerOf+citizenName for each tokenId 1..nextTokenId. O(n) on-chain calls; fine at colony scale (10s of citizens) | At large scale use an indexer (The Graph) |
 | No mainnet | Testnet only | Audit → Base mainnet |
 | Supabase activity log has no auth | Anyone with the anon key can insert | Add row-level security or switch to service key |
 | Beacon ownership | UpgradeableBeacon owned by deployer EOA | Transfer to governance contract when ready |
@@ -757,9 +904,11 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 
 ---
 
-*SPICE Colony · Technical Architecture · v7*
-*Last updated: 19 April 2026*
+*SPICE Colony · Technical Architecture · v9*
+*Last updated: 20 April 2026*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*
 *v7 changes (19 April 2026): ColonyRegistry redeployed as ERC-721 (§3.1 rewritten) — address 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68. Each register() mints a soulbound C-token ("SPICE Colony"/"COLONY") to the Colony contract address; deregister() burns it; reregister() remints same token ID; tokenURI() returns on-chain JSON. C-token design rationale: ownerOf == Colony contract (not founder EOA), so colony cannot be orphaned by key loss. Directory.jsx updated to read registry exclusively — contracts.json and localStorage no longer colony sources. Token table updated — C-token added. Repository structure comments updated. Future Architecture: ColonyRegistry v2 marked deployed.*
+*v8 changes (19 April 2026): Governance.sol deployed and wired (§3.9 new section). Dave's Colony redeployed — all contract addresses updated (§3.1). Colony.sol join() updated: accepts birth year (not Unix timestamp) + setGovernance() + issueObligationGov() + CEO active check in advanceEpoch() (§3.2). addrLabel.js added to repo structure (§2) — shortAddr, namedAddr, resolveNames batch helpers. Deploy steps updated to 18+Governance (§8). Known Limitations: "Governance not in deploy script" replaced with "Votes.jsx elections UI incomplete" (§9). MCC Ledger tab added to Admin.jsx — double-entry events view for all colony financial activity.*
+*v9 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections (§3.9 rewritten) — openElection / nominateCandidate / vote(candidate) / finaliseElection / executeElection / resign(). New Election struct with nominationEndsAt, votingEndsAt, timelockEndsAt, winner, executed, cancelled. New Governance address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated (§3.1). citizens.js serverless function added (§2) — enumerates citizens via GToken.nextTokenId() + ownerOf() + citizenName() loop; more reliable than getLogs. fetchCitizens.js utility added (§2). System overview diagram updated (§1). Known Limitations: "Votes.jsx UI incomplete" replaced with testnet timing constants + citizen enumeration scale note (§9).*

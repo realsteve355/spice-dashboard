@@ -291,8 +291,9 @@ own root directory, not the repo root.
 - **No mock data** — all state reads from chain; pages show clean empty states when no data
 
 **Contract addresses (Base Sepolia):**
-- ColonyRegistry: `0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a` (global ERC-721 registry — each colony gets a soulbound C-token)
-- Dave's Colony (Colony contract): `0xDc546810b73b499DB79a0DF2A662170660Bf3902`
+- ColonyRegistry: `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` (global ERC-721 registry — each colony gets a soulbound C-token)
+- Dave's Colony (Colony contract): `0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5` (redeployed 20 April 2026)
+- Dave's Colony (Governance): `0x7D885120a8766A6B6ce951f3fbf342046c485240` (multi-candidate elections, 20 April 2026)
 - Full per-colony addresses: `colony-app/src/data/contracts.json` (token-address cache only — not the colony directory)
 - ABIs + bytecodes for deploy: `colony-app/src/data/deployArtifacts.js` (215KB, lazy-loaded)
 
@@ -312,14 +313,18 @@ Step 18 (non-fatal): `ColonyRegistry.register(colonyAddr, name, slug)` — mints
 **Event queries:** use raw `provider.getLogs()` + `Interface.parseLog()` — never
 `contract.queryFilter()` (triggers LavaMoat intrinsics errors in MetaMask).
 
+**Citizen enumeration:** use `/api/citizens?colony=0x…` serverless endpoint — reads GToken contract
+directly (`nextTokenId` + `ownerOf` + `citizenName` per token). Do NOT use getLogs for CitizenJoined —
+this consistently fails on Base Sepolia across multiple RPC providers. Shared utility: `src/utils/fetchCitizens.js`.
+
 **Activity logging:** fire-and-forget POST to `/api/log` → Supabase `activity_log` table.
 
 **Protocol admin** (`spice-admin/`): single static HTML page at `spice.zpc.finance`.
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
 Config: `spice-admin/config.js` (ColonyRegistry address).
 
-**Full technical reference:** `docs/technical-architecture.md` (v7)
-**Full requirements spec:** `docs/user-stories.md` (v14)`
+**Full technical reference:** `docs/technical-architecture.md` (v9)
+**Full requirements spec:** `docs/user-stories.md` (v16)`
 
 ---
 
