@@ -122,7 +122,15 @@ export default function Votes() {
         entry.status = electionStatus(entry, nowSec)
         loaded.push(entry)
       }
-      setElecs(loaded.reverse())
+      // Merge with existing state — never downgrade myVoted from true to false
+      // (background load may return stale RPC data before the block propagates)
+      setElecs(prev => {
+        const prevMap = Object.fromEntries(prev.map(e => [e.id, e]))
+        return loaded.reverse().map(e => ({
+          ...e,
+          myVoted: prevMap[e.id]?.myVoted || e.myVoted,
+        }))
+      })
     } catch (err) {
       console.warn('Votes load error', err)
     }

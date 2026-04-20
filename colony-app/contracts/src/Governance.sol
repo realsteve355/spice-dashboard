@@ -40,8 +40,8 @@ contract Governance {
 
     // ── Constants ─────────────────────────────────────────────────────────────
 
-    uint256 public constant VOTING_WINDOW     = 14 days;
-    uint256 public constant TIMELOCK          = 7 days;
+    uint256 public constant VOTING_WINDOW     = 30 minutes;  // testnet — 14 days on mainnet
+    uint256 public constant TIMELOCK          = 10 minutes;  // testnet — 7 days on mainnet
     uint256 public constant TERM              = 365 days;
     uint256 public constant OBLIGATION_EXPIRY = 30 days;
 
