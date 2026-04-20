@@ -268,6 +268,25 @@ contract Governance {
         emit ElectionExecuted(electionId, e.role, e.candidate);
     }
 
+    // ── Role Resignation ─────────────────────────────────────────────────────
+
+    /**
+     * @notice Current holder of a role may voluntarily vacate it.
+     *         This frees the slot for a new election immediately.
+     */
+    function resign(Role role) external {
+        if (role == Role.CEO) {
+            require(msg.sender == ceo, "Gov: not CEO");
+            ceo = address(0); ceoTermEnd = 0;
+        } else if (role == Role.CFO) {
+            require(msg.sender == cfo, "Gov: not CFO");
+            cfo = address(0); cfoTermEnd = 0;
+        } else {
+            require(msg.sender == coo, "Gov: not COO");
+            coo = address(0); cooTermEnd = 0;
+        }
+    }
+
     // ── Obligation Proposals ──────────────────────────────────────────────────
 
     /**

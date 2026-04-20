@@ -19,6 +19,7 @@ const GOV_ABI = [
   "function vote(uint256 electionId, bool support) external",
   "function finaliseElection(uint256 electionId) external",
   "function executeElection(uint256 electionId) external",
+  "function resign(uint8 role) external",
 ]
 
 const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
@@ -193,6 +194,20 @@ export default function Votes() {
     return byRole[roleIdx]?.find(e => !['EXECUTED', 'FAILED'].includes(e.status))
   }
 
+  async function doResign(roleIdx) {
+    if (!signer || !govAddress) return
+    setActionPending(`resign-${roleIdx}`); setActionError(null)
+    try {
+      const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
+      const tx  = await gov.resign(roleIdx)
+      await tx.wait()
+      await load()
+    } catch (e) {
+      setActionError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActionPending(null)
+  }
+
   async function doNominate() {
     if (!signer || !govAddress) return
     if (!ethers.isAddress(newNom.candidate)) {
@@ -257,14 +272,26 @@ export default function Votes() {
             const expDate = rh && !vacant
               ? new Date(Number(rh.termEnd) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null
+            const isHolder = rh && !vacant && address && rh.holder.toLowerCase() === address.toLowerCase()
             return (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: i < 2 ? 8 : 0 }}>
                 <span style={{ fontSize: 11, color: C.faint, minWidth: 36 }}>{ROLES[i]}</span>
-                <span style={{ fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub, textAlign: 'right' }}>
-                  {vacant
-                    ? 'vacant'
-                    : `${holderName || shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub, textAlign: 'right' }}>
+                    {vacant
+                      ? 'vacant'
+                      : `${holderName || shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
+                  </span>
+                  {isHolder && (
+                    <button
+                      onClick={() => doResign(i)}
+                      disabled={!!actionPending}
+                      style={{ fontSize: 10, color: C.red, background: 'none', border: `1px solid ${C.red}`, borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", opacity: actionPending === `resign-${i}` ? 0.5 : 1 }}
+                    >
+                      {actionPending === `resign-${i}` ? '…' : 'Resign'}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}
