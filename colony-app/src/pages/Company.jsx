@@ -7,31 +7,7 @@ import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 
-const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
-const CITIZEN_IFACE_CO = new ethers.Interface([
-  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
-])
-
-async function fetchColonyCitizens(colonyAddr) {
-  const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
-  const toBlock = await rpc.getBlockNumber()
-  const CHUNK   = 9000
-  const chunks  = await Promise.all(
-    Array.from({ length: 20 }, (_, i) => {
-      const to   = toBlock - i * CHUNK
-      const from = Math.max(0, to - CHUNK + 1)
-      return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
-    })
-  )
-  const map = {}
-  for (const log of chunks.flat()) {
-    try {
-      const { args } = CITIZEN_IFACE_CO.parseLog({ topics: log.topics, data: log.data })
-      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
-    } catch {}
-  }
-  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-}
+import { fetchCitizens as fetchColonyCitizens } from '../utils/fetchCitizens'
 
 // Colony contract — for send() and citizen checks
 const COLONY_ABI = [

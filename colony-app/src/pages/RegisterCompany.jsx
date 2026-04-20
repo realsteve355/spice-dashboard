@@ -10,31 +10,7 @@ const FACTORY_ABI = [
   "function deployCompany(string, address[], uint256[], uint8) external returns (uint256)",
 ]
 
-const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
-const CITIZEN_IFACE = new ethers.Interface([
-  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
-])
-
-async function fetchCitizens(colonyAddr) {
-  const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
-  const toBlock = await rpc.getBlockNumber()
-  const CHUNK   = 9000
-  const chunks  = await Promise.all(
-    Array.from({ length: 20 }, (_, i) => {
-      const to   = toBlock - i * CHUNK
-      const from = Math.max(0, to - CHUNK + 1)
-      return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
-    })
-  )
-  const map = {}
-  for (const log of chunks.flat()) {
-    try {
-      const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
-      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
-    } catch {}
-  }
-  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-}
+import { fetchCitizens } from '../utils/fetchCitizens'
 
 export default function RegisterCompany() {
   const { slug }  = useParams()

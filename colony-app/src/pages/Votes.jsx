@@ -5,10 +5,10 @@ import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { C } from '../theme'
 import { shortAddr } from '../utils/addrLabel'
+import { fetchCitizens } from '../utils/fetchCitizens'
 
-const ROLES    = ['CEO', 'CFO', 'COO']
-const RPC      = 'https://base-sepolia-rpc.publicnode.com'
-const LOG_RPC  = 'https://sepolia.base.org'   // official RPC — more reliable for getLogs
+const ROLES = ['CEO', 'CFO', 'COO']
+const RPC   = 'https://base-sepolia-rpc.publicnode.com'
 
 const GOV_ABI = [
   "function nextId() view returns (uint256)",
@@ -25,10 +25,6 @@ const GOV_ABI = [
   "function resign(uint8 role) external",
 ]
 
-const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
-const CITIZEN_IFACE = new ethers.Interface([
-  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
-])
 
 // Status is derived client-side from timestamps
 function electionStatus(e, nowSec) {
@@ -41,40 +37,6 @@ function electionStatus(e, nowSec) {
   return 'NOMINATING'
 }
 
-async function fetchCitizens(colonyAddr) {
-  const rpc     = new ethers.JsonRpcProvider(LOG_RPC)
-  const toBlock = await rpc.getBlockNumber()
-  console.log('[fetchCitizens] toBlock:', toBlock, 'colony:', colonyAddr)
-  const CHUNK   = 9000
-  const map     = {}
-  // Sequential chunks — avoids rate limiting on parallel requests
-  for (let i = 0; i < 20; i++) {
-    const chunkTo   = toBlock - i * CHUNK
-    const chunkFrom = Math.max(0, chunkTo - CHUNK + 1)
-    if (chunkFrom > chunkTo) break
-    try {
-      const logs = await rpc.getLogs({
-        address:   colonyAddr,
-        fromBlock: chunkFrom,
-        toBlock:   chunkTo,
-        topics:    [CITIZEN_JOINED_TOPIC],
-      })
-      for (const log of logs) {
-        try {
-          const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
-          map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
-        } catch {}
-      }
-      // Stop early if we found citizens and have gone back far enough
-      if (Object.keys(map).length > 0 && i >= 3) break
-    } catch (err) {
-      console.warn('[fetchCitizens] chunk', i, 'failed:', err?.message || err)
-    }
-  }
-  const result = Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-  console.log('[fetchCitizens] found:', result.map(c => c.name))
-  return result
-}
 
 export default function Votes() {
   const { slug } = useParams()
