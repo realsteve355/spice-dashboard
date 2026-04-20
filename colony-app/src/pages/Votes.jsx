@@ -181,7 +181,9 @@ export default function Votes() {
     setActionPending(`open-${roleIdx}`); setActionError(null); setOpeningRole(null)
     try {
       const gov = new ethers.Contract(govAddress, GOV_ABI, signer)
-      const tx  = await gov.openElection(roleIdx, GAS)
+      // Simulate first to get a real revert reason
+      await gov.openElection.staticCall(roleIdx)
+      const tx = await gov.openElection(roleIdx, GAS)
       await tx.wait()
       await load()
     } catch (e) {
