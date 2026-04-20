@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
+import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { logInfo, logError } from '../utils/logger'
 
@@ -92,6 +93,7 @@ export default function ColonyPage() {
 
   const [citizens, setCitizens]         = useState(null)  // null = not loaded, [] = empty
   const [citizensLoading, setCitizensLoading] = useState(false)
+  const [citizenSearch, setCitizenSearch] = useState('')
 
   const [companies, setCompanies]         = useState(null)
   const [companiesLoading, setCompaniesLoading] = useState(false)
@@ -408,29 +410,75 @@ export default function ColonyPage() {
           ))}
         </div>
 
-        {/* Citizens */}
+        {/* Citizens directory */}
         <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>CITIZENS</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
+              CITIZENS {citizens ? `· ${citizens.length}` : ''}
+            </div>
+          </div>
+
+          {/* Search */}
+          {citizens && citizens.length > 3 && (
+            <input
+              value={citizenSearch}
+              onChange={e => setCitizenSearch(e.target.value)}
+              placeholder="Search by name or address…"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                padding: '8px 10px', fontSize: 12,
+                border: `1px solid ${C.border}`, borderRadius: 6,
+                fontFamily: "'IBM Plex Mono', monospace",
+                color: C.text, background: C.bg, outline: 'none',
+                marginBottom: 12,
+              }}
+            />
+          )}
+
           {citizensLoading ? (
             <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
           ) : !citizens || citizens.length === 0 ? (
             <div style={{ fontSize: 11, color: C.faint }}>No citizens yet.</div>
-          ) : citizens.map(({ addr, name }, i) => (
-            <div key={addr} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              paddingBottom: i < citizens.length - 1 ? 10 : 0,
-              marginBottom: i < citizens.length - 1 ? 10 : 0,
-              borderBottom: i < citizens.length - 1 ? `1px solid ${C.border}` : 'none',
-            }}>
-              <div>
-                <div style={{ fontSize: 12, color: C.text }}>{name || '(unnamed)'}</div>
-                <div style={{ fontSize: 10, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
-                  {addr.slice(0, 10)}…{addr.slice(-6)}
+          ) : (() => {
+            const q = citizenSearch.trim().toLowerCase()
+            const filtered = q
+              ? citizens.filter(c =>
+                  c.name.toLowerCase().includes(q) || c.addr.toLowerCase().includes(q)
+                )
+              : citizens
+            if (filtered.length === 0) return (
+              <div style={{ fontSize: 11, color: C.faint }}>No citizens match "{citizenSearch}".</div>
+            )
+            return filtered.map(({ addr, name }, i) => (
+              <div
+                key={addr}
+                onClick={() => navigate(`/colony/${slug}/profile/${addr}`)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  paddingBottom: i < filtered.length - 1 ? 10 : 0,
+                  marginBottom:  i < filtered.length - 1 ? 10 : 0,
+                  borderBottom:  i < filtered.length - 1 ? `1px solid ${C.border}` : 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <EntityImage
+                  colony={slug}
+                  entityType="citizen"
+                  entityId={addr.toLowerCase()}
+                  editable={false}
+                  size={36}
+                  label={(name || addr).slice(0, 2).toUpperCase()}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, color: C.text }}>{name || '(unnamed)'}</div>
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 2, fontFamily: 'monospace' }}>
+                    {addr.slice(0, 10)}…{addr.slice(-6)}
+                  </div>
                 </div>
+                <span style={{ fontSize: 16, color: C.faint, flexShrink: 0 }}>›</span>
               </div>
-              <div style={{ fontSize: 10, color: C.faint }}>#{i + 1}</div>
-            </div>
-          ))}
+            ))
+          })()}
         </div>
 
         {/* Companies */}

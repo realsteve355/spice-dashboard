@@ -297,6 +297,7 @@ export default function App() {
           <Route path="/colony/:slug/company/:companyId" element={<Company />}         />
           <Route path="/colony/:slug/votes"               element={<Votes />}           />
           <Route path="/colony/:slug/profile"            element={<Profile />}         />
+          <Route path="/colony/:slug/profile/:viewAddress" element={<Profile />}      />
           <Route path="/colony/:slug/guardian"           element={<Guardian />}        />
           <Route path="/colony/:slug/request"            element={<RequestPayment />}  />
           <Route path="/colony/:slug/pay"                element={<PaymentConfirm />}  />
