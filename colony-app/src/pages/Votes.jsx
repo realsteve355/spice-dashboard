@@ -4,9 +4,10 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { C } from '../theme'
-import { shortAddr } from '../utils/addrLabel'
+import { shortAddr, namedAddr } from '../utils/addrLabel'
 
 const ROLES = ['CEO', 'CFO', 'COO']
+const RPC   = 'https://base-sepolia-rpc.publicnode.com'
 
 const GOV_ABI = [
   "function nextId() view returns (uint256)",
@@ -20,13 +21,45 @@ const GOV_ABI = [
   "function executeElection(uint256 electionId) external",
 ]
 
+const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
+const CITIZEN_IFACE = new ethers.Interface([
+  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
+])
+
 function electionStatus(e, nowSec) {
-  if (e.executed)                               return 'EXECUTED'
-  if (e.cancelled)                              return 'FAILED'
-  if (e.timelockEndsAt > 0 && nowSec >= e.timelockEndsAt) return 'EXECUTE_READY'
-  if (e.timelockEndsAt > 0)                     return 'TIMELOCK'
-  if (nowSec > e.votingEndsAt)                  return 'FINALISE_READY'
+  if (e.executed)                                              return 'EXECUTED'
+  if (e.cancelled)                                             return 'FAILED'
+  if (e.timelockEndsAt > 0 && nowSec >= e.timelockEndsAt)     return 'EXECUTE_READY'
+  if (e.timelockEndsAt > 0)                                    return 'TIMELOCK'
+  if (nowSec > e.votingEndsAt)                                 return 'FINALISE_READY'
   return 'VOTING'
+}
+
+async function fetchCitizens(colonyAddr) {
+  const rpc     = new ethers.JsonRpcProvider(RPC)
+  const toBlock = await rpc.getBlockNumber()
+  const CHUNK   = 9000
+  const chunks  = await Promise.all(
+    Array.from({ length: 5 }, (_, i) => {
+      const chunkTo   = toBlock - i * CHUNK
+      const chunkFrom = Math.max(0, chunkTo - CHUNK + 1)
+      return rpc.getLogs({
+        address:   colonyAddr,
+        fromBlock: chunkFrom,
+        toBlock:   chunkTo,
+        topics:    [CITIZEN_JOINED_TOPIC],
+      }).catch(() => [])
+    })
+  )
+  // Parse and deduplicate by address (keep last join event per citizen)
+  const map = {}
+  for (const log of chunks.flat()) {
+    try {
+      const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
+      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
+    } catch {}
+  }
+  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export default function Votes() {
@@ -35,47 +68,55 @@ export default function Votes() {
 
   const colonyName = onChain?.[slug]?.colonyName || slug
   const isCitizen  = isCitizenOf(slug)
-
+  const colonyAddr = contracts?.colonies?.[slug]?.colony
   const govAddress = contracts?.colonies?.[slug]?.governance
 
-  const [elecs, setElecs]           = useState([])
+  const [elecs,       setElecs]       = useState([])
+  const [citizens,    setCitizens]    = useState([])   // [{ address, name }]
+  const [nameMap,     setNameMap]     = useState({})   // addr.lower → name
   const [roleHolders, setRoleHolders] = useState([null, null, null])
-  const [loading, setLoading]       = useState(true)
+  const [loading,     setLoading]     = useState(true)
   const [actionPending, setActionPending] = useState(null)
-  const [actionError, setActionError]   = useState(null)
-  const [nominating, setNominating] = useState(false)
-  const [newNom, setNewNom]         = useState({ role: 0, candidate: '' })
+  const [actionError,   setActionError]   = useState(null)
+  const [nominating,  setNominating]  = useState(false)
+  const [newNom,      setNewNom]      = useState({ role: 0, candidate: '' })
 
   async function load() {
-    if (!govAddress || !provider) { setLoading(false); return }
+    if (!govAddress || !colonyAddr || !provider) { setLoading(false); return }
     try {
-      const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
-      const gov = new ethers.Contract(govAddress, GOV_ABI, rpc)
+      const rpc    = new ethers.JsonRpcProvider(RPC)
+      const gov    = new ethers.Contract(govAddress, GOV_ABI, rpc)
       const nowSec = Math.floor(Date.now() / 1000)
 
-      // Load role holders
-      const holders = await Promise.all([0, 1, 2].map(r => gov.roleHolder(r)))
+      // Load role holders and citizen list in parallel
+      const [holders, citizenList] = await Promise.all([
+        Promise.all([0, 1, 2].map(r => gov.roleHolder(r))),
+        fetchCitizens(colonyAddr),
+      ])
       setRoleHolders(holders)
+      setCitizens(citizenList)
+      const nm = Object.fromEntries(citizenList.map(c => [c.address.toLowerCase(), c.name]))
+      setNameMap(nm)
 
       // Load all elections by iterating nextId
       const nextId = Number(await gov.nextId())
       const loaded = []
       for (let i = 1; i < nextId; i++) {
         const e = await gov.elections(i)
-        // If nominator is zero address this slot is an obligation proposal, not an election
+        // Skip obligation proposal slots (nominator == zero address)
         if (e.nominator === ethers.ZeroAddress) continue
         const myVoted = address ? await gov.hasVoted(address, i) : false
         const entry = {
-          id: i,
-          role:            Number(e.role),
-          candidate:       e.candidate,
-          nominator:       e.nominator,
-          votingEndsAt:    Number(e.votingEndsAt),
-          timelockEndsAt:  Number(e.timelockEndsAt),
-          votesFor:        Number(e.votesFor),
-          votesAgainst:    Number(e.votesAgainst),
-          executed:        e.executed,
-          cancelled:       e.cancelled,
+          id:             i,
+          role:           Number(e.role),
+          candidate:      e.candidate,
+          nominator:      e.nominator,
+          votingEndsAt:   Number(e.votingEndsAt),
+          timelockEndsAt: Number(e.timelockEndsAt),
+          votesFor:       Number(e.votesFor),
+          votesAgainst:   Number(e.votesAgainst),
+          executed:       e.executed,
+          cancelled:      e.cancelled,
           myVoted,
         }
         entry.status = electionStatus(entry, nowSec)
@@ -88,7 +129,7 @@ export default function Votes() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [govAddress, provider, address])
+  useEffect(() => { load() }, [govAddress, colonyAddr, provider, address])
 
   async function doVote(electionId, support) {
     if (!signer || !govAddress) return
@@ -135,7 +176,7 @@ export default function Votes() {
   async function doNominate() {
     if (!signer || !govAddress) return
     if (!ethers.isAddress(newNom.candidate)) {
-      setActionError('Invalid candidate address')
+      setActionError('Select a candidate')
       return
     }
     setActionPending('nominate'); setActionError(null)
@@ -167,7 +208,7 @@ export default function Votes() {
           {isCitizen && (
             <button
               onClick={() => setNominating(v => !v)}
-              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace" }}
+              style={ghostBtn(C.gold)}
             >
               + Nominate
             </button>
@@ -180,6 +221,7 @@ export default function Votes() {
           {roleHolders.map((rh, i) => {
             const vacant  = !rh || rh.holder === ethers.ZeroAddress
             const expired = rh && !rh.active && !vacant
+            const holderName = rh && !vacant ? nameMap[rh.holder.toLowerCase()] : null
             const expDate = rh && !vacant
               ? new Date(Number(rh.termEnd) * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
               : null
@@ -189,7 +231,7 @@ export default function Votes() {
                 <span style={{ fontSize: 11, color: expired ? C.red : vacant ? C.faint : C.sub, textAlign: 'right' }}>
                   {vacant
                     ? 'vacant'
-                    : `${shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
+                    : `${holderName || shortAddr(rh.holder)} · expires ${expDate}${expired ? ' · EXPIRED' : ''}`}
                 </span>
               </div>
             )
@@ -205,30 +247,49 @@ export default function Votes() {
             <select
               value={newNom.role}
               onChange={e => setNewNom(p => ({ ...p, role: Number(e.target.value) }))}
-              style={{ width: '100%', padding: '9px 10px', background: C.bg, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 12, fontFamily: "'IBM Plex Mono', monospace" }}
+              style={selectStyle}
             >
               {ROLES.map((r, i) => (
                 <option key={i} value={i} style={{ background: C.bg, color: C.text }}>{r}</option>
               ))}
             </select>
 
-            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4 }}>Candidate address</div>
-            <input
-              style={{ width: '100%', padding: '9px 10px', background: C.bg, color: C.text, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, marginBottom: 12, outline: 'none', fontFamily: "'IBM Plex Mono', monospace", boxSizing: 'border-box' }}
-              placeholder="0x…"
-              value={newNom.candidate}
-              onChange={e => setNewNom(p => ({ ...p, candidate: e.target.value }))}
-            />
-
-            {actionError && (
-              <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{actionError}</div>
+            <div style={{ fontSize: 11, color: C.faint, marginBottom: 4, marginTop: 12 }}>Candidate</div>
+            {citizens.length > 0 ? (
+              <select
+                value={newNom.candidate}
+                onChange={e => setNewNom(p => ({ ...p, candidate: e.target.value }))}
+                style={selectStyle}
+              >
+                <option value="" style={{ background: C.bg, color: C.faint }}>— select a citizen —</option>
+                {citizens.map(c => (
+                  <option key={c.address} value={c.address} style={{ background: C.bg, color: C.text }}>
+                    {c.name} · {shortAddr(c.address)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                style={inputStyle}
+                placeholder="0x…"
+                value={newNom.candidate}
+                onChange={e => setNewNom(p => ({ ...p, candidate: e.target.value }))}
+              />
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            {actionError && (
+              <div style={{ fontSize: 11, color: C.red, marginTop: 8 }}>{actionError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button onClick={() => { setNominating(false); setActionError(null) }} style={smallBtn(C.border, C.sub)}>
                 Cancel
               </button>
-              <button onClick={doNominate} disabled={actionPending === 'nominate'} style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1 }}>
+              <button
+                onClick={doNominate}
+                disabled={actionPending === 'nominate' || !newNom.candidate}
+                style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1, opacity: !newNom.candidate ? 0.5 : 1 }}
+              >
                 {actionPending === 'nominate' ? 'Submitting…' : 'Nominate →'}
               </button>
             </div>
@@ -256,6 +317,7 @@ export default function Votes() {
               <ElectionCard
                 key={e.id}
                 election={e}
+                nameMap={nameMap}
                 isCitizen={isCitizen}
                 actionPending={actionPending}
                 onVote={doVote}
@@ -273,6 +335,7 @@ export default function Votes() {
               <ElectionCard
                 key={e.id}
                 election={e}
+                nameMap={nameMap}
                 isCitizen={false}
                 actionPending={null}
                 onVote={null}
@@ -288,7 +351,7 @@ export default function Votes() {
   )
 }
 
-function ElectionCard({ election, isCitizen, actionPending, onVote, onFinalise, onExecute }) {
+function ElectionCard({ election, nameMap, isCitizen, actionPending, onVote, onFinalise, onExecute }) {
   const { id, role, candidate, nominator, votesFor, votesAgainst, myVoted, status, timelockEndsAt } = election
   const totalVotes = votesFor + votesAgainst
 
@@ -305,10 +368,13 @@ function ElectionCard({ election, isCitizen, actionPending, onVote, onFinalise, 
     ? new Date(timelockEndsAt * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
 
+  const candidateName = nameMap[candidate?.toLowerCase()] || shortAddr(candidate)
+  const nominatorName = nameMap[nominator?.toLowerCase()] || shortAddr(nominator)
+
   return (
     <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 10 }}>
 
-      {/* Top row: role + status badges */}
+      {/* Role + status badges */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
         <span style={{ fontSize: 9, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 6px', letterSpacing: '0.08em' }}>
           {ROLES[role]}
@@ -321,11 +387,11 @@ function ElectionCard({ election, isCitizen, actionPending, onVote, onFinalise, 
         )}
       </div>
 
-      {/* Candidate + vote tally */}
+      {/* Candidate + tally */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: totalVotes > 0 ? 10 : 0 }}>
         <div>
-          <div style={{ fontSize: 13, color: C.text, marginBottom: 3 }}>{shortAddr(candidate)}</div>
-          <div style={{ fontSize: 11, color: C.faint }}>Nominated by {shortAddr(nominator)}</div>
+          <div style={{ fontSize: 14, color: C.text, fontWeight: 500, marginBottom: 3 }}>{candidateName}</div>
+          <div style={{ fontSize: 11, color: C.faint }}>Nominated by {nominatorName}</div>
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
           <div style={{ fontSize: 12, color: C.green }}>{votesFor} FOR</div>
@@ -387,6 +453,36 @@ function ElectionCard({ election, isCitizen, actionPending, onVote, onFinalise, 
       )}
     </div>
   )
+}
+
+// ── Shared styles ─────────────────────────────────────────────────────────────
+
+const selectStyle = {
+  width: '100%',
+  padding: '9px 10px',
+  background: C.bg,
+  color: C.text,
+  border: `1px solid ${C.border}`,
+  borderRadius: 6,
+  fontSize: 12,
+  fontFamily: "'IBM Plex Mono', monospace",
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '9px 10px',
+  background: C.bg,
+  color: C.text,
+  border: `1px solid ${C.border}`,
+  borderRadius: 6,
+  fontSize: 12,
+  outline: 'none',
+  fontFamily: "'IBM Plex Mono', monospace",
+  boxSizing: 'border-box',
+}
+
+function ghostBtn(color) {
+  return { fontSize: 11, color, background: 'none', border: `1px solid ${color}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace" }
 }
 
 function smallBtn(bg, color = C.text, border) {
