@@ -7,18 +7,20 @@ pragma solidity ^0.8.25;
  *
  * Two proposal types:
  *
- *   MCC_ELECTION — any citizen nominates a candidate for CEO / CFO / COO.
- *     Citizens aged 18+ vote FOR or AGAINST (1 vote per citizen per proposal).
- *     Voting window: 14 days (fixed).
- *     Pass condition: votesFor > votesAgainst at close.
- *     Timelock: 7 days after passing, then anyone may execute.
- *     Term: 1 year. If the CEO role expires with no successor elected and
- *     executed, Colony.advanceEpoch() is blocked — no UBI until a new CEO
- *     takes office.
+ *   MCC_ELECTION — multi-candidate election for CEO / CFO / COO.
+ *     Phase 1 — NOMINATION (15 min testnet / 7 days mainnet):
+ *       Any citizen opens an election for a role. During this window any
+ *       citizen may nominate candidates (multiple allowed).
+ *     Phase 2 — VOTING (30 min testnet / 14 days mainnet):
+ *       Citizens aged 18+ who joined before the election opened cast one
+ *       vote for their preferred candidate.
+ *     Finalise: anyone calls finaliseElection() after voting closes.
+ *       Candidate with most votes wins. Ties → election fails.
+ *     Timelock: 10 min testnet / 7 days mainnet, then anyone may execute.
+ *     Term: 1 year.
  *
- *   OBLIGATION — any wallet (citizen, company, or third-party arranger)
- *     proposes loan terms between a creditor and an obligor.
- *     Both creditor and obligor must call signObligation() separately.
+ *   OBLIGATION — any wallet proposes loan terms between creditor and obligor.
+ *     Both parties must call signObligation() separately.
  *     On second signature the obligation is created in Colony immediately.
  *     Expires after 30 days if not fully signed.
  */
@@ -40,6 +42,7 @@ contract Governance {
 
     // ── Constants ─────────────────────────────────────────────────────────────
 
+    uint256 public constant NOMINATION_WINDOW = 15 minutes;  // testnet — 7 days on mainnet
     uint256 public constant VOTING_WINDOW     = 30 minutes;  // testnet — 14 days on mainnet
     uint256 public constant TIMELOCK          = 10 minutes;  // testnet — 7 days on mainnet
     uint256 public constant TERM              = 365 days;
@@ -49,15 +52,14 @@ contract Governance {
 
     enum Role { CEO, CFO, COO }
 
-    struct ElectionProposal {
-        Role    role;
-        address candidate;
-        address nominator;
-        uint256 proposedAt;     // block.timestamp when nomination was made
+    struct Election {
+        uint8   role;
+        address openedBy;
+        uint256 openedAt;
+        uint256 nominationEndsAt;
         uint256 votingEndsAt;
-        uint256 timelockEndsAt; // 0 until passed
-        uint256 votesFor;
-        uint256 votesAgainst;
+        uint256 timelockEndsAt;   // 0 until winner found
+        address winner;           // address(0) until finalised
         bool    executed;
         bool    cancelled;
     }
@@ -79,41 +81,36 @@ contract Governance {
 
     IColony public colony;
 
-    // MCC role holders + term ends (address(0) / 0 = vacant)
     address public ceo; uint256 public ceoTermEnd;
     address public cfo; uint256 public cfoTermEnd;
     address public coo; uint256 public cooTermEnd;
 
     uint256 public nextId = 1;
 
-    mapping(uint256 => ElectionProposal)  public elections;
-    mapping(uint256 => ObligationProposal) public obligations;
+    mapping(uint256 => Election)            public elections;
+    mapping(uint256 => address[])           public electionCandidates;
+    mapping(uint256 => mapping(address => uint256)) public candidateVotes;
+    mapping(uint256 => mapping(address => bool))    public isCandidate;
+    mapping(address => mapping(uint256 => bool))    public hasVoted;
+    mapping(uint8   => uint256)             public activeElectionForRole;
 
-    // voter → electionId → voted
-    mapping(address => mapping(uint256 => bool)) public hasVoted;
-
-    // role → current active election id (0 = none)
-    mapping(uint8 => uint256) public activeElectionForRole;
+    mapping(uint256 => ObligationProposal)  public obligations;
 
     // ── Events ────────────────────────────────────────────────────────────────
 
-    event ElectionProposed(uint256 indexed id, Role indexed role, address indexed candidate, address nominator);
-    event VoteCast(uint256 indexed id, address indexed voter, bool support);
-    event ElectionPassed(uint256 indexed id, Role role, address candidate);
-    event ElectionFailed(uint256 indexed id, Role role);
-    event ElectionExecuted(uint256 indexed id, Role indexed role, address indexed newHolder);
+    event ElectionOpened(uint256 indexed id, uint8 indexed role, address indexed openedBy);
+    event CandidateNominated(uint256 indexed id, address indexed candidate, address indexed nominatedBy);
+    event VoteCast(uint256 indexed id, address indexed voter, address indexed candidate);
+    event ElectionFinalised(uint256 indexed id, uint8 role, address winner);
+    event ElectionFailed(uint256 indexed id, uint8 role, string reason);
+    event ElectionExecuted(uint256 indexed id, uint8 indexed role, address indexed newHolder);
+    event RoleVacated(uint8 indexed role, address indexed previousHolder);
     event ObligationProposed(uint256 indexed id, address indexed proposer, address creditor, address obligor);
     event ObligationSigned(uint256 indexed id, address indexed signer);
     event ObligationCreated(uint256 indexed id, uint256 assetId, uint256 liabilityId);
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    /**
-     * @param colony_     Colony contract address
-     * @param initialCeo  Address to hold CEO on deploy (typically colony founder)
-     * @param initialCfo  Address to hold CFO on deploy
-     * @param initialCoo  Address to hold COO on deploy
-     */
     constructor(
         address colony_,
         address initialCeo,
@@ -122,7 +119,6 @@ contract Governance {
     ) {
         require(colony_ != address(0), "Gov: zero colony");
         colony = IColony(colony_);
-        // Founder holds all roles with a full 1-year term from deploy
         ceo = initialCeo; ceoTermEnd = block.timestamp + TERM;
         cfo = initialCfo; cfoTermEnd = block.timestamp + TERM;
         coo = initialCoo; cooTermEnd = block.timestamp + TERM;
@@ -130,40 +126,26 @@ contract Governance {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    function _isCitizen(address a) internal view returns (bool) {
-        return colony.isCitizen(a);
-    }
-
-    /**
-     * @param a          The voter address.
-     * @param proposedAt block.timestamp when the election was nominated.
-     *                   Anti-entryism: a citizen who joined AFTER an election was
-     *                   proposed may not vote in that election.
-     *                   joinedAt == 0 means the citizen predates the field — exempt.
-     */
-    function _isEligibleVoter(address a, uint256 proposedAt) internal view returns (bool) {
+    function _isEligibleVoter(address a, uint256 openedAt) internal view returns (bool) {
         if (!colony.isCitizen(a)) return false;
         uint256 birthYear = colony.dateOfBirth(a);
         if (birthYear == 0) return false;
-        // Approximate current year from Unix timestamp
         uint256 currentYear = 1970 + block.timestamp / 365 days;
         if (currentYear < birthYear + 18) return false;
-        // Anti-entryism: must have joined before this election was proposed
         uint256 joined = colony.joinedAt(a);
-        if (joined > 0 && joined > proposedAt) return false;
+        if (joined > 0 && joined > openedAt) return false;
         return true;
     }
 
     // ── MCC role views ────────────────────────────────────────────────────────
 
-    /// @notice Used by Colony.advanceEpoch() — returns false if CEO slot is vacant or term expired.
     function ceoActive() external view returns (bool) {
         return ceo != address(0) && block.timestamp < ceoTermEnd;
     }
 
-    function roleHolder(Role role) external view returns (address holder, uint256 termEnd, bool active) {
-        if (role == Role.CEO) { holder = ceo; termEnd = ceoTermEnd; }
-        else if (role == Role.CFO) { holder = cfo; termEnd = cfoTermEnd; }
+    function roleHolder(uint8 role) external view returns (address holder, uint256 termEnd, bool active) {
+        if (role == 0) { holder = ceo; termEnd = ceoTermEnd; }
+        else if (role == 1) { holder = cfo; termEnd = cfoTermEnd; }
         else { holder = coo; termEnd = cooTermEnd; }
         active = holder != address(0) && block.timestamp < termEnd;
     }
@@ -171,129 +153,183 @@ contract Governance {
     // ── MCC Elections ─────────────────────────────────────────────────────────
 
     /**
-     * @notice Any citizen may nominate any address for a MCC role.
-     *         Only one active (unresolved) election per role at a time.
+     * @notice Any citizen opens a new election for a role.
+     *         Only one active election per role at a time.
+     *         Starts a 15-minute nomination window immediately.
      */
-    function nominateForElection(Role role, address candidate) external returns (uint256 id) {
-        require(_isCitizen(msg.sender), "Gov: not a citizen");
-        require(candidate != address(0), "Gov: zero candidate");
-        require(candidate != msg.sender, "Gov: cannot self-nominate");
+    function openElection(uint8 role) external returns (uint256 id) {
+        require(role <= 2, "Gov: invalid role");
+        require(colony.isCitizen(msg.sender), "Gov: not a citizen");
 
-        // Ensure no active election for this role
-        uint256 existing = activeElectionForRole[uint8(role)];
+        uint256 existing = activeElectionForRole[role];
         if (existing != 0) {
-            ElectionProposal storage ex = elections[existing];
+            Election storage ex = elections[existing];
             require(
                 ex.executed || ex.cancelled || block.timestamp > ex.votingEndsAt,
-                "Gov: election already active for this role"
+                "Gov: election already active"
             );
         }
 
         id = nextId++;
-        elections[id] = ElectionProposal({
-            role:           role,
-            candidate:      candidate,
-            nominator:      msg.sender,
-            proposedAt:     block.timestamp,
-            votingEndsAt:   block.timestamp + VOTING_WINDOW,
-            timelockEndsAt: 0,
-            votesFor:       0,
-            votesAgainst:   0,
-            executed:       false,
-            cancelled:      false
+        uint256 nomEnd = block.timestamp + NOMINATION_WINDOW;
+        elections[id] = Election({
+            role:             role,
+            openedBy:         msg.sender,
+            openedAt:         block.timestamp,
+            nominationEndsAt: nomEnd,
+            votingEndsAt:     nomEnd + VOTING_WINDOW,
+            timelockEndsAt:   0,
+            winner:           address(0),
+            executed:         false,
+            cancelled:        false
         });
-        activeElectionForRole[uint8(role)] = id;
+        activeElectionForRole[role] = id;
 
-        emit ElectionProposed(id, role, candidate, msg.sender);
+        emit ElectionOpened(id, role, msg.sender);
     }
 
     /**
-     * @notice Cast a FOR or AGAINST vote. Caller must be a citizen aged 18+.
-     *         One vote per citizen per election.
+     * @notice Any citizen nominates a candidate during the nomination phase.
+     *         Multiple candidates per election are allowed.
      */
-    function vote(uint256 electionId, bool support) external {
-        ElectionProposal storage e = elections[electionId];
-        require(e.nominator != address(0), "Gov: election not found");
-        require(_isEligibleVoter(msg.sender, e.proposedAt), "Gov: not eligible (must be citizen 18+ who joined before this election)");
-        require(block.timestamp <= e.votingEndsAt, "Gov: voting closed");
-        require(!e.cancelled,                      "Gov: election cancelled");
-        require(!hasVoted[msg.sender][electionId], "Gov: already voted");
+    function nominateCandidate(uint256 electionId, address candidate) external {
+        Election storage e = elections[electionId];
+        require(e.openedBy != address(0),              "Gov: election not found");
+        require(!e.executed && !e.cancelled,            "Gov: election closed");
+        require(block.timestamp <= e.nominationEndsAt, "Gov: nomination phase closed");
+        require(colony.isCitizen(msg.sender),           "Gov: not a citizen");
+        require(candidate != address(0),               "Gov: zero candidate");
+        require(!isCandidate[electionId][candidate],   "Gov: already nominated");
+
+        isCandidate[electionId][candidate] = true;
+        electionCandidates[electionId].push(candidate);
+
+        emit CandidateNominated(electionId, candidate, msg.sender);
+    }
+
+    /**
+     * @notice Cast one vote for a candidate. Caller must be a citizen aged 18+
+     *         who joined before this election opened.
+     *         Voting is only open after nomination phase closes.
+     */
+    function vote(uint256 electionId, address candidate) external {
+        Election storage e = elections[electionId];
+        require(e.openedBy != address(0),             "Gov: election not found");
+        require(!e.executed && !e.cancelled,           "Gov: election closed");
+        require(block.timestamp > e.nominationEndsAt, "Gov: nomination still open");
+        require(block.timestamp <= e.votingEndsAt,    "Gov: voting closed");
+        require(isCandidate[electionId][candidate],   "Gov: not a candidate");
+        require(_isEligibleVoter(msg.sender, e.openedAt), "Gov: not eligible");
+        require(!hasVoted[msg.sender][electionId],    "Gov: already voted");
 
         hasVoted[msg.sender][electionId] = true;
-        if (support) e.votesFor++;
-        else          e.votesAgainst++;
+        candidateVotes[electionId][candidate]++;
 
-        emit VoteCast(electionId, msg.sender, support);
+        emit VoteCast(electionId, msg.sender, candidate);
     }
 
     /**
      * @notice Finalise an election after voting closes.
-     *         Pass → starts 7-day timelock.  Fail → clears slot, new election possible.
+     *         Candidate with most votes wins. On a tie the election fails.
+     *         If no candidates were nominated the election also fails.
      *         Anyone may call.
      */
     function finaliseElection(uint256 electionId) external {
-        ElectionProposal storage e = elections[electionId];
-        require(e.nominator != address(0),        "Gov: election not found");
+        Election storage e = elections[electionId];
+        require(e.openedBy != address(0),         "Gov: election not found");
         require(block.timestamp > e.votingEndsAt, "Gov: voting still open");
         require(!e.executed && !e.cancelled,      "Gov: already finalised");
 
-        if (e.votesFor > e.votesAgainst) {
-            e.timelockEndsAt = block.timestamp + TIMELOCK;
-            emit ElectionPassed(electionId, e.role, e.candidate);
-        } else {
+        address[] storage candidates = electionCandidates[electionId];
+
+        if (candidates.length == 0) {
             e.cancelled = true;
-            activeElectionForRole[uint8(e.role)] = 0;
-            emit ElectionFailed(electionId, e.role);
+            activeElectionForRole[e.role] = 0;
+            emit ElectionFailed(electionId, e.role, "no candidates");
+            return;
         }
+
+        // Find candidate with most votes; detect tie
+        address topCandidate = address(0);
+        uint256 topVotes     = 0;
+        bool    tie          = false;
+
+        for (uint256 i = 0; i < candidates.length; i++) {
+            uint256 v = candidateVotes[electionId][candidates[i]];
+            if (v > topVotes) {
+                topVotes     = v;
+                topCandidate = candidates[i];
+                tie          = false;
+            } else if (v == topVotes && topVotes > 0) {
+                tie = true;
+            }
+        }
+
+        if (topVotes == 0 || tie) {
+            e.cancelled = true;
+            activeElectionForRole[e.role] = 0;
+            emit ElectionFailed(electionId, e.role, topVotes == 0 ? "no votes cast" : "tie");
+            return;
+        }
+
+        e.winner         = topCandidate;
+        e.timelockEndsAt = block.timestamp + TIMELOCK;
+        emit ElectionFinalised(electionId, e.role, topCandidate);
     }
 
     /**
-     * @notice Execute a passed election after the 7-day timelock expires.
+     * @notice Execute a passed election after the timelock expires.
      *         Transfers the role to the winner. Anyone may call.
      */
     function executeElection(uint256 electionId) external {
-        ElectionProposal storage e = elections[electionId];
+        Election storage e = elections[electionId];
         require(e.timelockEndsAt > 0,                "Gov: not passed");
         require(block.timestamp >= e.timelockEndsAt, "Gov: timelock active");
         require(!e.executed,                         "Gov: already executed");
 
         e.executed = true;
-        activeElectionForRole[uint8(e.role)] = 0;
+        activeElectionForRole[e.role] = 0;
 
         uint256 newTermEnd = block.timestamp + TERM;
-        if      (e.role == Role.CEO) { ceo = e.candidate; ceoTermEnd = newTermEnd; }
-        else if (e.role == Role.CFO) { cfo = e.candidate; cfoTermEnd = newTermEnd; }
-        else                         { coo = e.candidate; cooTermEnd = newTermEnd; }
+        if      (e.role == 0) { ceo = e.winner; ceoTermEnd = newTermEnd; }
+        else if (e.role == 1) { cfo = e.winner; cfoTermEnd = newTermEnd; }
+        else                  { coo = e.winner; cooTermEnd = newTermEnd; }
 
-        emit ElectionExecuted(electionId, e.role, e.candidate);
+        emit ElectionExecuted(electionId, e.role, e.winner);
     }
 
     // ── Role Resignation ─────────────────────────────────────────────────────
 
     /**
-     * @notice Current holder of a role may voluntarily vacate it.
-     *         This frees the slot for a new election immediately.
+     * @notice Current holder may voluntarily vacate a role.
+     *         Frees the slot for a new election immediately.
      */
-    function resign(Role role) external {
-        if (role == Role.CEO) {
+    function resign(uint8 role) external {
+        if (role == 0) {
             require(msg.sender == ceo, "Gov: not CEO");
             ceo = address(0); ceoTermEnd = 0;
-        } else if (role == Role.CFO) {
+        } else if (role == 1) {
             require(msg.sender == cfo, "Gov: not CFO");
             cfo = address(0); cfoTermEnd = 0;
         } else {
             require(msg.sender == coo, "Gov: not COO");
             coo = address(0); cooTermEnd = 0;
         }
+        emit RoleVacated(role, msg.sender);
+    }
+
+    // ── Views ─────────────────────────────────────────────────────────────────
+
+    function getCandidates(uint256 electionId) external view returns (address[] memory) {
+        return electionCandidates[electionId];
+    }
+
+    function getCandidateVotes(uint256 electionId, address candidate) external view returns (uint256) {
+        return candidateVotes[electionId][candidate];
     }
 
     // ── Obligation Proposals ──────────────────────────────────────────────────
 
-    /**
-     * @notice Propose an obligation between creditor and obligor.
-     *         Caller may be either party, or any third-party arranger.
-     *         If the caller is one of the parties, their signature is auto-applied.
-     */
     function proposeObligation(
         address creditor,
         address obligor,
@@ -302,9 +338,9 @@ contract Governance {
         uint256 collateralId
     ) external returns (uint256 id) {
         require(creditor != address(0) && obligor != address(0), "Gov: zero address");
-        require(creditor != obligor,                             "Gov: same party");
-        require(monthlyAmountS > 0,                             "Gov: zero amount");
-        require(totalEpochs > 0,                                "Gov: zero epochs");
+        require(creditor != obligor,    "Gov: same party");
+        require(monthlyAmountS > 0,     "Gov: zero amount");
+        require(totalEpochs > 0,        "Gov: zero epochs");
 
         id = nextId++;
         obligations[id] = ObligationProposal({
@@ -321,24 +357,15 @@ contract Governance {
         });
 
         emit ObligationProposed(id, msg.sender, creditor, obligor);
-
-        // If proposer is one of the parties, check if we're already done
         _tryExecute(id);
     }
 
-    /**
-     * @notice Sign an obligation proposal as the creditor or obligor.
-     *         On second signature the obligation is created immediately.
-     */
     function signObligation(uint256 obligationId) external {
         ObligationProposal storage ob = obligations[obligationId];
         require(ob.creditor != address(0),       "Gov: proposal not found");
         require(!ob.executed,                    "Gov: already executed");
         require(block.timestamp <= ob.expiresAt, "Gov: expired");
-        require(
-            msg.sender == ob.creditor || msg.sender == ob.obligor,
-            "Gov: not a party"
-        );
+        require(msg.sender == ob.creditor || msg.sender == ob.obligor, "Gov: not a party");
 
         if (msg.sender == ob.creditor) {
             require(!ob.creditorSigned, "Gov: already signed");
@@ -362,14 +389,7 @@ contract Governance {
         emit ObligationCreated(id, assetId, liabilityId);
     }
 
-    // ── Views ─────────────────────────────────────────────────────────────────
-
-    /**
-     * @notice Obligation proposal IDs where the given address still needs to sign.
-     */
-    function pendingSignaturesFor(address party)
-        external view returns (uint256[] memory ids)
-    {
+    function pendingSignaturesFor(address party) external view returns (uint256[] memory ids) {
         uint256 count = 0;
         for (uint256 i = 1; i < nextId; i++) {
             if (_needsSign(i, party)) count++;
@@ -388,22 +408,5 @@ contract Governance {
         if (party == ob.creditor && !ob.creditorSigned) return true;
         if (party == ob.obligor  && !ob.obligorSigned)  return true;
         return false;
-    }
-
-    /**
-     * @notice IDs of elections that are still open (not executed or cancelled).
-     */
-    function activeElections() external view returns (uint256[] memory ids) {
-        uint256 count = 0;
-        for (uint256 i = 1; i < nextId; i++) {
-            ElectionProposal storage e = elections[i];
-            if (e.nominator != address(0) && !e.executed && !e.cancelled) count++;
-        }
-        ids = new uint256[](count);
-        uint256 j = 0;
-        for (uint256 i = 1; i < nextId; i++) {
-            ElectionProposal storage e = elections[i];
-            if (e.nominator != address(0) && !e.executed && !e.cancelled) ids[j++] = i;
-        }
     }
 }
