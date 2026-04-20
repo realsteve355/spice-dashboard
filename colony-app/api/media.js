@@ -55,8 +55,15 @@ export default async function handler(req, res) {
   const path = `${colony}/${entityType}/${entityId}.${ext}`
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return res.status(500).json({ error: 'SUPABASE_URL or SUPABASE_SERVICE_KEY not configured' })
+    return res.status(500).json({
+      error: 'env vars missing',
+      hasUrl:        !!SUPABASE_URL,
+      hasServiceKey: !!SUPABASE_SERVICE_KEY,
+    })
   }
+
+  // Diagnostic: confirm which key type is in use (never logs the full key)
+  console.log('[media] key check — length:', SUPABASE_SERVICE_KEY.length, 'prefix:', SUPABASE_SERVICE_KEY.slice(0, 8))
 
   // Upload to Supabase Storage using service role key (bypasses RLS)
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`
