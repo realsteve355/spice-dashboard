@@ -17,8 +17,7 @@ const hre = require("hardhat");
 // ── Config ────────────────────────────────────────────────────────────────────
 const COLONY_ADDRESS = "0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5";
 
-// Initial MCC role holders — founder holds all three on deploy
-const FOUNDER = "0x96f2E647abeD9Cf3B0b07c3FF2A4451E72D49f6B"; // Steve
+// Initial MCC role holders — use deployer address (founder holds all three on deploy)
 
 // Colony ABI (only what we need)
 const COLONY_ABI = [
@@ -39,10 +38,10 @@ async function main() {
     throw new Error("Signer is not the colony founder — setGovernance will revert");
   }
 
-  // 1. Deploy new Governance
+  // 1. Deploy new Governance (founder holds all three MCC roles initially)
   process.stdout.write("Deploying Governance… ");
   const Governance = await hre.ethers.getContractFactory("Governance");
-  const gov = await Governance.deploy(COLONY_ADDRESS, FOUNDER, FOUNDER, FOUNDER);
+  const gov = await Governance.deploy(COLONY_ADDRESS, deployer.address, deployer.address, deployer.address);
   await gov.waitForDeployment();
   const govAddr = await gov.getAddress();
   console.log("✓", govAddr);
