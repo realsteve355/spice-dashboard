@@ -1015,10 +1015,15 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
     if (!cfg?.companyFactory) return
     const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
     const factory = new ethers.Contract(cfg.companyFactory, FACTORY_ABI_CO, rpc)
+    const nameAbi = ['function name() view returns (string)']
     factory.companyCount().then(async count => {
       const all = await Promise.all(
         Array.from({ length: Number(count) }, (_, i) =>
-          factory.getCompany(i).then(([name, wallet]) => ({ name, address: wallet.toLowerCase() }))
+          factory.getCompany(i).then(async ([, wallet]) => {
+            const co   = new ethers.Contract(wallet, nameAbi, rpc)
+            const name = await co.name().catch(() => wallet.slice(0, 10))
+            return { name, address: wallet.toLowerCase() }
+          })
         )
       )
       setCompanies(all.filter(c => c.address !== addr))

@@ -253,16 +253,19 @@ export default function Dashboard() {
         const count = Number(await factory.companyCount())
         const allCompanies = await Promise.all(
           Array.from({ length: count }, (_, i) => i).map(async id => {
-            const [name, wallet] = await factory.getCompany(id)
+            const [, wallet] = await factory.getCompany(id)
+            let name = wallet.slice(0, 10)
             let isSecretary = false
             let isEquityHolder = false
             try {
               const companyContract = new ethers.Contract(wallet, COMPANY_IMPL_ABI, rpc)
-              const [secretary, equityResult] = await Promise.all([
+              const [liveNameRaw, secretary, equityResult] = await Promise.all([
+                companyContract.name(),
                 companyContract.secretary(),
                 companyContract.getEquityTable().catch(() => [[], [], []]),
               ])
-              const myAddr = address.toLowerCase()
+              name           = liveNameRaw
+              const myAddr   = address.toLowerCase()
               isSecretary    = secretary.toLowerCase() === myAddr
               isEquityHolder = equityResult[0].some(h => h.toLowerCase() === myAddr)
             } catch {}
