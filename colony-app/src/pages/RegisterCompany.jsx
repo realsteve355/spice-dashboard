@@ -1,19 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { logInfo, logError } from '../utils/logger'
+import { C } from '../theme'
 
 const FACTORY_ABI = [
   "function deployCompany(string, address[], uint256[], uint8) external returns (uint256)",
 ]
 
-const COLONY_ABI = [
-  "function isCitizen(address) view returns (bool)",
-]
+const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
+const CITIZEN_IFACE = new ethers.Interface([
+  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
+])
 
-import { C } from '../theme'
+async function fetchCitizens(colonyAddr) {
+  const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
+  const toBlock = await rpc.getBlockNumber()
+  const CHUNK   = 9000
+  const chunks  = await Promise.all(
+    Array.from({ length: 5 }, (_, i) => {
+      const to   = toBlock - i * CHUNK
+      const from = Math.max(0, to - CHUNK + 1)
+      return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
+    })
+  )
+  const map = {}
+  for (const log of chunks.flat()) {
+    try {
+      const { args } = CITIZEN_IFACE.parseLog({ topics: log.topics, data: log.data })
+      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
+    } catch {}
+  }
+  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+}
 
 export default function RegisterCompany() {
   const { slug }  = useParams()
@@ -27,27 +48,21 @@ export default function RegisterCompany() {
   const [done, setDone]           = useState(false)
   const [txError, setTxError]     = useState(null)
   const [companyId, setCompanyId] = useState(null)
+  const [citizens,  setCitizens]  = useState([])
+  const [companyPhoto, setCompanyPhoto] = useState(null)
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoInputRef = useRef()
 
-  const totalPct  = holders.reduce((s, h) => s + Number(h.pct || 0), 0)
-  const pctValid  = totalPct === 100
-  const hasErrors = Object.values(holderErrors).some(Boolean)
-  const canSubmit = name.trim() && pctValid && !hasErrors
+  useEffect(() => {
+    const colonyAddr = contracts?.colonies?.[slug]?.colony
+    if (!colonyAddr) return
+    fetchCitizens(colonyAddr).then(setCitizens).catch(() => {})
+  }, [slug, contracts])
 
-  async function checkCitizen(i, wallet) {
-    const cfg = contracts?.colonies?.[slug]
-    if (!cfg?.colony || !ethers.isAddress(wallet)) {
-      setHolderErrors(e => ({ ...e, [i]: wallet ? 'Invalid address' : null }))
-      return
-    }
-    try {
-      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
-      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
-      const ok     = await colony.isCitizen(wallet)
-      setHolderErrors(e => ({ ...e, [i]: ok ? null : 'Not a citizen of this colony' }))
-    } catch {
-      setHolderErrors(e => ({ ...e, [i]: null }))  // ignore RPC errors silently
-    }
-  }
+  const totalPct    = holders.reduce((s, h) => s + Number(h.pct || 0), 0)
+  const pctValid    = totalPct === 100
+  const allWallets  = holders.every((h, i) => i === 0 ? !!address : !!h.wallet)
+  const canSubmit   = name.trim() && pctValid && allWallets
 
   function addHolder() {
     const remaining = 100 - totalPct
@@ -98,6 +113,35 @@ export default function RegisterCompany() {
 
   const slugId = companyId !== null ? String(companyId) : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 
+  async function handlePhotoUpload(file) {
+    if (!file || !companyId) return
+    setPhotoUploading(true)
+    const reader = new FileReader()
+    reader.onload = async ev => {
+      const raw = ev.target.result
+      const img = new Image()
+      img.onload = async () => {
+        const scale = Math.min(1, 400 / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82)
+        setCompanyPhoto(dataUrl)
+        try {
+          await fetch('/api/media', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colony: slug, entityType: 'company', entityId: companyId.toLowerCase(), dataUrl }),
+          })
+        } catch {}
+        setPhotoUploading(false)
+      }
+      img.src = raw
+    }
+    reader.readAsDataURL(file)
+  }
+
   if (done) return (
     <Layout title="Company Registered" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
       <div style={{ padding: '32px 16px', textAlign: 'center' }}>
@@ -105,10 +149,42 @@ export default function RegisterCompany() {
         <div style={{ fontSize: 16, fontWeight: 500, color: C.text, marginBottom: 8 }}>
           {name} registered
         </div>
-        <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 24 }}>
+        <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 20 }}>
           Your company is live on the Fisc blockchain.<br />
           Equity stakes have been assigned.
         </div>
+
+        {/* Optional company photo */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>Add a company logo (optional)</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 12, alignItems: 'center' }}>
+            {companyPhoto ? (
+              <img src={companyPhoto} alt="" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: `1px solid ${C.border}` }} />
+            ) : (
+              <div style={{ width: 64, height: 64, borderRadius: 8, border: `1px dashed ${C.border}`, background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: C.faint }}>◈</div>
+            )}
+            <div>
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={photoUploading}
+                style={{ ...ghostBtn, display: 'block', marginBottom: 6 }}
+              >
+                {photoUploading ? 'Uploading…' : companyPhoto ? 'Change logo' : 'Upload logo'}
+              </button>
+              {companyPhoto && (
+                <div style={{ fontSize: 11, color: C.green }}>✓ Logo saved</div>
+              )}
+            </div>
+          </div>
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) handlePhotoUpload(f) }}
+          />
+        </div>
+
         <button
           onClick={() => navigate(`/colony/${slug}/company/${slugId}`)}
           style={primaryBtn}
@@ -147,43 +223,58 @@ export default function RegisterCompany() {
             Must total exactly 100%. Minimum unit: 0.01%.
           </div>
 
-          {holders.map((h, i) => (
-            <div key={i} style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                style={{ ...inputStyle, flex: 1, borderColor: holderErrors[i] ? C.red : C.border }}
-                placeholder={i === 0 ? address || '0x...' : '0x wallet address'}
-                value={i === 0 ? address || '' : h.wallet}
-                onChange={e => { if (i > 0) { updateHolder(i, 'wallet', e.target.value); setHolderErrors(er => ({ ...er, [i]: null })) } }}
-                onBlur={e => i > 0 && checkCitizen(i, e.target.value)}
-                readOnly={i === 0}
-              />
-              <div style={{ position: 'relative', width: 72, flexShrink: 0 }}>
-                <input
-                  style={{ ...inputStyle, paddingRight: 20, textAlign: 'right' }}
-                  type="number"
-                  min="0.01"
-                  max="100"
-                  step="0.01"
-                  value={h.pct}
-                  onChange={e => updateHolder(i, 'pct', e.target.value)}
-                />
-                <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>%</span>
+          {holders.map((h, i) => {
+            // Addresses already chosen by other rows (excluding self for i>0)
+            const chosenAddrs = holders
+              .filter((_, j) => j !== i && j > 0)
+              .map(x => x.wallet.toLowerCase())
+            return (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {i === 0 ? (
+                    <div style={{ ...inputStyle, flex: 1, color: C.sub, display: 'flex', alignItems: 'center' }}>
+                      {citizens.find(c => c.address.toLowerCase() === address?.toLowerCase())?.name || address || 'You (founder)'}
+                    </div>
+                  ) : (
+                    <select
+                      style={{ ...selectStyle, flex: 1 }}
+                      value={h.wallet}
+                      onChange={e => updateHolder(i, 'wallet', e.target.value)}
+                    >
+                      <option value="">Select citizen…</option>
+                      {citizens
+                        .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+                        .filter(c => !chosenAddrs.includes(c.address.toLowerCase()))
+                        .map(c => (
+                          <option key={c.address} value={c.address}>{c.name}</option>
+                        ))
+                      }
+                    </select>
+                  )}
+                  <div style={{ position: 'relative', width: 72, flexShrink: 0 }}>
+                    <input
+                      style={{ ...inputStyle, paddingRight: 20, textAlign: 'right' }}
+                      type="number"
+                      min="0.01"
+                      max="100"
+                      step="0.01"
+                      value={h.pct}
+                      onChange={e => updateHolder(i, 'pct', e.target.value)}
+                    />
+                    <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>%</span>
+                  </div>
+                  {i > 0 && (
+                    <button
+                      onClick={() => removeHolder(i)}
+                      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '0 10px', cursor: 'pointer', color: C.faint, height: 40, flexShrink: 0 }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
               </div>
-              {i > 0 && (
-                <button
-                  onClick={() => { removeHolder(i); setHolderErrors(e => { const n = { ...e }; delete n[i]; return n }) }}
-                  style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '0 10px', cursor: 'pointer', color: C.faint, height: 40, flexShrink: 0 }}
-                >
-                  ×
-                </button>
-              )}
-              </div>
-              {holderErrors[i] && (
-                <div style={{ fontSize: 11, color: C.red, marginTop: 4 }}>{holderErrors[i]}</div>
-              )}
-            </div>
-          ))}
+            )
+          })}
 
           {/* Total indicator */}
           <div style={{
@@ -242,6 +333,13 @@ const inputStyle  = {
   width: '100%', padding: '11px 12px',
   border: `1px solid ${C.border}`, borderRadius: 6,
   fontSize: 13, color: C.text, background: C.white, outline: 'none',
+  boxSizing: 'border-box',
+}
+const selectStyle = {
+  padding: '11px 12px',
+  border: `1px solid ${C.border}`, borderRadius: 6,
+  fontSize: 13, color: C.text, background: C.white,
+  fontFamily: "'IBM Plex Mono', monospace", boxSizing: 'border-box',
 }
 const primaryBtn  = {
   width: '100%', padding: '13px', background: C.gold, color: C.bg,

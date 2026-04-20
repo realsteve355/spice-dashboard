@@ -7,6 +7,32 @@ import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 
+const CITIZEN_JOINED_TOPIC = ethers.id("CitizenJoined(address,uint256,string)")
+const CITIZEN_IFACE_CO = new ethers.Interface([
+  "event CitizenJoined(address indexed citizen, uint256 gTokenId, string name)",
+])
+
+async function fetchColonyCitizens(colonyAddr) {
+  const rpc     = new ethers.JsonRpcProvider('https://sepolia.base.org')
+  const toBlock = await rpc.getBlockNumber()
+  const CHUNK   = 9000
+  const chunks  = await Promise.all(
+    Array.from({ length: 5 }, (_, i) => {
+      const to   = toBlock - i * CHUNK
+      const from = Math.max(0, to - CHUNK + 1)
+      return rpc.getLogs({ address: colonyAddr, fromBlock: from, toBlock: to, topics: [CITIZEN_JOINED_TOPIC] }).catch(() => [])
+    })
+  )
+  const map = {}
+  for (const log of chunks.flat()) {
+    try {
+      const { args } = CITIZEN_IFACE_CO.parseLog({ topics: log.topics, data: log.data })
+      map[args.citizen.toLowerCase()] = { address: args.citizen, name: args.name }
+    } catch {}
+  }
+  return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+}
+
 // Colony contract — for send() and citizen checks
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
@@ -288,25 +314,15 @@ export default function Company() {
   const [issuingShares,   setIssuingShares]  = useState(false)
   const [issueType,       setIssueType]      = useState('open')
   const [issueHolder,     setIssueHolder]    = useState('')
-  const [issueHolderError, setIssueHolderError] = useState(null)
   const [issueStakeBps,   setIssueStakeBps]  = useState('')
   const [issueVestMonths, setIssueVestMonths] = useState('12')
+  const [citizens,        setCitizens]       = useState([])
 
-  async function checkIssueHolder(wallet) {
-    const cfg = deployedContracts?.colonies?.[slug]
-    if (!cfg?.colony || !ethers.isAddress(wallet)) {
-      setIssueHolderError(wallet ? 'Invalid address' : null)
-      return
-    }
-    try {
-      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
-      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
-      const ok     = await colony.isCitizen(wallet)
-      setIssueHolderError(ok ? null : 'Not a citizen of this colony')
-    } catch {
-      setIssueHolderError(null)
-    }
-  }
+  useEffect(() => {
+    const colonyAddr = deployedContracts?.colonies?.[slug]?.colony
+    if (!colonyAddr) return
+    fetchColonyCitizens(colonyAddr).then(setCitizens).catch(() => {})
+  }, [slug, deployedContracts])
   const [actionPending,   setActPending]     = useState(false)
   const [actionError,     setActError]       = useState(null)
   const [actionDone,      setActDone]        = useState(null)
@@ -624,12 +640,19 @@ export default function Company() {
                         ? 'Immediately transferable. Suitable for investors paying S-tokens upfront.'
                         : 'Earned in monthly tranches. Unvested shares forfeit if the participant stops contributing.'}
                     </div>
-                    <CField label="Holder address" value={issueHolder}
-                      onChange={v => { setIssueHolder(v); setIssueHolderError(null) }}
-                      onBlur={() => checkIssueHolder(issueHolder)}
-                      placeholder="0x…"
-                      error={issueHolderError}
-                    />
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>HOLDER</div>
+                      <select
+                        style={{ ...inlineInput, width: '100%', fontFamily: "'IBM Plex Mono', monospace" }}
+                        value={issueHolder}
+                        onChange={e => setIssueHolder(e.target.value)}
+                      >
+                        <option value="">Select citizen…</option>
+                        {citizens.map(c => (
+                          <option key={c.address} value={c.address}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                     <CField label="Stake in basis points (10000 = 100%)" value={issueStakeBps} onChange={setIssueStakeBps} placeholder="e.g. 2000 = 20%" type="number" />
                     {issueType === 'vesting' && (
                       <CField label="Vesting period (months, equal tranches)" value={issueVestMonths} onChange={setIssueVestMonths} placeholder="12" type="number" />
@@ -640,8 +663,8 @@ export default function Company() {
                       </button>
                       <button
                         onClick={handleIssueShares}
-                        disabled={actionPending || !issueHolder || !issueStakeBps || !!issueHolderError}
-                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps || !!issueHolderError) ? 0.4 : 1 }}
+                        disabled={actionPending || !issueHolder || !issueStakeBps}
+                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Issuing…' : 'Issue shares →'}
                       </button>

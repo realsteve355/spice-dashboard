@@ -237,6 +237,8 @@ export default function Assets() {
             signer={signer}
             slug={slug}
             isCitizen={isCitizen}
+            citizens={citizens}
+            nameMap={nameMap}
             onReload={reload}
           />
         ) : (
@@ -272,7 +274,7 @@ function NotACitizenBanner() {
   )
 }
 
-function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) {
+function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, nameMap, onReload }) {
   const [registering,  setRegistering]  = useState(false)
   const [transferring, setTransferring] = useState(null)  // assetId or null
   const [actPending,   setActPending]   = useState(false)
@@ -345,12 +347,14 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
   }
 
   async function handleTransfer(assetId) {
-    if (!signer || !cfg?.colony || !tTo || !tPrice) return
-    if (!ethers.isAddress(tTo)) { setTError('Invalid address'); return }
+    const recipientAddr = citizens.find(c => c.address.toLowerCase() === tTo.toLowerCase())?.address || tTo
+    if (!signer || !cfg?.colony || !recipientAddr || !tPrice) return
+    if (!ethers.isAddress(recipientAddr)) { setTError('Select a valid recipient'); return }
     setActPending(true); setActError(null); setActDone(null)
     try {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
-      const tx = await colony.transferAsset(BigInt(assetId), tTo, ethers.parseEther(tPrice))
+      const recipientAddr = citizens.find(c => c.address.toLowerCase() === tTo.toLowerCase())?.address || tTo
+      const tx = await colony.transferAsset(BigInt(assetId), recipientAddr, ethers.parseEther(tPrice))
       await tx.wait()
       setActDone('Asset transferred')
       setTransferring(null); setTTo(''); setTPrice('')
@@ -414,8 +418,13 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
                 <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10 }}>
                   <div style={{ fontSize: 10, color: C.faint, marginBottom: 8 }}>TRANSFER ASSET</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <input style={{ ...inlineInput, flex: 2 }} placeholder="Recipient 0x…"
-                      value={tTo} onChange={e => { setTTo(e.target.value); setTError(null) }} />
+                    <select style={{ ...selectStyle, flex: 2 }}
+                      value={tTo} onChange={e => { setTTo(e.target.value); setTError(null) }}>
+                      <option value="">Select recipient…</option>
+                      {citizens.filter(c => c.address.toLowerCase() !== address?.toLowerCase()).map(c => (
+                        <option key={c.address} value={c.address.toLowerCase()}>{c.name}</option>
+                      ))}
+                    </select>
                     <div style={{ position: 'relative', flex: 1 }}>
                       <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} placeholder="Price"
                         type="number" value={tPrice} onChange={e => setTPrice(e.target.value)} />
@@ -427,7 +436,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, onReload }) 
                     <button onClick={() => { setTransferring(null); setTTo(''); setTPrice(''); setTError(null) }}
                       style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
                     <button onClick={() => handleTransfer(a.id)}
-                      disabled={actPending || !tTo || !tPrice}
+                      disabled={actPending || !tTo || !tPrice || tTo === ''}
                       style={{ ...actionBtn(C.gold), flex: 2, opacity: (actPending || !tTo || !tPrice) ? 0.4 : 1 }}>
                       {actPending ? 'Transferring…' : 'Transfer →'}
                     </button>
