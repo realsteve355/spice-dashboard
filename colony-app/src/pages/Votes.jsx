@@ -140,6 +140,16 @@ export default function Votes() {
 
   useEffect(() => { load() }, [govAddress, colonyAddr, provider, address])
 
+  // Recompute statuses every 15s so FINALISE_READY / EXECUTE_READY buttons
+  // appear automatically without a manual page refresh
+  useEffect(() => {
+    const t = setInterval(() => {
+      const nowSec = Math.floor(Date.now() / 1000)
+      setElecs(prev => prev.map(e => ({ ...e, status: electionStatus(e, nowSec) })))
+    }, 15000)
+    return () => clearInterval(t)
+  }, [])
+
   async function doVote(electionId, support) {
     if (!signer || !govAddress) return
     setActionPending(`vote-${electionId}`); setActionError(null)
