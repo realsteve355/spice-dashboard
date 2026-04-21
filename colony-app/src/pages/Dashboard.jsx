@@ -400,6 +400,21 @@ export default function Dashboard() {
       await tx.wait()
       logInfo('tx.confirmed', { colony: slug, address, txHash: tx.hash, message: `send ${amt} S`, meta: { to: recipient, note } })
       refresh()
+
+      // Notify recipient
+      const fromShort = `${address.slice(0, 6)}…${address.slice(-4)}`
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colony: slug,
+          address: recipient,
+          type: 'payment_received',
+          title: `${amt} S received`,
+          body: note ? `"${note}" from ${fromShort}` : `From ${fromShort}`,
+          link: `/colony/${slug}/dashboard`,
+        }),
+      }).catch(() => {})
     } catch (e) {
       logError('tx.failed', { colony: slug, address, message: e?.reason || e?.shortMessage || e?.message, meta: { action: 'send', to: recipient, amount: amt } })
       console.error(e)
