@@ -31,8 +31,8 @@ export default async function handler(req, res) {
   }
 
   // Validate entity type
-  if (!['citizen', 'company', 'asset'].includes(entityType)) {
-    return res.status(400).json({ error: 'entityType must be citizen, company, or asset' })
+  if (!['citizen', 'company', 'asset', 'product'].includes(entityType)) {
+    return res.status(400).json({ error: 'entityType must be citizen, company, asset, or product' })
   }
 
   // Validate data URL shape

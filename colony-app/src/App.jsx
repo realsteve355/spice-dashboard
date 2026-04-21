@@ -16,6 +16,8 @@ import Guardian         from './pages/Guardian'
 import RequestPayment   from './pages/RequestPayment'
 import PaymentConfirm   from './pages/PaymentConfirm'
 import Assets           from './pages/Assets'
+import Mall             from './pages/Mall'
+import Store            from './pages/Store'
 
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
@@ -302,6 +304,8 @@ export default function App() {
           <Route path="/colony/:slug/request"            element={<RequestPayment />}  />
           <Route path="/colony/:slug/pay"                element={<PaymentConfirm />}  />
           <Route path="/colony/:slug/assets"             element={<Assets />}          />
+          <Route path="/colony/:slug/mall"               element={<Mall />}            />
+          <Route path="/colony/:slug/mall/:companyAddr"  element={<Store />}           />
           <Route path="/create"                          element={<CreateColony />}    />
         </Routes>
       </BrowserRouter>
