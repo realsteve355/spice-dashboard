@@ -340,9 +340,45 @@ are paid via the Mall, not by entering addresses manually.
 - Seed script: `npm run seed` — registers bot wallets (Alice/Bob/Charlie/Diana/Erik) as citizens,
   sends S transactions, seeds Supabase. Idempotent. `.env.seed` with `BOT_0_KEY…BOT_4_KEY`.
 - Vitest unit tests: `npm test` — covers addrLabel.js pure functions.
-- Playwright E2E: `npm run test:e2e` — mockWallet fixture injects window.ethereum without MetaMask.
-  Requires seed to have been run first (bot wallets must be registered citizens).
+- Playwright E2E: `npm run test:e2e` — 11 tests across 3 spec files. mockWallet fixture injects
+  window.ethereum without MetaMask. Bypasses eth_estimateGas, eth_gasPrice, eth_feeHistory to
+  prevent RPC hangs on write-path tests. Requires seed to have been run first.
+  - `dashboard.spec.js` — 6 read-only smoke tests (name, address, citizen, balance, nav, tx history)
+  - `citizen-actions.spec.js` — claim UBI (skip if already claimed this epoch), send S-tokens
+  - `non-citizen.spec.js` — no wallet state, stranger address (not a citizen)
 - See `colony-app/.env.seed.example` for required env vars.
+
+### Native Mobile App (`colony-app-native/`) — Planned
+
+Decision made 21 April 2026. To be built as a separate Expo React Native project in the monorepo.
+
+**Goal:** Genuine iOS/Android app (App Store distributed) with embedded wallet and NFC tap-to-pay.
+The key demo scenario is a citizen paying S-tokens at a physical merchant (e.g. university cafeteria).
+
+**Stack:**
+- Expo managed workflow + EAS Build (App Store / Play Store pipeline)
+- React Native (native UIKit components — not a WebView)
+- Embedded wallet: `react-native-keychain` (iOS Secure Enclave) + ethers.js key gen + FaceID/TouchID
+- NFC: `react-native-nfc-manager` — reads NDEF tags; iOS opens app via Universal Links
+- ethers.js v6 — same contract calls as web app; business logic largely reusable
+
+**NFC payment flow (iOS + Android):**
+Till tablet encodes payment URL into rewritable NFC tag → citizen taps phone → iOS reads tag,
+opens app at /pay screen → citizen confirms with FaceID → `colony.send()` signed + broadcast →
+till polls for confirmed tx. No HCE required (Apple blocks third-party HCE).
+
+**Key custody model:** self-custodial with iCloud Keychain backup. Key generated on-device,
+never transmitted. Seed phrase export behind FaceID for recovery.
+
+**Build order:**
+1. Embedded wallet (keygen, Keychain storage, FaceID, seed phrase)
+2. Dashboard screen (balance, tx history)
+3. Send flow (citizen picker, amount, FaceID confirm, broadcast)
+4. NFC payment (tap tag → PayScreen → FaceID → done)
+5. UBI claim
+6. Till web page (amount entry, NFC tag write, tx confirmation poll)
+
+**Costs:** Apple Developer Program $99/year, Google Play $25 one-time. All libraries free/open source.
 
 **Protocol admin** (`spice-admin/`): single static HTML page at `spice.zpc.finance`.
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
@@ -374,10 +410,11 @@ Colony.settleProtocol() splits ETH between protocol treasury and founder wallet 
 
 Pre-launch research project. Key next steps:
 
+- [ ] **Native mobile app** — `colony-app-native/` Expo project, embedded wallet, NFC tap-to-pay (starting April 2026)
 - [ ] Chart 5 — SPICE protocol mechanics page
 - [ ] Mobile layout for /simulation
 - [ ] Feedback / comment mechanism on methodology page
 - [ ] Technical co-founder (DeFi-experienced, token allocation)
 - [ ] IRONVAULT (ticker: IRON) — whitepaper
 
-*Last updated: March 2026*
+*Last updated: April 2026*
