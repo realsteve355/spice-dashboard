@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { ethers } from 'ethers'
 import Layout from '../components/Layout'
@@ -24,6 +24,16 @@ const GOV_ABI = [
   "function executeElection(uint256 electionId) external",
   "function resign(uint8 role) external",
 ]
+
+function countdownStr(ts, nowSec) {
+  const secs = ts - nowSec
+  if (secs <= 0) return null
+  const s = secs % 60
+  const m = Math.floor(secs / 60) % 60
+  const h = Math.floor(secs / 3600)
+  if (h > 0) return `${h}h ${m}m remaining`
+  return `${m}m ${s}s remaining`
+}
 
 function electionStatus(e, nowSec) {
   if (e.executed)                                                  return 'EXECUTED'
@@ -209,12 +219,17 @@ export default function Votes() {
     }
   }, [nomElecId])
 
-  // Refresh statuses every 20s
+  // Always-fresh ref so the interval can call loadAfterWrite without stale closure
+  const loadRef = useRef(null)
+  useEffect(() => { loadRef.current = loadAfterWrite })
+
+  // Every 30s: recalculate time-based statuses AND re-read chain state
   useEffect(() => {
     const t = setInterval(() => {
       const nowSec = Math.floor(Date.now() / 1000)
       setElecs(prev => prev.map(e => ({ ...e, status: electionStatus(e, nowSec) })))
-    }, 20000)
+      loadRef.current?.()
+    }, 30000)
     return () => clearInterval(t)
   }, [])
 
@@ -360,15 +375,6 @@ export default function Votes() {
       })
     : '—'
 
-  function countdown(ts) {
-    const secs = ts - Math.floor(Date.now() / 1000)
-    if (secs <= 0) return null
-    const m = Math.floor(secs / 60), s = secs % 60
-    const h = Math.floor(m / 60), mm = m % 60
-    if (h > 0) return `${h}h ${mm}m remaining`
-    return `${m}m ${s}s remaining`
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -511,7 +517,6 @@ export default function Votes() {
                   address={address}
                   actionPending={actionPending}
                   fmtTime={fmtTime}
-                  countdown={countdown}
                   citizens={citizens}
                   onNominate={isCitizen && active.status === 'NOMINATING'
                     ? () => { setNomElecId(active.id); setNomCandidate(''); setActionError(null) }
@@ -558,8 +563,16 @@ export default function Votes() {
 
 // ── Election card ─────────────────────────────────────────────────────────────
 
-function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fmtTime, countdown, citizens, onNominate, onVote, onFinalise, onExecute }) {
+function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fmtTime, citizens, onNominate, onVote, onFinalise, onExecute }) {
   const { id, role, openedBy, nominationEndsAt, votingEndsAt, timelockEndsAt, winner, candidates, myVoted, myVotedFor, status } = election
+
+  // Live 1-second countdown — only runs while a time window is active
+  const [nowSec, setNowSec] = useState(Math.floor(Date.now() / 1000))
+  useEffect(() => {
+    if (!['NOMINATING', 'VOTING', 'TIMELOCK'].includes(status)) return
+    const t = setInterval(() => setNowSec(Math.floor(Date.now() / 1000)), 1000)
+    return () => clearInterval(t)
+  }, [status])
 
   const statusMeta = {
     NOMINATING:     { label: 'NOMINATIONS OPEN',  color: C.gold,   bg: '#fffbf0' },
@@ -591,9 +604,9 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
     ? `${winnerName} elected as ${ROLES[role]}`
     : null
 
-  const timer = status === 'NOMINATING' ? countdown(nominationEndsAt)
-    : status === 'VOTING'  ? countdown(votingEndsAt)
-    : status === 'TIMELOCK' ? countdown(timelockEndsAt)
+  const timer = status === 'NOMINATING' ? countdownStr(nominationEndsAt, nowSec)
+    : status === 'VOTING'   ? countdownStr(votingEndsAt, nowSec)
+    : status === 'TIMELOCK' ? countdownStr(timelockEndsAt, nowSec)
     : null
 
   return (
