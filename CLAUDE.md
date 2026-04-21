@@ -319,12 +319,39 @@ this consistently fails on Base Sepolia across multiple RPC providers. Shared ut
 
 **Activity logging:** fire-and-forget POST to `/api/log` → Supabase `activity_log` table.
 
+**Notifications:** per-wallet inbox in Supabase `notifications` table via `/api/notifications`.
+`useNotifications.js` hook polls every 30s. Bell button in Layout.jsx with unread badge.
+Payment notifications fire on Colony.send() confirm (with sender name). Election notifications
+broadcast to all citizens on openElection(). Seen state in localStorage.
+
+**Announcements:** colony-wide message board in Supabase `announcements` table via `/api/announcements`.
+MCC board/founder can post/delete from Mcc.jsx.
+
+**MCC page** (`Mcc.jsx`): `/colony/:slug/mcc` — board roles, token supply stats, live elections
+(nextId+loop pattern), announcements. Quick-nav MCC/Fisc pills on Dashboard citizen card.
+
+**getLogs RPC:** `https://sepolia.base.org` — switched from publicnode.com (silent failures).
+15 chunks × 9,000 blocks = ~75 hours of history.
+
+**SendSheet:** citizen picker (via fetchCitizens) instead of free-text address input. Companies
+are paid via the Mall, not by entering addresses manually.
+
+**Test infrastructure** (`colony-app/scripts/` + `colony-app/tests/`):
+- Seed script: `npm run seed` — registers bot wallets (Alice/Bob/Charlie/Diana/Erik) as citizens,
+  sends S transactions, seeds Supabase. Idempotent. `.env.seed` with `BOT_0_KEY…BOT_4_KEY`.
+- Vitest unit tests: `npm test` — covers addrLabel.js pure functions.
+- Playwright E2E: `npm run test:e2e` — mockWallet fixture injects window.ethereum without MetaMask.
+  Requires seed to have been run first (bot wallets must be registered citizens).
+- See `colony-app/.env.seed.example` for required env vars.
+
 **Protocol admin** (`spice-admin/`): single static HTML page at `spice.zpc.finance`.
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
 Config: `spice-admin/config.js` (ColonyRegistry address).
+Has founder share controls: global default % + per-colony override + founder wallet update.
+Colony.settleProtocol() splits ETH between protocol treasury and founder wallet per getFeeSplit().
 
-**Full technical reference:** `docs/technical-architecture.md` (v9)
-**Full requirements spec:** `docs/user-stories.md` (v16)`
+**Full technical reference:** `docs/technical-architecture.md` (v10)
+**Full requirements spec:** `docs/user-stories.md` (v17)`
 
 ---
 

@@ -53,20 +53,40 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   │   ├── Guardian.jsx      # Guardian view for minor wallets (UI only, no chain contract yet)
 │   │   │   ├── RequestPayment.jsx   # QR code payment request generator
 │   │   │   ├── PaymentConfirm.jsx   # Payment confirmation + Colony.send()
-│   │   │   └── CreateColony.jsx  # Deploy new colony — 18-step guided flow (see §8)
+│   │   │   ├── Mcc.jsx              # MCC overview — board roles, token supply, live elections, announcements
+│   │   │   ├── Mall.jsx             # Colony marketplace — list of companies with storefronts
+│   │   │   ├── Store.jsx            # Per-company storefront — pay via Colony.send()
+│   │   │   └── CreateColony.jsx     # Deploy new colony — 18-step guided flow (see §8)
 │   │   ├── components/
 │   │   │   ├── Layout.jsx        # Shell: header, back button, nav
 │   │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
 │   │   ├── utils/
-│   │   │   ├── logger.js         # Fire-and-forget activity logger → /api/log
-│   │   │   ├── addrLabel.js      # Address display helpers: shortAddr, namedAddr, resolveNames
-│   │   │   └── fetchCitizens.js  # Shared utility — GET /api/citizens → [{address,name}] sorted by name
+│   │   │   ├── logger.js           # Fire-and-forget activity logger → /api/log
+│   │   │   ├── addrLabel.js        # Address display helpers: shortAddr, namedAddr, resolveNames
+│   │   │   ├── fetchCitizens.js    # Shared utility — GET /api/citizens → [{address,name}] sorted by name
+│   │   │   └── useNotifications.js # React hook — polls /api/notifications every 30s; localStorage seen state; badge count
 │   │   └── data/
 │   │       ├── contracts.json        # Deployed contract addresses (token-address cache for known colonies; not used for colony discovery)
 │   │       └── deployArtifacts.js    # 215KB lazy-loaded ABIs + bytecodes for 10 contracts (used by CreateColony.jsx)
 │   ├── api/
 │   │   ├── log.js                # Serverless function — writes to Supabase activity_log
-│   │   └── citizens.js           # Serverless function — enumerates colony citizens via GToken contract reads
+│   │   ├── citizens.js           # Serverless function — enumerates colony citizens via GToken contract reads
+│   │   ├── notifications.js      # Serverless function — per-wallet notification inbox (GET/POST, Supabase)
+│   │   └── announcements.js      # Serverless function — colony announcements board (GET/POST/DELETE, Supabase)
+│   ├── scripts/
+│   │   ├── lib/
+│   │   │   ├── actors.js         # Bot wallet definitions — loads BOT_0_KEY…BOT_4_KEY, exports getActors()
+│   │   │   ├── colony.js         # Contract ABIs + helpers: ensureCitizen, sendS, getSBalance, openElection
+│   │   │   └── supabase.js       # Direct Supabase helpers: insertAnnouncement, broadcastNotification, clearSeedData
+│   │   └── seed.js               # Idempotent seed script — registers bots as citizens, sends S txs, seeds Supabase
+│   ├── tests/
+│   │   ├── helpers/
+│   │   │   ├── fixtures.js       # Playwright test fixtures — walletPage with mockWallet injected
+│   │   │   └── mockWallet.js     # Browser-side EIP-1193 mock — no MetaMask, proxies reads to Base Sepolia RPC
+│   │   ├── unit/
+│   │   │   └── utils.test.js     # Vitest unit tests for addrLabel.js (shortAddr, namedAddr)
+│   │   └── e2e/
+│   │       └── dashboard.spec.js # Playwright E2E tests for Dashboard page (auto-connect, citizen name, balance)
 │   ├── contracts/
 │   │   ├── src/                  # Solidity source files (see §3)
 │   │   ├── scripts/deploy.js     # Hardhat deploy script
@@ -634,6 +654,9 @@ chain data show a loading state or "not a citizen" message — never stale mock 
 | `/colony/:slug/request` | RequestPayment | QR payment request |
 | `/colony/:slug/pay` | PaymentConfirm | Confirm + submit payment |
 | `/colony/:slug/assets` | Assets | Register physical assets (Form 1 UNILATERAL A-token), create obligations (Form 3), view all A-tokens held |
+| `/colony/:slug/mcc` | Mcc | MCC overview — board roles, token supply, live elections, announcements |
+| `/colony/:slug/mall` | Mall | Colony marketplace — list of company storefronts |
+| `/colony/:slug/mall/:companyAddr` | Store | Per-company storefront |
 | `/create` | CreateColony | Deploy new colony |
 
 ### 4.4 Event Queries — getLogs Pattern
@@ -643,11 +666,11 @@ All on-chain history queries use raw `provider.getLogs()` + `Interface.parseLog(
 "unpermitted intrinsics" errors in MetaMask-hardened browser environments.
 
 **Block range:** Public RPCs cap `eth_getLogs` at 10,000 blocks. Base Sepolia runs at
-~2s/block = 10,000 blocks ≈ 5.5 hours. To cover ~25 hours of history we paginate:
-5 chunks × 9,000 blocks in parallel, results merged.
+~2s/block = 10,000 blocks ≈ 5.5 hours. To cover ~75 hours of history we paginate:
+15 chunks × 9,000 blocks in parallel, results merged (increased from 5 chunks April 2026).
 
-**RPC:** `https://base-sepolia-rpc.publicnode.com` — more permissive than the official
-`https://sepolia.base.org` node.
+**RPC:** `https://sepolia.base.org` — switched from `publicnode.com` in April 2026 after silent
+getLogs failures (publicnode was returning empty arrays instead of errors on rate limit).
 
 ```js
 // Pattern used in Dashboard.jsx and Company.jsx
@@ -854,7 +877,128 @@ manually registered via `spice.zpc.finance`.
 
 ---
 
-## 9. Known Limitations & Technical Debt
+## 9. Notifications & Announcements
+
+### Notifications
+
+Per-wallet notification inbox. Stored in Supabase `notifications` table.
+
+**Supabase table:**
+```
+notifications(id, colony, address, type, title, body, link, created_at, read_at)
+```
+
+**API:** `/api/notifications`
+- `GET ?colony=X&address=Y&limit=50` → `{ notifications: [...] }`
+- `POST { colony, address, type, title, body?, link? }` → single insert
+- `POST { colony, addresses: [...], type, title, body?, link? }` → broadcast (individual inserts, not batch)
+
+**Frontend:** `src/utils/useNotifications.js` hook
+- Polls every 30 seconds
+- Seen state in `localStorage` key `spice_notif_seen_{colony}_{address}`
+- Returns `{ notifications, unseenCount, markAllSeen }`
+
+**Bell button:** Layout.jsx — shown only when `colonySlug` is defined. Red badge with count.
+Opens a bottom sheet. `markAllSeen()` fires when sheet opens.
+
+**Notification types fired:**
+
+| Type | Trigger | Fired from |
+|------|---------|------------|
+| `payment_received` | Colony.send() confirmed | PaymentConfirm.jsx + Dashboard.jsx (SendSheet) |
+| `election_opened` | openElection() confirmed | Votes.jsx — broadcasts to all other citizens |
+| `seed_welcome` | Seed script run | scripts/seed.js |
+
+**Notification body format (payments):**
+`"${note}" from ${senderName} (${shortAddr})` — includes citizen name when known.
+
+### Announcements
+
+Colony-wide message board. Stored in Supabase `announcements` table.
+
+**Supabase table:**
+```
+announcements(id, colony, title, body, author_addr, created_at)
+```
+
+**API:** `/api/announcements`
+- `GET ?colony=X` → `{ announcements: [...] }`
+- `POST { action: 'create', colony, title, body, author_addr }` → insert
+- `POST { action: 'delete', id }` → delete (no auth — service key only)
+
+**Authorization:** Mcc.jsx checks `isAuthored` (isFounder or isBoardMember) before showing post/delete controls. The API itself uses the service key and does not enforce caller identity — rely on frontend checks for now.
+
+---
+
+## 10. Test Infrastructure
+
+### Overview
+
+Test layer added April 2026. Three-tier strategy: seed scripts → unit tests → E2E tests.
+
+### Seed Scripts (`colony-app/scripts/`)
+
+Bot wallets are real registered citizens — they persist between test runs.
+
+```bash
+npm run seed              # register bots + 10 S-token transactions
+npm run seed:reset        # clear Supabase seed data first, then re-seed
+npm run seed:election     # + open a CEO election and nominate candidates
+npm run seed:dry          # preview plan without sending transactions
+```
+
+`scripts/lib/actors.js` — loads `BOT_0_KEY…BOT_4_KEY` from `.env.seed`, exports ethers.Wallet array with human profiles (Alice, Bob, Charlie, Diana, Erik).
+
+`scripts/lib/colony.js` — contract ABIs + helpers: `ensureCitizen`, `sendS`, `getSBalance`, `openElection`, `nominate`, `castVote`, `getActiveElections`.
+
+`scripts/lib/supabase.js` — direct Supabase REST: `insertAnnouncement`, `insertNotification`, `broadcastNotification`, `clearSeedAnnouncements`, `clearNotifications`.
+
+`.env.seed` (gitignored): `BOT_0_KEY … BOT_4_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`. See `.env.seed.example`.
+
+**Goal 3 path (future):** `scripts/bots.js` (not yet written) uses the same `actors.js` / `colony.js` layer and runs a "round" of bot activity on a Vercel cron or GitHub Actions schedule. Same infrastructure, different trigger.
+
+### Unit Tests (`colony-app/tests/unit/`)
+
+Framework: **Vitest 4** + jsdom
+
+```bash
+npm test          # run once
+npm run test:watch
+npm run test:ui
+```
+
+Currently covers: `shortAddr`, `namedAddr` from `src/utils/addrLabel.js`.
+Add tests for: `fetchCitizens`, `logger` fire-and-forget pattern, pure sim functions.
+
+### E2E Tests (`colony-app/tests/e2e/`)
+
+Framework: **Playwright** (chromium only)
+
+```bash
+npm run test:e2e       # run headless
+npm run test:e2e:ui    # interactive UI mode
+```
+
+**Wallet mock (`tests/helpers/mockWallet.js`):**
+Injected by Playwright before the app loads via `page.addInitScript()`. Sets `window.ethereum` to a minimal EIP-1193 mock that:
+- Returns bot[0]'s address for `eth_accounts` / `eth_requestAccounts` → triggers App.jsx auto-connect
+- Returns chain ID 84532 for `eth_chainId` / `net_version`
+- No-ops `wallet_switchEthereumChain`, `wallet_addEthereumChain`, `wallet_revokePermissions`
+- Proxies all other calls (eth_call, eth_getLogs, etc.) to `https://sepolia.base.org`
+- Signing (`eth_sendTransaction`) throws a clear error — to be added when write-path tests are needed
+
+`loadOnChainData` in App.jsx uses its own `JsonRpcProvider('https://sepolia.base.org')` (line 165) so it reads real chain state regardless of the mock.
+
+**Fixtures (`tests/helpers/fixtures.js`):**
+Derives `BOT_0_ADDRESS` from `BOT_0_KEY` (from `.env.seed`). Provides `walletPage` fixture.
+
+**Playwright config:** reads `.env.seed` automatically. Starts dev server via `webServer` config.
+
+**Prerequisites for E2E:** run `npm run seed` first so bot wallets are registered citizens with S balances.
+
+---
+
+## 11. Known Limitations & Technical Debt
 
 | Item | Impact | Fix |
 |------|--------|-----|
@@ -877,7 +1021,7 @@ manually registered via `spice.zpc.finance`.
 
 ---
 
-## 10. Future Architecture
+## 12. Future Architecture
 
 ### Core v2 contracts (required for v17 economic model)
 
@@ -904,11 +1048,12 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 
 ---
 
-*SPICE Colony · Technical Architecture · v9*
-*Last updated: 20 April 2026*
+*SPICE Colony · Technical Architecture · v10*
+*Last updated: 21 April 2026*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*
 *v7 changes (19 April 2026): ColonyRegistry redeployed as ERC-721 (§3.1 rewritten) — address 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68. Each register() mints a soulbound C-token ("SPICE Colony"/"COLONY") to the Colony contract address; deregister() burns it; reregister() remints same token ID; tokenURI() returns on-chain JSON. C-token design rationale: ownerOf == Colony contract (not founder EOA), so colony cannot be orphaned by key loss. Directory.jsx updated to read registry exclusively — contracts.json and localStorage no longer colony sources. Token table updated — C-token added. Repository structure comments updated. Future Architecture: ColonyRegistry v2 marked deployed.*
 *v8 changes (19 April 2026): Governance.sol deployed and wired (§3.9 new section). Dave's Colony redeployed — all contract addresses updated (§3.1). Colony.sol join() updated: accepts birth year (not Unix timestamp) + setGovernance() + issueObligationGov() + CEO active check in advanceEpoch() (§3.2). addrLabel.js added to repo structure (§2) — shortAddr, namedAddr, resolveNames batch helpers. Deploy steps updated to 18+Governance (§8). Known Limitations: "Governance not in deploy script" replaced with "Votes.jsx elections UI incomplete" (§9). MCC Ledger tab added to Admin.jsx — double-entry events view for all colony financial activity.*
+*v10 changes (21 April 2026): Notifications + Announcements system (§9 new) — Supabase-backed per-wallet inbox, bell button in Layout.jsx, useNotifications hook, /api/notifications + /api/announcements serverless functions. Payment notifications fire on Colony.send() confirm with sender name. Election notifications broadcast to all citizens on openElection. Mcc.jsx (§4.3) — MCC overview page: board roles, token supply, live elections (nextId+loop pattern), announcements board. SendSheet rewritten — citizen picker (fetchCitizens) instead of free-text address. getLogs: RPC switched to sepolia.base.org; 15 chunks (§4.4). Test infrastructure (§10) — Vitest unit tests, Playwright E2E with mockWallet fixture, seed scripts with bot wallets. Repository structure updated (§2). Route map updated (§4.3) — /mcc, /mall, /mall/:addr.*
 *v9 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections (§3.9 rewritten) — openElection / nominateCandidate / vote(candidate) / finaliseElection / executeElection / resign(). New Election struct with nominationEndsAt, votingEndsAt, timelockEndsAt, winner, executed, cancelled. New Governance address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated (§3.1). citizens.js serverless function added (§2) — enumerates citizens via GToken.nextTokenId() + ownerOf() + citizenName() loop; more reliable than getLogs. fetchCitizens.js utility added (§2). System overview diagram updated (§1). Known Limitations: "Votes.jsx UI incomplete" replaced with testnet timing constants + citizen enumeration scale note (§9).*

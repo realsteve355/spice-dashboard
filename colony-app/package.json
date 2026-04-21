@@ -7,7 +7,16 @@
     "dev": "vite --port 5174",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "vite build"
+    "deploy": "vite build",
+    "seed": "node --env-file=.env.seed scripts/seed.js",
+    "seed:reset": "node --env-file=.env.seed scripts/seed.js --reset",
+    "seed:election": "node --env-file=.env.seed scripts/seed.js --election",
+    "seed:dry": "node --env-file=.env.seed scripts/seed.js --dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "ethers": "^6.16.0",
@@ -20,7 +29,10 @@
     "node": "20.x"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^6.3.0"
+    "jsdom": "^29.0.2",
+    "vite": "^6.3.0",
+    "vitest": "^4.1.5"
   }
 }

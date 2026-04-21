@@ -268,6 +268,30 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 
 *M-27/M-28: Ledger tab in Admin.jsx. Fetches last 50k blocks in 2,000-block chunks; parses 8 event types (UbiClaimed, Sent, ObligationSettled, ObligationDefaulted, AssetRegistered, VDividendPaid, ProtocolFeeSettled, CitizenJoined) using ethers.Interface + topic hashes; resolves names via addrLabel.resolveNames(); maps each event to debit/credit accounts in double-entry style.*
 
+### MCC Overview Page
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| M-29 | As any citizen, I want to see an MCC overview page showing the current board (CEO/CFO/COO), their wallet names, token supply (S and V total), and any live governance elections without needing to go to the Votes page | P2 | ✓ |
+| M-30 | As an MCC board member or founder, I want to post colony-wide announcements visible to all citizens from the MCC page | P2 | ✓ |
+| M-31 | As any citizen, I want to receive a notification in my inbox when a new governance election opens, so I don't miss nomination or voting windows | P2 | ✓ |
+
+*M-29: Mcc.jsx at /colony/:slug/mcc. Reads roleHolder(0/1/2) from Governance contract + citizenName from Colony + S/V totalSupply. Live elections loaded via nextId()+loop (same pattern as Votes.jsx — activeElections() was unreliable on Base Sepolia). Shows: NOMINATING / VOTING / FINALISE_READY / TIMELOCK / EXECUTE_READY states with colour coding. Links to Votes page for action. Quick-nav MCC/Fisc pills on Dashboard citizen card.*
+*M-30: Announcements section in Mcc.jsx. Board members and founder can post/delete. Stored in Supabase announcements table via /api/announcements.*
+*M-31: Votes.jsx fires individual notifications to all citizens (via fetchCitizens) when openElection() confirms. Uses fresh fetchCitizens() call inside handler (not React state which may be stale).*
+
+### Notifications
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| N-12 | As a citizen, I want to receive an in-app notification when I receive an S-token payment, showing the sender's name and any note | P2 | ✓ |
+| N-13 | As a citizen, I want to see unread notification count as a badge on a bell icon in the header | P2 | ✓ |
+| N-14 | As a citizen, I want to open a notification inbox and mark all as seen | P2 | ✓ |
+
+*N-12: Notification fires on tx.confirmed in PaymentConfirm.jsx and Dashboard.jsx (SendSheet). Body: `"note" from SenderName (0xabcd…1234)`. Stored in Supabase notifications table via /api/notifications.*
+*N-13: Bell button ◎ in Layout.jsx. Badge shows unseen count (max 9+). Only shown when colonySlug is in context.*
+*N-14: Bottom sheet opens on bell click. markAllSeen() writes seen IDs to localStorage key spice_notif_seen_{colony}_{address}.*
+
 ### MCC Treasury & Roles
 
 | # | Story | Priority | Status |
@@ -465,12 +489,14 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 70 | 41% |
-| ~ Partial / UI mock | 27 | 16% |
-| — Not built | 59 | 35% |
+| ✓ Done (on-chain) | 76 | 43% |
+| ~ Partial / UI mock | 27 | 15% |
+| — Not built | 59 | 33% |
 | Superseded | 5 | 3% |
 | New (v13, not yet built) | 10 | 6% |
-| **Total** | **171** | |
+| **Total** | **177** | |
+
+*v17 additions: M-29, M-30, M-31 (MCC overview page + announcements + election notifications — ✓ done); N-12, N-13, N-14 (payment notifications + bell badge + inbox — ✓ done).*
 
 *v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*
 *v10 updates (15 April 2026): F-27, F-28, OS-01–OS-03 marked ✓ — CompanyFactory + OToken.sol deployed and wired. Company accounts (double-entry), activity log, and getLogs pagination fix also shipped.*
@@ -524,6 +550,10 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | Intra-month contracts | — | **Superseded** — replaced by V-token reserve + A-token bilateral framework (v16 design decision) |
 | Guardian management | — | UI built, starts empty; no on-chain guardian contract |
 | Share trading (buy side) | — | Not built |
+| MCC overview page (board, elections, announcements) | Mcc.jsx | ✓ Live — /colony/:slug/mcc |
+| Payment notifications | Supabase + /api/notifications | ✓ Live — fires on send() confirm with sender name |
+| Election notifications | Supabase + /api/notifications | ✓ Live — broadcasts to all citizens on openElection |
+| Notification inbox + badge | Layout.jsx (bell), useNotifications hook | ✓ Live |
 
 ### Remaining P1 gaps
 
@@ -553,8 +583,9 @@ AToken.sol is deployed (April 2026). The remaining blockers are **CompanyImpleme
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v16*
-*Last updated: 20 April 2026*
+*SPICE Colony · User Stories & Requirements Spec · v17*
+*Last updated: 21 April 2026*
 *v14 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5). Dave's Colony redeployed (slug: daves-colony). Assets.jsx built — citizen asset registration, transfer, obligation creation, and A-token portfolio view at /colony/:slug/assets. On-chain table updated: asset registration, asset transfer, obligation creation, citizen portfolio, V dividend tx history all live. A-01/A-02/A-04/A-12/A-13 updated to ~ partial. C-31 updated to ~. F-22 updated to ~. C-14 updated to include V dividends. v2 blockers section rewritten: AToken.sol removed as blocker; CompanyImpl v2 and Colony.sol v2 are the remaining blockers with specific story mapping.*
 *v15 changes (19 April 2026): Governance.sol deployed and wired. Dave's Colony redeployed — all addresses updated. Colony.join() updated: birth year DOB (not Unix timestamp) — C-04 note added. Obligation mutual-consent flow: A-12 footnote updated to describe Governance.proposeObligation/signObligation path; direct issueObligation() retired. On-chain table updated: obligation creation row updated for Governance flow; colony directory corrected to getActive(). M-20 updated to ~ partial (Governance.sol live; Votes.jsx UI pending). M-27/M-28 added — MCC double-entry ledger in Admin.jsx (live). C-24/C-25/C-27/C-29 governance footnote updated with Governance contract address and remaining UI gap. addrLabel.js utility (shortAddr, namedAddr, resolveNames) added — names shown next to addresses in Dashboard.jsx, Company.jsx, Assets.jsx. Status summary not recounted (minor net change).*
+*v17 changes (21 April 2026): MCC overview page (M-29–M-31) — Mcc.jsx at /colony/:slug/mcc; board roles, token supply, live elections via nextId+loop, announcements. Notifications system (N-12–N-14) — Supabase-backed inbox, bell button in Layout.jsx, useNotifications hook, payment + election notifications. SendSheet reworked to citizen picker. getLogs switched to sepolia.base.org with 15 chunks. On-chain table updated: test infrastructure row added.*
 *v16 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections. openElection / nominateCandidate (multiple) / vote(candidate) / finaliseElection / executeElection / resign() — complete model change from single-candidate binary vote. New address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated. Votes.jsx fully rewritten for multi-candidate model. /api/citizens.js serverless function added — enumerates citizens via GToken contract reads (no getLogs dependency); citizen names now shown in nomination dropdown. M-20 updated to ✓. On-chain table updated — governance row ✓ live. Remaining P1 gaps — M-20 resolved. C-24/C-25/C-27/C-29 footnote updated.*
