@@ -54,15 +54,40 @@
       if (method === 'wallet_addEthereumChain')     return null
       if (method === 'wallet_revokePermissions')    return null
 
-      // ── Signing — not yet implemented ────────────────────────────────────
+      // ── Gas / fee data — return fixed values ─────────────────────────────
+      // Proxying these to the real RPC can hang or be slow, making write
+      // tests flaky. Return deterministic fixed values so the app populates
+      // transactions immediately without waiting on the network.
+      if (method === 'eth_estimateGas')  return '0x30d40'        // 200,000 gas
+      if (method === 'eth_gasPrice')     return '0x3B9ACA00'     // 1 gwei
+      if (method === 'eth_feeHistory')   return {
+        oldestBlock: '0x1',
+        reward: [['0x3B9ACA00']],
+        baseFeePerGas: ['0x3B9ACA00', '0x3B9ACA00'],
+        gasUsedRatio: [0.5],
+      }
+
+      // ── Signing ───────────────────────────────────────────────────────────
+      // eth_sendTransaction: if window.__mockSignAndSend__ is exposed by the
+      // Playwright test (via page.exposeFunction), sign + broadcast via Node
+      // ethers so the private key never enters the browser.
       if (method === 'eth_sendTransaction') {
-        throw new Error(
-          '[mockWallet] eth_sendTransaction is not supported yet.\n' +
-          'See tests/helpers/mockWallet.js to add signing support.'
-        )
+        if (typeof window.__mockSignAndSend__ !== 'function') {
+          throw new Error(
+            '[mockWallet] eth_sendTransaction: no signer.\n' +
+            'Call page.exposeFunction("__mockSignAndSend__", ...) in beforeAll.'
+          )
+        }
+        const result = await window.__mockSignAndSend__(params[0])
+        if (!result.success) {
+          const err = new Error(result.error || 'transaction failed')
+          err.code = -32603
+          throw err
+        }
+        return result.hash
       }
       if (method === 'eth_sign' || method === 'personal_sign' || method === 'eth_signTypedData_v4') {
-        throw new Error('[mockWallet] signing not supported in read-only test mode')
+        throw new Error('[mockWallet] personal signing not supported in test mode')
       }
 
       // ── Everything else — proxy to chain ──────────────────────────────────
