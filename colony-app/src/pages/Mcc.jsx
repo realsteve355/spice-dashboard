@@ -23,7 +23,34 @@ const ERC20_ABI = [
 
 const GOV_ABI = [
   "function roleHolder(uint8) view returns (address holder, uint256 termEnd, bool active)",
+  "function activeElections() view returns (uint256[])",
+  "function elections(uint256) view returns (uint8 role, address openedBy, uint256 openedAt, uint256 nominationEndsAt, uint256 votingEndsAt, uint256 timelockEndsAt, address winner, bool executed, bool cancelled)",
 ]
+
+function electionStatus(e, nowSec) {
+  if (e.executed)                                              return 'EXECUTED'
+  if (e.cancelled)                                             return 'FAILED'
+  if (e.timelockEndsAt > 0 && nowSec >= e.timelockEndsAt)     return 'EXECUTE_READY'
+  if (e.timelockEndsAt > 0)                                    return 'TIMELOCK'
+  if (nowSec > e.votingEndsAt)                                 return 'FINALISE_READY'
+  if (nowSec > e.nominationEndsAt)                             return 'VOTING'
+  return 'NOMINATING'
+}
+
+const STATUS_LABEL = {
+  NOMINATING:     'Nominations open',
+  VOTING:         'Voting underway',
+  FINALISE_READY: 'Ready to finalise',
+  TIMELOCK:       'Timelock period',
+  EXECUTE_READY:  'Ready to execute',
+}
+const STATUS_COLOR = {
+  NOMINATING:     '#8b5cf6',
+  VOTING:         '#3b82f6',
+  FINALISE_READY: '#eab308',
+  TIMELOCK:       '#eab308',
+  EXECUTE_READY:  '#16a34a',
+}
 
 function fmtDate(ts) {
   if (!ts) return '—'
@@ -41,6 +68,7 @@ export default function Mcc() {
 
   const [board,         setBoard]         = useState([])
   const [stats,         setStats]         = useState(null)
+  const [activeElecs,   setActiveElecs]   = useState([])
   const [loading,       setLoading]       = useState(true)
   const [isAuthored,    setIsAuthored]    = useState(false)  // can post announcements
 
@@ -109,6 +137,36 @@ export default function Mcc() {
         sSym, vSym, founder,
       })
       setIsAuthored(isFounder || isBoardMember)
+
+      // Load active elections
+      try {
+        const activeIds = await gov.activeElections()
+        const nowSec = Math.floor(Date.now() / 1000)
+        const elecs = await Promise.all(
+          activeIds.map(async id => {
+            const e = await gov.elections(id)
+            return {
+              id:               Number(id),
+              role:             Number(e.role),
+              nominationEndsAt: Number(e.nominationEndsAt),
+              votingEndsAt:     Number(e.votingEndsAt),
+              timelockEndsAt:   Number(e.timelockEndsAt),
+              executed:         e.executed,
+              cancelled:        e.cancelled,
+              status:           electionStatus({
+                nominationEndsAt: Number(e.nominationEndsAt),
+                votingEndsAt:     Number(e.votingEndsAt),
+                timelockEndsAt:   Number(e.timelockEndsAt),
+                executed:         e.executed,
+                cancelled:        e.cancelled,
+              }, nowSec),
+            }
+          })
+        )
+        // Only show in-progress elections (not completed/failed)
+        setActiveElecs(elecs.filter(e => STATUS_LABEL[e.status]))
+      } catch {}
+
       setLoading(false)
     }
 
@@ -238,6 +296,51 @@ export default function Mcc() {
             Elections →
           </button>
         </div>
+
+        {/* Active elections ───────────────────────────────────────── */}
+        {activeElecs.length > 0 && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              LIVE ELECTIONS
+            </div>
+            {activeElecs.map((e, i) => {
+              const color = STATUS_COLOR[e.status] || C.faint
+              return (
+                <div
+                  key={e.id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    paddingBottom: i < activeElecs.length - 1 ? 10 : 0,
+                    marginBottom:  i < activeElecs.length - 1 ? 10 : 0,
+                    borderBottom:  i < activeElecs.length - 1 ? `1px solid ${C.border}` : 'none',
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
+                    {ROLES[e.role]}
+                  </div>
+                  <span style={{
+                    fontSize: 10, color, border: `1px solid ${color}`,
+                    borderRadius: 10, padding: '3px 9px', letterSpacing: '0.04em',
+                  }}>
+                    {STATUS_LABEL[e.status]}
+                  </span>
+                </div>
+              )
+            })}
+            <button
+              onClick={() => navigate(`/colony/${slug}/votes`)}
+              style={{
+                marginTop: 12, width: '100%', padding: '9px 0',
+                background: 'none', border: `1px solid ${C.border}`,
+                borderRadius: 8, fontSize: 11, color: C.sub,
+                cursor: 'pointer', letterSpacing: '0.04em',
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              Go to Votes →
+            </button>
+          </div>
+        )}
 
         {/* Colony stats ────────────────────────────────────────────── */}
         <div style={card}>

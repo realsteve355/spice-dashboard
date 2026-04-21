@@ -278,11 +278,13 @@ export default function Votes() {
       ))
       setTimeout(() => loadAfterWrite(), 3000)
 
-      // Broadcast election notification to all other citizens (fire-and-forget)
-      const others = citizens
-        .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
-        .map(c => c.address)
-      if (others.length > 0) {
+      // Broadcast election notification — fetch citizens fresh so we don't
+      // depend on the citizens state which may still be loading at this point
+      fetchCitizens(colonyAddr).then(citizenList => {
+        const others = citizenList
+          .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+          .map(c => c.address)
+        if (others.length === 0) return
         fetch('/api/notifications', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -295,7 +297,7 @@ export default function Votes() {
             link: `/colony/${slug}/votes`,
           }),
         }).catch(() => {})
-      }
+      }).catch(() => {})
     } catch (e) {
       setActionError(govErr(e))
     }
