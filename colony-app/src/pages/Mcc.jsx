@@ -137,12 +137,25 @@ export default function Mcc() {
         sSym, vSym, founder,
       })
       setIsAuthored(isFounder || isBoardMember)
+      setLoading(false)
+    }
 
-      // Load active elections
+    load().catch(e => { console.warn('[Mcc] load failed:', e); if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [cfg, address])
+
+  // Load active elections in a separate effect so it isn't cut short by the
+  // board-load cancelled guard and can't silently swallow a thrown error there.
+  const [elecsLoading, setElecsLoading] = useState(true)
+  useEffect(() => {
+    if (!cfg?.governance) { setElecsLoading(false); return }
+    const rpc = new ethers.JsonRpcProvider(RPC)
+    const gov = new ethers.Contract(cfg.governance, GOV_ABI, rpc)
+    async function loadElections() {
       try {
         const activeIds = await gov.activeElections()
-        const nowSec = Math.floor(Date.now() / 1000)
-        const elecs = await Promise.all(
+        const nowSec    = Math.floor(Date.now() / 1000)
+        const elecs     = await Promise.all(
           activeIds.map(async id => {
             const e = await gov.elections(id)
             return {
@@ -153,7 +166,7 @@ export default function Mcc() {
               timelockEndsAt:   Number(e.timelockEndsAt),
               executed:         e.executed,
               cancelled:        e.cancelled,
-              status:           electionStatus({
+              status: electionStatus({
                 nominationEndsAt: Number(e.nominationEndsAt),
                 votingEndsAt:     Number(e.votingEndsAt),
                 timelockEndsAt:   Number(e.timelockEndsAt),
@@ -163,16 +176,14 @@ export default function Mcc() {
             }
           })
         )
-        // Only show in-progress elections (not completed/failed)
         setActiveElecs(elecs.filter(e => STATUS_LABEL[e.status]))
-      } catch {}
-
-      setLoading(false)
+      } catch (e) {
+        console.warn('[Mcc] loadElections failed:', e)
+      }
+      setElecsLoading(false)
     }
-
-    load().catch(e => { console.warn('[Mcc] load failed:', e); if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [cfg, address])
+    loadElections()
+  }, [cfg])
 
   // Load announcements separately so chain load doesn't block them
   async function loadAnnouncements() {
@@ -298,12 +309,17 @@ export default function Mcc() {
         </div>
 
         {/* Active elections ───────────────────────────────────────── */}
-        {activeElecs.length > 0 && (
-          <div style={card}>
-            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
-              LIVE ELECTIONS
-            </div>
-            {activeElecs.map((e, i) => {
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+            LIVE ELECTIONS
+          </div>
+
+          {elecsLoading ? (
+            <div style={{ fontSize: 12, color: C.faint }}>Loading…</div>
+          ) : activeElecs.length === 0 ? (
+            <div style={{ fontSize: 12, color: C.faint }}>No active elections.</div>
+          ) : (
+            activeElecs.map((e, i) => {
               const color = STATUS_COLOR[e.status] || C.faint
               return (
                 <div
@@ -326,21 +342,22 @@ export default function Mcc() {
                   </span>
                 </div>
               )
-            })}
-            <button
-              onClick={() => navigate(`/colony/${slug}/votes`)}
-              style={{
-                marginTop: 12, width: '100%', padding: '9px 0',
-                background: 'none', border: `1px solid ${C.border}`,
-                borderRadius: 8, fontSize: 11, color: C.sub,
-                cursor: 'pointer', letterSpacing: '0.04em',
-                fontFamily: "'IBM Plex Mono', monospace",
-              }}
-            >
-              Go to Votes →
-            </button>
-          </div>
-        )}
+            })
+          )}
+
+          <button
+            onClick={() => navigate(`/colony/${slug}/votes`)}
+            style={{
+              marginTop: 12, width: '100%', padding: '9px 0',
+              background: 'none', border: `1px solid ${C.border}`,
+              borderRadius: 8, fontSize: 11, color: C.sub,
+              cursor: 'pointer', letterSpacing: '0.04em',
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}
+          >
+            Go to Votes →
+          </button>
+        </div>
 
         {/* Colony stats ────────────────────────────────────────────── */}
         <div style={card}>
