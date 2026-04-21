@@ -102,6 +102,13 @@ export default function Store() {
   }
 
   // ── Edit product ────────────────────────────────────────────────────────────
+  // Track when an image has been uploaded for a product so product cards refresh their URL
+  const [imgVersions, setImgVersions] = useState({})
+
+  function handleImageUploaded(productId) {
+    setImgVersions(prev => ({ ...prev, [productId]: Date.now() }))
+  }
+
   const [editProduct, setEditProduct] = useState(null)   // product object being edited
   const [eName,       setEName]       = useState('')
   const [eDesc,       setEDesc]       = useState('')
@@ -260,6 +267,8 @@ export default function Store() {
                 isSecretary={isSecretary}
                 isCitizen={isCitizen}
                 address={address}
+                imgVersion={imgVersions[product.id] || 0}
+                onImageUploaded={handleImageUploaded}
                 confirmDelete={confirmDelete}
                 onBuy={() => { setBuyProduct(product); setDelivery('') }}
                 onEdit={() => startEdit(product)}
@@ -287,6 +296,8 @@ export default function Store() {
                   isSecretary={isSecretary}
                   isCitizen={isCitizen}
                   address={address}
+                  imgVersion={imgVersions[product.id] || 0}
+                  onImageUploaded={handleImageUploaded}
                   confirmDelete={confirmDelete}
                   onBuy={null}
                   onEdit={() => startEdit(product)}
@@ -311,7 +322,14 @@ export default function Store() {
           </div>
           {/* Product image upload */}
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 14 }}>
-            <ProductImage slug={slug} productId={editProduct.id} name={editProduct.name} isSecretary />
+            <ProductImage
+              slug={slug}
+              productId={editProduct.id}
+              name={editProduct.name}
+              isSecretary
+              size={84}
+              onUpload={handleImageUploaded}
+            />
             <div style={{ flex: 1, minWidth: 0 }}>
               <Field label="Product name" value={eName} onChange={setEName} placeholder="Product name" />
               <Field label="Category" value={eCategory} onChange={setECategory} placeholder="e.g. Food" />
@@ -394,6 +412,7 @@ export default function Store() {
 // ── ProductCard ───────────────────────────────────────────────────────────────
 
 function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDelete,
+  imgVersion, onImageUploaded,
   onBuy, onEdit, onToggle, onDeleteStart, onDeleteCancel, onDeleteConfirm, dimmed }) {
 
   const isConfirmingDelete = confirmDelete === product.id
@@ -406,7 +425,13 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
       display: 'flex', flexDirection: 'column',
     }}>
       {/* Square product image — fills card width */}
-      <ProductImage slug={slug} productId={product.id} name={product.name} />
+      <ProductImage
+        slug={slug}
+        productId={product.id}
+        name={product.name}
+        version={imgVersion}
+        onUpload={onImageUploaded}
+      />
 
       {/* Content */}
       <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -483,16 +508,24 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
 // Responsive square image (fills card width via paddingTop:100% trick).
 // Secretary can tap to upload a photo.
 
-function ProductImage({ slug, productId, name, isSecretary, size }) {
+function ProductImage({ slug, productId, name, isSecretary, size, version = 0, onUpload }) {
   const [imgError,  setImgError]  = useState(false)
   const [localUrl,  setLocalUrl]  = useState(null)
   const [uploading, setUploading] = useState(false)
   const inputRef = useRef()
 
   const supaBase = import.meta.env.VITE_SUPABASE_URL
+  // Append ?v= to bust browser cache after a fresh upload
   const remoteSrc = supaBase && productId
-    ? `${supaBase}/storage/v1/object/public/colony-media/${slug}/product/${productId}.jpg`
+    ? `${supaBase}/storage/v1/object/public/colony-media/${slug}/product/${productId}.jpg${version > 0 ? `?v=${version}` : ''}`
     : null
+
+  // Reset error state whenever the URL changes (e.g. after an upload bumps version)
+  useEffect(() => {
+    setImgError(false)
+    setLocalUrl(null)
+  }, [remoteSrc])
+
   const src             = localUrl || remoteSrc
   const showPlaceholder = !src || imgError
   const initials        = (name || '??').slice(0, 2).toUpperCase()
@@ -515,7 +548,12 @@ function ProductImage({ slug, productId, name, isSecretary, size }) {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ colony: slug, entityType: 'product', entityId: productId, dataUrl }),
       })
-      if (r.ok) { setLocalUrl(dataUrl); setImgError(false) }
+      if (r.ok) {
+        setLocalUrl(dataUrl)
+        setImgError(false)
+        // Notify Store so it can bump the version on the product card's ProductImage
+        onUpload?.(productId)
+      }
     } catch {}
     setUploading(false)
   }
