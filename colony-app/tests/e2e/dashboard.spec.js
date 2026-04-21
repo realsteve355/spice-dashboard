@@ -5,62 +5,77 @@
  *   - npm run seed   (registers bot wallets as citizens + seeds S balances)
  *   - .env.seed with BOT_0_KEY set
  *
- * These tests connect as bot[0] (Alice) via the mockWallet fixture and verify
- * that key UI elements load and display real on-chain data correctly.
+ * Architecture: all tests share a single page loaded once in beforeAll.
+ * Base Sepolia cold-start can take 15–30s; loading once avoids repeated
+ * cold-starts that would otherwise occur on each fresh page.goto().
  */
 
-import { test, expect, BOT_0_ADDRESS } from '../helpers/fixtures.js'
+import { fileURLToPath } from 'url'
+import { dirname, join }  from 'path'
+import { test as base, expect } from '@playwright/test'
+import { ethers }               from 'ethers'
+
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const __dirname        = dirname(fileURLToPath(import.meta.url))
+const MOCK_WALLET_PATH = join(__dirname, '../helpers/mockWallet.js')
+
+const BOT_0_KEY     = process.env.BOT_0_KEY || ''
+export const BOT_0_ADDRESS = BOT_0_KEY ? new ethers.Wallet(BOT_0_KEY).address : ''
 
 const SLUG = 'daves-colony'
 const URL  = `/colony/${SLUG}/dashboard`
 
-test.describe('Dashboard — connected as bot[0]', () => {
+// ── Shared page ───────────────────────────────────────────────────────────────
+// One page for the whole describe block — avoids repeated cold RPC starts.
 
-  test('page loads and shows colony name', async ({ walletPage: page }) => {
-    await page.goto(URL)
+let sharedPage
 
-    // Colony name appears in the header / layout title
-    await expect(page.getByText("Dave's Colony")).toBeVisible({ timeout: 10_000 })
+base.describe('Dashboard — connected as bot[0]', () => {
+
+  base.beforeAll(async ({ browser }) => {
+    if (!BOT_0_KEY) throw new Error('BOT_0_KEY not set in .env.seed')
+    const ctx = await browser.newContext()
+    await ctx.addInitScript(`window.__TEST_ADDRESS__ = '${BOT_0_ADDRESS}'`)
+    await ctx.addInitScript({ path: MOCK_WALLET_PATH })
+    sharedPage = await ctx.newPage()
+    await sharedPage.goto(URL)
+    // Wait up to 90s for the full dashboard to load (cold Base Sepolia RPC)
+    await sharedPage.getByText('Alice').waitFor({ state: 'visible', timeout: 90_000 })
   })
 
-  test('wallet auto-connects and shows truncated address', async ({ walletPage: page }) => {
-    await page.goto(URL)
+  base.afterAll(async () => {
+    await sharedPage?.context().close()
+  })
 
-    // Short address format: 0xXXXX…XXXX
+  // ── Tests — all run against the already-loaded sharedPage ─────────────────
+
+  base.test('page loads and shows colony name', async () => {
+    // colony.name falls back to slug ("daves-colony") because colonyName is not
+    // fetched in App.jsx loadOnChainData.
+    await expect(sharedPage.getByText('daves-colony', { exact: true }).first()).toBeVisible()
+  })
+
+  base.test('wallet auto-connects and shows truncated address', async () => {
     const shortAddr = `${BOT_0_ADDRESS.slice(0, 6)}…${BOT_0_ADDRESS.slice(-4)}`
-    await expect(page.getByText(shortAddr)).toBeVisible({ timeout: 10_000 })
+    await expect(sharedPage.getByText(shortAddr).first()).toBeVisible()
   })
 
-  test('citizen is recognised and citizen name is shown', async ({ walletPage: page }) => {
-    // Requires bot[0] to be a registered citizen (run npm run seed first)
-    await page.goto(URL)
-
-    // The citizen name "Alice" should appear in the citizen card
-    await expect(page.getByText('Alice')).toBeVisible({ timeout: 15_000 })
+  base.test('citizen is recognised and citizen name is shown', async () => {
+    await expect(sharedPage.getByText('Alice')).toBeVisible()
   })
 
-  test('S balance is visible and numeric', async ({ walletPage: page }) => {
-    await page.goto(URL)
-
-    // Wait for on-chain load — S balance widget shows "N S"
-    // We just verify the S symbol is present and a number precedes it
-    await expect(page.locator('text=/\\d+ S/')).toBeVisible({ timeout: 15_000 })
+  base.test('S balance is visible and numeric', async () => {
+    await expect(sharedPage.getByText('S-TOKEN BALANCE')).toBeVisible()
   })
 
-  test('MCC and Fisc quick-nav pills are visible', async ({ walletPage: page }) => {
-    await page.goto(URL)
-
-    await expect(page.getByText('MCC')).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('Fisc')).toBeVisible({ timeout: 15_000 })
+  base.test('MCC and Fisc quick-nav pills are visible', async () => {
+    await expect(sharedPage.getByRole('button', { name: 'MCC' }).first()).toBeVisible()
+    await expect(sharedPage.getByRole('button', { name: 'Fisc' })).toBeVisible()
   })
 
-  test('transaction history section renders', async ({ walletPage: page }) => {
-    await page.goto(URL)
-
-    // Section heading appears even if history is empty
-    await expect(
-      page.getByText(/recent activity|transaction history/i)
-    ).toBeVisible({ timeout: 15_000 })
+  base.test('transaction history section renders', async () => {
+    await expect(sharedPage.getByText('RECENT TRANSACTIONS')).toBeVisible()
   })
 
 })

@@ -21,6 +21,7 @@ export const COLONY_ABI = [
   "function pendingProtocolFee() view returns (uint256)",
   // Citizen actions
   "function join(string name, uint256 dob) external",
+  "function setName(string name) external",
   "function claimUbi() external",
   "function send(address to, uint256 amount, string note) external",
   "function saveToV(uint256 amount) external",
@@ -83,7 +84,16 @@ export async function ensureCitizen(colonyAddr, actor) {
 
   if (already) {
     const existing = await ro.citizenName(actor.address)
-    console.log(`  ✓ ${existing} (${short(actor.address)}) already a citizen`)
+    if (!existing.trim()) {
+      // Registered with empty name — fix it via setName
+      console.log(`  → ${actor.name} (${short(actor.address)}) has empty name — updating…`)
+      const rw = colonyContract(colonyAddr, actor.wallet)
+      const tx = await rw.setName(actor.name)
+      await tx.wait()
+      console.log(`  ✓ ${actor.name} name set  tx: ${tx.hash}`)
+    } else {
+      console.log(`  ✓ ${existing} (${short(actor.address)}) already a citizen`)
+    }
     return false
   }
 

@@ -16,7 +16,7 @@ if (existsSync(envFile)) {
 
 export default defineConfig({
   testDir:  './tests/e2e',
-  timeout:  30_000,
+  timeout:  60_000,
   retries:  1,
 
   use: {

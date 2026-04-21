@@ -115,7 +115,7 @@ async function main() {
   // ── [1] Check ETH balances ────────────────────────────────────────────────
 
   console.log('\n[1/4] Checking ETH balances…')
-  const MIN_ETH = 0.005  // rough estimate: enough for 3–5 txs at Base Sepolia gas prices
+  const MIN_ETH = 0.00005  // Base Sepolia gas is ~0.000001 ETH/tx; 0.0001 ETH covers ~100 txs
 
   let anyLow = false
   for (const actor of actors) {
@@ -124,7 +124,7 @@ async function main() {
     const ok  = eth >= MIN_ETH
     if (!ok) anyLow = true
     console.log(
-      `  ${ok ? '✓' : '✗'} ${actor.name.padEnd(8)} ${actor.address.slice(0,10)}…` +
+      `  ${ok ? '✓' : '✗'} ${actor.name.padEnd(8)} ${actor.address}` +
       `  ${eth.toFixed(4)} ETH${ok ? '' : '  ← NEEDS FUNDING'}`
     )
   }

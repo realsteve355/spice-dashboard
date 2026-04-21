@@ -26,12 +26,10 @@ async function db(path, options = {}) {
     'Content-Type':  'application/json',
     'Prefer':        prefer,
   }
-  const r = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { method, headers, body })
-  if (!r.ok) {
-    const text = await r.text()
-    throw new Error(`Supabase ${method} ${path} → ${r.status}: ${text}`)
-  }
-  return r.status === 204 ? null : r.json()
+  const r    = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { method, headers, body })
+  const text = await r.text()
+  if (!r.ok) throw new Error(`Supabase ${method} ${path} → ${r.status}: ${text}`)
+  return text ? JSON.parse(text) : null
 }
 
 // ── Announcements ─────────────────────────────────────────────────────────────
