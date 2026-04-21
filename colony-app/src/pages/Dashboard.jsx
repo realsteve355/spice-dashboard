@@ -545,6 +545,8 @@ export default function Dashboard() {
               <SendSheet
                 maxAmount={remaining}
                 label="Send S-tokens"
+                colonyAddr={contracts?.colonies?.[slug]?.colony}
+                senderAddress={address}
                 onClose={() => setSending(false)}
                 onConfirm={handleSend}
               />
