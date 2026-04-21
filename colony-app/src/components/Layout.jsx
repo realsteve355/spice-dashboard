@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '../App'
 import { C } from '../theme'
+import { useNotifications } from '../utils/useNotifications'
 
 // Context-sensitive help content keyed by page type.
 // Key is derived from the current URL path in getHelpKey().
@@ -134,7 +135,19 @@ export default function Layout({ children, title, back, colonySlug }) {
   const location  = useLocation()
   const { isConnected, address, connect, disconnect, citizenColonies } = useWallet()
 
-  const [helpOpen, setHelpOpen] = useState(false)
+  const [helpOpen,  setHelpOpen]  = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+
+  const { notifications, unseenCount, markAllSeen } = useNotifications(
+    isConnected ? colonySlug : null,
+    isConnected ? address    : null,
+  )
+
+  // Mark all seen when the drawer opens
+  useEffect(() => {
+    if (notifOpen && unseenCount > 0) markAllSeen()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifOpen])
 
   const path = location.pathname
 
@@ -176,12 +189,42 @@ export default function Layout({ children, title, back, colonySlug }) {
         </div>
 
         {isConnected ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {/* Notification bell — only when on a colony page */}
+            {colonySlug && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setNotifOpen(v => !v)}
+                  title="Notifications"
+                  style={{
+                    background: 'none', border: `1px solid ${C.border}`,
+                    borderRadius: '50%', width: 24, height: 24,
+                    cursor: 'pointer', color: unseenCount > 0 ? C.gold : C.faint,
+                    fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: 0, lineHeight: 1, flexShrink: 0,
+                  }}
+                >
+                  ◎
+                </button>
+                {unseenCount > 0 && (
+                  <div style={{
+                    position: 'absolute', top: -4, right: -4,
+                    background: '#ef4444', color: '#fff',
+                    borderRadius: '50%', minWidth: 14, height: 14,
+                    fontSize: 9, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '0 2px', lineHeight: 1, pointerEvents: 'none',
+                  }}>
+                    {unseenCount > 9 ? '9+' : unseenCount}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{
               fontSize: 11, color: C.gold, border: `1px solid ${C.gold}`,
               borderRadius: 20, padding: '4px 10px', letterSpacing: '0.04em',
             }}>
-              {address}
+              {address?.slice(0, 6)}…{address?.slice(-4)}
             </div>
             <button
               onClick={disconnect}
@@ -258,6 +301,71 @@ export default function Layout({ children, title, back, colonySlug }) {
             active={helpOpen}
             onClick={() => setHelpOpen(v => !v)}
           />
+        </div>
+      )}
+
+      {/* ── Notification bottom sheet ── */}
+      {notifOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 100,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setNotifOpen(false) }}
+        >
+          <div style={{
+            background: C.white, borderRadius: '16px 16px 0 0',
+            padding: '20px 20px 48px', width: '100%', maxWidth: 480,
+            maxHeight: '75vh', overflowY: 'auto',
+          }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 18px' }} />
+            <div style={{ fontSize: 12, color: C.gold, letterSpacing: '0.1em', marginBottom: 16 }}>
+              NOTIFICATIONS
+            </div>
+
+            {notifications.length === 0 ? (
+              <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: '24px 0' }}>
+                No notifications yet.
+              </div>
+            ) : (
+              notifications.map((n, i) => (
+                <div
+                  key={n.id}
+                  onClick={() => { if (n.link) { navigate(n.link); setNotifOpen(false) } }}
+                  style={{
+                    paddingBottom: i < notifications.length - 1 ? 12 : 0,
+                    marginBottom:  i < notifications.length - 1 ? 12 : 0,
+                    borderBottom:  i < notifications.length - 1 ? `1px solid ${C.border}` : 'none',
+                    cursor: n.link ? 'pointer' : 'default',
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 500, color: C.text }}>{n.title}</div>
+                  {n.body && (
+                    <div style={{ fontSize: 11, color: C.sub, marginTop: 3, lineHeight: 1.5 }}>{n.body}</div>
+                  )}
+                  <div style={{ fontSize: 10, color: C.faint, marginTop: 4 }}>
+                    {new Date(n.created_at).toLocaleString('en-GB', {
+                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                    })}
+                    {n.link && <span style={{ color: C.gold, marginLeft: 6 }}>view →</span>}
+                  </div>
+                </div>
+              ))
+            )}
+
+            <button
+              onClick={() => setNotifOpen(false)}
+              style={{
+                width: '100%', marginTop: 16,
+                padding: '11px 0', background: 'none',
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                fontSize: 11, color: C.sub, cursor: 'pointer',
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
 

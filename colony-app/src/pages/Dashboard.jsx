@@ -716,13 +716,22 @@ export default function Dashboard() {
               )}
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 12, color: C.sub }}>Open votes</span>
             <span
               onClick={() => navigate(`/colony/${slug}/votes`)}
               style={{ fontSize: 12, color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
             >
               {openVoteCount === null ? '…' : openVoteCount} open →
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 12, color: C.sub }}>MCC board</span>
+            <span
+              onClick={() => navigate(`/colony/${slug}/mcc`)}
+              style={{ fontSize: 12, color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              View →
             </span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

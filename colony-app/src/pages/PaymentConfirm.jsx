@@ -41,6 +41,22 @@ export default function PaymentConfirm() {
       await tx.wait()
       logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} S confirmed` })
       refresh()   // update S balance in wallet context
+
+      // Notify recipient (fire-and-forget — don't block UI on failure)
+      const fromShort = `${signer.address.slice(0, 6)}…${signer.address.slice(-4)}`
+      fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          colony: slug,
+          address: to,
+          type: 'payment_received',
+          title: `${amount} S received`,
+          body: note ? `"${note}" from ${fromShort}` : `From ${fromShort}`,
+          link: `/colony/${slug}/dashboard`,
+        }),
+      }).catch(() => {})
+
       setDone(true)
     } catch (e) {
       const msg = e?.reason || e?.shortMessage || e?.message || 'Transaction failed'
