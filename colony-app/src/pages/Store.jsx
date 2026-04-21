@@ -179,7 +179,8 @@ export default function Store() {
     const note = delivery.trim()
       ? `${buyProduct.name} — delivery: ${delivery.trim()}`
       : buyProduct.name
-    navigate(`/colony/${slug}/pay?to=${companyAddr}&amount=${buyProduct.price}&note=${encodeURIComponent(note)}`)
+    const storeUrl = `/colony/${slug}/mall/${companyAddr}`
+    navigate(`/colony/${slug}/pay?to=${companyAddr}&amount=${buyProduct.price}&note=${encodeURIComponent(note)}&returnTo=${encodeURIComponent(storeUrl)}`)
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────

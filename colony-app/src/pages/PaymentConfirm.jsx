@@ -15,11 +15,12 @@ export default function PaymentConfirm() {
   const { slug }       = useParams()
   const navigate       = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isConnected, connect, signer, contracts, onChain } = useWallet()
+  const { isConnected, connect, signer, contracts, onChain, refresh } = useWallet()
 
-  const to     = searchParams.get('to')     || ''
-  const amount = searchParams.get('amount') || ''
-  const note   = searchParams.get('note')   || ''
+  const to       = searchParams.get('to')       || ''
+  const amount   = searchParams.get('amount')   || ''
+  const note     = searchParams.get('note')     || ''
+  const returnTo = searchParams.get('returnTo') || `/colony/${slug}/dashboard`
 
   const [pending, setPending] = useState(false)
   const [done,    setDone]    = useState(false)
@@ -39,6 +40,7 @@ export default function PaymentConfirm() {
       logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} S`, meta: { to, note } })
       await tx.wait()
       logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} S confirmed` })
+      refresh()   // update S balance in wallet context
       setDone(true)
     } catch (e) {
       const msg = e?.reason || e?.shortMessage || e?.message || 'Transaction failed'
@@ -50,7 +52,7 @@ export default function PaymentConfirm() {
 
   // Invalid URL
   if (!to || !amount) return (
-    <Layout title="Payment" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
+    <Layout title="Payment" back={returnTo} colonySlug={slug}>
       <div style={{ padding: 32, textAlign: 'center', fontSize: 12, color: C.faint }}>
         Invalid payment request.
       </div>
@@ -59,7 +61,7 @@ export default function PaymentConfirm() {
 
   // Success
   if (done) return (
-    <Layout title="Payment Sent" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
+    <Layout title="Payment Sent" back={returnTo} colonySlug={slug}>
       <div style={{ padding: '40px 16px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>✓</div>
         <div style={{ fontSize: 18, fontWeight: 500, color: C.green, marginBottom: 8 }}>
@@ -69,17 +71,17 @@ export default function PaymentConfirm() {
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 24 }}>{note}</div>
         )}
         <button
-          onClick={() => navigate(`/colony/${slug}/dashboard`)}
+          onClick={() => navigate(returnTo)}
           style={primaryBtn}
         >
-          Back to Dashboard →
+          {returnTo.includes('/mall') ? '← Back to store' : 'Back to Dashboard →'}
         </button>
       </div>
     </Layout>
   )
 
   return (
-    <Layout title="Confirm Payment" back={`/colony/${slug}/dashboard`} colonySlug={slug}>
+    <Layout title="Confirm Payment" back={returnTo} colonySlug={slug}>
       <div style={{ padding: '24px 16px 0' }}>
 
         {/* Payment summary card */}
@@ -131,7 +133,7 @@ export default function PaymentConfirm() {
         )}
 
         <button
-          onClick={() => navigate(`/colony/${slug}/dashboard`)}
+          onClick={() => navigate(returnTo)}
           style={{ ...primaryBtn, background: 'none', color: C.faint, border: `1px solid ${C.border}`, marginTop: 10 }}
         >
           Cancel
