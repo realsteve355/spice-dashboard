@@ -54,9 +54,35 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── POST — create a notification ───────────────────────────────────────────
+  // ── POST — create a notification (single or broadcast) ────────────────────
   if (req.method === 'POST') {
-    const { colony, address, type, title, body: msgBody, link } = req.body || {}
+    const body = req.body || {}
+    const { colony, type, title, body: msgBody, link } = body
+
+    // Broadcast: write one row per address in the array
+    if (Array.isArray(body.addresses)) {
+      if (!colony || !type || !title || body.addresses.length === 0) {
+        return res.status(400).json({ error: 'colony, type, title, addresses required' })
+      }
+      try {
+        const rows = body.addresses.map(addr => ({
+          colony,
+          address: addr.toLowerCase(),
+          type,
+          title,
+          body:    msgBody || null,
+          link:    link    || null,
+        }))
+        await db('/notifications', { method: 'POST', body: JSON.stringify(rows) })
+        return res.status(200).json({ ok: true, count: rows.length })
+      } catch (e) {
+        console.error('[notifications] broadcast failed:', e.message)
+        return res.status(500).json({ error: e.message })
+      }
+    }
+
+    // Single recipient
+    const { address } = body
     if (!colony || !address || !type || !title) {
       return res.status(400).json({ error: 'colony, address, type, title required' })
     }

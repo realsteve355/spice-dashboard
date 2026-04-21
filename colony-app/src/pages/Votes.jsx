@@ -277,6 +277,25 @@ export default function Votes() {
           : e
       ))
       setTimeout(() => loadAfterWrite(), 3000)
+
+      // Broadcast election notification to all other citizens (fire-and-forget)
+      const others = citizens
+        .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+        .map(c => c.address)
+      if (others.length > 0) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            colony: slug,
+            addresses: others,
+            type: 'election_opened',
+            title: `${ROLES[roleIdx]} election opened`,
+            body: 'Nominations are now open — visit Votes to nominate a candidate.',
+            link: `/colony/${slug}/votes`,
+          }),
+        }).catch(() => {})
+      }
     } catch (e) {
       setActionError(govErr(e))
     }

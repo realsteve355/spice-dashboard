@@ -482,7 +482,20 @@ export default function Dashboard() {
               {chain?.citizenName ? 'citizen · ' : ''}{colony.name}
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* MCC + Fisc quick-nav pills */}
+            <button
+              onClick={e => { e.stopPropagation(); navigate(`/colony/${slug}/mcc`) }}
+              style={quickPill}
+            >
+              MCC
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); navigate(`/colony/${slug}/fisc`) }}
+              style={quickPill}
+            >
+              Fisc
+            </button>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>
                 {chain?.gTokenId > 0 ? `G#${String(chain.gTokenId).padStart(4,'0')}` : ''}
@@ -901,6 +914,13 @@ function LegendDot({ color, label }) {
 const card = {
   background: C.white, border: `1px solid ${C.border}`,
   borderRadius: 8, padding: 16, marginBottom: 10,
+}
+
+const quickPill = {
+  fontSize: 9, color: C.faint, letterSpacing: '0.06em',
+  border: `1px solid ${C.border}`, borderRadius: 4,
+  padding: '3px 6px', background: 'none', cursor: 'pointer',
+  fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0,
 }
 
 const primaryBtn = {
