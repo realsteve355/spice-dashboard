@@ -140,7 +140,7 @@ export default function Dashboard() {
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
     if (!cfg || !address) return
-    const rpc = new ethers.JsonRpcProvider('https://base-sepolia-rpc.publicnode.com')
+    const rpc = new ethers.JsonRpcProvider('https://sepolia.base.org')
     const iface = new ethers.Interface(COLONY_ABI)
     async function loadTx() {
       try {
@@ -157,9 +157,9 @@ export default function Dashboard() {
           try { return await rpc.getLogs(filter) } catch { return [] }
         }
 
-        // 5 chunks × 9,000 blocks ≈ 25 hours of Base Sepolia history
+        // 15 chunks × 9,000 blocks ≈ 75 hours of Base Sepolia history (~2s/block)
         const chunkResults = await Promise.all(
-          Array.from({ length: 5 }, (_, i) => {
+          Array.from({ length: 15 }, (_, i) => {
             const chunkTo   = toBlock - i * CHUNK
             const chunkFrom = Math.max(0, chunkTo - CHUNK)
             const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
