@@ -403,6 +403,7 @@ export default function Dashboard() {
 
       // Notify recipient
       const fromShort = `${address.slice(0, 6)}…${address.slice(-4)}`
+      const fromLabel = chain?.citizenName ? `${chain.citizenName} (${fromShort})` : fromShort
       fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -411,7 +412,7 @@ export default function Dashboard() {
           address: recipient,
           type: 'payment_received',
           title: `${amt} S received`,
-          body: note ? `"${note}" from ${fromShort}` : `From ${fromShort}`,
+          body: note ? `"${note}" from ${fromLabel}` : `From ${fromLabel}`,
           link: `/colony/${slug}/dashboard`,
         }),
       }).catch(() => {})

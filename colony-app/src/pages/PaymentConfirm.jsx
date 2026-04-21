@@ -15,7 +15,7 @@ export default function PaymentConfirm() {
   const { slug }       = useParams()
   const navigate       = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isConnected, connect, signer, contracts, onChain, refresh } = useWallet()
+  const { isConnected, connect, signer, contracts, onChain, refresh, address } = useWallet()
 
   const to       = searchParams.get('to')       || ''
   const amount   = searchParams.get('amount')   || ''
@@ -44,6 +44,8 @@ export default function PaymentConfirm() {
 
       // Notify recipient (fire-and-forget — don't block UI on failure)
       const fromShort = `${signer.address.slice(0, 6)}…${signer.address.slice(-4)}`
+      const senderName = onChain?.[slug]?.citizenName
+      const fromLabel  = senderName ? `${senderName} (${fromShort})` : fromShort
       fetch('/api/notifications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +54,7 @@ export default function PaymentConfirm() {
           address: to,
           type: 'payment_received',
           title: `${amount} S received`,
-          body: note ? `"${note}" from ${fromShort}` : `From ${fromShort}`,
+          body: note ? `"${note}" from ${fromLabel}` : `From ${fromLabel}`,
           link: `/colony/${slug}/dashboard`,
         }),
       }).catch(() => {})
