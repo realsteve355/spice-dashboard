@@ -23,7 +23,7 @@ const ERC20_ABI = [
 
 const GOV_ABI = [
   "function roleHolder(uint8) view returns (address holder, uint256 termEnd, bool active)",
-  "function activeElections() view returns (uint256[])",
+  "function nextId() view returns (uint256)",
   "function elections(uint256) view returns (uint8 role, address openedBy, uint256 openedAt, uint256 nominationEndsAt, uint256 votingEndsAt, uint256 timelockEndsAt, address winner, bool executed, bool cancelled)",
 ]
 
@@ -153,30 +153,26 @@ export default function Mcc() {
     const gov = new ethers.Contract(cfg.governance, GOV_ABI, rpc)
     async function loadElections() {
       try {
-        const activeIds = await gov.activeElections()
-        const nowSec    = Math.floor(Date.now() / 1000)
-        const elecs     = await Promise.all(
-          activeIds.map(async id => {
-            const e = await gov.elections(id)
-            return {
-              id:               Number(id),
-              role:             Number(e.role),
+        const nextId = Number(await gov.nextId())
+        const nowSec = Math.floor(Date.now() / 1000)
+        const result = []
+        for (let i = 1; i < nextId; i++) {
+          try {
+            const e = await gov.elections(i)
+            if (e.openedBy === ethers.ZeroAddress) continue
+            if (e.executed || e.cancelled) continue
+            const status = electionStatus({
               nominationEndsAt: Number(e.nominationEndsAt),
               votingEndsAt:     Number(e.votingEndsAt),
               timelockEndsAt:   Number(e.timelockEndsAt),
               executed:         e.executed,
               cancelled:        e.cancelled,
-              status: electionStatus({
-                nominationEndsAt: Number(e.nominationEndsAt),
-                votingEndsAt:     Number(e.votingEndsAt),
-                timelockEndsAt:   Number(e.timelockEndsAt),
-                executed:         e.executed,
-                cancelled:        e.cancelled,
-              }, nowSec),
-            }
-          })
-        )
-        setActiveElecs(elecs.filter(e => STATUS_LABEL[e.status]))
+            }, nowSec)
+            if (!STATUS_LABEL[status]) continue
+            result.push({ id: i, role: Number(e.role), status })
+          } catch {}
+        }
+        setActiveElecs(result)
       } catch (e) {
         console.warn('[Mcc] loadElections failed:', e)
       }

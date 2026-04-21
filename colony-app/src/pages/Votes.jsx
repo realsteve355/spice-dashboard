@@ -278,25 +278,24 @@ export default function Votes() {
       ))
       setTimeout(() => loadAfterWrite(), 3000)
 
-      // Broadcast election notification — fetch citizens fresh so we don't
-      // depend on the citizens state which may still be loading at this point
+      // Notify each other citizen individually (single-address path is reliable)
       fetchCitizens(colonyAddr).then(citizenList => {
-        const others = citizenList
+        citizenList
           .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
-          .map(c => c.address)
-        if (others.length === 0) return
-        fetch('/api/notifications', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            colony: slug,
-            addresses: others,
-            type: 'election_opened',
-            title: `${ROLES[roleIdx]} election opened`,
-            body: 'Nominations are now open — visit Votes to nominate a candidate.',
-            link: `/colony/${slug}/votes`,
-          }),
-        }).catch(() => {})
+          .forEach(c => {
+            fetch('/api/notifications', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                colony:  slug,
+                address: c.address,
+                type:    'election_opened',
+                title:   `${ROLES[roleIdx]} election opened`,
+                body:    'Nominations are now open — visit Votes to nominate a candidate.',
+                link:    `/colony/${slug}/votes`,
+              }),
+            }).catch(() => {})
+          })
       }).catch(() => {})
     } catch (e) {
       setActionError(govErr(e))
