@@ -34,6 +34,8 @@ let sharedPage
 base.describe('Dashboard — connected as bot[0]', () => {
 
   base.beforeAll(async ({ browser }) => {
+    // Cold Base Sepolia RPC can take up to 90s — extend hook timeout beyond global 60s
+    base.setTimeout(120_000)
     if (!BOT_0_KEY) throw new Error('BOT_0_KEY not set in .env.seed')
     const ctx = await browser.newContext()
     await ctx.addInitScript(`window.__TEST_ADDRESS__ = '${BOT_0_ADDRESS}'`)
@@ -41,7 +43,7 @@ base.describe('Dashboard — connected as bot[0]', () => {
     sharedPage = await ctx.newPage()
     await sharedPage.goto(URL)
     // Wait up to 90s for the full dashboard to load (cold Base Sepolia RPC)
-    await sharedPage.getByText('Alice').waitFor({ state: 'visible', timeout: 90_000 })
+    await sharedPage.getByText('Alice').waitFor({ state: 'visible', timeout: 110_000 })
   })
 
   base.afterAll(async () => {

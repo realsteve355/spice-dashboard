@@ -84,7 +84,7 @@ base.describe('Citizen actions — connected as bot[0]', () => {
     await sharedPage.addInitScript({ path: MOCK_WALLET_PATH })
 
     await sharedPage.goto(URL)
-    await sharedPage.getByText('Alice').waitFor({ state: 'visible', timeout: 90_000 })
+    await sharedPage.getByText('Alice').waitFor({ state: 'visible', timeout: 110_000 })
   })
 
   base.afterAll(async () => {
