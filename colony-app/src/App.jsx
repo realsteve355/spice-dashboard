@@ -19,6 +19,8 @@ import Assets           from './pages/Assets'
 import Mall             from './pages/Mall'
 import Store            from './pages/Store'
 import Mcc              from './pages/Mcc'
+import Fisc             from './pages/Fisc'
+import Budget           from './pages/Budget'
 
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
@@ -308,6 +310,8 @@ export default function App() {
           <Route path="/colony/:slug/mall"               element={<Mall />}            />
           <Route path="/colony/:slug/mall/:companyAddr"  element={<Store />}           />
           <Route path="/colony/:slug/mcc"                element={<Mcc />}             />
+          <Route path="/colony/:slug/fisc"               element={<Fisc />}            />
+          <Route path="/colony/:slug/budget"             element={<Budget />}          />
           <Route path="/create"                          element={<CreateColony />}    />
         </Routes>
       </BrowserRouter>
