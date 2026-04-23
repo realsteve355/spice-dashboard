@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "SPICE Colony",
+    "slug": "spice-colony",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "spice",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "finance.zpc.colony",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Face ID is used to authenticate access to your SPICE wallet and sign transactions.",
+        "NFCReaderUsageDescription": "NFC is used to read payment tags for tap-to-pay at colony merchants."
+      }
+    },
+    "android": {
+      "package": "finance.zpc.colony",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#B8860B"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.NFC"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication"
+    ]
+  }
+}
