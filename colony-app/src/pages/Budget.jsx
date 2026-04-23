@@ -190,8 +190,10 @@ export default function Budget() {
           publishedBy: address, effectiveFrom,
         }),
       })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data.error || 'Publish failed')
+      const text = await r.text()
+      let data = {}
+      try { data = JSON.parse(text) } catch { /* non-JSON response */ }
+      if (!r.ok) throw new Error(data.error || `Server error (${r.status})`)
       setShowModal(false)
       setEditMode(false)
       loadBudget()
