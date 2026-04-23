@@ -55,7 +55,8 @@ async function db(path, options = {}) {
     const text = await r.text()
     throw new Error(`Supabase ${method} ${path} → ${r.status}: ${text}`)
   }
-  return r.status === 204 ? null : r.json()
+  const text = await r.text()
+  return text ? JSON.parse(text) : null
 }
 
 export default async function handler(req, res) {
