@@ -6,6 +6,8 @@
 
 **Status:** ✓ Done (on-chain) · ~ Partial / UI-only mock · — Not built
 
+*v18 (23 April 2026): Added Fisc/Budget stories (§ Role 4 Fisc Engine, N-12 colony type choice).*
+
 ---
 
 ## Role 1 — Citizen
@@ -280,6 +282,37 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 *M-30: Announcements section in Mcc.jsx. Board members and founder can post/delete. Stored in Supabase announcements table via /api/announcements.*
 *M-31: Votes.jsx fires individual notifications to all citizens (via fetchCitizens) when openElection() confirms. Uses fresh fetchCitizens() call inside handler (not React state which may be stale).*
 
+### Fisc Engine
+
+The Fisc Engine translates the colony's published budget into a single monetary rate ($/S). The MCC CEO
+publishes the Standard Citizen Budget; all other Fisc numbers derive from it. Earth colonies have
+additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run a closed economy.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| FI-01 | As any citizen, I want to see the Fisc engine landing page showing the current UBI (S/month), Fisc rate ($/S), and implied UBI value ($/month) at a glance | P1 | ✓ |
+| FI-02 | As any citizen, I want to see whether my colony is an Earth or Mars colony, with a clear badge, so I know which Fisc features apply | P1 | ✓ |
+| FI-03 | As any citizen, I want to navigate from the Fisc page directly to the Standard Citizen Budget | P1 | ✓ |
+| FI-04 | As any citizen, I want to see the Standard Citizen Budget — all 15 line items across MCC, Essential, Discretionary, and Savings categories — with S-token amounts and descriptions | P1 | ✓ |
+| FI-05 | As any citizen, I want to see a split bar showing the percentage allocation to each budget category vs the target (MCC 25 / Essential 35 / Discretionary 20 / Savings 20) | P1 | ✓ |
+| FI-06 | As any citizen, I want to see the bread-basket anchor values (S-price per loaf, SPICE labour discount, Ohio reference price) so I understand how the Fisc rate is derived | P1 | ✓ |
+| FI-07 | As any citizen, I want to see the budget version, effective-from date, and the publishing MCC CEO address | P1 | ✓ |
+| FI-08 | As the MCC CEO, I want to enter draft mode and edit S-token amounts for each budget line item | P2 | ✓ |
+| FI-09 | As the MCC CEO, I want to toggle optional line items off (and core services cannot be toggled off) | P2 | ✓ |
+| FI-10 | As the MCC CEO, I want to adjust the bread price (S/loaf) and SPICE labour discount to explore their effect on the Fisc rate in real time | P2 | ✓ |
+| FI-11 | As the MCC CEO, I want a consistency panel showing whether the Fisc rate ($0.30–$1.20) and UBI value ($300–$1,500/mo) are in range, and whether Savings is approximately 20% of total | P2 | ✓ |
+| FI-12 | As the MCC CEO, I want to save a draft budget (not yet published to citizens) | P2 | ✓ |
+| FI-13 | As the MCC CEO, I want a confirmation modal showing the new total and effective date before I publish, so I don't accidentally go live | P2 | ✓ |
+| FI-14 | As the MCC CEO, I want to publish the budget so all citizens can see the updated UBI, rate, and value on the Fisc page | P2 | ✓ |
+| FI-15 | As the MCC CEO, I want a warning if the draft total exceeds 120% of any version in the prior 12 months, indicating a citizen vote will be triggered | P2 | ✓ |
+| FI-16 | As any citizen, I want to see the full version history of published budgets with expandable per-version line item detail | P2 | ✓ |
+| FI-17 | As a citizen, I want to vote on a proposed budget spike (>20% increase) before it takes effect | P3 | — |
+| FI-18 | As any citizen (Earth colony), I want to see the USDC reserve balance and Fisc boundary status | P3 | — |
+| FI-19 | As any citizen (Earth colony), I want to see current Local Robot Tax (LRT) rates and filings | P3 | — |
+| FI-20 | As any citizen (Earth colony), I want to see V→USDC boundary flow history and current rate | P3 | — |
+
+*FI-01–FI-16: Implemented April 2026. Fisc.jsx (/colony/:slug/fisc) + Budget.jsx (/colony/:slug/budget). CEO detected via Governance.roleHolder(0). Draft stored in Supabase budget_draft; published history in budget_published. Fisc rate = ($2.80 × (1 − discount%)) / breadPriceS. FI-17: spike vote UI warning shown, citizen vote flow not yet built. FI-18–FI-20: Earth-only placeholder cards in Fisc.jsx (opacity 0.5, "coming soon").*
+
 ### Notifications
 
 | # | Story | Priority | Status |
@@ -356,6 +389,7 @@ A citizen deploying a new colony.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
+| N-00 | As a colony founder, I want to choose whether my colony is an Earth colony (open economy — USDC reserve, Fisc rate, LRT) or a Mars colony (closed — no external USDC, Harberger land) so the correct features are enabled from day one | P1 | ✓ |
 | N-01 | As a colony founder, I want to name my colony and generate a unique URL slug | P1 | ✓ |
 | N-02 | As a colony founder, I want to designate founding MCC board wallet addresses | P1 | ✓ |
 | N-03 | As a colony founder, I want to review and accept the fixed founding constitution | P1 | ✓ |
@@ -369,6 +403,7 @@ A citizen deploying a new colony.
 | N-10 | As a colony founder, I want my colony to appear automatically in the global directory for all users without any manual step by the protocol team | P1 | ✓ |
 | N-11 | As a colony founder, I want the deploy flow to register my colony with the ColonyRegistry contract so it is publicly discoverable | P1 | ✓ |
 
+*N-00: Colony type (earth/mars) chosen at step 2 of the deploy wizard. Stored in localStorage['spice_user_colonies'][slug].colonyType at step 17.5. Drives Fisc.jsx badge and feature gating. On-chain Fisc contract planned but not yet deployed — type lives in localStorage for now.*
 *N-04: Deploy wizard at app.zpc.finance/create runs an 18-step guided flow: 17 contract deploys/wires (GToken, SToken, VToken, Colony, ownership transfers, OToken, CompanyImpl, UpgradeableBeacon, CompanyFactory, MCCBilling, MCCServices) + step 18: registry.register() (non-fatal). Pre-flight: network check (84532), balance check (≥0.005 ETH), slug availability check via slugToColony().*
 *N-06: Invite URL copyable; QR not yet generated.*
 *N-07: Directory.jsx reads ColonyRegistry (0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68) on-chain exclusively — no contracts.json or localStorage fallbacks. The registry is the single source of truth.*

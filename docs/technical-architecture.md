@@ -54,9 +54,11 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   │   ├── RequestPayment.jsx   # QR code payment request generator
 │   │   │   ├── PaymentConfirm.jsx   # Payment confirmation + Colony.send()
 │   │   │   ├── Mcc.jsx              # MCC overview — board roles, token supply, live elections, announcements
+│   │   │   ├── Fisc.jsx             # Fisc engine landing — three-number panel (UBI/rate/value), colony type badge, Budget link
+│   │   │   ├── Budget.jsx           # Standard citizen budget — citizen view + CEO edit/publish flow
 │   │   │   ├── Mall.jsx             # Colony marketplace — list of companies with storefronts
 │   │   │   ├── Store.jsx            # Per-company storefront — pay via Colony.send()
-│   │   │   └── CreateColony.jsx     # Deploy new colony — 18-step guided flow (see §8)
+│   │   │   └── CreateColony.jsx     # Deploy new colony — 18-step guided flow + Mars/Earth type choice (see §8)
 │   │   ├── components/
 │   │   │   ├── Layout.jsx        # Shell: header, back button, nav
 │   │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
@@ -72,7 +74,8 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   ├── log.js                # Serverless function — writes to Supabase activity_log
 │   │   ├── citizens.js           # Serverless function — enumerates colony citizens via GToken contract reads
 │   │   ├── notifications.js      # Serverless function — per-wallet notification inbox (GET/POST, Supabase)
-│   │   └── announcements.js      # Serverless function — colony announcements board (GET/POST/DELETE, Supabase)
+│   │   ├── announcements.js      # Serverless function — colony announcements board (GET/POST/DELETE, Supabase)
+│   │   └── budget.js             # Serverless function — standard citizen budget (GET published/draft, POST save_draft/publish, Supabase)
 │   ├── scripts/
 │   │   ├── lib/
 │   │   │   ├── actors.js         # Bot wallet definitions — loads BOT_0_KEY…BOT_4_KEY, exports getActors()
@@ -655,9 +658,11 @@ chain data show a loading state or "not a citizen" message — never stale mock 
 | `/colony/:slug/pay` | PaymentConfirm | Confirm + submit payment |
 | `/colony/:slug/assets` | Assets | Register physical assets (Form 1 UNILATERAL A-token), create obligations (Form 3), view all A-tokens held |
 | `/colony/:slug/mcc` | Mcc | MCC overview — board roles, token supply, live elections, announcements |
+| `/colony/:slug/fisc` | Fisc | Fisc engine — three-number panel (UBI/rate/value), Mars/Earth badge, Budget link, Earth-only placeholders |
+| `/colony/:slug/budget` | Budget | Standard citizen budget — citizen read view + CEO edit/publish; audit trail |
 | `/colony/:slug/mall` | Mall | Colony marketplace — list of company storefronts |
 | `/colony/:slug/mall/:companyAddr` | Store | Per-company storefront |
-| `/create` | CreateColony | Deploy new colony |
+| `/create` | CreateColony | Deploy new colony — includes Mars/Earth economy type choice |
 
 ### 4.4 Event Queries — getLogs Pattern
 
@@ -930,7 +935,106 @@ announcements(id, colony, title, body, author_addr, created_at)
 
 ---
 
-## 10. Test Infrastructure
+## 10. Fisc Engine & Budget System
+
+### Colony Types
+
+Each colony has an economy type chosen at creation time in `CreateColony.jsx` and stored in
+`localStorage['spice_user_colonies'][slug].colonyType`. Two types are supported:
+
+| Type | Badge | Economy | Additional features |
+|------|-------|---------|---------------------|
+| `earth` | EARTH · OPEN | Open — USDC reserve + Fisc rate | LRT, V→USDC boundary flows (placeholders) |
+| `mars` | MARS · CLOSED | Closed — no external USDC | Harberger land fee (placeholder) |
+
+The colony type is saved to localStorage at step 17.5 of the deploy wizard (alongside contract
+addresses). It will move on-chain when a Fisc contract is built. Mars colonies are a strict subset of
+Earth Fisc features.
+
+### Fisc Rate Calculation
+
+The Fisc rate links the S-token to an external dollar reference via a bread-basket anchor:
+
+```
+fiscRate ($/S) = (OHIO_BREAD_REF × (1 − labourDiscount%)) / breadPriceS
+
+OHIO_BREAD_REF = $2.80   (Ohio reference loaf price)
+labourDiscount = 28%      (default — SPICE labour discount)
+breadPriceS    = 4        (default — S-tokens per loaf, set by MCC CEO)
+
+→ default fiscRate = (2.80 × 0.72) / 4 = $0.504/S
+→ UBI value = totalS × fiscRate
+```
+
+Consistency bands enforced in `Budget.jsx`:
+- Rate OK: $0.30–$1.20/S
+- UBI value OK: $300–$1,500/month
+
+### Standard Citizen Budget
+
+The published budget is the MCC CEO's declaration of what a standard month of citizen life costs in
+S-tokens. It calibrates the UBI amount and makes the Fisc rate derivable.
+
+**15 default line items across 4 categories:**
+
+| Category | Lines | Auto-deducted | Core (cannot disable) |
+|----------|-------|---------------|----------------------|
+| MCC | Electricity, Water, Waste, Broadband, Roads/EMS, Housing | Yes | Electricity, Water, Waste, Broadband, Roads/EMS |
+| Essential | Groceries, Personal Care, Healthcare, Transport, Education | No | all optional |
+| Discretionary | Dining, Entertainment, Non-essential Goods | No | none |
+| Savings | S→V Conversion | No | none |
+
+Target split: MCC 25% · Essential 35% · Discretionary 20% · Savings 20%.
+
+**CEO detection:** `Governance.roleHolder(0)` — the holder of CEO role (role index 0) is the MCC CEO.
+Only the CEO sees the Edit button and can save/publish drafts.
+
+**Spike protection:** If a draft total exceeds 120% of the lowest published total in the trailing 12
+versions, publishing triggers a citizen vote (UI warning shown; vote mechanism planned, not yet built).
+
+### Supabase Tables
+
+```sql
+budget_draft (
+  colony                text primary key,
+  lines                 jsonb not null,
+  bread_price_s         integer not null,
+  spice_labour_discount integer not null default 28,
+  updated_at            timestamptz default now(),
+  updated_by            text not null
+);
+
+budget_published (
+  id                    bigserial primary key,
+  colony                text not null,
+  version               integer not null,
+  published_at          timestamptz default now(),
+  published_by          text not null,
+  effective_from        text not null,
+  bread_price_s         integer not null,
+  spice_labour_discount integer not null default 28,
+  lines                 jsonb not null,
+  total_s               integer not null,
+  change_from_prior     real
+);
+```
+
+### API: `/api/budget`
+
+| Method | Params | Action |
+|--------|--------|--------|
+| `GET ?colony=0x…` | — | Returns `{ published, history[] }` — latest published version + last 20 |
+| `GET ?colony=0x…&draft=true` | — | Returns `{ draft }` — CEO-only draft |
+| `POST { action: 'save_draft', colony, lines, breadPriceS, spiceLabourDiscount, updatedBy }` | — | Upsert draft (merge-duplicates) |
+| `POST { action: 'publish', colony, publishedBy, effectiveFrom }` | — | Promotes draft to published; increments version; computes totalS + changePct |
+
+**Bug note (fixed April 2026):** `db()` helper used `r.status === 204 ? null : r.json()` — Supabase
+returns 201 with empty body when `prefer: return=minimal`, causing `r.json()` to throw
+"Unexpected end of JSON input". Fixed to `r.text()` then `JSON.parse(text)`.
+
+---
+
+## 11. Test Infrastructure
 
 ### Overview
 
@@ -998,7 +1102,7 @@ Derives `BOT_0_ADDRESS` from `BOT_0_KEY` (from `.env.seed`). Provides `walletPag
 
 ---
 
-## 11. Known Limitations & Technical Debt
+## 12. Known Limitations & Technical Debt
 
 | Item | Impact | Fix |
 |------|--------|-----|
@@ -1021,7 +1125,7 @@ Derives `BOT_0_ADDRESS` from `BOT_0_KEY` (from `.env.seed`). Provides `walletPag
 
 ---
 
-## 12. Future Architecture
+## 13. Future Architecture
 
 ### Core v2 contracts (required for v17 economic model)
 
@@ -1048,8 +1152,8 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 
 ---
 
-*SPICE Colony · Technical Architecture · v10*
-*Last updated: 21 April 2026*
+*SPICE Colony · Technical Architecture · v11*
+*Last updated: 23 April 2026*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*
@@ -1057,3 +1161,4 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 *v8 changes (19 April 2026): Governance.sol deployed and wired (§3.9 new section). Dave's Colony redeployed — all contract addresses updated (§3.1). Colony.sol join() updated: accepts birth year (not Unix timestamp) + setGovernance() + issueObligationGov() + CEO active check in advanceEpoch() (§3.2). addrLabel.js added to repo structure (§2) — shortAddr, namedAddr, resolveNames batch helpers. Deploy steps updated to 18+Governance (§8). Known Limitations: "Governance not in deploy script" replaced with "Votes.jsx elections UI incomplete" (§9). MCC Ledger tab added to Admin.jsx — double-entry events view for all colony financial activity.*
 *v10 changes (21 April 2026): Notifications + Announcements system (§9 new) — Supabase-backed per-wallet inbox, bell button in Layout.jsx, useNotifications hook, /api/notifications + /api/announcements serverless functions. Payment notifications fire on Colony.send() confirm with sender name. Election notifications broadcast to all citizens on openElection. Mcc.jsx (§4.3) — MCC overview page: board roles, token supply, live elections (nextId+loop pattern), announcements board. SendSheet rewritten — citizen picker (fetchCitizens) instead of free-text address. getLogs: RPC switched to sepolia.base.org; 15 chunks (§4.4). Test infrastructure (§10) — Vitest unit tests, Playwright E2E with mockWallet fixture, seed scripts with bot wallets. Repository structure updated (§2). Route map updated (§4.3) — /mcc, /mall, /mall/:addr.*
 *v9 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections (§3.9 rewritten) — openElection / nominateCandidate / vote(candidate) / finaliseElection / executeElection / resign(). New Election struct with nominationEndsAt, votingEndsAt, timelockEndsAt, winner, executed, cancelled. New Governance address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated (§3.1). citizens.js serverless function added (§2) — enumerates citizens via GToken.nextTokenId() + ownerOf() + citizenName() loop; more reliable than getLogs. fetchCitizens.js utility added (§2). System overview diagram updated (§1). Known Limitations: "Votes.jsx UI incomplete" replaced with testnet timing constants + citizen enumeration scale note (§9).*
+*v11 changes (23 April 2026): Fisc Engine & Budget System added (§10 new). Mars/Earth colony type choice in CreateColony wizard — stored in localStorage at step 17.5; drives Fisc.jsx badge and feature gating. Fisc.jsx + Budget.jsx pages added (§2, §4.3). budget.js serverless function added (§2, §10). Two new Supabase tables: budget_draft, budget_published (§10). Fisc rate formula documented (bread-basket anchor). Section renumbering: old §10 Test Infrastructure → §11; old §11 Known Limitations → §12; old §12 Future Architecture → §13.*

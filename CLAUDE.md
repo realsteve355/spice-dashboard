@@ -301,10 +301,14 @@ own root directory, not the repo root.
 (not the founder's EOA). `ownerOf(tokenId)` == Colony contract — the colony cannot be orphaned by key loss.
 `deregister()` burns it; `reregister()` remints with the same token ID. On-chain tokenURI with metadata JSON.
 
-**Colony deploy flow** (`CreateColony.jsx`): 18-step guided wizard.
+**Colony types:** Each colony is either `earth` (open economy — USDC reserve, Fisc rate, LRT) or `mars`
+(closed economy — no external USDC, Harberger land). Chosen in `CreateColony.jsx` step 2.
+Stored in `localStorage['spice_user_colonies'][slug].colonyType`. Drives Fisc.jsx badge + feature gating.
+
+**Colony deploy flow** (`CreateColony.jsx`): 18-step guided wizard (plus a Mars/Earth type choice at step 2).
 Pre-flight: network (84532) + balance (≥0.005 ETH) + slug availability.
 Steps 1–17: deploy 10 contracts + wiring (each MetaMask confirmation).
-Step 17.5: save to localStorage (colony usable from here).
+Step 17.5: save to localStorage (colony usable from here, colonyType also saved here).
 Step 18 (non-fatal): `ColonyRegistry.register(colonyAddr, name, slug)` — mints C-token.
 
 **Directory colony source:** ColonyRegistry on-chain only (`getActive()` + `entries(addr)`).
@@ -329,6 +333,17 @@ MCC board/founder can post/delete from Mcc.jsx.
 
 **MCC page** (`Mcc.jsx`): `/colony/:slug/mcc` — board roles, token supply stats, live elections
 (nextId+loop pattern), announcements. Quick-nav MCC/Fisc pills on Dashboard citizen card.
+
+**Fisc page** (`Fisc.jsx`): `/colony/:slug/fisc` — three-number panel (UBI/rate/value computed from
+published budget), Mars/Earth badge, "View Budget →" link. Earth-only placeholder sections for
+USDC Reserve, LRT, Boundary Flows.
+
+**Budget page** (`Budget.jsx`): `/colony/:slug/budget` — 15 default line items (4 categories: MCC,
+Essential, Discretionary, Savings). Citizen read-only view with split bar. CEO edit mode: per-line
+inputs, on/off toggles (CORE_IDS cannot be disabled), bread price + labour discount inputs,
+consistency panel, spike warning (>20% vs trailing 12-version low). Publish modal with version
+history audit trail. CEO detected via `Governance.roleHolder(0)`. Backed by `/api/budget` + Supabase
+tables `budget_draft` + `budget_published`. Fisc rate = `($2.80 × (1 − discount%)) / breadPriceS`.
 
 **getLogs RPC:** `https://sepolia.base.org` — switched from publicnode.com (silent failures).
 15 chunks × 9,000 blocks = ~75 hours of history.
@@ -386,8 +401,8 @@ Config: `spice-admin/config.js` (ColonyRegistry address).
 Has founder share controls: global default % + per-colony override + founder wallet update.
 Colony.settleProtocol() splits ETH between protocol treasury and founder wallet per getFeeSplit().
 
-**Full technical reference:** `docs/technical-architecture.md` (v10)
-**Full requirements spec:** `docs/user-stories.md` (v17)`
+**Full technical reference:** `docs/technical-architecture.md` (v11)
+**Full requirements spec:** `docs/user-stories.md` (v18)
 
 ---
 
