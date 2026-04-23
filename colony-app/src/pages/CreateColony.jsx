@@ -14,14 +14,24 @@ const REGISTRY_ABI = [
   'function colonyBeacon() view returns (address)',
 ]
 
-const FIXED_PARAMS = [
+const FIXED_PARAMS_COMMON = [
   { label: 'UBI per citizen',        value: '1,000 S-tokens / month' },
   { label: 'Max monthly savings',    value: '200 S-tokens → V'       },
   { label: 'Adulthood',              value: '18 years'               },
   { label: 'MCC recall trigger',     value: 'Bill +20% above 12m avg'},
   { label: 'Constitutional change',  value: '80% referendum required'},
   { label: 'V-token expiry',         value: '100 years from mint'    },
-  { label: 'Harberger fee',          value: '0.5% declared value/mo' },
+]
+const FIXED_PARAMS_MARS = [
+  ...FIXED_PARAMS_COMMON,
+  { label: 'Economy',                value: 'Closed — no external USDC' },
+  { label: 'Harberger land fee',     value: '0.5% declared value/mo'    },
+]
+const FIXED_PARAMS_EARTH = [
+  ...FIXED_PARAMS_COMMON,
+  { label: 'Economy',                value: 'Open — USDC reserve + Fisc rate' },
+  { label: 'External trade',         value: 'V → USDC via Fisc boundary'      },
+  { label: 'Robot tax (LRT)',        value: 'On local net profit, USDC'        },
 ]
 
 // Deploy a contract from its artifact — returns { contract, addr }
@@ -44,6 +54,8 @@ export default function CreateColony() {
   const [description, setDesc]    = useState('')
   const [boards, setBoards]       = useState([''])
   const [accepted, setAccepted]   = useState(false)
+
+  const [colonyType, setColonyType] = useState('earth')  // 'mars' | 'earth'
 
   const [deploying, setDeploying] = useState(false)
   const [deployLog, setDeployLog] = useState([])   // array of { text, done }
@@ -262,6 +274,7 @@ export default function CreateColony() {
       const stored = JSON.parse(localStorage.getItem('spice_user_colonies') || '{}')
       stored[slug] = {
         name,
+        colonyType,
         address:     colonyAddr,
         aToken:      aTokenAddr,
         mccBilling:  billingAddr,
@@ -291,7 +304,7 @@ export default function CreateColony() {
 
       setDeployedAddrs({ colony: colonyAddr, aToken: aTokenAddr, billing: billingAddr, services: servicesAddr })
       setDeploying(false)
-      setStep(4)
+      setStep(5)
 
     } catch (e) {
       const msg = e?.reason || e?.shortMessage || e?.message || 'Deploy failed'
@@ -316,9 +329,9 @@ export default function CreateColony() {
       <div style={{ padding: '20px 16px 0' }}>
 
         {/* Step indicator */}
-        {step < 4 && (
+        {step < 5 && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
-            {[1, 2, 3].map(n => (
+            {[1, 2, 3, 4].map(n => (
               <div key={n} style={{
                 flex: 1, height: 3, borderRadius: 2,
                 background: step >= n ? C.gold : C.border,
@@ -390,8 +403,89 @@ export default function CreateColony() {
           </div>
         )}
 
-        {/* ── Step 2: MCC Board ── */}
+        {/* ── Step 2: Colony Type ── */}
         {step === 2 && (
+          <div>
+            <div style={stepTitle}>Choose colony type</div>
+            <div style={stepSub}>
+              This is set in the founding constitution and cannot be changed without an 80% referendum.
+            </div>
+
+            {[
+              {
+                type: 'mars',
+                label: 'Mars Colony',
+                badge: 'CLOSED ECONOMY',
+                badgeColor: C.purple,
+                description: 'S-tokens have value only within the colony. No external currency. No USDC reserve. Harberger land rules apply. The simplest and most self-contained colony model.',
+                params: ['Closed S/V economy', 'Harberger land (0.5%/mo)', 'No external trade'],
+              },
+              {
+                type: 'earth',
+                label: 'Earth Colony',
+                badge: 'OPEN ECONOMY',
+                badgeColor: C.gold,
+                description: 'S-tokens connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Citizens can buy externally using V-tokens.',
+                params: ['USDC reserve + Fisc rate', 'V → USDC boundary flows', 'Local Robot Tax (LRT)'],
+              },
+            ].map(opt => {
+              const selected = colonyType === opt.type
+              return (
+                <div
+                  key={opt.type}
+                  onClick={() => setColonyType(opt.type)}
+                  style={{
+                    background: C.white,
+                    border: `2px solid ${selected ? C.gold : C.border}`,
+                    borderRadius: 8, padding: 16, marginBottom: 12,
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: selected ? C.gold : C.text }}>
+                      {opt.label}
+                    </div>
+                    <span style={{
+                      fontSize: 9, letterSpacing: '0.1em', fontWeight: 600,
+                      color: opt.badgeColor, border: `1px solid ${opt.badgeColor}`,
+                      borderRadius: 10, padding: '2px 8px',
+                    }}>
+                      {opt.badge}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6, marginBottom: 10 }}>
+                    {opt.description}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {opt.params.map(p => (
+                      <span key={p} style={{
+                        fontSize: 10, color: C.faint,
+                        border: `1px solid ${C.border}`, borderRadius: 4,
+                        padding: '2px 7px',
+                      }}>
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                  {selected && (
+                    <div style={{ marginTop: 10, fontSize: 10, color: C.gold, letterSpacing: '0.06em' }}>
+                      ✓ selected
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+              <button onClick={() => setStep(1)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
+              <button onClick={() => setStep(3)} style={{ ...primaryBtn, flex: 2 }}>Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: MCC Board ── */}
+        {step === 3 && (
           <div>
             <div style={stepTitle}>Designate the MCC board</div>
             <div style={stepSub}>
@@ -434,14 +528,14 @@ export default function CreateColony() {
             )}
 
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setStep(1)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
-              <button onClick={() => setStep(3)} style={{ ...primaryBtn, flex: 2 }}>Next →</button>
+              <button onClick={() => setStep(2)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
+              <button onClick={() => setStep(4)} style={{ ...primaryBtn, flex: 2 }}>Next →</button>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Constitution & Deploy ── */}
-        {step === 3 && (
+        {/* ── Step 4: Constitution & Deploy ── */}
+        {step === 4 && (
           <div>
             {!deploying && !deployError && (
               <>
@@ -455,11 +549,11 @@ export default function CreateColony() {
                   <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
                     FIXED PARAMETERS
                   </div>
-                  {FIXED_PARAMS.map((p, i) => (
+                  {(colonyType === 'mars' ? FIXED_PARAMS_MARS : FIXED_PARAMS_EARTH).map((p, i, arr) => (
                     <div key={i} style={{
                       padding: '10px 16px',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      borderBottom: i < FIXED_PARAMS.length - 1 ? `1px solid ${C.border}` : 'none',
+                      borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
                     }}>
                       <span style={{ fontSize: 11, color: C.sub }}>{p.label}</span>
                       <span style={{ fontSize: 11, color: C.gold, fontWeight: 500 }}>{p.value}</span>
@@ -470,6 +564,7 @@ export default function CreateColony() {
                 {/* Summary */}
                 <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
                   <span style={{ color: C.gold }}>Colony:</span> {name}<br />
+                  <span style={{ color: C.gold }}>Type:</span> {colonyType === 'mars' ? 'Mars (closed economy)' : 'Earth (open economy)'}<br />
                   <span style={{ color: C.gold }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
                   <span style={{ color: C.gold }}>URL:</span> app.zpc.finance/colony/{slug}<br />
                   <span style={{ color: C.gold }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
@@ -493,7 +588,7 @@ export default function CreateColony() {
                 </label>
 
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => setStep(2)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
+                  <button onClick={() => setStep(3)} style={{ ...ghostBtn, flex: 1 }}>← Back</button>
                   <button
                     onClick={handleDeploy}
                     disabled={!accepted}
@@ -550,14 +645,17 @@ export default function CreateColony() {
           </div>
         )}
 
-        {/* ── Step 4: Confirmation ── */}
-        {step === 4 && (
+        {/* ── Step 5: Confirmation ── */}
+        {step === 5 && (
           <div style={{ textAlign: 'center', paddingTop: 16 }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>⬡</div>
             <div style={{ fontSize: 18, fontWeight: 500, color: C.text, marginBottom: 8 }}>
               Colony deployed
             </div>
-            <div style={{ fontSize: 13, color: C.gold, marginBottom: 4 }}>{name}</div>
+            <div style={{ fontSize: 13, color: C.gold, marginBottom: 2 }}>{name}</div>
+            <div style={{ fontSize: 10, color: C.faint, marginBottom: 20, letterSpacing: '0.08em' }}>
+              {colonyType === 'mars' ? 'MARS COLONY · CLOSED ECONOMY' : 'EARTH COLONY · OPEN ECONOMY'}
+            </div>
             {deployedAddrs && (
               <div style={{ fontSize: 10, color: C.faint, marginBottom: 24, lineHeight: 1.9, fontFamily: 'monospace' }}>
                 Colony: {deployedAddrs.colony.slice(0, 10)}…{deployedAddrs.colony.slice(-6)}<br />
