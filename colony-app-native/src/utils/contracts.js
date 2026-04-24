@@ -19,6 +19,7 @@ export const COLONY = {
   vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
   gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
   governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
+  fisc:       '0xceD019811D02958B38d05ab2c57162B91E16F866',
   name:       "Dave's Colony",
   slug:       'daves-colony',
 }
@@ -28,6 +29,20 @@ export const COLONY = {
 const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
   'function symbol() view returns (string)',
+]
+
+const FISC_ABI = [
+  'function fiscRate() view returns (uint256)',
+  'function reserveUSDC() view returns (uint256)',
+  'function reserveRatio() view returns (uint256)',
+  'function reserveStatus() view returns (uint8)',
+  'function lrtRate() view returns (uint256)',
+  'function breadBasketPriceS() view returns (uint256)',
+  'function ubiAmount() view returns (uint256)',
+  'function periodEnd() view returns (uint256)',
+  'function daysUntilPeriodEnd() view returns (uint256)',
+  'function toUSDC(uint256 tokenAmount) view returns (uint256)',
+  'function snapshot() view returns (uint256,uint256,uint256,uint8,uint256,uint256,uint256,uint256,uint256,address)',
 ]
 
 const COLONY_ABI = [
@@ -75,6 +90,33 @@ export async function fetchColonyState(address) {
     isCitizen,
     citizenName,
     epochStart:  Number(epochStart),
+  }
+}
+
+/** Fetch Fisc state — rate, reserve, period timing. */
+export async function fetchFiscState() {
+  const rpc  = getProvider()
+  const fisc = new ethers.Contract(COLONY.fisc, FISC_ABI, rpc)
+
+  const [
+    fiscRate, reserveUSDC, reserveRatio, reserveStatus,
+    lrtRate, breadBasketPriceS, ubiAmount, periodEnd, daysLeft,
+  ] = await fisc.snapshot()
+
+  // fiscRate is scaled 1e6 ($0.75 = 750_000)
+  const rateUSD = Number(fiscRate) / 1e6
+
+  return {
+    fiscRate:          rateUSD,
+    fiscRateRaw:       fiscRate,
+    reserveUSDC:       Number(reserveUSDC) / 1e6,
+    reserveRatio:      Number(reserveRatio) / 1e4,
+    reserveStatus:     Number(reserveStatus), // 2=healthy, 1=adequate, 0=alert
+    lrtRate:           Number(lrtRate) / 100, // percentage
+    breadBasketPriceS: Number(breadBasketPriceS),
+    ubiAmount:         Number(ubiAmount),
+    periodEnd:         Number(periodEnd),
+    daysLeft:          Number(daysLeft),
   }
 }
 

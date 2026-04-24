@@ -22,7 +22,7 @@ import {
   loadWallet   as _load,
   clearWallet  as _clear,
 } from '../utils/wallet'
-import { fetchColonyState } from '../utils/contracts'
+import { fetchColonyState, fetchFiscState } from '../utils/contracts'
 
 const Ctx = createContext(null)
 export const useWallet = () => useContext(Ctx)
@@ -32,6 +32,7 @@ export function WalletProvider({ children }) {
   const [isSetup,      setIsSetup]      = useState(false)
   const [wallet,       setWallet]       = useState(null)  // loaded only after biometric auth
   const [colonyState,  setColonyState]  = useState(null)
+  const [fiscState,    setFiscState]    = useState(null)
   const [stateLoading, setStateLoading] = useState(false)
   const [initialising, setInitialising] = useState(true)  // true while checking SecureStore on boot
 
@@ -53,13 +54,13 @@ export function WalletProvider({ children }) {
     })()
   }, [])
 
-  // Whenever address changes, fetch colony state from chain
+  // Whenever address changes, fetch colony + fisc state from chain
   useEffect(() => {
     if (!address) return
     setStateLoading(true)
-    fetchColonyState(address)
-      .then(s => setColonyState(s))
-      .catch(e => console.warn('[WalletContext] fetchColonyState error:', e.message))
+    Promise.all([fetchColonyState(address), fetchFiscState()])
+      .then(([colony, fisc]) => { setColonyState(colony); setFiscState(fisc) })
+      .catch(e => console.warn('[WalletContext] fetch error:', e.message))
       .finally(() => setStateLoading(false))
   }, [address])
 
@@ -67,8 +68,9 @@ export function WalletProvider({ children }) {
     if (!address) return
     setStateLoading(true)
     try {
-      const s = await fetchColonyState(address)
-      setColonyState(s)
+      const [colony, fisc] = await Promise.all([fetchColonyState(address), fetchFiscState()])
+      setColonyState(colony)
+      setFiscState(fisc)
     } catch (e) {
       console.warn('[WalletContext] refresh error:', e.message)
     } finally {
@@ -114,6 +116,7 @@ export function WalletProvider({ children }) {
     isSetup,
     wallet,
     colonyState,
+    fiscState,
     stateLoading,
     initialising,
     createWallet,

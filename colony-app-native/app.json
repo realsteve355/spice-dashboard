@@ -18,7 +18,8 @@
       "bundleIdentifier": "finance.zpc.colony",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID is used to authenticate access to your SPICE wallet and sign transactions.",
-        "NFCReaderUsageDescription": "NFC is used to read payment tags for tap-to-pay at colony merchants."
+        "NFCReaderUsageDescription": "NFC is used to read payment tags for tap-to-pay at colony merchants.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -28,12 +29,22 @@
         "backgroundColor": "#B8860B"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.NFC"]
+      "permissions": [
+        "android.permission.NFC",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "plugins": [
       "expo-secure-store",
       "expo-local-authentication",
       "react-native-nfc-manager"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7e27160c-f7a0-452f-968e-d1ae7735f5b9"
+      }
+    },
+    "owner": "realsteve355"
   }
 }

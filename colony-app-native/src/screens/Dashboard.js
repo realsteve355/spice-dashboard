@@ -25,7 +25,7 @@ const EVENT_LABELS = {
 
 export default function Dashboard() {
   const navigation = useNavigation()
-  const { address, colonyState, stateLoading, refreshState, authenticate, wallet } = useWallet()
+  const { address, colonyState, fiscState, stateLoading, refreshState, authenticate, wallet } = useWallet()
 
   const [history,      setHistory]      = useState([])
   const [histLoading,  setHistLoading]  = useState(false)
@@ -166,6 +166,40 @@ export default function Dashboard() {
               </View>
             </View>
 
+            {/* Fisc panel */}
+            {fiscState && (
+              <View style={[card, S.fiscCard]}>
+                <View style={S.fiscRow}>
+                  <View style={S.fiscItem}>
+                    <Text style={label}>FISC RATE</Text>
+                    <Text style={[value, S.fiscValue]}>${fiscState.fiscRate.toFixed(2)}<Text style={S.fiscUnit}>/S</Text></Text>
+                  </View>
+                  <View style={S.fiscItem}>
+                    <Text style={label}>TOTAL VALUE</Text>
+                    <Text style={[value, S.fiscValue]}>
+                      ${s ? ((s.sBalance + s.vBalance) * fiscState.fiscRate).toFixed(0) : '—'}
+                    </Text>
+                  </View>
+                  <View style={S.fiscItem}>
+                    <Text style={label}>S EXPIRES</Text>
+                    <Text style={[value, S.fiscValue, { color: fiscState.daysLeft <= 5 ? C.red : C.text }]}>
+                      {fiscState.daysLeft}d
+                    </Text>
+                  </View>
+                </View>
+                <View style={S.reserveRow}>
+                  <View style={[S.reserveDot, {
+                    backgroundColor: fiscState.reserveStatus === 2 ? C.green
+                      : fiscState.reserveStatus === 1 ? C.gold : C.red
+                  }]} />
+                  <Text style={S.reserveText}>
+                    RESERVE {fiscState.reserveStatus === 2 ? 'HEALTHY' : fiscState.reserveStatus === 1 ? 'ADEQUATE' : 'ALERT'}
+                    {'  '}${fiscState.reserveUSDC.toLocaleString()} · {fiscState.reserveRatio.toFixed(1)}× cover
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* Action buttons — row 1 */}
             <View style={S.actions}>
               <TouchableOpacity
@@ -274,6 +308,15 @@ const S = StyleSheet.create({
   actionBtnTextGold:    { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
   actionBtnTextNfc:     { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
   actionBtnTextOutline: { color: C.sub,  fontSize: 11, fontFamily: font },
+
+  fiscCard:       { marginBottom: 12 },
+  fiscRow:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  fiscItem:       { flex: 1 },
+  fiscValue:      { fontSize: 15 },
+  fiscUnit:       { fontSize: 10, color: C.faint },
+  reserveRow:     { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8 },
+  reserveDot:     { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
+  reserveText:    { fontSize: 9, color: C.faint, fontFamily: font, flex: 1 },
 
   empty:          { fontSize: 11, color: C.faint, fontFamily: font },
   txRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
