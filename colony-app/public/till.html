@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPICE Till</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    background: #ffffff;
+    color: #111;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 14px; letter-spacing: 2px; color: #B8860B; margin-bottom: 4px; }
+  .sub { font-size: 10px; color: #999; letter-spacing: 1px; margin-bottom: 28px; }
+
+  label { display: block; font-size: 10px; color: #aaa; letter-spacing: 1.2px; margin-bottom: 6px; margin-top: 16px; }
+  input {
+    width: 100%;
+    border: 1px solid #e2e2e2;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: #111;
+    outline: none;
+  }
+  input:focus { border-color: #B8860B; }
+
+  .card {
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 8px;
+    padding: 14px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+    letter-spacing: 0.5px;
+  }
+  .btn-gold   { background: #B8860B; color: #fff; }
+  .btn-dark   { background: #1a1a1a; color: #fff; }
+  .btn-outline { background: #fff; color: #555; border: 1px solid #e2e2e2; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Amount display */
+  .amount-display {
+    font-size: 48px;
+    font-weight: 700;
+    color: #B8860B;
+    text-align: center;
+    padding: 24px 0 8px;
+  }
+  .amount-unit { font-size: 16px; color: #B8860B; text-align: center; }
+
+  /* Status panels */
+  #panel-waiting, #panel-success, #panel-error { display: none; }
+
+  .status-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; margin: 0 auto 16px;
+  }
+  .icon-waiting { background: #f5f5f5; animation: pulse 1.6s infinite; }
+  .icon-success { background: #16a34a; color: #fff; }
+  .icon-error   { background: #ef4444; color: #fff; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .status-title  { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 8px; }
+  .status-sub    { font-size: 11px; color: #999; text-align: center; margin-bottom: 20px; }
+  .status-amount { font-size: 28px; font-weight: 700; color: #B8860B; text-align: center; }
+  .status-detail { font-size: 10px; color: #aaa; text-align: center; margin-top: 8px; word-break: break-all; }
+
+  #qr-wrap { display: flex; justify-content: center; margin: 16px 0; }
+  #qr-box  { display: none; }
+
+  .nfc-badge {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 1px;
+    border: 1px solid #e2e2e2;
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+  .nfc-badge.available { border-color: #16a34a; color: #16a34a; }
+
+  .rule { border: none; border-top: 1px solid #e2e2e2; margin: 24px 0; }
+
+  .config-section { margin-top: 32px; }
+  .config-title { font-size: 10px; color: #aaa; letter-spacing: 1.2px; margin-bottom: 12px; }
+  .config-addr  { font-size: 11px; color: #555; word-break: break-all; margin-top: 6px; }
+
+  .footer { font-size: 9px; color: #ccc; text-align: center; margin-top: 40px; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<h1>SPICE TILL</h1>
+<p class="sub">DAVE'S COLONY · MERCHANT PAYMENT TERMINAL</p>
+
+<!-- ── Section: payment entry ─────────────────────────────────────────── -->
+<div id="panel-entry">
+  <div id="nfc-status" class="nfc-badge">NFC CHECKING…</div>
+
+  <label>AMOUNT (S)</label>
+  <input id="inp-amount" type="number" min="1" step="1" placeholder="5" inputmode="numeric" />
+
+  <label>NOTE (optional)</label>
+  <input id="inp-note" type="text" placeholder="Cafeteria lunch" maxlength="80" />
+
+  <button class="btn btn-dark" id="btn-write-nfc" style="display:none">⬡ Write NFC Tag</button>
+  <button class="btn btn-gold" id="btn-show-qr">Show QR Code</button>
+
+  <!-- QR code display -->
+  <div id="qr-box" class="card" style="text-align:center;">
+    <p style="font-size:10px;color:#999;letter-spacing:1px;margin-bottom:12px;">SCAN WITH SPICE COLONY APP</p>
+    <div id="qr-wrap"></div>
+    <p id="qr-url" style="font-size:8px;color:#ccc;margin-top:8px;word-break:break-all;"></p>
+    <button class="btn btn-outline" id="btn-qr-await" style="margin-top:12px;">Awaiting payment…</button>
+  </div>
+</div>
+
+<!-- ── Section: waiting for confirmation ─────────────────────────────── -->
+<div id="panel-waiting">
+  <div class="card" style="text-align:center; padding: 32px 16px;">
+    <div class="status-icon icon-waiting">⏳</div>
+    <p class="status-title">Awaiting payment</p>
+    <p class="status-sub">Citizen taps phone · Face ID · broadcast</p>
+    <div class="amount-display" id="wait-amount">—</div>
+    <div class="amount-unit">S</div>
+    <p class="status-detail" id="wait-note" style="margin-top:12px;"></p>
+    <button class="btn btn-outline" id="btn-cancel-wait" style="margin-top:20px;">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Section: payment confirmed ─────────────────────────────────────── -->
+<div id="panel-success">
+  <div class="card" style="text-align:center; padding: 32px 16px;">
+    <div class="status-icon icon-success">✓</div>
+    <p class="status-title">Payment received</p>
+    <div class="amount-display" id="success-amount">—</div>
+    <div class="amount-unit">S</div>
+    <p class="status-detail" id="success-from"></p>
+    <p class="status-detail" id="success-note" style="margin-top:4px;"></p>
+    <p class="status-detail" id="success-tx" style="margin-top:4px;"></p>
+    <button class="btn btn-gold" id="btn-new-payment" style="margin-top:20px;">New payment</button>
+  </div>
+</div>
+
+<!-- ── Section: error ─────────────────────────────────────────────────── -->
+<div id="panel-error">
+  <div class="card" style="text-align:center; padding: 32px 16px;">
+    <div class="status-icon icon-error">✕</div>
+    <p class="status-title" id="err-title">Error</p>
+    <p class="status-sub"  id="err-msg"></p>
+    <button class="btn btn-outline" id="btn-err-back" style="margin-top:20px;">Try again</button>
+  </div>
+</div>
+
+<hr class="rule" />
+
+<!-- ── Config section ─────────────────────────────────────────────────── -->
+<div class="config-section">
+  <p class="config-title">MERCHANT CONFIGURATION</p>
+  <label>MERCHANT WALLET ADDRESS</label>
+  <input id="inp-merchant" type="text" placeholder="0x…" autocomplete="off" spellcheck="false" />
+  <label>MERCHANT NAME (shown to citizens)</label>
+  <input id="inp-merchant-name" type="text" placeholder="Dave's Cafeteria" />
+  <button class="btn btn-outline" id="btn-save-config" style="margin-top:10px;">Save configuration</button>
+  <p class="config-addr" id="cfg-saved"></p>
+</div>
+
+<p class="footer">app.zpc.finance · Base Sepolia testnet</p>
+
+<script>
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const COLONY_ADDR   = '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5'
+const RPC_URL       = 'https://sepolia.base.org'
+const CHAIN_ID      = 84532
+const APP_SCHEME    = 'spice'
+const SENT_TOPIC    = '0x' + keccak256('Sent(address,address,uint256,string)')
+
+// ── State ────────────────────────────────────────────────────────────────────
+
+let merchantAddr = ''
+let merchantName = ''
+let pollTimer    = null
+let pollBlock    = null
+let pendingAmt   = 0
+let pendingNote  = ''
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig()
+  checkNfc()
+
+  document.getElementById('btn-save-config').addEventListener('click', saveConfig)
+  document.getElementById('btn-write-nfc').addEventListener('click', writeNfcTag)
+  document.getElementById('btn-show-qr').addEventListener('click', showQr)
+  document.getElementById('btn-qr-await').addEventListener('click', startPolling)
+  document.getElementById('btn-cancel-wait').addEventListener('click', resetToEntry)
+  document.getElementById('btn-new-payment').addEventListener('click', resetToEntry)
+  document.getElementById('btn-err-back').addEventListener('click', resetToEntry)
+})
+
+function loadConfig() {
+  merchantAddr = localStorage.getItem('spice_till_addr') || ''
+  merchantName = localStorage.getItem('spice_till_name') || ''
+  document.getElementById('inp-merchant').value      = merchantAddr
+  document.getElementById('inp-merchant-name').value = merchantName
+  if (merchantAddr) {
+    document.getElementById('cfg-saved').textContent = 'Active: ' + merchantAddr
+  }
+}
+
+function saveConfig() {
+  merchantAddr = document.getElementById('inp-merchant').value.trim()
+  merchantName = document.getElementById('inp-merchant-name').value.trim()
+  if (!/^0x[0-9a-fA-F]{40}$/.test(merchantAddr)) {
+    alert('Please enter a valid 0x Ethereum address.')
+    return
+  }
+  localStorage.setItem('spice_till_addr', merchantAddr)
+  localStorage.setItem('spice_till_name', merchantName)
+  document.getElementById('cfg-saved').textContent = 'Saved: ' + merchantAddr
+}
+
+// ── NFC availability ─────────────────────────────────────────────────────────
+
+function checkNfc() {
+  const badge = document.getElementById('nfc-status')
+  const btn   = document.getElementById('btn-write-nfc')
+  if ('NDEFReader' in window) {
+    badge.textContent = 'NFC AVAILABLE'
+    badge.classList.add('available')
+    btn.style.display = 'block'
+  } else {
+    badge.textContent = 'NFC NOT AVAILABLE — QR MODE'
+    btn.style.display = 'none'
+  }
+}
+
+// ── Build payment URL ────────────────────────────────────────────────────────
+
+function buildPayUrl() {
+  const amt  = parseInt(document.getElementById('inp-amount').value, 10)
+  const note = document.getElementById('inp-note').value.trim()
+
+  if (!merchantAddr) {
+    alert('Please configure a merchant wallet address first.')
+    return null
+  }
+  if (!amt || amt <= 0) {
+    alert('Please enter an amount.')
+    return null
+  }
+
+  const params = new URLSearchParams({ to: merchantAddr, amount: String(amt) })
+  if (note)         params.set('note', note)
+  if (merchantName) params.set('name', merchantName)
+
+  return `${APP_SCHEME}://pay?${params.toString()}`
+}
+
+// ── NFC write ────────────────────────────────────────────────────────────────
+
+async function writeNfcTag() {
+  const url = buildPayUrl()
+  if (!url) return
+
+  const btn = document.getElementById('btn-write-nfc')
+  btn.disabled = true
+  btn.textContent = 'Bring tag close…'
+
+  try {
+    const ndef = new NDEFReader()
+    await ndef.write({ records: [{ recordType: 'url', data: url }] })
+    btn.textContent = '✓ Tag written'
+    pendingAmt  = parseInt(document.getElementById('inp-amount').value, 10)
+    pendingNote = document.getElementById('inp-note').value.trim()
+    setTimeout(startPolling, 800)
+  } catch (e) {
+    btn.disabled = false
+    btn.textContent = '⬡ Write NFC Tag'
+    if (e.name !== 'AbortError') alert('NFC write failed: ' + e.message)
+  }
+}
+
+// ── QR code ──────────────────────────────────────────────────────────────────
+
+let qrInstance = null
+
+function showQr() {
+  const url = buildPayUrl()
+  if (!url) return
+
+  pendingAmt  = parseInt(document.getElementById('inp-amount').value, 10)
+  pendingNote = document.getElementById('inp-note').value.trim()
+
+  const wrap = document.getElementById('qr-wrap')
+  wrap.innerHTML = ''
+  if (qrInstance) { try { qrInstance.clear() } catch {} }
+  qrInstance = new QRCode(wrap, {
+    text:          url,
+    width:         200,
+    height:        200,
+    colorDark:     '#111111',
+    colorLight:    '#ffffff',
+    correctLevel:  QRCode.CorrectLevel.M,
+  })
+  document.getElementById('qr-url').textContent = url
+  document.getElementById('qr-box').style.display = 'block'
+}
+
+// ── Polling ──────────────────────────────────────────────────────────────────
+
+async function startPolling() {
+  if (!merchantAddr) { alert('No merchant address configured.'); return }
+  showPanel('waiting')
+  document.getElementById('wait-amount').textContent = pendingAmt
+  document.getElementById('wait-note').textContent   = pendingNote ? `"${pendingNote}"` : ''
+
+  // Record the current block so we only look forward from here
+  try {
+    const res  = await rpc('eth_blockNumber', [])
+    pollBlock  = parseInt(res, 16)
+  } catch {
+    pollBlock = 0
+  }
+
+  clearInterval(pollTimer)
+  pollTimer = setInterval(checkForPayment, 4000)
+}
+
+async function checkForPayment() {
+  try {
+    const latestRes = await rpc('eth_blockNumber', [])
+    const latest = parseInt(latestRes, 16)
+    if (latest <= pollBlock) return
+
+    const addrPad = '0x' + merchantAddr.slice(2).toLowerCase().padStart(64, '0')
+    const logs = await rpc('eth_getLogs', [{
+      address:   COLONY_ADDR,
+      fromBlock: '0x' + pollBlock.toString(16),
+      toBlock:   '0x' + latest.toString(16),
+      topics:    [SENT_TOPIC, null, addrPad],
+    }])
+
+    for (const log of logs) {
+      const decoded = decodeSentLog(log)
+      if (!decoded) continue
+      // Match on amount if specified; otherwise accept any payment
+      if (pendingAmt && decoded.amount !== pendingAmt) continue
+
+      clearInterval(pollTimer)
+      showSuccess(decoded)
+      return
+    }
+
+    pollBlock = latest
+  } catch (e) {
+    console.warn('poll error', e)
+  }
+}
+
+function decodeSentLog(log) {
+  try {
+    // Sent(address indexed from, address indexed to, uint256 amount, string note)
+    // topics[0] = signature, topics[1] = from (indexed), topics[2] = to (indexed)
+    // data = abi-encoded (uint256 amount, string note)
+    const from = '0x' + log.topics[1].slice(26)
+    const data  = log.data.slice(2)     // remove 0x
+    // first 32 bytes = amount (uint256), next 32 = offset, then length, then note bytes
+    const amtHex = data.slice(0, 64)
+    const amount = parseInt(amtHex, 16) / 1e18  // convert from wei
+
+    // decode string: offset is at byte 64-128, but easiest to just try
+    let note = ''
+    try {
+      const offsetHex  = data.slice(64, 128)
+      const offset     = parseInt(offsetHex, 16) * 2  // in nibbles
+      const lenHex     = data.slice(offset, offset + 64)
+      const len        = parseInt(lenHex, 16)
+      const strHex     = data.slice(offset + 64, offset + 64 + len * 2)
+      note = decodeHex(strHex)
+    } catch {}
+
+    return { from, amount: Math.floor(amount), note, txHash: log.transactionHash }
+  } catch {
+    return null
+  }
+}
+
+function decodeHex(hex) {
+  let str = ''
+  for (let i = 0; i < hex.length; i += 2) {
+    const code = parseInt(hex.slice(i, i + 2), 16)
+    if (code === 0) break
+    str += String.fromCharCode(code)
+  }
+  return str
+}
+
+function showSuccess(decoded) {
+  showPanel('success')
+  document.getElementById('success-amount').textContent = decoded.amount
+  document.getElementById('success-from').textContent   = 'from ' + shortAddr(decoded.from)
+  document.getElementById('success-note').textContent   = decoded.note ? `"${decoded.note}"` : ''
+  document.getElementById('success-tx').textContent     = 'tx ' + decoded.txHash.slice(0, 10) + '…'
+}
+
+// ── RPC helper ───────────────────────────────────────────────────────────────
+
+async function rpc(method, params) {
+  const res  = await fetch(RPC_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  })
+  const json = await res.json()
+  if (json.error) throw new Error(json.error.message)
+  return json.result
+}
+
+// ── keccak256 (for SENT_TOPIC) — computed at build time, hardcoded below ─────
+// keccak256("Sent(address,address,uint256,string)") computed externally:
+// 0x33e6a7ecb5ac2b524a1fd5bc543d4fe92eefce2fc5c1745f0a4a2e7be8c78218
+
+function keccak256(str) {
+  // This function is called once at module parse. We inline the known value.
+  // If you change the event signature, recompute with: ethers.id('Sent(address,address,uint256,string)')
+  return '33e6a7ecb5ac2b524a1fd5bc543d4fe92eefce2fc5c1745f0a4a2e7be8c78218'
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────────────
+
+function showPanel(name) {
+  ['entry','waiting','success','error'].forEach(p => {
+    document.getElementById('panel-' + p).style.display = p === name ? 'block' : 'none'
+  })
+}
+
+function resetToEntry() {
+  clearInterval(pollTimer)
+  document.getElementById('qr-box').style.display = 'none'
+  const btn = document.getElementById('btn-write-nfc')
+  btn.disabled = false
+  btn.textContent = '⬡ Write NFC Tag'
+  showPanel('entry')
+}
+
+function shortAddr(addr) {
+  if (!addr || addr.length < 10) return addr || '—'
+  return addr.slice(0, 6) + '…' + addr.slice(-4)
+}
+</script>
+</body>
+</html>

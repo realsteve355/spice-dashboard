@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
 import { fetchTxHistory, txClaimUbi, txSaveToV, COLONY } from '../utils/contracts'
+import { isNfcSupported, scanPayTag } from '../utils/nfc'
 import { C, font, shortAddr, card, label, value } from '../theme'
 
 const EVENT_LABELS = {
@@ -29,7 +30,12 @@ export default function Dashboard() {
   const [history,      setHistory]      = useState([])
   const [histLoading,  setHistLoading]  = useState(false)
   const [refreshing,   setRefreshing]   = useState(false)
-  const [actionLoading,setActionLoading]= useState(null)  // 'ubi' | 'save' | null
+  const [actionLoading,setActionLoading]= useState(null)  // 'ubi' | 'save' | 'nfc' | null
+  const [nfcAvail,     setNfcAvail]     = useState(null)  // null=checking, true/false
+
+  useEffect(() => {
+    isNfcSupported().then(setNfcAvail).catch(() => setNfcAvail(false))
+  }, [])
 
   const loadHistory = useCallback(async () => {
     if (!address) return
@@ -48,6 +54,20 @@ export default function Dashboard() {
     await Promise.all([refreshState(), loadHistory()])
     setRefreshing(false)
   }, [refreshState, loadHistory])
+
+  async function handleNfcPay() {
+    setActionLoading('nfc')
+    try {
+      const params = await scanPayTag()
+      navigation.navigate('Pay', params)
+    } catch (e) {
+      if (e.message && !e.message.includes('cancelled')) {
+        Alert.alert('NFC error', e.message)
+      }
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   async function requireWallet() {
     if (wallet) return wallet
@@ -146,7 +166,7 @@ export default function Dashboard() {
               </View>
             </View>
 
-            {/* Action buttons */}
+            {/* Action buttons — row 1 */}
             <View style={S.actions}>
               <TouchableOpacity
                 style={[S.actionBtn, S.actionBtnGold]}
@@ -155,6 +175,22 @@ export default function Dashboard() {
                 <Text style={S.actionBtnTextGold}>Send S →</Text>
               </TouchableOpacity>
 
+              {nfcAvail && (
+                <TouchableOpacity
+                  style={[S.actionBtn, S.actionBtnNfc]}
+                  onPress={handleNfcPay}
+                  disabled={actionLoading === 'nfc'}
+                >
+                  {actionLoading === 'nfc'
+                    ? <ActivityIndicator size="small" color={C.bg} />
+                    : <Text style={S.actionBtnTextNfc}>⬡ Tap to Pay</Text>
+                  }
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Action buttons — row 2 */}
+            <View style={S.actions}>
               <TouchableOpacity
                 style={[S.actionBtn, S.actionBtnOutline]}
                 onPress={handleClaimUbi}
@@ -232,10 +268,12 @@ const S = StyleSheet.create({
 
   actions:        { flexDirection: 'row', gap: 8, marginBottom: 12 },
   actionBtn:      { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
-  actionBtnGold:  { backgroundColor: C.gold },
+  actionBtnGold:    { backgroundColor: C.gold },
+  actionBtnNfc:     { backgroundColor: '#1a1a1a' },
   actionBtnOutline: { borderWidth: 1, borderColor: C.border },
-  actionBtnTextGold:    { color: C.bg, fontSize: 12, fontWeight: '600', fontFamily: font },
-  actionBtnTextOutline: { color: C.sub, fontSize: 11, fontFamily: font },
+  actionBtnTextGold:    { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
+  actionBtnTextNfc:     { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
+  actionBtnTextOutline: { color: C.sub,  fontSize: 11, fontFamily: font },
 
   empty:          { fontSize: 11, color: C.faint, fontFamily: font },
   txRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },

@@ -1,6 +1,6 @@
 {
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ public/ api/ package.json vite.config.js",
   "rewrites": [
-    { "source": "/((?!api\\/).*)", "destination": "/" }
+    { "source": "/((?!api\\/|till\\.html).*)", "destination": "/" }
   ]
 }

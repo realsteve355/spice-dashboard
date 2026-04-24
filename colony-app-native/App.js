@@ -20,7 +20,29 @@ import Onboarding  from './src/screens/Onboarding'
 import Dashboard   from './src/screens/Dashboard'
 import Send        from './src/screens/Send'
 import Settings    from './src/screens/Settings'
+import Pay         from './src/screens/Pay'
 import { C, font } from './src/theme'
+
+/**
+ * Deep-link config — handles spice://pay?to=0x...&amount=N&note=TEXT
+ * opened by iOS/Android when the user taps an NFC tag outside the app.
+ */
+const linking = {
+  prefixes: ['spice://'],
+  config: {
+    screens: {
+      Pay: {
+        path: 'pay',
+        parse: {
+          to:           (v) => v,
+          amount:       (v) => v,
+          note:         (v) => v,
+          merchantName: (v) => v,
+        },
+      },
+    },
+  },
+}
 
 const Stack = createNativeStackNavigator()
 
@@ -48,7 +70,7 @@ function Navigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerStyle:         { backgroundColor: C.bg },
@@ -82,6 +104,11 @@ function Navigator() {
               name="Settings"
               component={Settings}
               options={{ title: 'SETTINGS' }}
+            />
+            <Stack.Screen
+              name="Pay"
+              component={Pay}
+              options={{ headerShown: false }}
             />
           </>
         )}
