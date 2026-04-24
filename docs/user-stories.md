@@ -6,7 +6,7 @@
 
 **Status:** ✓ Done (on-chain) · ~ Partial / UI-only mock · — Not built
 
-*v18 (23 April 2026): Added Fisc/Budget stories (§ Role 4 Fisc Engine, N-12 colony type choice).*
+*v19 (24 April 2026): Added NFC tap-to-pay story C-13c; new Role 8 — Mobile App User (stories MB-01–MB-15).*
 
 ---
 
@@ -46,11 +46,13 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-13 | As a citizen, I want to send S-tokens to any address with an optional note | P1 | ✓ |
 | C-13a | As a citizen (payer), I want to scan a merchant's QR code — which opens MetaMask directly — and confirm payment in one tap | P1 | ✓ |
 | C-13b | As a citizen, I want to pay my MCC services bill on-chain from the dashboard, with payment going to the MCC treasury (not the founder's personal wallet) | P1 | ✓ |
+| C-13c | As a citizen using the native app, I want to tap my phone to an NFC tag at a merchant till, confirm the pre-filled amount with Face ID, and have the payment broadcast automatically | P1 | ✓ |
 | C-14 | As a citizen, I want to see my full on-chain transaction history (payments sent/received, UBI, savings, redeems, V dividends received) with dates and labels | P1 | ✓ |
 | C-15 | As a citizen, I want to see my projected MCC bill for the current month | P1 | ~ |
 | C-16 | As a citizen, I want a warning if my S-token balance will not cover my projected MCC bill | P2 | — |
 
 *C-13a: QR encodes a MetaMask deep link (metamask.app.link). Scanning with iPhone camera opens MetaMask app automatically. No separate scanner or app switching required.*
+*C-13c: Implemented April 2026. NFC flow: till writes spice://pay?to=...&amount=...&note=... to NDEF tag (Chrome Android Web NFC). Citizen opens SPICE Colony app → Tap to Pay → holds phone to tag → Pay screen pre-filled → FaceID → txSend. OR: app closed → OS reads tag → opens spice:// deep link → Pay screen. Till polls Base Sepolia getLogs for Sent event confirmation. QR fallback if NFC unavailable.*
 *C-14: Queries Sent, UbiClaimed, Saved, Redeemed events from Colony contract. Uses deployBlock as fromBlock to comply with RPC 10,000-block limit.*
 *C-15: Shows month-to-date actual MCC bill, not a forward projection.*
 
@@ -520,17 +522,62 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 
 ---
 
+## Role 8 — Mobile App User
+
+A citizen using the native SPICE Colony iOS/Android app (`colony-app-native/`).
+App is self-custodial with an embedded wallet — no MetaMask required.
+
+### Wallet Setup
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| MB-01 | As a new mobile user, I want to create a self-custodial wallet on my phone by generating a 12-word seed phrase so I control my keys | P1 | ✓ |
+| MB-02 | As a new mobile user, I want to see my 12-word phrase after creation, confirm I've saved it, and proceed to the dashboard | P1 | ✓ |
+| MB-03 | As a returning mobile user, I want to import an existing wallet by entering my seed phrase | P1 | ✓ |
+| MB-04 | As a mobile user, I want my seed phrase to be stored behind Face ID / Touch ID so no one else can access my wallet keys | P1 | ✓ |
+| MB-05 | As a mobile user, I want to reveal my seed phrase at any time using Face ID so I can back it up to paper | P1 | ✓ |
+| MB-06 | As a mobile user, I want to delete my wallet from the device (with double confirmation) in case I lose the phone | P1 | ✓ |
+
+*MB-01–MB-06: Implemented April 2026 (steps 1–2 of build order). expo-crypto entropy → ethers.Mnemonic.entropyToPhrase → expo-secure-store with requireAuthentication:true. Address stored without auth (public). Mnemonic only accessible via FaceID. Onboarding.js: landing → create_show (12-word grid, copy button, confirm checkbox) → or import (mnemonic text input).*
+
+### Dashboard & Transactions
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| MB-07 | As a mobile citizen, I want to see my S and V balances on the home screen | P1 | ✓ |
+| MB-08 | As a mobile citizen, I want to see my recent transaction history with labels (sent/received/UBI/saved/redeemed) | P1 | ✓ |
+| MB-09 | As a mobile citizen, I want to send S-tokens by selecting a citizen from a list or entering an address, with Face ID confirmation | P1 | ✓ |
+| MB-10 | As a mobile citizen, I want to claim my monthly UBI with one tap and Face ID confirmation | P1 | ✓ |
+| MB-11 | As a mobile citizen, I want to convert S to V savings with Face ID confirmation | P1 | ✓ |
+
+*MB-07–MB-11: Dashboard.js + Send.js implemented April 2026 (step 3). fetchColonyState() reads S/V balance + citizen status. fetchTxHistory() uses same 5×9k getLogs chunk pattern as web app. Send.js includes citizen picker via /api/citizens.*
+
+### NFC Tap-to-Pay
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| MB-12 | As a mobile citizen at a merchant, I want to tap my phone to an NFC tag and have the payment details pre-filled automatically | P1 | ✓ |
+| MB-13 | As a mobile citizen, I want to review the payment (merchant name, amount, note) before confirming, and cancel if wrong | P1 | ✓ |
+| MB-14 | As a mobile citizen, I want to confirm payment with Face ID, and see a success screen with the transaction hash | P1 | ✓ |
+| MB-15 | As a mobile citizen without NFC hardware, I want to fall back to scanning a QR code that opens the same payment confirmation flow | P1 | ✓ |
+
+*MB-12–MB-15: Implemented April 2026 (step 4). react-native-nfc-manager reads NDEF URI tag (spice://pay?...). Two paths: (A) in-app "Tap to Pay" button triggers active NFC scan → Pay screen; (B) app closed → OS reads tag via spice:// scheme → deep link → Pay screen. QR fallback: till.html shows QR code of the same URL when NFC is unavailable. Till page at app.zpc.finance/till.html. EAS dev build required for NFC + biometrics; Expo Go supports read-only features.*
+
+---
+
 ## Status Summary
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done (on-chain) | 76 | 43% |
-| ~ Partial / UI mock | 27 | 15% |
-| — Not built | 59 | 33% |
+| ✓ Done | 91 | 46% |
+| ~ Partial / UI mock | 27 | 14% |
+| — Not built | 59 | 30% |
 | Superseded | 5 | 3% |
-| New (v13, not yet built) | 10 | 6% |
-| **Total** | **177** | |
+| New (not yet built) | 10 | 5% |
+| **Total** | **192** | |
 
+*v19 additions: C-13c (NFC tap-to-pay — ✓); Role 8 Mobile App User MB-01–MB-15 (wallet setup, dashboard, NFC payment — all ✓).*
+*v18 additions: FI-01–FI-20 (Fisc Engine, Budget — ✓ done except FI-17, FI-18–FI-20 placeholder); N-00 (colony type choice — ✓).*
 *v17 additions: M-29, M-30, M-31 (MCC overview page + announcements + election notifications — ✓ done); N-12, N-13, N-14 (payment notifications + bell badge + inbox — ✓ done).*
 
 *v9 additions (April 2026): F-27–F-28 (company as smart contract); Role 2b Organisation Secretary (OS-01–OS-13); M-21–M-23 (MCC O-token and succession).*

@@ -1,6 +1,6 @@
 # SPICE Colony — Technical Architecture
 
-*app.zpc.finance · Base Sepolia testnet · April 2026*
+*app.zpc.finance · Base Sepolia testnet · April 2026 · v12*
 
 ---
 
@@ -96,10 +96,29 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   └── hardhat.config.js
 │   └── vercel.json               # Colony app routing (catch-all rewrite, excludes /api/*) + ignoreCommand
 │
-└── spice-admin/                  # Protocol admin panel (spice.zpc.finance)
-    ├── index.html                # Single-page admin UI — no build step, ethers.js CDN
-    ├── config.js                 # ColonyRegistry address + Supabase config
-    └── vercel.json               # Static routing + ignoreCommand
+├── spice-admin/                  # Protocol admin panel (spice.zpc.finance)
+│   ├── index.html                # Single-page admin UI — no build step, ethers.js CDN
+│   ├── config.js                 # ColonyRegistry address + Supabase config
+│   └── vercel.json               # Static routing + ignoreCommand
+│
+└── colony-app-native/            # Native mobile app (Expo React Native — not yet published)
+    ├── App.js                    # NavigationContainer (spice:// deep-link), WalletProvider, Pay route
+    ├── app.json                  # bundleId: finance.zpc.colony; scheme: spice; NFC permissions
+    ├── package.json              # Expo 54, RN 0.81.5, react-native-nfc-manager
+    └── src/
+        ├── theme.js              # Design tokens (matches web app)
+        ├── context/
+        │   └── WalletContext.js  # address + isSetup + colonyState auto-fetched; authenticate()
+        ├── utils/
+        │   ├── wallet.js         # createWallet / loadWallet / loadMnemonic / clearWallet (expo-secure-store)
+        │   ├── contracts.js      # fetchColonyState, fetchTxHistory, txSend, txClaimUbi, txSaveToV, txJoin
+        │   └── nfc.js            # scanPayTag() (NfcManager NDEF read → parsePayUrl); isNfcSupported()
+        └── screens/
+            ├── Onboarding.js     # Landing → create (12-word phrase) or import mnemonic
+            ├── Dashboard.js      # S/V balances, UBI claim, Save V, Send, Tap-to-Pay (NFC), tx history
+            ├── Send.js           # Address + citizen picker, amount, note, FaceID → txSend
+            ├── Pay.js            # NFC payment confirm: merchant/amount/note, FaceID → txSend → success
+            └── Settings.js       # Address copy, seed phrase reveal (FaceID), colony info, wallet reset
 ```
 
 ---
@@ -753,6 +772,51 @@ Merchant (PC or phone)                  Customer (phone)
 
 No backend required for payments. Transaction details travel in the URL.
 
+### 5.2 NFC Tap-to-Pay (Native App — step 4, April 2026)
+
+"Flipped model" — the till writes the tag; the citizen reads it. No HCE required (Apple blocks third-party HCE).
+
+```
+Till (Android tablet, Chrome)            Citizen (iPhone with SPICE Colony app)
+─────────────────────────────            ──────────────────────────────────────
+1. Open app.zpc.finance/till.html
+2. Enter amount + note
+3. Tap "Write NFC Tag"
+   → Web NFC NDEFWriter writes:
+     spice://pay?to=0xMERCHANT
+             &amount=5
+             &note=Cafeteria+lunch
+             &name=Dave%27s+Cafe
+
+                                         Path A — in-app scan:
+                                         4a. Dashboard → "⬡ Tap to Pay"
+                                         5a. NfcManager.requestTechnology(Ndef)
+                                         6a. Hold phone to tag → reads URI record
+                                         7a. parsePayUrl() → { to, amount, note }
+                                         8a. Navigate to Pay screen
+
+                                         Path B — OS deep link (app closed):
+                                         4b. iOS reads tag at OS level
+                                         5b. OS opens SPICE Colony app via
+                                             spice:// scheme
+                                         6b. React Navigation linking config
+                                             routes to Pay screen with params
+
+                                         9.  Pay screen shows merchant, amount, note
+                                        10.  Citizen taps "Confirm with Face ID"
+                                        11.  FaceID → txSend(merchantAddr, amt, note)
+                                        12.  txSend → Colony.send() on Base Sepolia
+                                        13.  Success screen + tx hash
+
+4. Till polls eth_getLogs every 4s
+   → Sent event where to == merchantAddr
+   → matches amount → shows "✓ Payment received"
+```
+
+**QR fallback:** If Web NFC unavailable (iOS Safari, desktop), the till shows a QR code of the same `spice://pay?...` URL for manual scanning.
+
+**Till page location:** `colony-app/public/` → served at `app.zpc.finance/till.html` (excluded from SPA catch-all rewrite via vercel.json).
+
 ---
 
 ## 6. Company Flow
@@ -829,9 +893,11 @@ use paths relative to the project root.
 
 ### app.zpc.finance (colony app)
 - Build: `npm run build` in `colony-app/`
-- `vercel.json`: catch-all rewrite to `/`, excludes `/api/*`
+- `vercel.json`: catch-all rewrite to `/`, excludes `/api/*` and `/till.html`
 - Colony list source: ColonyRegistry on-chain only — no `contracts.json` or `localStorage` fallbacks
 - `contracts.json` retained as a token-address lookup cache (sToken/vToken/gToken per colony slug)
+- `colony-app/public/till.html` — static merchant till page served at `app.zpc.finance/till.html`;
+  Web NFC write (Chrome Android), QR fallback, getLogs polling for payment confirmation
 
 ### spice.zpc.finance (protocol admin)
 - **No build step** — `spice-admin/index.html` is served as static HTML with ethers.js loaded from CDN
@@ -1034,7 +1100,97 @@ returns 201 with empty body when `prefer: return=minimal`, causing `r.json()` to
 
 ---
 
-## 11. Test Infrastructure
+## 11. Native Mobile App
+
+Native iOS/Android app in `colony-app-native/`. Expo managed workflow + EAS Build.
+The key demo scenario: citizen pays S-tokens at a physical merchant (cafeteria) with a phone tap.
+
+### 11.1 Stack
+
+| Layer | Choice | Notes |
+|-------|--------|-------|
+| Framework | Expo SDK 54 / React Native 0.81.5 | Managed workflow — no eject |
+| Navigation | React Navigation v7 + native stack | Deep-link config: `spice://` scheme |
+| Web3 | ethers.js v6 | Same contract calls as web app; `JsonRpcProvider` → sepolia.base.org |
+| Wallet storage | expo-secure-store | Mnemonic behind `requireAuthentication: true` (FaceID/TouchID/PIN) |
+| Biometrics | expo-local-authentication | Biometric prompt before all write operations |
+| Entropy | expo-crypto | `getRandomBytesAsync(16)` → BIP-39 entropy (avoids Hermes crypto quirks) |
+| NFC | react-native-nfc-manager | NDEF read (scan tag); NFC write is handled by the till web page |
+| Build | EAS Build | `npx eas build --profile development` for biometric testing |
+
+### 11.2 Screen Map
+
+| Screen | Route | Purpose |
+|--------|-------|---------|
+| Onboarding | initial | Landing → create (12-word phrase) or import mnemonic |
+| Dashboard | `Dashboard` | S/V balances, UBI claim, Save V, Send, Tap-to-Pay, tx history |
+| Send | `Send` | Citizen picker, address, amount, note, FaceID → txSend |
+| Pay | `Pay` | NFC payment confirm: merchant/amount/note, FaceID → txSend → success |
+| Settings | `Settings` | Address copy, seed phrase reveal (FaceID), colony info, wallet reset |
+
+### 11.3 Deep-Link Config
+
+```js
+const linking = {
+  prefixes: ['spice://'],
+  config: {
+    screens: {
+      Pay: {
+        path: 'pay',   // spice://pay?to=0x...&amount=5&note=Lunch&name=Dave%27s+Cafe
+        parse: { to: v => v, amount: v => v, note: v => v, merchantName: v => v },
+      },
+    },
+  },
+}
+```
+
+When iOS/Android reads a tag and opens the app via the `spice://` scheme, React Navigation
+routes the URL to the Pay screen automatically. Also used for Path B (app closed when tag tapped).
+
+### 11.4 NFC Utility (`src/utils/nfc.js`)
+
+```js
+scanPayTag()   // requestTechnology(Ndef) → getTag() → Ndef.uri.decodePayload() → parsePayUrl()
+parsePayUrl()  // splits spice://pay?... query string → { to, amount, note, merchantName }
+isNfcSupported() // NfcManager.isSupported() — Dashboard shows "Tap to Pay" only if true
+```
+
+`react-native-nfc-manager` is not available in Expo Go — requires `npx eas build --profile development`.
+
+### 11.5 Wallet Security Model
+
+| Data | Storage | Auth required |
+|------|---------|---------------|
+| Wallet address | expo-secure-store (no auth) | No — public data |
+| Mnemonic phrase | expo-secure-store + `requireAuthentication: true` | Yes — FaceID/TouchID/PIN |
+| `wallet` (ethers.Wallet) | In-memory only | Loaded by `authenticate()` on demand |
+
+All write transactions (`txSend`, `txClaimUbi`, `txSaveToV`, `txJoin`) require `authenticate()` first.
+`gasLimit: 150000` hardcoded on all write txs to avoid `eth_estimateGas` failures on Base Sepolia.
+
+### 11.6 Build Steps Completed
+
+| Step | Status | Files |
+|------|--------|-------|
+| 1. Embedded wallet (keygen, Keychain, FaceID, seed export) | ✓ | `src/utils/wallet.js` |
+| 2. Dashboard (balance, tx history, citizen badge) | ✓ | `src/screens/Dashboard.js`, `src/context/WalletContext.js`, `src/utils/contracts.js` |
+| 3. Send flow (citizen picker, amount, FaceID, broadcast) | ✓ | `src/screens/Send.js` |
+| 4. NFC tap-to-pay (scan tag, Pay screen, FaceID, done) | ✓ | `src/screens/Pay.js`, `src/utils/nfc.js`, `App.js`, `colony-app/public/till.html` |
+| 5. UBI claim on device | — | Button exists in Dashboard; needs device testing |
+| 6. Multi-colony support | — | Dave's Colony hardcoded; future: read ColonyRegistry |
+
+### 11.7 To Run
+
+```bash
+cd colony-app-native
+npm install          # installs react-native-nfc-manager + all deps
+npm start            # Expo Go — read-only (balances, tx history); no biometric/NFC
+npx eas build --profile development --platform ios   # dev build with FaceID + NFC
+```
+
+---
+
+## 12. Test Infrastructure
 
 ### Overview
 
@@ -1102,7 +1258,7 @@ Derives `BOT_0_ADDRESS` from `BOT_0_KEY` (from `.env.seed`). Provides `walletPag
 
 ---
 
-## 12. Known Limitations & Technical Debt
+## 13. Known Limitations & Technical Debt
 
 | Item | Impact | Fix |
 |------|--------|-----|
@@ -1125,7 +1281,7 @@ Derives `BOT_0_ADDRESS` from `BOT_0_KEY` (from `.env.seed`). Provides `walletPag
 
 ---
 
-## 13. Future Architecture
+## 14. Future Architecture
 
 ### Core v2 contracts (required for v17 economic model)
 
@@ -1144,7 +1300,7 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 ### Infrastructure
 
 - **WalletConnect v2** — broader wallet support, removes MetaMask dependency
-- **React Native** — NFC tap-to-pay, push notifications
+- **~~React Native~~** — ✓ **In progress (April 2026).** `colony-app-native/` — steps 1–4 done (wallet, dashboard, send, NFC tap-to-pay). See §11.
 - **The Graph** — event indexer, removes getLogs pagination workaround
 - **Guardian.sol** — on-chain minor wallet management with automatic 18th-birthday transfer
 - **Governance beacon upgrade** — transfer UpgradeableBeacon ownership to Governance.sol
@@ -1152,8 +1308,9 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 
 ---
 
-*SPICE Colony · Technical Architecture · v11*
-*Last updated: 23 April 2026*
+*SPICE Colony · Technical Architecture · v12*
+*Last updated: 24 April 2026*
+*v12 updates (24 April 2026): §11 Native Mobile App added — Expo SDK 54, react-native-nfc-manager, NFC tap-to-pay (§11.4), deep-link config spice://pay (§11.3), wallet security model (§11.5), build steps 1–4 done (§11.6). colony-app-native/ added to §2 repo structure. §5.2 NFC Tap-to-Pay flow diagram added (in-app scan + OS deep-link paths). till.html noted in §8 (app.zpc.finance/till.html, Web NFC write + QR + getLogs poll, excluded from SPA rewrite). §12 Test Infrastructure (was §11), §13 Known Limitations (was §12), §14 Future Architecture (was §13). React Native marked in-progress in §14.*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*

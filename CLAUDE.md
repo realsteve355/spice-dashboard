@@ -363,37 +363,39 @@ are paid via the Mall, not by entering addresses manually.
   - `non-citizen.spec.js` — no wallet state, stranger address (not a citizen)
 - See `colony-app/.env.seed.example` for required env vars.
 
-### Native Mobile App (`colony-app-native/`) — Planned
+### Native Mobile App (`colony-app-native/`) — In Progress
 
-Decision made 21 April 2026. To be built as a separate Expo React Native project in the monorepo.
+Scaffolded 23 April 2026. Steps 1–4 complete (commit `683a2bf`).
 
 **Goal:** Genuine iOS/Android app (App Store distributed) with embedded wallet and NFC tap-to-pay.
 The key demo scenario is a citizen paying S-tokens at a physical merchant (e.g. university cafeteria).
 
-**Stack:**
-- Expo managed workflow + EAS Build (App Store / Play Store pipeline)
-- React Native (native UIKit components — not a WebView)
-- Embedded wallet: `react-native-keychain` (iOS Secure Enclave) + ethers.js key gen + FaceID/TouchID
-- NFC: `react-native-nfc-manager` — reads NDEF tags; iOS opens app via Universal Links
-- ethers.js v6 — same contract calls as web app; business logic largely reusable
+**Stack:** Expo SDK 54, React Native 0.81.5, ethers.js v6, expo-secure-store, expo-local-authentication, react-native-nfc-manager.
 
-**NFC payment flow (iOS + Android):**
-Till tablet encodes payment URL into rewritable NFC tag → citizen taps phone → iOS reads tag,
-opens app at /pay screen → citizen confirms with FaceID → `colony.send()` signed + broadcast →
-till polls for confirmed tx. No HCE required (Apple blocks third-party HCE).
+**NFC payment flow (both paths):**
+- **Path A (in-app):** Dashboard → "⬡ Tap to Pay" → `NfcManager.requestTechnology(Ndef)` → citizen holds phone to till tag → `parsePayUrl()` → navigate to Pay screen
+- **Path B (OS deep-link):** App closed, iOS/Android reads tag → `spice://pay?...` URL scheme → opens Pay screen via React Navigation `linking` config
 
-**Key custody model:** self-custodial with iCloud Keychain backup. Key generated on-device,
-never transmitted. Seed phrase export behind FaceID for recovery.
+**Till page:** `colony-app/public/till.html` → `app.zpc.finance/till.html`. Merchant enters amount + note. Chrome Android: Web NFC writes NDEF URI tag. Any browser: QR code fallback. After writing, polls Base Sepolia `eth_getLogs` for Sent event confirmation.
+
+**Wallet:** expo-secure-store with `requireAuthentication: true` — mnemonic stored behind FaceID/TouchID/PIN. Address stored without auth. All write txs require `authenticate()` first. `gasLimit: 150000` hardcoded on all write txs.
 
 **Build order:**
-1. Embedded wallet (keygen, Keychain storage, FaceID, seed phrase)
-2. Dashboard screen (balance, tx history)
-3. Send flow (citizen picker, amount, FaceID confirm, broadcast)
-4. NFC payment (tap tag → PayScreen → FaceID → done)
-5. UBI claim
-6. Till web page (amount entry, NFC tag write, tx confirmation poll)
+1. ✓ Embedded wallet (keygen, Keychain storage, FaceID, seed phrase) — `src/utils/wallet.js`
+2. ✓ Dashboard + WalletContext + contracts utils — `src/screens/Dashboard.js`
+3. ✓ Send flow (citizen picker, amount, FaceID, broadcast) — `src/screens/Send.js`
+4. ✓ NFC tap-to-pay (scan tag → Pay screen → FaceID → success) — `src/screens/Pay.js`, `src/utils/nfc.js`, till.html
+5. — UBI claim — button exists in Dashboard; needs device testing
+6. — Multi-colony support (Dave's Colony hardcoded; future: read ColonyRegistry)
 
 **Costs:** Apple Developer Program $99/year, Google Play $25 one-time. All libraries free/open source.
+
+**To run:**
+```bash
+cd colony-app-native && npm install
+npm start                                                    # Expo Go — read-only (balance, tx history)
+npx eas build --profile development --platform ios          # dev build — FaceID + NFC
+```
 
 **Protocol admin** (`spice-admin/`): single static HTML page at `spice.zpc.finance`.
 Reads ColonyRegistry read-only on load. Owner actions require MetaMask wallet connect.
@@ -401,8 +403,8 @@ Config: `spice-admin/config.js` (ColonyRegistry address).
 Has founder share controls: global default % + per-colony override + founder wallet update.
 Colony.settleProtocol() splits ETH between protocol treasury and founder wallet per getFeeSplit().
 
-**Full technical reference:** `docs/technical-architecture.md` (v11)
-**Full requirements spec:** `docs/user-stories.md` (v18)
+**Full technical reference:** `docs/technical-architecture.md` (v12)
+**Full requirements spec:** `docs/user-stories.md` (v19)
 
 ---
 
@@ -425,11 +427,11 @@ Colony.settleProtocol() splits ETH between protocol treasury and founder wallet 
 
 Pre-launch research project. Key next steps:
 
-- [ ] **Native mobile app** — `colony-app-native/` Expo project, embedded wallet, NFC tap-to-pay (starting April 2026)
+- [x] **Native mobile app** — steps 1–4 done (wallet, dashboard, send, NFC tap-to-pay); till.html live at app.zpc.finance/till.html
 - [ ] Chart 5 — SPICE protocol mechanics page
 - [ ] Mobile layout for /simulation
 - [ ] Feedback / comment mechanism on methodology page
 - [ ] Technical co-founder (DeFi-experienced, token allocation)
 - [ ] IRONVAULT (ticker: IRON) — whitepaper
 
-*Last updated: April 2026*
+*Last updated: 24 April 2026*
