@@ -40,6 +40,7 @@ const M = {
   adults:     10900,
   workforce:  6700,
   wage:       2667,        // $/month per employed worker
+  wageFloor:  0.05,        // 5% of workforce always employed — some jobs machines can't do
   revenue:    350e6,       // $/year all colony businesses
   baseMargin: 0.035,
   autoMargin: 0.560,       // additional margin gained at A=1.0
@@ -74,8 +75,9 @@ function computeAt(A) {
   const fedTotal = M.federal * Math.max(0, 1 - A * M.fedDecay)
   const fedAdult = fedTotal / M.adults / 12    // $/adult/month
 
-  // Wages: average across all adults (non-employed = $0)
-  const wageAdult = M.workforce * M.wage * (1 - A) / M.adults  // $/adult/month
+  // Wages: employment rate floors at wageFloor — some work is always human
+  const employment = M.wageFloor + (1 - M.wageFloor) * (1 - A)
+  const wageAdult  = M.workforce * M.wage * employment / M.adults  // $/adult/month
 
   // Daily basket cost in USD (falls with automation)
   const basketUSD = M.basket * P
@@ -93,6 +95,7 @@ function computeAt(A) {
 
   return {
     pct:             Math.round(A * 100),
+    employed:        Math.round(M.workforce * employment),
     // Income composition ($/month per adult, nominal)
     wages:           Math.round(wageAdult),
     federal:         Math.round(fedAdult),
@@ -117,14 +120,21 @@ const ALL = Array.from({ length: 101 }, (_, i) => computeAt(i / 100))
 // Crossing point: first A where unemployed real index ≥ 100
 const CROSSING = ALL.find(d => d.unemployedIndex >= 100)?.pct ?? null
 
+// UBI universality threshold: when LAT-funded UBI equals today's federal welfare per adult.
+// At this point the colony's own mechanism fully replaces what federal welfare was doing.
+const UBI_WELFARE_FLOOR = Math.round(M.federal / M.adults / 12)   // ~$283/month
+const UBI_UNIVERSAL     = ALL.find(d => d.ubiUSD >= UBI_WELFARE_FLOOR)?.pct ?? null
+
 // ── Stage definitions ─────────────────────────────────────────────────────────
 function getStage(pct) {
-  if (pct < 20)  return { label: 'Today',              color: T3,   desc: 'Wages dominant. Federal safety net intact. SPICE not yet needed.' }
-  if (pct < 40)  return { label: 'Colony launches',    color: BLU,  desc: 'LAT emerges. UBI begins as a supplement. Federal transfers still present.' }
-  if (pct < CROSSING || pct < 77)
-                 return { label: 'The hard zone',       color: ORG,  desc: 'Wages falling. Federal collapsing. UBI growing but not yet above today\'s standard.' }
-  if (pct < 90)  return { label: 'Crossing',           color: GOLD, desc: 'Real UBI purchasing power crosses today\'s worker standard. Colony self-sufficient.' }
-  return           { label: 'Post-Collision',           color: GRN,  desc: 'Everyone wealthier than today\'s workers in real terms. Federal welfare irrelevant.' }
+  const u = UBI_UNIVERSAL || 25
+  const c = CROSSING      || 77
+  if (pct < 15)  return { label: 'Today',                 color: T3,   desc: 'Wages dominant. Targeted welfare (SNAP, Social Security) intact. No SPICE mechanism yet.' }
+  if (pct < u)   return { label: 'Colony supplements',    color: BLU,  desc: 'Colony launches. LAT begins. UBI is a small supplement alongside existing welfare — not yet universal.' }
+  if (pct < 40)  return { label: 'UBI goes universal',    color: T1,   desc: `LAT now funds $${UBI_WELFARE_FLOOR}/month per adult — matching what federal welfare paid. Means-testing phased out. All adults receive equally.` }
+  if (pct < c)   return { label: 'The hard zone',         color: ORG,  desc: 'Wages falling fast. Federal transfers collapsing. UBI is universal but real purchasing power still below today\'s worker standard.' }
+  if (pct < 90)  return { label: 'Crossing',              color: GOLD, desc: 'Real UBI purchasing power crosses today\'s worker standard. UBI-only citizens live better than today\'s employed workers.' }
+  return           { label: 'Post-Collision',              color: GRN,  desc: 'Everyone wealthier than today\'s workers in real terms. A residual workforce — ~5% — still works by choice.' }
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -174,10 +184,26 @@ function IncomeChart({ data, highlightPct }) {
           <Tooltip content={<TooltipEl />} />
           {/* Hard zone */}
           <ReferenceArea x1={40} x2={CROSSING || 77} fill={ORG} fillOpacity={0.04} />
+          {/* UBI universality crossover */}
+          {UBI_UNIVERSAL && (
+            <ReferenceLine
+              x={UBI_UNIVERSAL}
+              stroke={T1}
+              strokeDasharray="3 2"
+              label={{ value: `${UBI_UNIVERSAL}% — UBI universal`, position: 'top', style: { fontFamily: F, fontSize: 9, fill: T1 } }}
+            />
+          )}
+          {/* UBI welfare floor threshold */}
+          <ReferenceLine
+            y={UBI_WELFARE_FLOOR}
+            stroke={T3}
+            strokeDasharray="4 2"
+            label={{ value: `$${UBI_WELFARE_FLOOR} welfare floor`, position: 'insideTopRight', style: { fontFamily: F, fontSize: 9, fill: T3 } }}
+          />
           {/* Current position */}
           <ReferenceLine x={highlightPct} stroke={GOLD} strokeWidth={1.5} strokeDasharray="3 2" />
           <Line dataKey="wages"   stroke={ORG}  strokeWidth={2} dot={false} isAnimationActive={false} name="Wages" />
-          <Line dataKey="federal" stroke={BLU}  strokeWidth={2} dot={false} isAnimationActive={false} name="Federal transfers" />
+          <Line dataKey="federal" stroke={BLU}  strokeWidth={2} dot={false} isAnimationActive={false} name="Welfare (targeted)" />
           <Line dataKey="ubiUSD"  stroke={GRN}  strokeWidth={2} dot={false} isAnimationActive={false} name="UBI (LAT-funded)" />
           <Line dataKey="total"   stroke={T2}   strokeWidth={1} strokeDasharray="4 2" dot={false} isAnimationActive={false} name="Total" />
         </LineChart>
@@ -277,10 +303,11 @@ export default function PathwayToUBI() {
   const stage   = getStage(automation)
 
   const legend1 = [
-    { color: ORG,  label: 'Wages (per adult average)' },
-    { color: BLU,  label: 'Federal transfers (Social Security, SNAP)' },
+    { color: ORG,  label: 'Wages (per adult average — floors at 5% employment)' },
+    { color: BLU,  label: 'Welfare (targeted: Social Security, SNAP, Medicaid)' },
     { color: GRN,  label: 'UBI — LAT flowing through Fisc to all adults' },
     { color: T2,   label: 'Total (dashed)' },
+    { color: T3,   label: `Dashed horizontal: $${UBI_WELFARE_FLOOR}/month welfare floor — UBI universality threshold` },
   ]
 
   const legend2 = [
@@ -308,11 +335,16 @@ export default function PathwayToUBI() {
             LAT taxes the automation windfall, the Fisc distributes it as S-token UBI,
             and the S/USD exchange rate stabilises real purchasing power as prices fall.
           </p>
+          <p style={{ fontFamily: F, fontSize: 13, color: T2, lineHeight: 1.9, margin: '0 0 16px 0', maxWidth: 700 }}>
+            UBI does not become universal immediately. It begins as a colony supplement
+            alongside existing welfare, and only replaces it once LAT funds enough to make
+            means-testing unnecessary. There are two distinct crossovers: welfare gives way
+            to UBI (~A=25%), then UBI purchasing power surpasses today's worker standard (~A=77%).
+          </p>
           <p style={{ fontFamily: F, fontSize: 13, color: T2, lineHeight: 1.9, margin: 0, maxWidth: 700 }}>
-            The destination is not austerity — it is abundance. As automation deepens,
-            the same UBI buys more, because goods become cheaper faster than UBI grows.
-            Citizens with no wage eventually live better than today's workers.
-            The path there contains a hard zone. The charts below show both.
+            Wages never reach zero. Some jobs will always be done by people who want to do them —
+            caregivers, craftspeople, teachers. That residual workforce also receives UBI.
+            The destination is not forced idleness — it is the freedom to choose.
           </p>
         </div>
       </section>
@@ -352,11 +384,12 @@ export default function PathwayToUBI() {
             {/* Stage markers */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
               {[
-                { pct: 0,   label: 'Today',      color: T3 },
-                { pct: 20,  label: 'Colony',     color: BLU },
-                { pct: 40,  label: 'Hard zone',  color: ORG },
-                { pct: CROSSING || 77, label: 'Crossing', color: GOLD },
-                { pct: 90,  label: 'Post-Collision', color: GRN },
+                { pct: 0,                      label: 'Today',      color: T3 },
+                { pct: 15,                     label: 'Colony',     color: BLU },
+                { pct: UBI_UNIVERSAL || 25,    label: 'UBI universal', color: T1 },
+                { pct: 40,                     label: 'Hard zone',  color: ORG },
+                { pct: CROSSING || 77,         label: 'Crossing',   color: GOLD },
+                { pct: 90,                     label: 'Post-Collision', color: GRN },
               ].map(({ pct, label, color }) => (
                 <div
                   key={pct}
@@ -416,13 +449,16 @@ export default function PathwayToUBI() {
             Chart 1 · Income composition — who funds the citizen's monthly income
           </div>
           <div style={{ fontFamily: F, fontSize: 15, fontWeight: 600, color: T1, marginBottom: 8 }}>
-            Wages and welfare collapse. LAT/UBI rises to replace them.
+            Targeted welfare gives way to universal UBI. Wages never reach zero.
           </div>
           <p style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8, margin: '0 0 20px 0' }}>
-            Monthly income per adult averaged across all citizens. Wages fall as workers are displaced.
-            Federal transfers collapse as income and payroll tax revenues shrink — Social Security
-            and SNAP cannot survive the loss of their funding base. UBI, funded by LAT on automation
-            profits flowing through the Fisc, grows to fill the gap.
+            Monthly income per adult averaged across all citizens. Wages fall as workers are displaced
+            but floor at 5% employment — some jobs require human judgment, care, or craft and will
+            always be done by people who want to do them. Targeted welfare (Social Security, SNAP)
+            collapses as its tax base evaporates. UBI, funded by LAT via the Fisc, is initially a
+            small supplement — it does not become universal until it exceeds the welfare floor
+            (dashed line at ${UBI_WELFARE_FLOOR}/month, ~A={UBI_UNIVERSAL || 25}%). Only then does
+            means-testing end and all adults receive equally.
           </p>
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
             {legend1.map(({ color, label }) => (
@@ -433,13 +469,31 @@ export default function PathwayToUBI() {
             ))}
           </div>
           <IncomeChart data={ALL} highlightPct={automation} />
-          <div style={{ marginTop: 16, background: BG3, border: BD, borderLeft: `3px solid ${ORG}`, padding: '14px 18px' }}>
-            <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8 }}>
-              <span style={{ color: ORG }}>The hard zone (shaded):</span>
-              {' '}wages and federal transfers fall faster than UBI rises, creating a nominal income
-              dip. In real terms this is partially offset by falling prices. The transition requires
-              the colony to have launched before the hard zone arrives — the UBI mechanism must be
-              running before wages collapse, not after.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
+            <div style={{ background: BG3, border: BD, borderLeft: `3px solid ${T1}`, padding: '14px 18px' }}>
+              <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8 }}>
+                <span style={{ color: T1 }}>Welfare → UBI (A ≈ {UBI_UNIVERSAL || 25}%):</span>
+                {' '}UBI is not declared universal until it equals the per-adult value of today's
+                federal welfare. Below that threshold the colony distributes it as a supplement
+                alongside the existing targeted system. At the threshold, means-testing ends —
+                the colony's own mechanism fully replaces what the federal government was doing.
+              </div>
+            </div>
+            <div style={{ background: BG3, border: BD, borderLeft: `3px solid ${ORG}`, padding: '14px 18px' }}>
+              <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8 }}>
+                <span style={{ color: ORG }}>The hard zone (shaded, A = 40–{CROSSING || 77}%):</span>
+                {' '}wages and welfare fall faster than UBI rises. In real terms the impact is
+                cushioned by falling prices, but this is the period of maximum social stress.
+                The colony must be running before wages collapse, not after.
+              </div>
+            </div>
+            <div style={{ background: BG3, border: BD, borderLeft: `3px solid ${ORG}`, padding: '14px 18px' }}>
+              <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8 }}>
+                <span style={{ color: ORG }}>Wage floor:</span>
+                {' '}wages level off at ~5% of the workforce — craftspeople, caregivers, teachers,
+                tradespeople whose work people specifically want done by a human. This employment
+                is voluntary and supplementary; those workers also receive UBI.
+              </div>
             </div>
           </div>
         </div>
