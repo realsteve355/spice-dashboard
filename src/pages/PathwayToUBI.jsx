@@ -180,7 +180,7 @@ function IncomeChart({ data, highlightPct }) {
   return (
     <div style={{ height: CH }}>
       <ResponsiveContainer width="100%" height={CH}>
-        <LineChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 50 }}>
+        <LineChart data={data} margin={{ top: 36, right: 20, bottom: 20, left: 50 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1e2a42" />
           <XAxis
             dataKey="pct"
