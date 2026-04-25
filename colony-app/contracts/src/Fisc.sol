@@ -7,68 +7,94 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @title Fisc
  * @notice The monetary authority of a SPICE colony (Earth type).
  *
- * Phase 1 — manually governed state store. The owner (founder / MCC CEO)
- * sets the exchange rate, reserve balance, and period timing. All values
- * are published on-chain for wallets and dashboards to read.
+ * Phase 1 — manually governed with F9 algorithmic rate-setting.
+ * The owner provides external price pressure; the contract computes
+ * the rate adjustment based on reserve health (policy stance).
  *
- * Phase 2 — F9 algorithmic rate-setting, USDC reserve integration, LRT
- * collection (F8), and boundary flows (F6/F7) will be added here.
+ * Phase 2 — USDC reserve integration, LRT collection (F8),
+ * boundary flows (F6/F7), Chainlink oracle for price inputs.
  *
- * Key state exposed:
- *   fiscRate         — $ per S/V token (scaled 1e6, e.g. 1.00 = 1_000_000)
- *   reserveUSDC      — USDC in reserve (scaled 1e6, USDC decimals)
- *   reserveRatio     — reserve / (V_outstanding × rate), scaled 1e4
- *   lrtRate          — Local Robot Tax on local net profit, bps (e.g. 1500 = 15%)
- *   breadBasketPriceS — basket cost in S-tokens (integer)
- *   ubiAmount        — S-tokens issued per citizen per period (mirrors SToken.UBI_AMOUNT)
- *   periodEnd        — unix timestamp of current period end
- *   colony           — linked Colony contract address
+ * F9 Rate algorithm:
+ *   net_pressure   = externalInflationBps - abundanceBps
+ *   policy_stance  = f(reserveRatio) — 0.0 to 1.0 scaled 1e4
+ *   adjustment     = net_pressure × stance × RATE_SENSITIVITY / 1e8
+ *   new_rate       = current_rate × (1 + adjustment / 10000)
+ *   clamped to [minRate, maxRate] and max 2% daily change
+ *
+ * Rate scaling: fiscRate is $ per S/V token × 1e6
+ *   e.g. $0.75/token = 750_000
  */
 contract Fisc is Ownable {
 
-    // ── Core parameters ───────────────────────────────────────────────────────
+    // ── Core state ────────────────────────────────────────────────────────────
 
     /// Exchange rate: $ per S/V token, scaled 1e6.
-    /// e.g. $1.00/token = 1_000_000, $0.75/token = 750_000
     uint256 public fiscRate;
 
     /// USDC held in reserve, scaled 1e6 (USDC native decimals).
     uint256 public reserveUSDC;
 
-    /// Total V-tokens outstanding across all holders, scaled 1e18.
-    /// Updated by owner when V supply changes significantly.
+    /// Total V-tokens outstanding, scaled 1e18.
     uint256 public totalVOutstanding;
 
-    /// Reserve ratio = reserveUSDC / (totalVOutstanding × fiscRate / 1e(18+6-6))
-    /// Scaled 1e4. e.g. 4.0× = 40_000. Recomputed on every state change.
+    /// Reserve ratio = reserveUSDC / (totalVOutstanding × fiscRate), scaled 1e4.
     uint256 public reserveRatio;
 
-    /// LRT rate in basis points. e.g. 1500 = 15% of local net profit.
+    /// LRT rate in basis points (e.g. 1500 = 15%).
     uint256 public lrtRate;
 
-    /// Bread basket price in S-tokens (integer, no decimals).
-    /// The Fisc defends this price — rate moves to keep it stable.
+    /// Bread basket price in S-tokens (integer).
     uint256 public breadBasketPriceS;
 
     /// UBI amount per citizen per period in S-tokens (integer).
     uint256 public ubiAmount;
 
-    /// Unix timestamp of the end of the current period (calendar month).
+    /// Unix timestamp of end of current period (calendar month).
     uint256 public periodEnd;
 
     /// Linked Colony contract address.
     address public colony;
 
-    // ── Reserve status levels ─────────────────────────────────────────────────
+    // ── F9 Rate algorithm parameters ──────────────────────────────────────────
+
+    /// Rate sensitivity: how aggressively rate moves per unit of pressure.
+    /// Scaled 1e4. Default 100 = 1% rate change per 1% net pressure at full stance.
+    uint256 public rateSensitivity = 100;
+
+    /// Minimum allowed rate ($ per token × 1e6). Default $0.10.
+    uint256 public minRate = 100_000;
+
+    /// Maximum allowed rate ($ per token × 1e6). Default $2.00.
+    uint256 public maxRate = 2_000_000;
+
+    /// Maximum single-day rate change in bps. Default 200 = 2%.
+    uint256 public maxDailyChangeBps = 200;
+
+    /// Timestamp of last rate update via F9.
+    uint256 public lastRateUpdate;
+
+    /// Last net pressure applied (bps, signed). For dashboard display.
+    int256  public lastNetPressureBps;
+
+    /// Last policy stance applied (0–10000). For dashboard display.
+    uint256 public lastPolicyStance;
+
+    // ── Rate history (last 30 daily rates) ───────────────────────────────────
+
+    uint256[30] public rateHistory;
+    uint256     public rateHistoryCount;  // how many entries recorded so far (max 30)
+    uint256     public rateHistoryHead;   // next write position (circular)
+
+    // ── Reserve ratio thresholds ──────────────────────────────────────────────
 
     uint256 public constant RATIO_HEALTHY  = 40_000; // >= 4.0×
     uint256 public constant RATIO_ADEQUATE = 20_000; // >= 2.0×
-    // < 2.0× = ALERT
 
     // ── Events ────────────────────────────────────────────────────────────────
 
-    event RateChanged(uint256 oldRate, uint256 newRate, uint256 reserveRatio);
+    event RateChanged(uint256 oldRate, uint256 newRate, uint256 reserveRatio, int256 netPressureBps, uint256 policyStance);
     event ReserveUpdated(uint256 reserveUSDC, uint256 reserveRatio);
+    event ReserveAlert(uint256 reserveUSDC, uint256 reserveRatio);
     event LRTRateChanged(uint256 oldRate, uint256 newRate);
     event BreadBasketChanged(uint256 oldPrice, uint256 newPrice);
     event PeriodAdvanced(uint256 newPeriodEnd, uint256 epoch);
@@ -76,16 +102,6 @@ contract Fisc is Ownable {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
-    /**
-     * @param _colony           Linked Colony contract address
-     * @param _fiscRate         Initial exchange rate ($ per token × 1e6)
-     * @param _reserveUSDC      Initial USDC reserve (× 1e6)
-     * @param _totalVOutstanding Initial V supply (× 1e18)
-     * @param _lrtRate          LRT in bps
-     * @param _breadBasketPriceS Basket price in S-tokens
-     * @param _ubiAmount        UBI per citizen per period (S-tokens, integer)
-     * @param _periodEnd        Unix timestamp of current period end
-     */
     constructor(
         address _colony,
         uint256 _fiscRate,
@@ -96,61 +112,119 @@ contract Fisc is Ownable {
         uint256 _ubiAmount,
         uint256 _periodEnd
     ) Ownable(msg.sender) {
-        require(_colony != address(0), "Fisc: zero colony address");
-        require(_fiscRate > 0,         "Fisc: rate must be > 0");
-        require(_breadBasketPriceS > 0,"Fisc: bread price must be > 0");
-        require(_ubiAmount > 0,        "Fisc: UBI must be > 0");
-        require(_periodEnd > block.timestamp, "Fisc: period end must be in future");
+        require(_colony != address(0),    "Fisc: zero colony");
+        require(_fiscRate > 0,            "Fisc: rate must be > 0");
+        require(_breadBasketPriceS > 0,   "Fisc: bread price must be > 0");
+        require(_ubiAmount > 0,           "Fisc: UBI must be > 0");
+        require(_periodEnd > block.timestamp, "Fisc: period end in past");
 
-        colony             = _colony;
-        fiscRate           = _fiscRate;
-        reserveUSDC        = _reserveUSDC;
-        totalVOutstanding  = _totalVOutstanding;
-        lrtRate            = _lrtRate;
-        breadBasketPriceS  = _breadBasketPriceS;
-        ubiAmount          = _ubiAmount;
-        periodEnd          = _periodEnd;
+        colony            = _colony;
+        fiscRate          = _fiscRate;
+        reserveUSDC       = _reserveUSDC;
+        totalVOutstanding = _totalVOutstanding;
+        lrtRate           = _lrtRate;
+        breadBasketPriceS = _breadBasketPriceS;
+        ubiAmount         = _ubiAmount;
+        periodEnd         = _periodEnd;
 
+        _recordRate(_fiscRate);
         _recomputeRatio();
+    }
+
+    // ── F9 — Algorithmic rate update ──────────────────────────────────────────
+
+    /**
+     * @notice Update exchange rate using the F9 bread-basket-anchor algorithm.
+     *         Owner calls daily with current external price pressure.
+     *
+     * @param externalInflationBps  % change in external dollar prices × 100
+     *        e.g. 3.5% annual CPI = 350. Positive = dollar weakening.
+     * @param abundanceBps          % reduction in local production costs × 100
+     *        e.g. 2% AI deflation = 200. Positive = local goods getting cheaper.
+     *
+     * net_pressure = externalInflation - abundance
+     *   positive: external inflation dominant — token should strengthen
+     *   negative: abundance dominant — token can weaken safely
+     */
+    function updateRate(int256 externalInflationBps, int256 abundanceBps) external onlyOwner {
+        require(
+            lastRateUpdate == 0 || block.timestamp >= lastRateUpdate + 20 hours,
+            "Fisc: rate updated too recently"
+        );
+
+        int256 netPressure = externalInflationBps - abundanceBps;
+
+        // Policy stance: how aggressively to defend the bread price
+        // Based on reserve health. 0 = no defence (reserve critical), 10000 = full defence.
+        uint256 stance;
+        if (reserveRatio >= RATIO_HEALTHY) {
+            stance = 10_000;
+        } else if (reserveRatio >= RATIO_ADEQUATE) {
+            stance = (reserveRatio - RATIO_ADEQUATE) * 10_000
+                     / (RATIO_HEALTHY - RATIO_ADEQUATE);
+        } else {
+            stance = 0;
+            emit ReserveAlert(reserveUSDC, reserveRatio);
+        }
+
+        // adjustment (bps) = netPressure × stance × sensitivity / 1e8
+        // e.g. netPressure=350, stance=10000, sensitivity=100
+        //   → 350 × 10000 × 100 / 1e8 = 350 bps = 3.5%
+        int256 adjustmentBps = (netPressure * int256(stance) * int256(rateSensitivity)) / 1e8;
+
+        // new_rate = current × (1 + adjustment/10000)
+        int256 newRateInt = int256(fiscRate) + (int256(fiscRate) * adjustmentBps / 10_000);
+
+        // Clamp to daily max change
+        uint256 maxChange = fiscRate * maxDailyChangeBps / 10_000;
+        uint256 newRate;
+        if (newRateInt <= 0) {
+            newRate = minRate;
+        } else {
+            newRate = uint256(newRateInt);
+            if (newRate > fiscRate + maxChange) newRate = fiscRate + maxChange;
+            if (newRate < fiscRate - maxChange) newRate = fiscRate - maxChange;
+        }
+
+        // Clamp to absolute bounds
+        if (newRate < minRate) newRate = minRate;
+        if (newRate > maxRate) newRate = maxRate;
+
+        uint256 oldRate = fiscRate;
+        fiscRate           = newRate;
+        lastRateUpdate     = block.timestamp;
+        lastNetPressureBps = netPressure;
+        lastPolicyStance   = stance;
+
+        _recordRate(newRate);
+        _recomputeRatio();
+
+        emit RateChanged(oldRate, newRate, reserveRatio, netPressure, stance);
     }
 
     // ── Owner setters ─────────────────────────────────────────────────────────
 
-    /**
-     * @notice Set the exchange rate. Emits RateChanged.
-     * @param _fiscRate New rate ($ per token × 1e6)
-     */
     function setFiscRate(uint256 _fiscRate) external onlyOwner {
         require(_fiscRate > 0, "Fisc: rate must be > 0");
         uint256 old = fiscRate;
         fiscRate = _fiscRate;
+        _recordRate(_fiscRate);
         _recomputeRatio();
-        emit RateChanged(old, _fiscRate, reserveRatio);
+        emit RateChanged(old, _fiscRate, reserveRatio, 0, 0);
     }
 
-    /**
-     * @notice Update the USDC reserve balance and recompute ratio.
-     * @param _reserveUSDC New reserve (× 1e6)
-     */
     function setReserveUSDC(uint256 _reserveUSDC) external onlyOwner {
         reserveUSDC = _reserveUSDC;
         _recomputeRatio();
         emit ReserveUpdated(_reserveUSDC, reserveRatio);
     }
 
-    /**
-     * @notice Update total V outstanding (call when V supply changes materially).
-     * @param _totalV New total V supply (× 1e18)
-     */
     function setTotalVOutstanding(uint256 _totalV) external onlyOwner {
         totalVOutstanding = _totalV;
         _recomputeRatio();
         emit ParameterChanged("totalVOutstanding", 0, _totalV);
     }
 
-    /**
-     * @notice Set the LRT rate in basis points.
-     */
     function setLrtRate(uint256 _lrtRate) external onlyOwner {
         require(_lrtRate <= 6000, "Fisc: LRT cannot exceed 60%");
         uint256 old = lrtRate;
@@ -158,9 +232,6 @@ contract Fisc is Ownable {
         emit LRTRateChanged(old, _lrtRate);
     }
 
-    /**
-     * @notice Set the bread basket price in S-tokens.
-     */
     function setBreadBasketPrice(uint256 _priceS) external onlyOwner {
         require(_priceS > 0, "Fisc: price must be > 0");
         uint256 old = breadBasketPriceS;
@@ -168,9 +239,6 @@ contract Fisc is Ownable {
         emit BreadBasketChanged(old, _priceS);
     }
 
-    /**
-     * @notice Set the UBI amount in S-tokens (should mirror SToken.UBI_AMOUNT).
-     */
     function setUbiAmount(uint256 _ubiAmount) external onlyOwner {
         require(_ubiAmount > 0, "Fisc: UBI must be > 0");
         uint256 old = ubiAmount;
@@ -178,21 +246,18 @@ contract Fisc is Ownable {
         emit ParameterChanged("ubiAmount", old, _ubiAmount);
     }
 
-    /**
-     * @notice Advance to the next period. Sets periodEnd to end of next
-     *         calendar month (caller supplies the timestamp).
-     * @param _newPeriodEnd Unix timestamp of new period end
-     * @param _epoch        New epoch number (for event log)
-     */
+    function setRateSensitivity(uint256 _sensitivity) external onlyOwner {
+        require(_sensitivity <= 10_000, "Fisc: sensitivity too high");
+        rateSensitivity = _sensitivity;
+        emit ParameterChanged("rateSensitivity", 0, _sensitivity);
+    }
+
     function advancePeriod(uint256 _newPeriodEnd, uint256 _epoch) external onlyOwner {
-        require(_newPeriodEnd > block.timestamp, "Fisc: period end must be in future");
+        require(_newPeriodEnd > block.timestamp, "Fisc: period end in past");
         periodEnd = _newPeriodEnd;
         emit PeriodAdvanced(_newPeriodEnd, _epoch);
     }
 
-    /**
-     * @notice Update all parameters in a single call (gas-efficient for monthly reset).
-     */
     function updateAll(
         uint256 _fiscRate,
         uint256 _reserveUSDC,
@@ -205,9 +270,9 @@ contract Fisc is Ownable {
         require(_fiscRate > 0,          "Fisc: rate must be > 0");
         require(_breadBasketPriceS > 0, "Fisc: bread price must be > 0");
         require(_ubiAmount > 0,         "Fisc: UBI must be > 0");
-        require(_periodEnd > block.timestamp, "Fisc: period end must be in future");
+        require(_periodEnd > block.timestamp, "Fisc: period end in past");
 
-        uint256 oldRate = fiscRate;
+        uint256 oldRate   = fiscRate;
         fiscRate          = _fiscRate;
         reserveUSDC       = _reserveUSDC;
         totalVOutstanding = _totalVOutstanding;
@@ -216,51 +281,47 @@ contract Fisc is Ownable {
         ubiAmount         = _ubiAmount;
         periodEnd         = _periodEnd;
 
+        _recordRate(_fiscRate);
         _recomputeRatio();
-        emit RateChanged(oldRate, _fiscRate, reserveRatio);
+        emit RateChanged(oldRate, _fiscRate, reserveRatio, 0, 0);
         emit ReserveUpdated(_reserveUSDC, reserveRatio);
     }
 
     // ── Views ─────────────────────────────────────────────────────────────────
 
-    /**
-     * @notice Seconds remaining in the current period. 0 if period has ended.
-     */
     function secondsUntilPeriodEnd() external view returns (uint256) {
         if (block.timestamp >= periodEnd) return 0;
         return periodEnd - block.timestamp;
     }
 
-    /**
-     * @notice Days remaining in the current period (rounded down).
-     */
     function daysUntilPeriodEnd() external view returns (uint256) {
         if (block.timestamp >= periodEnd) return 0;
         return (periodEnd - block.timestamp) / 1 days;
     }
 
-    /**
-     * @notice Reserve status: 2 = healthy (>=4×), 1 = adequate (>=2×), 0 = alert (<2×).
-     */
     function reserveStatus() external view returns (uint8) {
         if (reserveRatio >= RATIO_HEALTHY)  return 2;
         if (reserveRatio >= RATIO_ADEQUATE) return 1;
         return 0;
     }
 
-    /**
-     * @notice Dollar equivalent of a token amount at current rate.
-     * @param tokenAmount Amount in S or V tokens (× 1e18)
-     * @return usdcValue  USDC equivalent (× 1e6)
-     */
     function toUSDC(uint256 tokenAmount) external view returns (uint256) {
-        // tokenAmount (1e18) × fiscRate (1e6) / 1e18 = result (1e6)
         return (tokenAmount * fiscRate) / 1e18;
     }
 
-    /**
-     * @notice Full Fisc state snapshot — for wallets and dashboards.
-     */
+    /// @notice Last N rate history entries (most recent last). Returns up to 30.
+    function getRateHistory() external view returns (uint256[] memory rates) {
+        uint256 count = rateHistoryCount < 30 ? rateHistoryCount : 30;
+        rates = new uint256[](count);
+        if (count == 0) return rates;
+        // Reconstruct chronological order from circular buffer
+        for (uint256 i = 0; i < count; i++) {
+            uint256 idx = (rateHistoryHead + 30 - count + i) % 30;
+            rates[i] = rateHistory[idx];
+        }
+    }
+
+    /// @notice Full state snapshot for wallets and dashboards.
     function snapshot() external view returns (
         uint256 _fiscRate,
         uint256 _reserveUSDC,
@@ -274,9 +335,8 @@ contract Fisc is Ownable {
         address _colony
     ) {
         uint8 status;
-        if (reserveRatio >= RATIO_HEALTHY)  status = 2;
+        if (reserveRatio >= RATIO_HEALTHY)       status = 2;
         else if (reserveRatio >= RATIO_ADEQUATE) status = 1;
-        else status = 0;
 
         uint256 daysLeft;
         if (block.timestamp < periodEnd) daysLeft = (periodEnd - block.timestamp) / 1 days;
@@ -293,31 +353,40 @@ contract Fisc is Ownable {
         _colony            = colony;
     }
 
+    /// @notice Rate algorithm state for dashboard display.
+    function rateAlgorithmState() external view returns (
+        uint256 _rateSensitivity,
+        uint256 _minRate,
+        uint256 _maxRate,
+        uint256 _maxDailyChangeBps,
+        uint256 _lastRateUpdate,
+        int256  _lastNetPressureBps,
+        uint256 _lastPolicyStance
+    ) {
+        _rateSensitivity    = rateSensitivity;
+        _minRate            = minRate;
+        _maxRate            = maxRate;
+        _maxDailyChangeBps  = maxDailyChangeBps;
+        _lastRateUpdate     = lastRateUpdate;
+        _lastNetPressureBps = lastNetPressureBps;
+        _lastPolicyStance   = lastPolicyStance;
+    }
+
     // ── Internal ──────────────────────────────────────────────────────────────
 
-    /**
-     * @dev Recompute reserveRatio from current state.
-     *      ratio = reserveUSDC (1e6) / (totalVOutstanding (1e18) × fiscRate (1e6) / 1e18)
-     *            = reserveUSDC × 1e18 / (totalVOutstanding × fiscRate / 1e18)
-     *            = reserveUSDC × 1e18 × 1e18 / (totalVOutstanding × fiscRate)
-     *      scaled to 1e4: multiply numerator by 1e4.
-     *
-     *      If totalVOutstanding == 0: ratio = RATIO_HEALTHY (no V in circulation = healthy).
-     */
     function _recomputeRatio() internal {
         if (totalVOutstanding == 0 || fiscRate == 0) {
             reserveRatio = RATIO_HEALTHY;
             return;
         }
-        // reserveUSDC in 1e6, totalVOutstanding in 1e18, fiscRate in 1e6
-        // V value in USDC (1e6) = totalVOutstanding * fiscRate / 1e18
-        // ratio (1e4) = reserveUSDC * 1e18 * 1e4 / (totalVOutstanding * fiscRate)
         uint256 numerator   = reserveUSDC * 1e18 * 1e4;
         uint256 denominator = totalVOutstanding * fiscRate / 1e18;
-        if (denominator == 0) {
-            reserveRatio = RATIO_HEALTHY;
-        } else {
-            reserveRatio = numerator / denominator;
-        }
+        reserveRatio = denominator == 0 ? RATIO_HEALTHY : numerator / denominator;
+    }
+
+    function _recordRate(uint256 rate) internal {
+        rateHistory[rateHistoryHead % 30] = rate;
+        rateHistoryHead++;
+        if (rateHistoryCount < 30) rateHistoryCount++;
     }
 }
