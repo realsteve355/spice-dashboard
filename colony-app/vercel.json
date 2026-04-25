@@ -2,5 +2,11 @@
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ public/ api/ package.json vite.config.js",
   "rewrites": [
     { "source": "/((?!api\\/|till\\.html).*)", "destination": "/" }
+  ],
+  "crons": [
+    {
+      "path": "/api/fisc-rate-update",
+      "schedule": "5 0 * * *"
+    }
   ]
 }

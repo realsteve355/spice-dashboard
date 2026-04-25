@@ -21,6 +21,7 @@ import Store            from './pages/Store'
 import Mcc              from './pages/Mcc'
 import Fisc             from './pages/Fisc'
 import Budget           from './pages/Budget'
+import Basket           from './pages/Basket'
 
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
@@ -312,6 +313,7 @@ export default function App() {
           <Route path="/colony/:slug/mcc"                element={<Mcc />}             />
           <Route path="/colony/:slug/fisc"               element={<Fisc />}            />
           <Route path="/colony/:slug/budget"             element={<Budget />}          />
+          <Route path="/colony/:slug/basket"            element={<Basket />}          />
           <Route path="/create"                          element={<CreateColony />}    />
         </Routes>
       </BrowserRouter>

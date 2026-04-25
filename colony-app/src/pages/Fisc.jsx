@@ -231,13 +231,16 @@ export default function Fisc() {
           )}
         </div>
 
-        {/* ── Budget button ── */}
+        {/* ── Budget + Basket buttons ── */}
         <div style={card}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>STANDARD CITIZEN BUDGET</div>
           <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6, marginBottom: 14 }}>
             The published breakdown of how the monthly UBI is calibrated — MCC charges, essentials, discretionary spend, and savings.
           </div>
-          <button onClick={() => navigate(`/colony/${slug}/budget`)} style={navBtn}>View Budget →</button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => navigate(`/colony/${slug}/budget`)} style={navBtn}>View Budget →</button>
+            <button onClick={() => navigate(`/colony/${slug}/basket`)} style={{ ...navBtn, background: 'transparent', color: C.gold, border: `1px solid ${C.gold}` }}>Bread Basket →</button>
+          </div>
         </div>
 
         {/* ── Earth only ── */}
