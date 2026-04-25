@@ -48,7 +48,7 @@ contract Fisc is Ownable {
     uint256 public reserveRatio;
 
     /// LRT rate in basis points (e.g. 1500 = 15%).
-    uint256 public lrtRate;
+    uint256 public latRate;
 
     /// Bread basket price in S-tokens (integer).
     uint256 public breadBasketPriceS;
@@ -112,7 +112,7 @@ contract Fisc is Ownable {
     event RateChanged(uint256 oldRate, uint256 newRate, uint256 reserveRatio, int256 netPressureBps, uint256 policyStance);
     event ReserveUpdated(uint256 reserveUSDC, uint256 reserveRatio);
     event ReserveAlert(uint256 reserveUSDC, uint256 reserveRatio);
-    event LRTRateChanged(uint256 oldRate, uint256 newRate);
+    event LATRateChanged(uint256 oldRate, uint256 newRate);
     event BreadBasketChanged(uint256 oldPrice, uint256 newPrice);
     event PeriodAdvanced(uint256 newPeriodEnd, uint256 epoch);
     event ParameterChanged(string name, uint256 oldValue, uint256 newValue);
@@ -126,7 +126,7 @@ contract Fisc is Ownable {
         uint256 _fiscRate,
         uint256 _reserveUSDC,
         uint256 _totalVOutstanding,
-        uint256 _lrtRate,
+        uint256 _latRate,
         uint256 _breadBasketPriceS,
         uint256 _ubiAmount,
         uint256 _periodEnd,
@@ -143,7 +143,7 @@ contract Fisc is Ownable {
         fiscRate          = _fiscRate;
         reserveUSDC       = _reserveUSDC;
         totalVOutstanding = _totalVOutstanding;
-        lrtRate           = _lrtRate;
+        latRate           = _latRate;
         breadBasketPriceS = _breadBasketPriceS;
         ubiAmount         = _ubiAmount;
         periodEnd         = _periodEnd;
@@ -276,11 +276,11 @@ contract Fisc is Ownable {
         emit ParameterChanged("totalVOutstanding", 0, _totalV);
     }
 
-    function setLrtRate(uint256 _lrtRate) external onlyOwnerOrCFO {
-        require(_lrtRate <= 6000, "Fisc: LRT cannot exceed 60%");
-        uint256 old = lrtRate;
-        lrtRate = _lrtRate;
-        emit LRTRateChanged(old, _lrtRate);
+    function setLatRate(uint256 _latRate) external onlyOwnerOrCFO {
+        require(_latRate <= 6000, "Fisc: LAT cannot exceed 60%");
+        uint256 old = latRate;
+        latRate = _latRate;
+        emit LATRateChanged(old, _latRate);
     }
 
     function setBreadBasketPrice(uint256 _priceS) external onlyOwnerOrCFO {
@@ -323,7 +323,7 @@ contract Fisc is Ownable {
         uint256 _fiscRate,
         uint256 _reserveUSDC,
         uint256 _totalVOutstanding,
-        uint256 _lrtRate,
+        uint256 _latRate,
         uint256 _breadBasketPriceS,
         uint256 _ubiAmount,
         uint256 _periodEnd
@@ -337,7 +337,7 @@ contract Fisc is Ownable {
         fiscRate          = _fiscRate;
         reserveUSDC       = _reserveUSDC;
         totalVOutstanding = _totalVOutstanding;
-        lrtRate           = _lrtRate;
+        latRate           = _latRate;
         breadBasketPriceS = _breadBasketPriceS;
         ubiAmount         = _ubiAmount;
         periodEnd         = _periodEnd;
@@ -388,7 +388,7 @@ contract Fisc is Ownable {
         uint256 _reserveUSDC,
         uint256 _reserveRatio,
         uint8   _reserveStatus,
-        uint256 _lrtRate,
+        uint256 _latRate,
         uint256 _breadBasketPriceS,
         uint256 _ubiAmount,
         uint256 _periodEnd,
@@ -406,7 +406,7 @@ contract Fisc is Ownable {
         _reserveUSDC       = reserveUSDC;
         _reserveRatio      = reserveRatio;
         _reserveStatus     = status;
-        _lrtRate           = lrtRate;
+        _latRate           = latRate;
         _breadBasketPriceS = breadBasketPriceS;
         _ubiAmount         = ubiAmount;
         _periodEnd         = periodEnd;

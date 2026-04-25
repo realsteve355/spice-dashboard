@@ -5,7 +5,7 @@
  *   fiscRate         = $0.75/token   (750_000 × 1e6)
  *   reserveUSDC      = $5,000        (5_000_000_000 × 1e6)
  *   totalVOutstanding = 0
- *   lrtRate          = 15%           (1500 bps)
+ *   latRate          = 15%           (1500 bps)
  *   breadBasketPriceS = 5 S/item
  *   ubiAmount        = 935 S         (matches published budget total)
  *   periodEnd        = end of current calendar month (UTC)
@@ -44,7 +44,7 @@ async function main() {
     750_000n,         // fiscRate $0.75 (1e6)
     5_000_000_000n,   // reserveUSDC $5,000 (1e6)
     0n,               // totalVOutstanding
-    1500n,            // lrtRate 15%
+    1500n,            // latRate 15%
     5n,               // breadBasketPriceS
     935n,             // ubiAmount — matches published budget total
     BigInt(periodEnd),
@@ -59,11 +59,11 @@ async function main() {
   // Verify
   const rate   = await fisc.fiscRate();
   const ubi    = await fisc.ubiAmount();
-  const lrt    = await fisc.lrtRate();
+  const lrt    = await fisc.latRate();
   const days   = await fisc.daysUntilPeriodEnd();
   console.log(`  fiscRate:  $${Number(rate)/1e6}`);
   console.log(`  ubiAmount: ${ubi} S`);
-  console.log(`  lrtRate:   ${Number(lrt)/100}%`);
+  console.log(`  latRate:   ${Number(lrt)/100}%`);
   console.log(`  daysLeft:  ${days}`);
 
   console.log("\n─────────────────────────────────────────────");

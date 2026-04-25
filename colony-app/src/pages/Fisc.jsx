@@ -50,7 +50,7 @@ async function fetchChainData(fiscAddr, colonyAddr) {
       reserveUSDC:       Number(snap[1]) / 1e6,
       reserveRatio:      Number(snap[2]) / 1e4,
       reserveStatus:     Number(snap[3]),
-      lrtRate:           Number(snap[4]) / 100,
+      latRate:           Number(snap[4]) / 100,
       breadBasketPriceS: Number(snap[5]),
       ubiAmount:         Number(snap[6]),
       periodEnd:         Number(snap[7]),
@@ -120,8 +120,8 @@ export default function Fisc() {
   // Viability numbers
   const monthlyUBICostUSDC   = citizenCount && totalS && displayRate
     ? citizenCount * totalS * displayRate : null
-  const lrtBreakevenProfit   = monthlyUBICostUSDC && fs?.lrtRate
-    ? monthlyUBICostUSDC / (fs.lrtRate / 100) : null
+  const latBreakevenProfit   = monthlyUBICostUSDC && fs?.latRate
+    ? monthlyUBICostUSDC / (fs.latRate / 100) : null
   const reserveRunwayMonths  = monthlyUBICostUSDC && fs?.reserveUSDC && monthlyUBICostUSDC > 0
     ? fs.reserveUSDC / monthlyUBICostUSDC : null
 
@@ -265,7 +265,7 @@ export default function Fisc() {
                   {[
                     { label: 'RESERVE',      value: `$${fs.reserveUSDC.toLocaleString()}` },
                     { label: 'COVER RATIO',  value: `${fs.reserveRatio.toFixed(1)}×`      },
-                    { label: 'LRT RATE',     value: `${fs.lrtRate.toFixed(1)}%`            },
+                    { label: 'LAT RATE',     value: `${fs.latRate.toFixed(1)}%`            },
                     { label: 'BREAD BASKET', value: `${fs.breadBasketPriceS}S`             },
                   ].map(item => (
                     <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '10px 12px' }}>
@@ -282,7 +282,7 @@ export default function Fisc() {
 
               {fs && (
                 <div style={{ marginTop: 12, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-                  Target: 4.0× · alert below 2.0×. LRT rate set to minimum sustaining reserve target.
+                  Target: 4.0× · alert below 2.0×. LAT rate set to minimum sustaining reserve target.
                 </div>
               )}
             </div>
@@ -297,7 +297,7 @@ export default function Fisc() {
                     {[
                       { label: 'CITIZENS',         value: citizenCount.toString()                                         },
                       { label: 'MONTHLY UBI COST', value: monthlyUBICostUSDC ? `$${Math.round(monthlyUBICostUSDC).toLocaleString()}` : '—' },
-                      { label: 'LRT BREAKEVEN',    value: lrtBreakevenProfit  ? `$${Math.round(lrtBreakevenProfit).toLocaleString()} profit` : '—' },
+                      { label: 'LAT BREAKEVEN',    value: latBreakevenProfit  ? `$${Math.round(latBreakevenProfit).toLocaleString()} profit` : '—' },
                       { label: 'RESERVE RUNWAY',   value: reserveRunwayMonths ? `${reserveRunwayMonths.toFixed(1)} months` : '—'               },
                     ].map(item => (
                       <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '10px 12px' }}>
@@ -308,8 +308,8 @@ export default function Fisc() {
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
                     Monthly UBI cost = {citizenCount} citizens × {totalS}S × ${displayRate?.toFixed(3)}/S.
-                    LRT breakeven = local net profit needed at {fs.lrtRate}% to cover full UBI cost.
-                    Reserve runway = months of UBI issuance the reserve can cover without LRT income.
+                    LAT breakeven = local net profit needed at {fs.latRate}% to cover full UBI cost.
+                    Reserve runway = months of UBI issuance the reserve can cover without LAT income.
                   </div>
                 </>
               ) : (

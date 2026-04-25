@@ -19,7 +19,7 @@ export const COLONY = {
   vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
   gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
   governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
-  fisc:       '0xD801749E582151D86C4548A96492DD972e782C2b',
+  fisc:       '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57',
   name:       "Dave's Colony",
   slug:       'daves-colony',
 }
@@ -36,7 +36,7 @@ const FISC_ABI = [
   'function reserveUSDC() view returns (uint256)',
   'function reserveRatio() view returns (uint256)',
   'function reserveStatus() view returns (uint8)',
-  'function lrtRate() view returns (uint256)',
+  'function latRate() view returns (uint256)',
   'function breadBasketPriceS() view returns (uint256)',
   'function ubiAmount() view returns (uint256)',
   'function periodEnd() view returns (uint256)',
@@ -100,7 +100,7 @@ export async function fetchFiscState() {
 
   const [
     fiscRate, reserveUSDC, reserveRatio, reserveStatus,
-    lrtRate, breadBasketPriceS, ubiAmount, periodEnd, daysLeft,
+    latRate, breadBasketPriceS, ubiAmount, periodEnd, daysLeft,
   ] = await fisc.snapshot()
 
   // fiscRate is scaled 1e6 ($0.75 = 750_000)
@@ -112,7 +112,7 @@ export async function fetchFiscState() {
     reserveUSDC:       Number(reserveUSDC) / 1e6,
     reserveRatio:      Number(reserveRatio) / 1e4,
     reserveStatus:     Number(reserveStatus), // 2=healthy, 1=adequate, 0=alert
-    lrtRate:           Number(lrtRate) / 100, // percentage
+    latRate:           Number(latRate) / 100, // percentage
     breadBasketPriceS: Number(breadBasketPriceS),
     ubiAmount:         Number(ubiAmount),
     periodEnd:         Number(periodEnd),

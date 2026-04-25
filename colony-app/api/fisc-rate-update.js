@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
   const fredKey    = process.env.VITE_FRED_API_KEY
   const oracleKey  = process.env.FISC_ORACLE_KEY
-  const fiscAddr   = process.env.FISC_ADDRESS || '0xD801749E582151D86C4548A96492DD972e782C2b'
+  const fiscAddr   = process.env.FISC_ADDRESS || '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57'
   const abundBps   = parseInt(process.env.ABUNDANCE_BPS || '0', 10)
 
   if (!fredKey)   return res.status(500).json({ error: 'FRED API key not configured' })
