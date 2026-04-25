@@ -20,6 +20,7 @@ import MarsHealth    from './pages/mars/MarsHealth.jsx'
 import CollisionLayout from './pages/CollisionLayout.jsx'
 import SpiceSystem from './pages/SpiceSystem.jsx'
 import CreateColony from './pages/CreateColony.jsx'
+import FairbrookSim from './pages/FairbrookSim.jsx'
 
 function Nav() {
   return (
@@ -46,6 +47,9 @@ function Nav() {
         </NavLink>
         <NavLink to="/earth" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Earth
+        </NavLink>
+        <NavLink to="/fairbrook" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Fairbrook
         </NavLink>
         <NavLink to="/spice-system" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           System
@@ -75,6 +79,7 @@ export default function App() {
           <Route path="/earth" element={<Earth />} />
           <Route path="/spice-system" element={<SpiceSystem />} />
           <Route path="/create-colony" element={<CreateColony />} />
+          <Route path="/fairbrook" element={<FairbrookSim />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}
