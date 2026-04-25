@@ -125,6 +125,18 @@ const CROSSING = ALL.find(d => d.unemployedIndex >= 100)?.pct ?? null
 const UBI_WELFARE_FLOOR = Math.round(M.federal / M.adults / 12)   // ~$283/month
 const UBI_UNIVERSAL     = ALL.find(d => d.ubiUSD >= UBI_WELFARE_FLOOR)?.pct ?? null
 
+// Split UBI line: dashed (targeted, displaced only) vs solid (universal, all adults).
+// The per-adult average is the same value, but the distribution mechanism differs.
+// Before universality each displaced worker receives more than shown — the total
+// LAT is divided among fewer people; employed adults receive nothing.
+ALL.forEach(d => {
+  d.ubiTargeted  = d.pct <  (UBI_UNIVERSAL ?? 25) ? d.ubiUSD : null
+  d.ubiUniversal = d.pct >= (UBI_UNIVERSAL ?? 25) ? d.ubiUSD : null
+  // What each displaced worker actually receives (before universality)
+  const displaced = M.workforce - d.employed
+  d.ubiPerDisplaced = displaced > 0 ? Math.round(d.ubiUSD * M.adults / displaced) : 0
+})
+
 // ── Stage definitions ─────────────────────────────────────────────────────────
 function getStage(pct) {
   const u = UBI_UNIVERSAL || 25
@@ -202,10 +214,11 @@ function IncomeChart({ data, highlightPct }) {
           />
           {/* Current position */}
           <ReferenceLine x={highlightPct} stroke={GOLD} strokeWidth={1.5} strokeDasharray="3 2" />
-          <Line dataKey="wages"   stroke={ORG}  strokeWidth={2} dot={false} isAnimationActive={false} name="Wages" />
-          <Line dataKey="federal" stroke={BLU}  strokeWidth={2} dot={false} isAnimationActive={false} name="Welfare (targeted)" />
-          <Line dataKey="ubiUSD"  stroke={GRN}  strokeWidth={2} dot={false} isAnimationActive={false} name="UBI (LAT-funded)" />
-          <Line dataKey="total"   stroke={T2}   strokeWidth={1} strokeDasharray="4 2" dot={false} isAnimationActive={false} name="Total" />
+          <Line dataKey="wages"        stroke={ORG}  strokeWidth={2} dot={false} isAnimationActive={false} name="Wages" />
+          <Line dataKey="federal"      stroke={BLU}  strokeWidth={2} dot={false} isAnimationActive={false} name="Welfare (targeted)" />
+          <Line dataKey="ubiTargeted"  stroke={GRN}  strokeWidth={2} strokeDasharray="5 3" dot={false} isAnimationActive={false} name="LAT benefit (displaced workers only)" connectNulls={false} />
+          <Line dataKey="ubiUniversal" stroke={GRN}  strokeWidth={2} dot={false} isAnimationActive={false} name="UBI (universal — all adults)" connectNulls={false} />
+          <Line dataKey="total"        stroke={T2}   strokeWidth={1} strokeDasharray="4 2" dot={false} isAnimationActive={false} name="Total" />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -303,11 +316,10 @@ export default function PathwayToUBI() {
   const stage   = getStage(automation)
 
   const legend1 = [
-    { color: ORG,  label: 'Wages (per adult average — floors at 5% employment)' },
-    { color: BLU,  label: 'Welfare (targeted: Social Security, SNAP, Medicaid)' },
-    { color: GRN,  label: 'UBI — LAT flowing through Fisc to all adults' },
-    { color: T2,   label: 'Total (dashed)' },
-    { color: T3,   label: `Dashed horizontal: $${UBI_WELFARE_FLOOR}/month welfare floor — UBI universality threshold` },
+    { color: ORG,  label: 'Wages (per adult average — floors at 5% employment)', dash: false },
+    { color: BLU,  label: 'Welfare (targeted: Social Security, SNAP, Medicaid)', dash: false },
+    { color: GRN,  label: `LAT benefit — dashed: displaced workers only (avg per adult understates per-recipient); solid: universal (all adults equally from A=${UBI_UNIVERSAL ?? 25}%)`, dash: true },
+    { color: T2,   label: 'Total income per adult (dashed)', dash: true },
   ]
 
   const legend2 = [
@@ -409,9 +421,14 @@ export default function PathwayToUBI() {
           {/* KPI cards */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <KpiCard
-              label="Monthly UBI"
+              label={automation >= (UBI_UNIVERSAL ?? 25) ? 'Monthly UBI (universal)' : 'Monthly LAT benefit (targeted)'}
               value={snap.ubiUSD > 0 ? `$${snap.ubiUSD.toLocaleString()}` : '—'}
-              sub={snap.ubiSday > 0 ? `${snap.ubiSday} S/day at $${snap.fiscRate}/S` : 'LAT not yet above 2× baseline'}
+              sub={
+                snap.ubiUSD <= 0 ? 'LAT not yet above 2× baseline' :
+                automation < (UBI_UNIVERSAL ?? 25)
+                  ? `Avg per adult — displaced workers each receive ~$${snap.ubiPerDisplaced.toLocaleString()}`
+                  : `${snap.ubiSday} S/day · all ${M.adults.toLocaleString()} adults equally`
+              }
               color={snap.ubiUSD > 0 ? GRN : T3}
             />
             <KpiCard
@@ -461,9 +478,14 @@ export default function PathwayToUBI() {
             means-testing end and all adults receive equally.
           </p>
           <div style={{ display: 'flex', gap: 20, marginBottom: 16, flexWrap: 'wrap' }}>
-            {legend1.map(({ color, label }) => (
+            {legend1.map(({ color, label, dash }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 20, height: 2, background: color }} />
+                <svg width={20} height={4}>
+                  {dash
+                    ? <line x1={0} y1={2} x2={20} y2={2} stroke={color} strokeWidth={2} strokeDasharray="5 3" />
+                    : <line x1={0} y1={2} x2={20} y2={2} stroke={color} strokeWidth={2} />
+                  }
+                </svg>
                 <span style={{ fontFamily: F, fontSize: 9, color: T3 }}>{label}</span>
               </div>
             ))}
