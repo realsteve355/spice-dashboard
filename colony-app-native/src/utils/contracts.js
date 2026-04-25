@@ -19,7 +19,7 @@ export const COLONY = {
   vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
   gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
   governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
-  fisc:       '0xeA65Ebf62925D1b2D658b5B6ADD1C18470b4F431',
+  fisc:       '0xD801749E582151D86C4548A96492DD972e782C2b',
   name:       "Dave's Colony",
   slug:       'daves-colony',
 }

@@ -7,7 +7,7 @@
  *
  * Environment variables required:
  *   VITE_FRED_API_KEY    — FRED API key
- *   FISC_OWNER_KEY       — Private key of Fisc contract owner wallet
+ *   FISC_ORACLE_KEY      — Private key of the rate oracle wallet (set via Fisc.setRateOracle())
  *   FISC_ADDRESS         — Deployed Fisc contract address
  *   ABUNDANCE_BPS        — Local abundance estimate in bps (default 0)
  *                          Set via Vercel env vars; governance updates monthly.
@@ -60,12 +60,12 @@ export default async function handler(req, res) {
   }
 
   const fredKey    = process.env.VITE_FRED_API_KEY
-  const ownerKey   = process.env.FISC_OWNER_KEY
-  const fiscAddr   = process.env.FISC_ADDRESS || '0xeA65Ebf62925D1b2D658b5B6ADD1C18470b4F431'
+  const oracleKey  = process.env.FISC_ORACLE_KEY
+  const fiscAddr   = process.env.FISC_ADDRESS || '0xD801749E582151D86C4548A96492DD972e782C2b'
   const abundBps   = parseInt(process.env.ABUNDANCE_BPS || '0', 10)
 
-  if (!fredKey)  return res.status(500).json({ error: 'FRED API key not configured' })
-  if (!ownerKey) return res.status(500).json({ error: 'FISC_OWNER_KEY not configured' })
+  if (!fredKey)   return res.status(500).json({ error: 'FRED API key not configured' })
+  if (!oracleKey) return res.status(500).json({ error: 'FISC_ORACLE_KEY not configured' })
 
   try {
     // 1. Get CPI change from FRED
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
 
     // 2. Connect to chain
     const provider = new ethers.JsonRpcProvider(RPC)
-    const wallet   = new ethers.Wallet(ownerKey, provider)
+    const wallet   = new ethers.Wallet(oracleKey, provider)
     const fisc     = new ethers.Contract(fiscAddr, FISC_ABI, wallet)
 
     // 3. Check current state

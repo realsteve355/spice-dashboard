@@ -9,6 +9,9 @@
  *   breadBasketPriceS = 5 S/item
  *   ubiAmount        = 935 S         (matches published budget total)
  *   periodEnd        = end of current calendar month (UTC)
+ *   governance       = Dave's Colony Governance (role 1 = CFO)
+ *   rateOracle       = dedicated oracle wallet (used by daily cron)
+ *                      set to address(0) here; call setRateOracle() post-deploy
  *
  * Usage:
  *   npx hardhat run scripts/deployFisc.js --network baseSepolia
@@ -16,7 +19,8 @@
 
 const hre = require("hardhat");
 
-const COLONY_ADDRESS = "0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5";
+const COLONY_ADDRESS     = "0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5";
+const GOVERNANCE_ADDRESS = "0xe2af55fe189B18678187eF48eB49b9bA8bF24534";
 
 function endOfMonthUTC() {
   const now = new Date();
@@ -44,6 +48,8 @@ async function main() {
     5n,               // breadBasketPriceS
     935n,             // ubiAmount — matches published budget total
     BigInt(periodEnd),
+    GOVERNANCE_ADDRESS,  // governance — CFO (role 1) can set parameters
+    hre.ethers.ZeroAddress, // rateOracle — set post-deploy via setRateOracle()
   );
 
   await fisc.waitForDeployment();
@@ -62,6 +68,7 @@ async function main() {
 
   console.log("\n─────────────────────────────────────────────");
   console.log("Update contracts.json fisc address to:", fiscAddr);
+  console.log("Then call setRateOracle(<oracle-wallet>) to wire up the cron.");
   console.log("─────────────────────────────────────────────");
 }
 

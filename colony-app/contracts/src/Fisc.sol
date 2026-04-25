@@ -3,16 +3,23 @@ pragma solidity ^0.8.25;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IGovernance {
+    /// @notice Returns the current holder of a colony role.
+    /// role 0 = CEO, 1 = CFO, 2 = COO.
+    function roleHolder(uint8 role) external view returns (address holder, uint256 termEnd, bool active);
+}
+
 /**
  * @title Fisc
  * @notice The monetary authority of a SPICE colony (Earth type).
  *
  * Phase 1 — manually governed with F9 algorithmic rate-setting.
- * The owner provides external price pressure; the contract computes
- * the rate adjustment based on reserve health (policy stance).
  *
- * Phase 2 — USDC reserve integration, LRT collection (F8),
- * boundary flows (F6/F7), Chainlink oracle for price inputs.
+ * Access control:
+ *   owner        — deployer / protocol admin. Admin ops only.
+ *   rateOracle   — dedicated cron wallet. Can call updateRate() daily.
+ *   CFO          — governance-elected. Can call updateRate() and set
+ *                  algorithm parameters (sensitivity, LRT, bread price, UBI).
  *
  * F9 Rate algorithm:
  *   net_pressure   = externalInflationBps - abundanceBps
@@ -54,6 +61,16 @@ contract Fisc is Ownable {
 
     /// Linked Colony contract address.
     address public colony;
+
+    // ── Access control ────────────────────────────────────────────────────────
+
+    /// Dedicated oracle wallet used by the automated daily cron.
+    /// Can call updateRate(). Set by owner; never has other privileges.
+    address public rateOracle;
+
+    /// Colony Governance contract. Used to look up the current CFO (role 1).
+    /// May be address(0) if governance is not yet deployed.
+    address public governance;
 
     // ── F9 Rate algorithm parameters ──────────────────────────────────────────
 
@@ -99,6 +116,8 @@ contract Fisc is Ownable {
     event BreadBasketChanged(uint256 oldPrice, uint256 newPrice);
     event PeriodAdvanced(uint256 newPeriodEnd, uint256 epoch);
     event ParameterChanged(string name, uint256 oldValue, uint256 newValue);
+    event RateOracleSet(address indexed previous, address indexed next);
+    event GovernanceSet(address indexed previous, address indexed next);
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -110,7 +129,9 @@ contract Fisc is Ownable {
         uint256 _lrtRate,
         uint256 _breadBasketPriceS,
         uint256 _ubiAmount,
-        uint256 _periodEnd
+        uint256 _periodEnd,
+        address _governance,  // may be address(0); set later via setGovernance()
+        address _rateOracle   // may be address(0); set later via setRateOracle()
     ) Ownable(msg.sender) {
         require(_colony != address(0),    "Fisc: zero colony");
         require(_fiscRate > 0,            "Fisc: rate must be > 0");
@@ -126,9 +147,39 @@ contract Fisc is Ownable {
         breadBasketPriceS = _breadBasketPriceS;
         ubiAmount         = _ubiAmount;
         periodEnd         = _periodEnd;
+        governance        = _governance;
+        rateOracle        = _rateOracle;
 
         _recordRate(_fiscRate);
         _recomputeRatio();
+    }
+
+    // ── Access control modifiers ──────────────────────────────────────────────
+
+    /// Owner, rate oracle, or active CFO from governance.
+    modifier onlyRateAuthority() {
+        if (msg.sender != owner() && msg.sender != rateOracle) {
+            bool isCFO;
+            if (governance != address(0)) {
+                (address cfo, , bool active) = IGovernance(governance).roleHolder(1);
+                isCFO = (msg.sender == cfo && active);
+            }
+            require(isCFO, "Fisc: not rate authority");
+        }
+        _;
+    }
+
+    /// Owner or active CFO from governance.
+    modifier onlyOwnerOrCFO() {
+        if (msg.sender != owner()) {
+            bool isCFO;
+            if (governance != address(0)) {
+                (address cfo, , bool active) = IGovernance(governance).roleHolder(1);
+                isCFO = (msg.sender == cfo && active);
+            }
+            require(isCFO, "Fisc: not owner or CFO");
+        }
+        _;
     }
 
     // ── F9 — Algorithmic rate update ──────────────────────────────────────────
@@ -146,7 +197,7 @@ contract Fisc is Ownable {
      *   positive: external inflation dominant — token should strengthen
      *   negative: abundance dominant — token can weaken safely
      */
-    function updateRate(int256 externalInflationBps, int256 abundanceBps) external onlyOwner {
+    function updateRate(int256 externalInflationBps, int256 abundanceBps) external onlyRateAuthority {
         require(
             lastRateUpdate == 0 || block.timestamp >= lastRateUpdate + 20 hours,
             "Fisc: rate updated too recently"
@@ -225,31 +276,41 @@ contract Fisc is Ownable {
         emit ParameterChanged("totalVOutstanding", 0, _totalV);
     }
 
-    function setLrtRate(uint256 _lrtRate) external onlyOwner {
+    function setLrtRate(uint256 _lrtRate) external onlyOwnerOrCFO {
         require(_lrtRate <= 6000, "Fisc: LRT cannot exceed 60%");
         uint256 old = lrtRate;
         lrtRate = _lrtRate;
         emit LRTRateChanged(old, _lrtRate);
     }
 
-    function setBreadBasketPrice(uint256 _priceS) external onlyOwner {
+    function setBreadBasketPrice(uint256 _priceS) external onlyOwnerOrCFO {
         require(_priceS > 0, "Fisc: price must be > 0");
         uint256 old = breadBasketPriceS;
         breadBasketPriceS = _priceS;
         emit BreadBasketChanged(old, _priceS);
     }
 
-    function setUbiAmount(uint256 _ubiAmount) external onlyOwner {
+    function setUbiAmount(uint256 _ubiAmount) external onlyOwnerOrCFO {
         require(_ubiAmount > 0, "Fisc: UBI must be > 0");
         uint256 old = ubiAmount;
         ubiAmount = _ubiAmount;
         emit ParameterChanged("ubiAmount", old, _ubiAmount);
     }
 
-    function setRateSensitivity(uint256 _sensitivity) external onlyOwner {
+    function setRateSensitivity(uint256 _sensitivity) external onlyOwnerOrCFO {
         require(_sensitivity <= 10_000, "Fisc: sensitivity too high");
         rateSensitivity = _sensitivity;
         emit ParameterChanged("rateSensitivity", 0, _sensitivity);
+    }
+
+    function setRateOracle(address _oracle) external onlyOwner {
+        emit RateOracleSet(rateOracle, _oracle);
+        rateOracle = _oracle;
+    }
+
+    function setGovernance(address _governance) external onlyOwner {
+        emit GovernanceSet(governance, _governance);
+        governance = _governance;
     }
 
     function advancePeriod(uint256 _newPeriodEnd, uint256 _epoch) external onlyOwner {
