@@ -22,6 +22,7 @@ import SpiceSystem from './pages/SpiceSystem.jsx'
 import CreateColony from './pages/CreateColony.jsx'
 import FairbrookSim from './pages/FairbrookSim.jsx'
 import PathwayToUBI from './pages/PathwayToUBI.jsx'
+import Abundance from './pages/Abundance.jsx'
 
 function Nav() {
   return (
@@ -51,6 +52,9 @@ function Nav() {
         </NavLink>
         <NavLink to="/fairbrook" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Fairbrook
+        </NavLink>
+        <NavLink to="/abundance" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
+          Abundance
         </NavLink>
         <NavLink to="/pathway" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
           Pathway
@@ -85,6 +89,7 @@ export default function App() {
           <Route path="/create-colony" element={<CreateColony />} />
           <Route path="/fairbrook" element={<FairbrookSim />} />
           <Route path="/pathway" element={<PathwayToUBI />} />
+          <Route path="/abundance" element={<Abundance />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}
