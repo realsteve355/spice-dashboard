@@ -19,6 +19,8 @@ const ATOKEN_ABI = [
   "function assetData(uint256) view returns (uint256, uint256, bool, uint256, uint256)",
   "function currentAssetValue(uint256, uint256) view returns (uint256)",
   "function getObligation(uint256) view returns (address, address, uint256, uint256, uint256, uint256, bool)",
+  "function nextId() view returns (uint256)",
+  "function assetLabel(uint256) view returns (string)",
 ]
 
 const COLONY_ABI = [
@@ -50,15 +52,17 @@ export default function Assets() {
   const { address, signer, contracts, isCitizenOf } = useWallet()
   const isCitizen = isCitizenOf(slug)
 
-  const [tab,          setTab]          = useState('assets')
-  const [loading,      setLoading]      = useState(true)
-  const [myAssets,     setMyAssets]     = useState([])
-  const [myOwed,       setMyOwed]       = useState([])   // OBLIGATION_LIABILITY — I owe
-  const [myLent,       setMyLent]       = useState([])   // OBLIGATION_ASSET — owed to me
-  const [pendingProps, setPendingProps] = useState([])   // obligation proposals awaiting my signature
-  const [nameMap,      setNameMap]      = useState({})   // address.lower → citizen name
-  const [citizens,     setCitizens]     = useState([])   // [{ address, name }]
-  const [reloadKey,    setReloadKey]    = useState(0)
+  const [tab,           setTab]           = useState('assets')
+  const [loading,       setLoading]       = useState(true)
+  const [myAssets,      setMyAssets]      = useState([])
+  const [myOwed,        setMyOwed]        = useState([])   // OBLIGATION_LIABILITY — I owe
+  const [myLent,        setMyLent]        = useState([])   // OBLIGATION_ASSET — owed to me
+  const [pendingProps,  setPendingProps]  = useState([])   // obligation proposals awaiting my signature
+  const [nameMap,       setNameMap]       = useState({})   // address.lower → citizen name
+  const [citizens,      setCitizens]      = useState([])   // [{ address, name }]
+  const [reloadKey,     setReloadKey]     = useState(0)
+  const [publicAssets,  setPublicAssets]  = useState(null) // A-03: full registry browse — null until loaded
+  const [publicLoading, setPublicLoading] = useState(false)
 
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
@@ -182,6 +186,70 @@ export default function Assets() {
 
   function reload() { setReloadKey(k => k + 1) }
 
+  // A-03: lazy-load all UNILATERAL assets in the colony when the user opens the public tab
+  useEffect(() => {
+    if (tab !== 'public' || publicAssets !== null) return
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg?.aToken || !cfg?.colony) return
+    const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const aToken = new ethers.Contract(cfg.aToken, ATOKEN_ABI, rpc)
+    const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
+    let cancelled = false
+    setPublicLoading(true)
+
+    async function loadPublic() {
+      try {
+        const [nextIdRaw, epoch] = await Promise.all([
+          aToken.nextId(),
+          colony.currentEpoch().then(Number),
+        ])
+        const nextId = Number(nextIdRaw)
+        const ids    = Array.from({ length: Math.max(0, nextId - 1) }, (_, i) => i + 1)
+
+        const assetNames = getAssetNames()
+        const all = await Promise.all(ids.map(async (id) => {
+          try {
+            const t = await aToken.tokens(id)
+            const form = Number(t[0])
+            const active = Boolean(t[4])
+            if (!active || form !== FORM_UNILATERAL) return null
+            const holder = String(t[1])
+            const [valRaw, wt, hasAI, depBps] = await aToken.assetData(id)
+            let curRaw = valRaw
+            if (Number(depBps) > 0) {
+              try { curRaw = await aToken.currentAssetValue(id, epoch) } catch {}
+            }
+            let label = ''
+            try { label = await aToken.assetLabel(id) } catch {}
+            return {
+              id:           String(id),
+              holder,
+              label,
+              localName:    assetNames[assetNameKey(cfg.colony, id)] || null,
+              value:        Math.floor(Number(ethers.formatEther(valRaw))),
+              currentValue: Math.floor(Number(ethers.formatEther(curRaw))),
+              weightKg:     Number(wt),
+              hasAI:        Boolean(hasAI),
+            }
+          } catch {
+            return null
+          }
+        }))
+
+        if (cancelled) return
+        const filtered = all.filter(Boolean).sort((a, b) => Number(b.id) - Number(a.id))
+        setPublicAssets(filtered)
+      } catch (e) {
+        console.warn('[Assets] public load failed:', e?.message || e)
+        if (!cancelled) setPublicAssets([])
+      }
+      if (!cancelled) setPublicLoading(false)
+    }
+
+    loadPublic()
+    return () => { cancelled = true }
+  }, [tab, publicAssets, contracts, slug])
+
   const cfg = contracts?.colonies?.[slug]
 
   return (
@@ -190,7 +258,7 @@ export default function Assets() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
-          {[['assets','Assets'],['obligations','Obligations']].map(([t, label]) => (
+          {[['assets','My Assets'],['obligations','Obligations'],['public','Registry']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{
               flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
               border: 'none', color: tab === t ? '#fff' : C.sub,
@@ -201,7 +269,14 @@ export default function Assets() {
           ))}
         </div>
 
-        {loading ? (
+        {tab === 'public' ? (
+          <PublicRegistryTab
+            assets={publicAssets}
+            loading={publicLoading}
+            nameMap={nameMap}
+            myAddress={address}
+          />
+        ) : loading ? (
           <div style={{ textAlign: 'center', padding: 32, fontSize: 12, color: C.faint }}>
             Loading…
           </div>
@@ -799,6 +874,67 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
       {/* Progress bar */}
       <div style={{ height: 3, background: C.border, borderRadius: 2, overflow: 'hidden', marginTop: 6 }}>
         <div style={{ height: '100%', width: `${pct * 100}%`, background: statusColor }} />
+      </div>
+    </div>
+  )
+}
+
+// ── Public registry tab (A-03) ───────────────────────────────────────────────
+
+function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
+  if (loading || assets === null) {
+    return (
+      <div style={{ textAlign: 'center', padding: 32, fontSize: 12, color: C.faint }}>
+        Loading registry…
+      </div>
+    )
+  }
+  if (!assets.length) {
+    return (
+      <div style={card}>
+        <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 24 }}>
+          No physical assets registered in this colony yet.
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div>
+      <div style={card}>
+        <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+          ALL REGISTERED ASSETS · {assets.length}
+        </div>
+        {assets.map((a, i) => {
+          const isMine = myAddress && a.holder.toLowerCase() === myAddress.toLowerCase()
+          const holderName = nameMap[a.holder.toLowerCase()] || `${a.holder.slice(0,6)}…${a.holder.slice(-4)}`
+          const displayName = a.localName || a.label || `Asset #${a.id}`
+          return (
+            <div key={a.id} style={{
+              paddingBottom: i < assets.length - 1 ? 12 : 0,
+              marginBottom:  i < assets.length - 1 ? 12 : 0,
+              borderBottom:  i < assets.length - 1 ? `1px solid ${C.border}` : 'none',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
+                  {displayName}
+                  <span style={{ fontSize: 10, color: C.faint, marginLeft: 8 }}>#{a.id}</span>
+                  {isMine && <span style={{ fontSize: 10, color: C.gold, marginLeft: 6 }}>· yours</span>}
+                </div>
+                <div style={{ fontSize: 12, color: C.gold }}>
+                  {a.currentValue} S
+                </div>
+              </div>
+              <div style={{ fontSize: 10, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>
+                Holder: {holderName}
+                {a.weightKg > 0 && <> · {a.weightKg} kg</>}
+                {a.hasAI && <> · autonomous AI</>}
+                {a.value !== a.currentValue && (
+                  <> · was {a.value} S</>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

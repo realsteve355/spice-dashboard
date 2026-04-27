@@ -493,7 +493,7 @@ AI capability. Below threshold, possession implies ownership with no on-chain re
 | A-01 | As a citizen, I want to register a physical asset (robot, vehicle, AI hardware) on-chain as a unilateral A-token so that ownership is verifiable by any party | P2 | ~ |
 | A-01b | As an asset owner, I want to declare a depreciation rate on registration so the on-chain value decays linearly each epoch, reflecting wear and amortisation | P2 | ~ |
 | A-02 | As an asset owner, I want to transfer an A-token to another citizen or company wallet, with the agreed transfer price recorded on-chain as the new declared value | P2 | ~ |
-| A-03 | As any citizen, I want to browse the public A-token registry and see all registered assets, their owners, declared values, and weight | P2 | — |
+| A-03 | As any citizen, I want to browse the public A-token registry and see all registered assets, their owners, declared values, and weight | P2 | ✓ |
 | A-04 | As an asset owner, I want to see all A-tokens registered to my wallet — assets, equity positions, and obligations — in a single portfolio view | P2 | ~ |
 
 *A-01: Citizen asset registration live via Assets.jsx (/colony/:slug/assets). Company assets require an extension to Company.jsx — not yet built.*
