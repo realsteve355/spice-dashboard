@@ -207,10 +207,10 @@ operations on behalf of the organisation.
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | OS-06 | As an organisation secretary, I want to see the company wallet's S-token balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | — |
-| OS-07 | As an organisation secretary, I want to convert the company's net S-token earnings to V-tokens in a single on-chain transaction | P1 | — |
-| OS-08 | As an organisation secretary, I want to distribute V-token dividends to all equity holders in one transaction — amounts calculated automatically from the equity register in basis points | P1 | — |
-| OS-09 | As an organisation secretary, I want to see a dividend history showing each distribution: date, total V-tokens distributed, and the per-holder breakdown | P2 | — |
-| OS-10 | As an organisation secretary, I want to pay a supplier (citizen or company) in S-tokens from the company wallet with a note recorded on-chain | P1 | — |
+| OS-07 | As an organisation secretary, I want to convert the company's net S-token earnings to V-tokens in a single on-chain transaction | P1 | ✓ |
+| OS-08 | As an organisation secretary, I want to distribute V-token dividends to all equity holders in one transaction — amounts calculated automatically from the equity register in basis points | P1 | ✓ |
+| OS-09 | As an organisation secretary, I want to see a dividend history showing each distribution: date, total V-tokens distributed, and the per-holder breakdown | P2 | ~ |
+| OS-10 | As an organisation secretary, I want to pay a supplier (citizen or company) in S-tokens from the company wallet with a note recorded on-chain | P1 | ✓ |
 
 ### Asset Management
 
