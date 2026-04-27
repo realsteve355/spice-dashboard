@@ -49,7 +49,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-13c | As a citizen using the native app, I want to tap my phone to an NFC tag at a merchant till, confirm the pre-filled amount with Face ID, and have the payment broadcast automatically | P1 | ✓ |
 | C-14 | As a citizen, I want to see my full on-chain transaction history (payments sent/received, UBI, savings, redeems, V dividends received) with dates and labels | P1 | ✓ |
 | C-15 | As a citizen, I want to see my projected MCC bill for the current month | P1 | ~ |
-| C-16 | As a citizen, I want a warning if my S-token balance will not cover my projected MCC bill | P2 | — |
+| C-16 | As a citizen, I want a warning if my S-token balance will not cover my projected MCC bill | P2 | ✓ |
 | C-32 | As a citizen, I want to browse the colony Mall — all companies and their products — and pay for a listed item in S-tokens directly | P1 | ✓ |
 
 *C-13a: QR encodes a MetaMask deep link (metamask.app.link). Scanning with iPhone camera opens MetaMask app automatically. No separate scanner or app switching required.*

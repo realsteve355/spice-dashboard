@@ -704,6 +704,25 @@ export default function Dashboard() {
           )}
           {((onChainBill ?? data.mccBill.total) > 0) && billRecipient && (
             <div style={{ marginTop: 12 }}>
+              {/* C-16: warn if balance won't cover the bill */}
+              {(() => {
+                const billNow  = Math.floor(onChainBill ?? data.mccBill.total)
+                const balance  = Math.floor(Number(data.sBalance) || 0)
+                const shortBy  = billNow - balance
+                if (shortBy > 0) {
+                  return (
+                    <div style={{
+                      fontSize: 11, color: C.red, marginBottom: 8,
+                      padding: '8px 10px', background: `${C.red}10`, border: `1px solid ${C.red}30`,
+                      borderRadius: 6, lineHeight: 1.5,
+                    }}>
+                      Balance is {balance} S — short by {shortBy} S to cover this bill.
+                      Convert V→S or wait for next UBI to top up.
+                    </div>
+                  )
+                }
+                return null
+              })()}
               {billError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{billError}</div>}
               <button
                 onClick={handlePayBill}
