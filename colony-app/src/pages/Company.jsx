@@ -36,12 +36,20 @@ const COMPANY_ABI = [
   "function buybackShares(uint256, uint256, uint256) external",
   "function shareNAV(uint256) view returns (uint256)",
   "function setName(string) external",
+  "function changeSecretary(address) external",
 ]
 
 // AToken — for reading equity token IDs (assetId lookups for forfeit/buyback)
 const ATOKEN_ABI = [
   "function tokensOf(address) view returns (uint256[])",
   "function getVestingStake(uint256) view returns (uint256, uint256, address)",
+]
+
+// OToken — for reading the secretary's organisation badge and handing it over
+const OTOKEN_ABI = [
+  "function tokensOf(address) view returns (uint256[])",
+  "function orgs(uint256) view returns (string name, uint8 orgType, uint256 registeredAt)",
+  "function handOver(uint256, address) external",
 ]
 
 import { C } from '../theme'
@@ -314,6 +322,9 @@ export default function Company() {
   const [issueHolder,     setIssueHolder]    = useState('')
   const [issueStakeBps,   setIssueStakeBps]  = useState('')
   const [issueVestMonths, setIssueVestMonths] = useState('12')
+  const [handingOver,     setHandingOver]    = useState(false)
+  const [handoverTarget,  setHandoverTarget] = useState('')
+  const [handoverStep,    setHandoverStep]   = useState('') // '' | 'changing' | 'handing' | 'done'
   const [citizens,        setCitizens]       = useState([])
 
   useEffect(() => {
@@ -407,6 +418,59 @@ export default function Company() {
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
     }
+    setActPending(false)
+  }
+
+  // OS-04: Hand over secretary role + O-token identity to another citizen.
+  // Two on-chain calls (Company.changeSecretary then OToken.handOver) so the
+  // incoming holder gets both authority and identity in a single user flow.
+  async function handleHandover() {
+    const co = companyContract()
+    const oTokenAddr = deployedContracts?.colonies?.[slug]?.oToken
+    if (!co || !signer || !handoverTarget || !oTokenAddr) return
+    if (handoverTarget.toLowerCase() === address?.toLowerCase()) {
+      setActError('Cannot hand over to yourself')
+      return
+    }
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      // Locate the O-token id for this company by matching org name on tokens
+      // currently held by the outgoing secretary.
+      const oToken   = new ethers.Contract(oTokenAddr, OTOKEN_ABI, signer)
+      const tokenIds = await oToken.tokensOf(address)
+      let companyTokenId = null
+      for (const id of tokenIds) {
+        const org = await oToken.orgs(id)
+        if (String(org.name) === String(company?.name)) {
+          companyTokenId = id
+          break
+        }
+      }
+      if (companyTokenId === null) {
+        throw new Error('O-token for this company not found in your wallet')
+      }
+
+      // 1. Company.changeSecretary — moves on-chain authority
+      setHandoverStep('changing')
+      const tx1 = await co.changeSecretary(handoverTarget)
+      await tx1.wait()
+
+      // 2. OToken.handOver — moves the identity badge (recipient must be a citizen)
+      setHandoverStep('handing')
+      const tx2 = await oToken.handOver(companyTokenId, handoverTarget)
+      await tx2.wait()
+
+      setHandoverStep('done')
+      setActDone(`Secretary role handed over to ${shortAddr(handoverTarget)}`)
+      setHandingOver(false); setHandoverTarget('')
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      const stage = handoverStep === 'handing'
+        ? ' — secretary changed but O-token transfer failed; the outgoing wallet still holds the badge and can retry the handover'
+        : ''
+      setActError((e?.reason || e?.shortMessage || e?.message || 'Transaction failed') + stage)
+    }
+    setHandoverStep('')
     setActPending(false)
   }
 
@@ -694,6 +758,57 @@ export default function Company() {
                         style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Issuing…' : 'Issue shares →'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Hand over secretary role (OS-04) */}
+                <button onClick={() => setHandingOver(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
+                  Hand over secretary role
+                </button>
+                {handingOver && (
+                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
+                      Transfer this company's secretary authority and the O-token identity badge to another citizen.
+                      Two on-chain transactions will be requested in sequence.
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>NEW SECRETARY</div>
+                      <select
+                        style={{ ...inlineInput, width: '100%', fontFamily: "'IBM Plex Mono', monospace" }}
+                        value={handoverTarget}
+                        onChange={e => setHandoverTarget(e.target.value)}
+                      >
+                        <option value="">Select citizen…</option>
+                        {citizens
+                          .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+                          .map(c => (
+                            <option key={c.address} value={c.address}>{c.name}</option>
+                          ))
+                        }
+                      </select>
+                    </div>
+                    {handoverStep && (
+                      <div style={{ fontSize: 11, color: C.faint, marginBottom: 8 }}>
+                        {handoverStep === 'changing' && 'Step 1/2 — transferring secretary authority…'}
+                        {handoverStep === 'handing'  && 'Step 2/2 — handing over O-token identity badge…'}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                      <button
+                        onClick={() => { setHandingOver(false); setHandoverTarget('') }}
+                        disabled={actionPending}
+                        style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1, opacity: actionPending ? 0.4 : 1 }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleHandover}
+                        disabled={actionPending || !handoverTarget}
+                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !handoverTarget) ? 0.4 : 1 }}
+                      >
+                        {actionPending ? 'Handing over…' : 'Hand over →'}
                       </button>
                     </div>
                   </div>
