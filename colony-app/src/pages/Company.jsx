@@ -325,6 +325,9 @@ export default function Company() {
   const [handingOver,     setHandingOver]    = useState(false)
   const [handoverTarget,  setHandoverTarget] = useState('')
   const [handoverStep,    setHandoverStep]   = useState('') // '' | 'changing' | 'handing' | 'done'
+  const [buybackForId,    setBuybackForId]   = useState(null)  // assetId being bought back
+  const [buybackBps,      setBuybackBps]     = useState('')
+  const [buybackPriceS,   setBuybackPriceS]  = useState('')
   const [citizens,        setCitizens]       = useState([])
 
   useEffect(() => {
@@ -414,6 +417,30 @@ export default function Company() {
       const tx = await co.forfeitShares(BigInt(assetId))
       await tx.wait()
       setActDone('Unvested shares forfeited')
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
+  // F-15a: buy back vested equity from a holder at a secretary-set S-token price.
+  // Cancels the bps from the holder's stake, increasing NAV for remaining shareholders.
+  async function handleBuyback(assetId) {
+    const co = companyContract()
+    if (!co || !assetId) return
+    const bps   = Number(buybackBps)
+    const price = Number(buybackPriceS)
+    if (!(bps > 0) || !(price > 0)) {
+      setActError('Enter both bps and S-token price (each > 0)')
+      return
+    }
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const tx = await co.buybackShares(BigInt(assetId), BigInt(bps), ethers.parseEther(String(price)))
+      await tx.wait()
+      setActDone(`Bought back ${bps} bps for ${price} S — shares cancelled`)
+      setBuybackForId(null); setBuybackBps(''); setBuybackPriceS('')
       refresh(); setReloadKey(k => k + 1)
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
@@ -924,21 +951,72 @@ export default function Company() {
                             ? 'Fully vested'
                             : `${e.vestedBps} / ${e.totalBps} bps vested (${Math.round(e.vestedBps / e.totalBps * 100)}%)`}
                         </span>
-                        {isSecretary && e.assetId != null && e.vestedBps < e.totalBps && (
-                          <button
-                            onClick={() => handleForfeitShares(e.assetId)}
-                            disabled={actionPending}
-                            style={{
-                              fontSize: 9, padding: '2px 7px',
-                              background: 'none', border: `1px solid ${C.red}`,
-                              color: C.red, borderRadius: 4, cursor: 'pointer',
-                              opacity: actionPending ? 0.4 : 1,
-                            }}
-                          >
-                            Forfeit unvested
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {isSecretary && e.assetId != null && e.vestedBps > 0 && e.wallet?.toLowerCase() !== address?.toLowerCase() && (
+                            <button
+                              onClick={() => {
+                                if (buybackForId === e.assetId) { setBuybackForId(null) }
+                                else { setBuybackForId(e.assetId); setBuybackBps(String(e.vestedBps)); setBuybackPriceS('') }
+                              }}
+                              disabled={actionPending}
+                              style={{
+                                fontSize: 9, padding: '2px 7px',
+                                background: 'none', border: `1px solid ${C.gold}`,
+                                color: C.gold, borderRadius: 4, cursor: 'pointer',
+                                opacity: actionPending ? 0.4 : 1,
+                              }}
+                            >
+                              {buybackForId === e.assetId ? 'Cancel' : 'Buy back'}
+                            </button>
+                          )}
+                          {isSecretary && e.assetId != null && e.vestedBps < e.totalBps && (
+                            <button
+                              onClick={() => handleForfeitShares(e.assetId)}
+                              disabled={actionPending}
+                              style={{
+                                fontSize: 9, padding: '2px 7px',
+                                background: 'none', border: `1px solid ${C.red}`,
+                                color: C.red, borderRadius: 4, cursor: 'pointer',
+                                opacity: actionPending ? 0.4 : 1,
+                              }}
+                            >
+                              Forfeit unvested
+                            </button>
+                          )}
+                        </div>
                       </div>
+
+                      {/* F-15a: inline buyback form when this row's button is active */}
+                      {buybackForId === e.assetId && (
+                        <div style={{ marginTop: 8, padding: 10, background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                          <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 8 }}>
+                            Buy back vested bps from {e.label} at an S-token price you set. Bought-back shares are cancelled, increasing NAV for remaining holders.
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                            <input
+                              style={{ ...inlineInput, flex: 1 }}
+                              type="number"
+                              placeholder={`bps (max ${e.vestedBps})`}
+                              value={buybackBps}
+                              onChange={ev => setBuybackBps(ev.target.value)}
+                            />
+                            <input
+                              style={{ ...inlineInput, flex: 1 }}
+                              type="number"
+                              placeholder="price in S"
+                              value={buybackPriceS}
+                              onChange={ev => setBuybackPriceS(ev.target.value)}
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleBuyback(e.assetId)}
+                            disabled={actionPending || !buybackBps || !buybackPriceS}
+                            style={{ ...actionBtn(C.gold), width: '100%', fontSize: 11, opacity: (actionPending || !buybackBps || !buybackPriceS) ? 0.4 : 1 }}
+                          >
+                            {actionPending ? 'Buying back…' : `Pay ${buybackPriceS || '0'} S → cancel ${buybackBps || '0'} bps`}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

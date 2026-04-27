@@ -124,7 +124,7 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-14 | As a company secretary, I want to issue vesting shares to a participant — specifying total stake and number of monthly tranches (1–12) — so they earn equity progressively | P2 | ✓ |
 | F-14a | As a company secretary, I want to issue open shares (no vesting) to an investor so they hold equity immediately | P2 | ✓ |
 | F-15 | As a shareholder, I want to transfer vested shares to another wallet atomically; unvested shares may not be transferred | P2 | ~ |
-| F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in S-tokens, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | — |
+| F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in S-tokens, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | ✓ |
 | F-16 | As a company owner, I want to see the full history of share issuances, vesting events, transfers, buybacks, and forfeitures | P2 | — |
 
 ### Vesting Lifecycle
@@ -666,7 +666,6 @@ AToken.sol and CompanyImplementation v2 are deployed (April 2026). The remaining
 
 | Blocked stories | Blocker | Description |
 |----------------|---------|-------------|
-| F-15a | CompanyImpl v3 | Share buyback at NAV |
 | F-16 | CompanyImpl v3 | Full share event history (vesting events, forfeitures, transfers) |
 | F-23 | CompanyImpl v3 | Participant claims vested tranches each month |
 | F-26 | UI | Per-participant vesting schedule view |
