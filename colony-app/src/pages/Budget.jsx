@@ -4,10 +4,7 @@ import { ethers } from 'ethers'
 import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { C } from '../theme'
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const OHIO_BREAD_REF = 2.80  // $ Ohio reference bread price
+import { OHIO_BREAD_REF, computeDerived } from '../utils/budgetMath'
 
 const DEFAULT_LINES = [
   // MCC — auto-deducted
@@ -37,28 +34,6 @@ const CORE_IDS    = new Set(['elec', 'water', 'waste', 'broad', 'ems'])
 
 const GOV_ABI = ['function roleHolder(uint8) view returns (address holder, uint256 termEnd, bool active)']
 const RPC     = 'https://sepolia.base.org'
-
-// ── Derived calculations ───────────────────────────────────────────────────────
-
-function computeDerived(lines, breadPriceS, spiceLabourDiscount) {
-  const active = lines.filter(l => l.active !== false)
-  const totalMCC  = active.filter(l => l.category === 'MCC').reduce((s, l) => s + l.sTokenAmount, 0)
-  const totalEss  = active.filter(l => l.category === 'Essential').reduce((s, l) => s + l.sTokenAmount, 0)
-  const totalDisc = active.filter(l => l.category === 'Discretionary').reduce((s, l) => s + l.sTokenAmount, 0)
-  const totalSave = active.filter(l => l.category === 'Savings').reduce((s, l) => s + l.sTokenAmount, 0)
-  const totalUBI  = totalMCC + totalEss + totalDisc + totalSave
-
-  const discount    = (spiceLabourDiscount || 28) / 100
-  const breadUSD    = OHIO_BREAD_REF * (1 - discount)
-  const fiscRate    = breadPriceS > 0 ? breadUSD / breadPriceS : 0
-  const ubiUSD      = totalUBI * fiscRate
-
-  const rateOK  = fiscRate >= 0.30 && fiscRate <= 1.20
-  const ubiOK   = ubiUSD  >= 300  && ubiUSD  <= 1500
-  const splitOK = totalUBI > 0 && Math.abs((totalSave / totalUBI) * 100 - 20) < 5
-
-  return { totalMCC, totalEss, totalDisc, totalSave, totalUBI, fiscRate, ubiUSD, rateOK, ubiOK, splitOK }
-}
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
