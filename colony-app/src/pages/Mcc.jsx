@@ -27,6 +27,12 @@ const GOV_ABI = [
   "function elections(uint256) view returns (uint8 role, address openedBy, uint256 openedAt, uint256 nominationEndsAt, uint256 votingEndsAt, uint256 timelockEndsAt, address winner, bool executed, bool cancelled)",
 ]
 
+// MCC O-token is minted as tokenId 1 in CreateColony deploy step 7 (orgType = 1 = MCC)
+const OTOKEN_ABI = [
+  "function ownerOf(uint256) view returns (address)",
+  "function orgs(uint256) view returns (string name, uint8 orgType, uint256 registeredAt)",
+]
+
 function electionStatus(e, nowSec) {
   if (e.executed)                                              return 'EXECUTED'
   if (e.cancelled)                                             return 'FAILED'
@@ -71,6 +77,7 @@ export default function Mcc() {
   const [activeElecs,   setActiveElecs]   = useState([])
   const [loading,       setLoading]       = useState(true)
   const [isAuthored,    setIsAuthored]    = useState(false)  // can post announcements
+  const [oTokenHolder,  setOTokenHolder]  = useState(null)   // M-23: who holds the MCC O-token
 
   const [announcements, setAnnouncements] = useState([])
   const [annLoading,    setAnnLoading]    = useState(true)
@@ -137,6 +144,30 @@ export default function Mcc() {
         sSym, vSym, founder,
       })
       setIsAuthored(isFounder || isBoardMember)
+
+      // M-23: read the MCC O-token holder. It is tokenId 1 by deploy convention
+      // (first OToken mint is the MCC badge in CreateColony step 7).
+      if (cfg.oToken) {
+        try {
+          const oToken = new ethers.Contract(cfg.oToken, OTOKEN_ABI, rpc)
+          const [holder, org] = await Promise.all([
+            oToken.ownerOf(1),
+            oToken.orgs(1),
+          ])
+          let holderName = ''
+          if (holder && holder !== ethers.ZeroAddress) {
+            try { holderName = await colony.citizenName(holder) } catch {}
+          }
+          if (!cancelled) setOTokenHolder({
+            address: holder,
+            name:    holderName,
+            isMcc:   Number(org.orgType) === 1, // OrgType.MCC
+          })
+        } catch (e) {
+          if (!cancelled) setOTokenHolder({ unavailable: true })
+        }
+      }
+
       setLoading(false)
     }
 
@@ -289,6 +320,33 @@ export default function Mcc() {
               )
             })
           )}
+
+          {/* M-23: cryptographic authority — who currently holds the MCC O-token */}
+          {oTokenHolder && !oTokenHolder.unavailable && oTokenHolder.address !== ethers.ZeroAddress && (() => {
+            const ceo = board[0]
+            const ceoAddr = ceo?.holder?.toLowerCase()
+            const oAddr   = oTokenHolder.address.toLowerCase()
+            const matches = ceo?.active && ceoAddr === oAddr
+            return (
+              <div style={{
+                marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`,
+                fontSize: 10, color: C.faint, lineHeight: 1.6,
+              }}>
+                <div style={{ letterSpacing: '0.06em' }}>O-TOKEN #1 (MCC IDENTITY)</div>
+                <div style={{ marginTop: 4, color: C.sub, fontFamily: 'monospace' }}>
+                  {oTokenHolder.name || shortAddr(oTokenHolder.address)}
+                  {oTokenHolder.name && (
+                    <span style={{ color: C.faint, marginLeft: 6 }}>{shortAddr(oTokenHolder.address)}</span>
+                  )}
+                </div>
+                {!matches && (
+                  <div style={{ marginTop: 4, color: '#eab308' }}>
+                    note: O-token holder differs from elected CEO — handover pending
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           <button
             onClick={() => navigate(`/colony/${slug}/votes`)}
