@@ -131,10 +131,10 @@ to V-tokens at month end, and distributes dividends to equity holders.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-23 | As a participant, I want to claim my vested share tranches each month as they unlock so I can see and use my earned equity | P2 | — |
-| F-24 | As a participant, I want to receive V-token dividends on both my vested and unvested shares from the first month I hold them | P2 | — |
+| F-23 | As a participant, I want to claim my vested share tranches each month as they unlock so I can see and use my earned equity | P2 | ✓ |
+| F-24 | As a participant, I want to receive V-token dividends on both my vested and unvested shares from the first month I hold them | P2 | ✓ |
 | F-25 | As a company secretary, I want to forfeit a departing participant's unvested shares — returning them to the company for reallocation — in a single transaction | P2 | ✓ |
-| F-26 | As a participant, I want to see my vesting schedule: which tranches have vested, which are upcoming, and what V-token dividends I have received | P2 | — |
+| F-26 | As a participant, I want to see my vesting schedule: which tranches have vested, which are upcoming, and what V-token dividends I have received | P2 | ~ |
 
 ### Intra-Month Contracts — Superseded
 
@@ -668,8 +668,7 @@ AToken.sol and CompanyImplementation v2 are deployed (April 2026). The remaining
 | Blocked stories | Blocker | Description |
 |----------------|---------|-------------|
 | F-16 | CompanyImpl v3 | Full share event history (vesting events, forfeitures, transfers) |
-| F-23 | CompanyImpl v3 | Participant claims vested tranches each month |
-| F-26 | UI | Per-participant vesting schedule view |
+| F-26 (full) | UI | Vesting schedule per-tranche view + dividend-by-tranche history (per-tranche works in new colonies; pre-existing Dave's Colony AToken needs redeploy for getVestingSchedule getter; dividend-history-per-tranche still pending) |
 | M-24–M-26 | CompanyImpl v3 + Colony v2 | MCC office-term equity (issue on election, redeem on term end) |
 | A-05–A-11 | Colony v2 | Harberger land (stewardship fee collection at epoch advance) |
 | Obligation auto-settlement | Colony v2 | advanceEpoch() must iterate AToken.activeObligationIds() and call markObligationPaid() |

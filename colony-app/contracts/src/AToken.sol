@@ -855,6 +855,32 @@ contract AToken is ERC721 {
     }
 
     /**
+     * @notice Full per-tranche schedule for an equity token (F-26).
+     *         vestingEpochs[i] is the epoch at which trancheBps[i] unlocks.
+     *         nextTranche points to the next tranche pending claim.
+     */
+    function getVestingSchedule(uint256 assetId) external view returns (
+        uint256          totalStakeBps,
+        uint256          vestedBps,
+        address          company,
+        uint256[] memory vestingEpochs,
+        uint256[] memory trancheBps,
+        uint256          nextTranche
+    ) {
+        Token storage t = tokens[assetId];
+        require(t.form == Form.EQUITY_ASSET, "AToken: not an equity asset token");
+        VestingData storage v = vestingData[assetId];
+        return (
+            v.totalStakeBps,
+            v.vestedBps,
+            v.company,
+            v.vestingEpochs,
+            v.trancheBps,
+            v.nextTranche
+        );
+    }
+
+    /**
      * @notice Total monthly unsecured S-token obligations for an address.
      *         Used at obligation creation to enforce the UBI cap for citizens.
      */

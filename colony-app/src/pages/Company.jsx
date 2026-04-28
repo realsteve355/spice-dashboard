@@ -9,10 +9,12 @@ import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 
 import { fetchCitizens as fetchColonyCitizens } from '../utils/fetchCitizens'
 
-// Colony contract — for send() and citizen checks
+// Colony contract — for send() and citizen checks; includes the per-citizen
+// vesting-claim relay used for F-23.
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
   "function isCitizen(address) view returns (bool)",
+  "function claimVestedTranches(uint256) external returns (uint256 newlyVestedBps)",
 ]
 const COLONY_EVENTS_ABI = [
   "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
@@ -40,9 +42,12 @@ const COMPANY_ABI = [
 ]
 
 // AToken — for reading equity token IDs (assetId lookups for forfeit/buyback)
+// and the F-26 per-tranche vesting schedule getter (only available on AToken
+// deployments compiled with the v3+ source; older colonies fall back gracefully).
 const ATOKEN_ABI = [
   "function tokensOf(address) view returns (uint256[])",
   "function getVestingStake(uint256) view returns (uint256, uint256, address)",
+  "function getVestingSchedule(uint256) view returns (uint256 totalStakeBps, uint256 vestedBps, address company, uint256[] vestingEpochs, uint256[] trancheBps, uint256 nextTranche)",
 ]
 
 // OToken — for reading the secretary's organisation badge, handing it over,
@@ -423,6 +428,8 @@ export default function Company() {
   const [buybackForId,    setBuybackForId]   = useState(null)  // assetId being bought back
   const [buybackBps,      setBuybackBps]     = useState('')
   const [buybackPriceS,   setBuybackPriceS]  = useState('')
+  const [scheduleForId,   setScheduleForId]  = useState(null)  // F-26: assetId showing schedule
+  const [scheduleData,    setScheduleData]   = useState({})    // assetId → schedule object
   const [citizens,        setCitizens]       = useState([])
 
   useEffect(() => {
@@ -515,6 +522,53 @@ export default function Company() {
       refresh(); setReloadKey(k => k + 1)
     } catch (e) {
       setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
+  // F-26: load per-tranche schedule for an equity token. Falls back gracefully
+  // on older AToken deployments that lack getVestingSchedule.
+  async function toggleSchedule(assetId) {
+    if (scheduleForId === assetId) { setScheduleForId(null); return }
+    setScheduleForId(assetId)
+    if (scheduleData[assetId]) return  // cached
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.aToken) return
+    try {
+      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+      const aToken = new ethers.Contract(cfg.aToken, ATOKEN_ABI, rpc)
+      const r      = await aToken.getVestingSchedule(BigInt(assetId))
+      setScheduleData(prev => ({
+        ...prev,
+        [assetId]: {
+          totalStakeBps: Number(r[0]),
+          vestedBps:     Number(r[1]),
+          epochs:        r[3].map(Number),
+          tranches:      r[4].map(Number),
+          nextTranche:   Number(r[5]),
+        },
+      }))
+    } catch (e) {
+      setScheduleData(prev => ({
+        ...prev,
+        [assetId]: { unavailable: true },
+      }))
+    }
+  }
+
+  // F-23: participant claims all newly-vested tranches via Colony relay.
+  async function handleClaimVested(assetId) {
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.colony || !signer || !assetId) return
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const colonyContract = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colonyContract.claimVestedTranches(BigInt(assetId))
+      await tx.wait()
+      setActDone(`Vested tranches claimed`)
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Nothing to claim, or transaction failed')
     }
     setActPending(false)
   }
@@ -1078,6 +1132,21 @@ export default function Company() {
                             : `${e.vestedBps} / ${e.totalBps} bps vested (${Math.round(e.vestedBps / e.totalBps * 100)}%)`}
                         </span>
                         <div style={{ display: 'flex', gap: 6 }}>
+                          {/* F-23: the holder of this equity row may claim newly-vested tranches */}
+                          {e.assetId != null && e.wallet?.toLowerCase() === address?.toLowerCase() && e.vestedBps < e.totalBps && (
+                            <button
+                              onClick={() => handleClaimVested(e.assetId)}
+                              disabled={actionPending}
+                              style={{
+                                fontSize: 9, padding: '2px 7px',
+                                background: 'none', border: `1px solid ${C.green}`,
+                                color: C.green, borderRadius: 4, cursor: 'pointer',
+                                opacity: actionPending ? 0.4 : 1,
+                              }}
+                            >
+                              Claim vested
+                            </button>
+                          )}
                           {isSecretary && e.assetId != null && e.vestedBps > 0 && e.wallet?.toLowerCase() !== address?.toLowerCase() && (
                             <button
                               onClick={() => {
@@ -1111,6 +1180,67 @@ export default function Company() {
                           )}
                         </div>
                       </div>
+
+                      {/* F-26: per-tranche vesting schedule expandable */}
+                      {e.assetId != null && e.totalBps > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          <button
+                            onClick={() => toggleSchedule(e.assetId)}
+                            style={{
+                              fontSize: 9, padding: '0', border: 'none',
+                              background: 'none', color: C.faint, cursor: 'pointer',
+                              textDecoration: 'underline', letterSpacing: '0.04em',
+                            }}
+                          >
+                            {scheduleForId === e.assetId ? 'Hide schedule' : 'Show schedule'}
+                          </button>
+                          {scheduleForId === e.assetId && (() => {
+                            const sd = scheduleData[e.assetId]
+                            if (!sd) {
+                              return <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>Loading…</div>
+                            }
+                            if (sd.unavailable) {
+                              return (
+                                <div style={{
+                                  marginTop: 6, padding: 8, fontSize: 10,
+                                  background: `${C.border}40`, borderRadius: 4, color: C.faint,
+                                }}>
+                                  Per-tranche schedule unavailable for this colony's AToken (deployed before F-26 added). Total/vested still correct.
+                                </div>
+                              )
+                            }
+                            if (sd.epochs.length === 0) {
+                              return (
+                                <div style={{ marginTop: 6, padding: 8, fontSize: 10, color: C.faint }}>
+                                  No schedule — equity vested immediately at issue.
+                                </div>
+                              )
+                            }
+                            return (
+                              <div style={{
+                                marginTop: 6, padding: 8,
+                                background: `${C.gold}06`, border: `1px solid ${C.border}`, borderRadius: 4,
+                              }}>
+                                {sd.epochs.map((ep, idx) => {
+                                  const claimed = idx < sd.nextTranche
+                                  return (
+                                    <div key={idx} style={{
+                                      display: 'flex', justifyContent: 'space-between',
+                                      fontSize: 10, color: claimed ? C.text : C.faint,
+                                      paddingTop: idx > 0 ? 4 : 0,
+                                    }}>
+                                      <span>Tranche {idx + 1} · epoch {ep}</span>
+                                      <span style={{ color: claimed ? equityColor(i) : C.faint }}>
+                                        {sd.tranches[idx]} bps · {claimed ? 'vested' : 'pending'}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })()}
+                        </div>
+                      )}
 
                       {/* F-15a: inline buyback form when this row's button is active */}
                       {buybackForId === e.assetId && (

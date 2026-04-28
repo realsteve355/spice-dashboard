@@ -542,5 +542,40 @@ describe("AToken", () => {
       await at.connect(colony).registerAsset(alice.address, "X", E(600), 0, false, 0, 1);
       expect(await at.getTokenHolder(1)).to.equal(alice.address);
     });
+
+    it("getVestingSchedule returns full per-tranche detail (F-26)", async () => {
+      const { at, colony, alice, company } = await loadFixture(deploy);
+      // 1200 bps over 3 tranches at epochs 2, 4, 6
+      await at.connect(colony).issueEquity(
+        company.address, alice.address, 1200, [2, 4, 6], [400, 400, 400]
+      );
+      // After claim at epoch 5, two tranches unlock; nextTranche advances to 2
+      await at.connect(colony).claimVestedTranches(2, 5);
+      const sched = await at.getVestingSchedule(2);
+      // Tuple: totalStakeBps, vestedBps, company, vestingEpochs, trancheBps, nextTranche
+      expect(sched[0]).to.equal(1200n);
+      expect(sched[1]).to.equal(800n);
+      expect(sched[2]).to.equal(company.address);
+      expect(sched[3].map(Number)).to.deep.equal([2, 4, 6]);
+      expect(sched[4].map(Number)).to.deep.equal([400, 400, 400]);
+      expect(sched[5]).to.equal(2n);
+    });
+
+    it("getVestingSchedule rejects non-equity tokens", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).registerAsset(alice.address, "X", E(600), 0, false, 0, 1);
+      await expect(at.getVestingSchedule(1)).to.be.revertedWith("AToken: not an equity asset token");
+    });
+
+    it("getVestingSchedule returns empty arrays for immediate-vest equity (no schedule)", async () => {
+      const { at, colony, alice, company } = await loadFixture(deploy);
+      await at.connect(colony).issueEquity(company.address, alice.address, 1000, [], []);
+      const sched = await at.getVestingSchedule(2);
+      expect(sched[0]).to.equal(1000n);   // total
+      expect(sched[1]).to.equal(1000n);   // vested (immediate)
+      expect(sched[3].length).to.equal(0); // empty epochs
+      expect(sched[4].length).to.equal(0); // empty bps
+      expect(sched[5]).to.equal(0n);
+    });
   });
 });
