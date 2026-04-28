@@ -404,7 +404,7 @@ Has founder share controls: global default % + per-colony override + founder wal
 Colony.settleProtocol() splits ETH between protocol treasury and founder wallet per getFeeSplit().
 
 **Full technical reference:** `docs/technical-architecture.md` (v12)
-**Full requirements spec:** `docs/user-stories.md` (v21)
+**Full requirements spec:** `docs/user-stories.md` (v22)
 
 ---
 
