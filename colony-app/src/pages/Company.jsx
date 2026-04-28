@@ -45,11 +45,14 @@ const ATOKEN_ABI = [
   "function getVestingStake(uint256) view returns (uint256, uint256, address)",
 ]
 
-// OToken — for reading the secretary's organisation badge and handing it over
+// OToken — for reading the secretary's organisation badge, handing it over,
+// and reading historical handover events for the secretary-history view (OS-05).
 const OTOKEN_ABI = [
   "function tokensOf(address) view returns (uint256[])",
   "function orgs(uint256) view returns (string name, uint8 orgType, uint256 registeredAt)",
   "function handOver(uint256, address) external",
+  "event RoleHandedOver(uint256 indexed tokenId, address indexed from, address indexed to)",
+  "event OrgRegistered(uint256 indexed tokenId, address indexed holder, uint8 orgType, string name)",
 ]
 
 import { C } from '../theme'
@@ -177,6 +180,98 @@ export default function Company() {
   const company = onChain ? chainCo : null
 
   const [tab, setTab] = useState('overview')
+
+  // ── OS-05: Secretary handover history ──────────────────────────────────────
+  const [secretaryHistory, setSecretaryHistory] = useState([])
+  const [historyLoading,   setHistoryLoading]   = useState(false)
+
+  useEffect(() => {
+    const cfg = deployedContracts?.colonies?.[slug]
+    const oTokenAddr = cfg?.oToken
+    const currentSecretary = chainCo?.secretary
+    if (!oTokenAddr || !currentSecretary) return
+    let cancelled = false
+    setHistoryLoading(true)
+
+    async function load() {
+      try {
+        const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+        const oToken = new ethers.Contract(oTokenAddr, OTOKEN_ABI, rpc)
+
+        // Find this company's tokenId by walking the secretary's O-tokens
+        const tokenIds = await oToken.tokensOf(currentSecretary)
+        let companyTokenId = null
+        for (const id of tokenIds) {
+          const org = await oToken.orgs(id)
+          if (String(org.name) === String(chainCo?.name)) { companyTokenId = id; break }
+        }
+        if (companyTokenId === null) { setSecretaryHistory([]); setHistoryLoading(false); return }
+
+        // Query handover events filtered by tokenId
+        const iface = new ethers.Interface(OTOKEN_ABI)
+        const tokenIdHex  = ethers.zeroPadValue(ethers.toBeHex(companyTokenId), 32)
+        const handoverTopic = ethers.id("RoleHandedOver(uint256,address,address)")
+        const registerTopic = ethers.id("OrgRegistered(uint256,address,uint8,string)")
+        const toBlock   = await rpc.getBlockNumber()
+        const fromBlock = Math.max(0, toBlock - 50000)
+
+        const [handoverLogs, registerLogs] = await Promise.all([
+          rpc.getLogs({ address: oTokenAddr, fromBlock, toBlock,
+            topics: [handoverTopic, tokenIdHex] }),
+          rpc.getLogs({ address: oTokenAddr, fromBlock, toBlock,
+            topics: [registerTopic, tokenIdHex] }),
+        ])
+
+        const events = []
+        for (const log of registerLogs) {
+          const parsed = iface.parseLog(log)
+          events.push({
+            kind: 'register',
+            blockNumber: log.blockNumber,
+            from: null,
+            to:   String(parsed.args[1]),
+          })
+        }
+        for (const log of handoverLogs) {
+          const parsed = iface.parseLog(log)
+          events.push({
+            kind: 'handover',
+            blockNumber: log.blockNumber,
+            from: String(parsed.args[1]),
+            to:   String(parsed.args[2]),
+          })
+        }
+        events.sort((a, b) => a.blockNumber - b.blockNumber)
+
+        // Resolve block timestamps + citizen names
+        const blocks = [...new Set(events.map(e => e.blockNumber))]
+        const blockMap = {}
+        await Promise.all(blocks.map(async n => {
+          const b = await rpc.getBlock(n)
+          if (b) blockMap[n] = b.timestamp
+        }))
+        const fmtDate = ts => ts
+          ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          : ''
+        const allAddrs = events.flatMap(e => [e.from, e.to]).filter(Boolean)
+        const nameMap = await resolveNames(allAddrs, cfg.colony).catch(() => ({}))
+
+        if (cancelled) return
+        setSecretaryHistory(events.map(e => ({
+          ...e,
+          date: fmtDate(blockMap[e.blockNumber]),
+          fromName: e.from ? (nameMap[e.from.toLowerCase()] || null) : null,
+          toName:   nameMap[e.to.toLowerCase()] || null,
+        })))
+      } catch (e) {
+        console.warn('[Company] secretary history load failed:', e?.message || e)
+        if (!cancelled) setSecretaryHistory([])
+      }
+      if (!cancelled) setHistoryLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
+  }, [deployedContracts, slug, chainCo, reloadKey])
 
   // ── On-chain transaction history ───────────────────────────────────────────
   const [onChainTxs, setOnChainTxs] = useState([])
@@ -862,6 +957,37 @@ export default function Company() {
                   Request Payment (show QR) →
                 </button>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* OS-05: Secretary history — visible to all viewers on overview */}
+        {tab === 'overview' && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              SECRETARY HISTORY
+            </div>
+            {historyLoading ? (
+              <div style={{ fontSize: 12, color: C.faint }}>Loading…</div>
+            ) : secretaryHistory.length === 0 ? (
+              <div style={{ fontSize: 12, color: C.faint }}>No on-chain handover history yet (founding secretary only).</div>
+            ) : (
+              secretaryHistory.map((h, i) => (
+                <div key={i} style={{
+                  paddingBottom: i < secretaryHistory.length - 1 ? 10 : 0,
+                  marginBottom:  i < secretaryHistory.length - 1 ? 10 : 0,
+                  borderBottom:  i < secretaryHistory.length - 1 ? `1px solid ${C.border}` : 'none',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div style={{ fontSize: 12, color: C.text }}>
+                      {h.kind === 'register'
+                        ? <>Founded — {h.toName || shortAddr(h.to)}</>
+                        : <>{h.fromName || shortAddr(h.from)} → {h.toName || shortAddr(h.to)}</>}
+                    </div>
+                    <div style={{ fontSize: 10, color: C.faint }}>{h.date}</div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}

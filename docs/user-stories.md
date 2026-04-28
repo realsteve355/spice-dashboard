@@ -200,7 +200,7 @@ operations on behalf of the organisation.
 | OS-02 | As an organisation secretary, I want to see the O-token in my wallet with the company name, registration number, and org type so I can confirm my authority at a glance | P1 | ✓ |
 | OS-03 | As any citizen, I want to look up any company and see who currently holds its O-token so I know who is authorised to act on its behalf | P1 | ✓ |
 | OS-04 | As an organisation secretary, I want to transfer the O-token to another registered citizen when I hand over the role so the incoming secretary has full on-chain authority immediately | P1 | ✓ |
-| OS-05 | As any citizen, I want to see the O-token transfer history for a company so I can audit who has held the secretary role over time | P2 | — |
+| OS-05 | As any citizen, I want to see the O-token transfer history for a company so I can audit who has held the secretary role over time | P2 | ✓ |
 
 ### Company Wallet Operations
 
