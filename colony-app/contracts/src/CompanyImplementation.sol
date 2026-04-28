@@ -68,6 +68,10 @@ interface IColony {
         uint256 depreciationBps
     ) external returns (uint256 id);
     function transferAsset(uint256 id, address to, uint256 newValueS) external;
+    function claimLand(string calldata label, uint256 declaredValueV) external returns (uint256 id);
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external;
+    function payLandStewardship(uint256 id) external;
+    function forcePurchaseLand(uint256 id, uint256 newDeclaredValueV) external;
 }
 
 interface IERC20Minimal {
@@ -257,6 +261,30 @@ contract CompanyImplementation is Initializable {
     function transferAsset(uint256 id, address to, uint256 newValueS) external onlySecretary {
         IColony(colony).transferAsset(id, to, newValueS);
         emit AssetTransferredByCompany(id, to, newValueS);
+    }
+
+    // ── Harberger land relays (OS-13)
+
+    /**
+     * @notice Claim a Harberger land parcel in the company's name. First-epoch
+     *         stewardship fee paid in V from the company reserve.
+     */
+    function claimLand(string calldata label, uint256 declaredValueV)
+        external onlySecretary returns (uint256 id)
+    {
+        id = IColony(colony).claimLand(label, declaredValueV);
+    }
+
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external onlySecretary {
+        IColony(colony).updateLandValue(id, newDeclaredValueV);
+    }
+
+    function payLandStewardship(uint256 id) external onlySecretary {
+        IColony(colony).payLandStewardship(id);
+    }
+
+    function forcePurchaseLand(uint256 id, uint256 newDeclaredValueV) external onlySecretary {
+        IColony(colony).forcePurchaseLand(id, newDeclaredValueV);
     }
 
     // ── Equity issuance ──────────────────────────────────────────────────────

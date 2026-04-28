@@ -218,7 +218,7 @@ operations on behalf of the organisation.
 |---|-------|----------|--------|
 | OS-11 | As an organisation secretary, I want to register a physical asset to the company wallet so it appears on-chain as company-owned | P2 | ✓ |
 | OS-12 | As an organisation secretary, I want to transfer a company-owned A-token to a citizen's wallet (e.g. on sale of company equipment) | P2 | ✓ |
-| OS-13 | As an organisation secretary, I want to file a Harberger land claim in the company's name, paying the first epoch's stewardship fee from the company's V-token reserve | P2 | — |
+| OS-13 | As an organisation secretary, I want to file a Harberger land claim in the company's name, paying the first epoch's stewardship fee from the company's V-token reserve | P2 | ✓ |
 
 *OS-01–OS-03: Completed April 2026. OToken.sol deployed, CompanyFactory mints O-token on deployCompany(). Dashboard shows Active Roles section. OS-04+ not yet built.*
 
@@ -268,7 +268,7 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 | M-10 | As an MCC board member, I want to propose a dividend distribution | P2 | — |
 | M-11 | As an MCC board member, I want to see results of all G-token votes | P2 | ~ |
 | M-12 | As an MCC board member, I want to see MCC V-token reserve and profit | P2 | — |
-| M-13 | As an MCC board member, I want to add or remove a board member (subject to G-token vote) | P3 | — |
+| M-13 | As an MCC board member, I want to add or remove a board member (subject to G-token vote) | P3 | ✓ |
 
 ### MCC Ledger
 

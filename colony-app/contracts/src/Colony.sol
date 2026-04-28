@@ -639,7 +639,7 @@ contract Colony is Initializable {
      *         the colony treasury (this contract).
      */
     function claimLand(string calldata label, uint256 declaredValueV)
-        external requireAToken onlyCitizen returns (uint256 id)
+        external requireAToken onlyCitizenOrCompany returns (uint256 id)
     {
         require(declaredValueV > 0, "Colony: zero declared value");
         uint256 fee = (declaredValueV * 50) / 10000; // STEWARDSHIP_BPS = 50
@@ -652,7 +652,7 @@ contract Colony is Initializable {
     /**
      * @notice A-06: update the declared Harberger value of a parcel you own.
      */
-    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external requireAToken onlyCitizen {
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external requireAToken onlyCitizenOrCompany {
         require(IAToken(aToken).getTokenHolder(id) == msg.sender, "Colony: not the land holder");
         IAToken(aToken).updateLandValue(id, newDeclaredValueV);
         emit LandValueUpdated(id, newDeclaredValueV);
@@ -662,7 +662,7 @@ contract Colony is Initializable {
      * @notice A-07: pay all outstanding stewardship epochs in V-tokens.
      *         Fee = STEWARDSHIP_BPS × declaredValueV × epochsOutstanding.
      */
-    function payLandStewardship(uint256 id) external requireAToken onlyCitizen {
+    function payLandStewardship(uint256 id) external requireAToken onlyCitizenOrCompany {
         require(IAToken(aToken).getTokenHolder(id) == msg.sender, "Colony: not the land holder");
         uint256 currentEpoch = sToken.currentEpoch();
         uint256 epochs = IAToken(aToken).outstandingLandFeeEpochs(id, currentEpoch);
@@ -682,7 +682,7 @@ contract Colony is Initializable {
      *         their own declared value (and pays its first-epoch fee).
      */
     function forcePurchaseLand(uint256 id, uint256 newDeclaredValueV)
-        external requireAToken onlyCitizen
+        external requireAToken onlyCitizenOrCompany
     {
         address currentHolder = IAToken(aToken).getTokenHolder(id);
         require(currentHolder != msg.sender, "Colony: already the holder");
