@@ -4,25 +4,27 @@
  * Uses ethers.JsonRpcProvider pointing directly at Base Sepolia RPC.
  * No MetaMask dependency.
  *
- * Colony addresses + chain config now imported from packages/spice-shared
- * so a single edit there propagates to both web and native.
- * TODO: extend to read from ColonyRegistry for multi-colony support.
+ * Addresses are duplicated from packages/spice-shared/addresses.js for now —
+ * EAS Build only uploads colony-app-native/ so paths above the project root
+ * are not available at build time. Proper extraction would require either a
+ * real npm package or a build-time copy step. Keep both copies in sync until
+ * then.
  */
 import { ethers } from 'ethers'
-import { RPC, CHAIN_ID, DEFAULT_COLONY, DEFAULT_COLONY_SLUG } from '../../../packages/spice-shared/addresses.js'
 
-export { RPC, CHAIN_ID }
+export const RPC      = 'https://sepolia.base.org'
+export const CHAIN_ID = 84532
 
-/** Dave's Colony — primary demo colony. Sourced from shared package. */
+/** Dave's Colony — primary demo colony */
 export const COLONY = {
-  colony:     DEFAULT_COLONY.colony,
-  sToken:     DEFAULT_COLONY.sToken,
-  vToken:     DEFAULT_COLONY.vToken,
-  gToken:     DEFAULT_COLONY.gToken,
-  governance: DEFAULT_COLONY.governance,
-  fisc:       DEFAULT_COLONY.fisc,
-  name:       DEFAULT_COLONY.name,
-  slug:       DEFAULT_COLONY_SLUG,
+  colony:     '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5',
+  sToken:     '0x8B9B98cf05C5dC6e43C5b74320B2B858b92D6a04',
+  vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
+  gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
+  governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
+  fisc:       '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57',
+  name:       "Dave's Colony",
+  slug:       'daves-colony',
 }
 
 // ── ABIs ────────────────────────────────────────────────────────────────────────
