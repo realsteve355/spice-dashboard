@@ -252,7 +252,6 @@ export default function Dashboard() {
     async function load() {
       try {
         const count = Number(await factory.companyCount())
-        console.log('[MyCompanies] factory:', cfg.companyFactory, 'count:', count, 'myAddr:', address)
         const allCompanies = await Promise.all(
           Array.from({ length: count }, (_, i) => i).map(async id => {
             const [, wallet] = await factory.getCompany(id)
@@ -270,17 +269,13 @@ export default function Dashboard() {
               const myAddr   = address.toLowerCase()
               isSecretary    = secretary.toLowerCase() === myAddr
               isEquityHolder = equityResult[0].some(h => h.toLowerCase() === myAddr)
-              console.log('[MyCompanies]', `#${id}`, name, 'wallet:', wallet,
-                'secretary:', secretary, 'isSec:', isSecretary,
-                'isHolder:', isEquityHolder, 'holders:', equityResult[0])
             } catch (e) {
-              console.warn('[MyCompanies] inner read failed for', wallet, e?.message || e)
+              console.warn('[Dashboard] inner company read failed for', wallet, e?.message || e)
             }
             return { id, name, wallet, isSecretary, isEquityHolder }
           })
         )
         const companies = allCompanies.filter(co => co.isSecretary || co.isEquityHolder)
-        console.log('[MyCompanies] filtered →', companies.length, 'matched')
         if (!cancelled) setMyCompanies(companies)
       } catch (e) {
         console.warn('[Dashboard] load companies failed:', e?.message || e)
