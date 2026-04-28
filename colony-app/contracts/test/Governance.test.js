@@ -343,6 +343,87 @@ describe("Governance", () => {
     });
   });
 
+  describe("M-22 — auto-handover of MCC O-token on CEO election", () => {
+    async function deployWithOToken() {
+      const fixt = await loadFixture(deploy);
+      const { gov, mock, deployer, alice } = fixt;
+      // Deploy a real OToken whose `colony` is the mock (so isCitizen works)
+      const OToken = await ethers.getContractFactory("OToken");
+      const oToken = await OToken.deploy("Fairbrook", await mock.getAddress());
+      // Mint the MCC O-token (id 1, orgType=MCC) to the founding CEO (alice)
+      await oToken.connect(deployer).mint(alice.address, "Fairbrook MCC", 1);
+      // Wire: OToken trusts Governance; Governance knows OToken
+      await oToken.connect(deployer).setElectionAuthority(await gov.getAddress());
+      await gov.setOToken(await oToken.getAddress());
+      return { ...fixt, oToken };
+    }
+
+    it("setOToken can only be called once", async () => {
+      const { gov, alice } = await loadFixture(deploy);
+      await gov.setOToken(alice.address);  // any non-zero, just to set it
+      await expect(
+        gov.setOToken(alice.address)
+      ).to.be.revertedWith("Gov: oToken already set");
+    });
+
+    it("setOToken rejects zero address", async () => {
+      const { gov } = await loadFixture(deploy);
+      await expect(
+        gov.setOToken(ethers.ZeroAddress)
+      ).to.be.revertedWith("Gov: zero oToken");
+    });
+
+    async function runElection(fixt) {
+      const { gov, alice, dave } = fixt;
+      await gov.connect(alice).openElection(ROLE.CEO);
+      await gov.connect(alice).nominateCandidate(1, dave.address);
+      await time.increase(NOMINATION_WINDOW + 1);
+      await gov.connect(alice).vote(1, dave.address);
+      await time.increase(VOTING_WINDOW + 1);
+      await gov.connect(alice).finaliseElection(1);
+      await time.increase(TIMELOCK + 1);
+      return gov.connect(alice).executeElection(1);
+    }
+
+    it("when wired, executeElection auto-transfers the MCC O-token to the new CEO", async () => {
+      const fixt = await deployWithOToken();
+      const { oToken, dave } = fixt;
+      await runElection(fixt);
+      expect(await oToken.ownerOf(1)).to.equal(dave.address);
+    });
+
+    it("emits MccOTokenAutoHandedOver(newCeo)", async () => {
+      const fixt = await deployWithOToken();
+      const { gov, dave } = fixt;
+      await expect(runElection(fixt))
+        .to.emit(gov, "MccOTokenAutoHandedOver")
+        .withArgs(dave.address);
+    });
+
+    it("when NOT wired, executeElection still installs the new CEO (no handover, no error)", async () => {
+      const fixt = await loadFixture(deploy);
+      await runElection(fixt);
+      const [holder] = await fixt.gov.roleHolder(ROLE.CEO);
+      expect(holder).to.equal(fixt.dave.address);
+    });
+
+    it("non-CEO elections do NOT trigger handover", async () => {
+      const fixt = await deployWithOToken();
+      const { gov, oToken, alice, dave } = fixt;
+      // Run a CFO election — alice the only voter elects dave
+      await gov.connect(alice).openElection(ROLE.CFO);
+      await gov.connect(alice).nominateCandidate(1, dave.address);
+      await time.increase(NOMINATION_WINDOW + 1);
+      await gov.connect(alice).vote(1, dave.address);
+      await time.increase(VOTING_WINDOW + 1);
+      await gov.connect(alice).finaliseElection(1);
+      await time.increase(TIMELOCK + 1);
+      await gov.connect(alice).executeElection(1);
+      // O-token still with founding CEO (alice)
+      expect(await oToken.ownerOf(1)).to.equal(alice.address);
+    });
+  });
+
   describe("voter eligibility — age and join time", () => {
     it("under-18 cannot vote", async () => {
       const { gov, mock, alice, dave, erika } = await loadFixture(deploy);

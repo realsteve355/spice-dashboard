@@ -209,4 +209,84 @@ describe("OToken", () => {
       expect(json.description).to.contain("MCC");
     });
   });
+
+  describe("electionHandOver (M-22 — auto-transfer MCC O-token)", () => {
+    async function deployWithAuthority() {
+      const fixt = await loadFixture(deploy);
+      const { o, owner, alice } = fixt;
+      // Mint the MCC O-token to alice as the founding holder
+      await o.connect(owner).mint(alice.address, "Fairbrook MCC", ORG_TYPE.MCC);
+      // owner takes the role of "Governance" for these tests
+      await o.connect(owner).setElectionAuthority(owner.address);
+      return { ...fixt };
+    }
+
+    it("setElectionAuthority is owner-only", async () => {
+      const { o, alice } = await loadFixture(deploy);
+      await expect(
+        o.connect(alice).setElectionAuthority(alice.address)
+      ).to.be.revertedWithCustomError(o, "OwnableUnauthorizedAccount");
+    });
+
+    it("setElectionAuthority emits ElectionAuthoritySet", async () => {
+      const { o, owner } = await loadFixture(deploy);
+      await expect(o.connect(owner).setElectionAuthority(owner.address))
+        .to.emit(o, "ElectionAuthoritySet")
+        .withArgs(owner.address);
+    });
+
+    it("electionHandOver rejects callers other than the authority", async () => {
+      const { o, alice, bob } = await deployWithAuthority();
+      await expect(
+        o.connect(alice).electionHandOver(1, bob.address)
+      ).to.be.revertedWith("OToken: not election authority");
+    });
+
+    it("electionHandOver rejects when authority is unset", async () => {
+      const { o, owner, alice, bob } = await loadFixture(deploy);
+      await o.connect(owner).mint(alice.address, "Fairbrook MCC", ORG_TYPE.MCC);
+      // No authority set — even owner can't call (owner != authority)
+      await expect(
+        o.connect(owner).electionHandOver(1, bob.address)
+      ).to.be.revertedWith("OToken: not election authority");
+    });
+
+    it("electionHandOver rejects non-MCC O-tokens", async () => {
+      const { o, owner, alice, bob } = await loadFixture(deploy);
+      // Mint a Company O-token (not MCC)
+      await o.connect(owner).mint(alice.address, "Acme", ORG_TYPE.Company);
+      await o.connect(owner).setElectionAuthority(owner.address);
+      await expect(
+        o.connect(owner).electionHandOver(1, bob.address)
+      ).to.be.revertedWith("OToken: only MCC O-token");
+    });
+
+    it("electionHandOver rejects non-citizen recipient", async () => {
+      const { o, mock, owner, stranger } = await deployWithAuthority();
+      await mock.setCitizen(stranger.address, false);
+      await expect(
+        o.connect(owner).electionHandOver(1, stranger.address)
+      ).to.be.revertedWith("OToken: recipient is not a citizen");
+    });
+
+    it("electionHandOver moves the MCC O-token to the new holder + emits RoleHandedOver", async () => {
+      const { o, owner, alice, bob } = await deployWithAuthority();
+      await expect(o.connect(owner).electionHandOver(1, bob.address))
+        .to.emit(o, "RoleHandedOver")
+        .withArgs(1, alice.address, bob.address);
+      expect(await o.ownerOf(1)).to.equal(bob.address);
+    });
+
+    it("electionHandOver is a no-op when the recipient already holds the token", async () => {
+      const { o, owner, alice } = await deployWithAuthority();
+      // No revert, no transfer, no event
+      const tx = await o.connect(owner).electionHandOver(1, alice.address);
+      const receipt = await tx.wait();
+      const handoverEvents = receipt.logs.filter(l => {
+        try { return o.interface.parseLog(l)?.name === "RoleHandedOver" } catch { return false }
+      });
+      expect(handoverEvents.length).to.equal(0);
+      expect(await o.ownerOf(1)).to.equal(alice.address);
+    });
+  });
 });

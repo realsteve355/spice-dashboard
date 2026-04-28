@@ -22,6 +22,14 @@ interface IOToken {
     function mint(address to, string calldata name, uint8 orgType) external returns (uint256);
 }
 
+// Election-handover wiring (M-22)
+interface IOTokenAdmin {
+    function setElectionAuthority(address authority) external;
+}
+interface IGovernanceAdmin {
+    function setOToken(address oToken_) external;
+}
+
 // AToken interface — Colony is the sole state-changer; all mutations relay through here
 interface IAToken {
     // Obligation settlement (called at advanceEpoch)
@@ -266,6 +274,21 @@ contract Colony is Initializable {
         require(msg.sender == founder,      "Colony: only founder");
         require(_governance != address(0),  "Colony: zero address");
         governance = _governance;
+    }
+
+    /**
+     * @notice M-22: enable automatic MCC O-token handover on CEO election.
+     *         Wires the colony's Governance into OToken as the election authority,
+     *         and tells Governance the OToken address. Founder-only, callable once
+     *         after both setOToken() and setGovernance() have completed.
+     *         Existing handover remains via OS-04 if this is not enabled.
+     */
+    function enableElectionHandover() external {
+        require(msg.sender == founder,            "Colony: only founder");
+        require(oToken     != address(0),          "Colony: oToken not set");
+        require(governance != address(0),          "Colony: governance not set");
+        IOTokenAdmin(oToken).setElectionAuthority(governance);
+        IGovernanceAdmin(governance).setOToken(oToken);
     }
 
     // ── Citizen actions ───────────────────────────────────────────────────────

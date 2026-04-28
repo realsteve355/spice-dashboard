@@ -41,6 +41,7 @@ contract OToken is ERC721, Ownable {
     // ── State ────────────────────────────────────────────────────────────────
 
     address public colony;       // Colony contract — citizen verification
+    address public electionAuthority;  // Governance — may force-transfer MCC O-token after election (M-22)
     uint256 public nextTokenId = 1;
 
     mapping(uint256 => OrgInfo) public orgs;
@@ -49,6 +50,7 @@ contract OToken is ERC721, Ownable {
 
     event OrgRegistered(uint256 indexed tokenId, address indexed holder, OrgType orgType, string name);
     event RoleHandedOver(uint256 indexed tokenId, address indexed from, address indexed to);
+    event ElectionAuthoritySet(address indexed authority);
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -100,6 +102,35 @@ contract OToken is ERC721, Ownable {
         require(_isCitizen(incoming),            "OToken: recipient is not a citizen");
         _transfer(msg.sender, incoming, tokenId);
         emit RoleHandedOver(tokenId, msg.sender, incoming);
+    }
+
+    // ── M-22: election-driven handover ──────────────────────────────────────
+
+    /**
+     * @notice Wire a Governance contract as the election authority.
+     *         When set, that contract may force-transfer the MCC O-token
+     *         (tokenId == 1, orgType == MCC) to a newly-elected holder via
+     *         electionHandOver(). Only the contract owner (Colony) may set this.
+     */
+    function setElectionAuthority(address authority) external onlyOwner {
+        electionAuthority = authority;
+        emit ElectionAuthoritySet(authority);
+    }
+
+    /**
+     * @notice Force-transfer the MCC O-token to a newly-elected holder.
+     *         Only the configured electionAuthority may call. Only valid for
+     *         the MCC O-token. Recipient must be a citizen.
+     */
+    function electionHandOver(uint256 tokenId, address incoming) external {
+        require(msg.sender == electionAuthority,           "OToken: not election authority");
+        require(electionAuthority != address(0),           "OToken: authority not set");
+        require(orgs[tokenId].orgType == OrgType.MCC,      "OToken: only MCC O-token");
+        require(_isCitizen(incoming),                       "OToken: recipient is not a citizen");
+        address from = ownerOf(tokenId);
+        if (from == incoming) return;  // already in place — no-op
+        _transfer(from, incoming, tokenId);
+        emit RoleHandedOver(tokenId, from, incoming);
     }
 
     // ── Views ────────────────────────────────────────────────────────────────

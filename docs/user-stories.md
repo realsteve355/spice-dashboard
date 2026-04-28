@@ -354,7 +354,7 @@ additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | M-21 | As MCC CEO, I want to hold the MCC O-token so my authority over MCC on-chain operations — epoch advance, service pricing, billing — is cryptographically verifiable by any citizen | P1 | ~ |
-| M-22 | As MCC CEO, I want to transfer the MCC O-token to my elected successor immediately after the annual election so they have full operational authority from day one of their term | P1 | — |
+| M-22 | As MCC CEO, I want to transfer the MCC O-token to my elected successor immediately after the annual election so they have full operational authority from day one of their term | P1 | ~ |
 | M-23 | As any citizen, I want to see who currently holds the MCC O-token so I know who is authorised to act as MCC CEO on-chain | P1 | ✓ |
 
 ### MCC Office-Term Equity

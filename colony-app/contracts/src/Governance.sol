@@ -37,6 +37,10 @@ interface IColony {
     ) external returns (uint256 assetId, uint256 liabilityId);
 }
 
+interface IOTokenForGov {
+    function electionHandOver(uint256 tokenId, address incoming) external;
+}
+
 contract Governance {
 
     // ── Constants ─────────────────────────────────────────────────────────────
@@ -82,6 +86,9 @@ contract Governance {
     address public cfo; uint256 public cfoTermEnd;
     address public coo; uint256 public cooTermEnd;
 
+    /// @notice OToken wired for M-22 auto-handover. Zero means manual handover only.
+    address public oToken;
+
     uint256 public nextId = 1;
 
     mapping(uint256 => Election)                         public elections;
@@ -105,6 +112,8 @@ contract Governance {
     event ObligationProposed(uint256 indexed id, address indexed proposer, address creditor, address obligor);
     event ObligationSigned(uint256 indexed id, address indexed signer);
     event ObligationCreated(uint256 indexed id, uint256 assetId, uint256 liabilityId);
+    event OTokenLinked(address indexed oToken);
+    event MccOTokenAutoHandedOver(address indexed newCeo);
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -291,6 +300,9 @@ contract Governance {
     /**
      * @notice Execute a passed election after the timelock expires.
      *         Transfers the role to the winner. Anyone may call.
+     *         If role == CEO and oToken is wired (M-22 enabled), auto-transfers
+     *         the MCC O-token to the new CEO. Failure of the auto-handover does
+     *         not block the election execution — manual OS-04 remains as fallback.
      */
     function executeElection(uint256 electionId) external {
         Election storage e = elections[electionId];
@@ -307,6 +319,26 @@ contract Governance {
         else                  { coo = e.winner; cooTermEnd = newTermEnd; }
 
         emit ElectionExecuted(electionId, e.role, e.winner);
+
+        // M-22: auto-transfer MCC O-token to new CEO when wired.
+        if (e.role == 0 && oToken != address(0)) {
+            try IOTokenForGov(oToken).electionHandOver(1, e.winner) {
+                emit MccOTokenAutoHandedOver(e.winner);
+            } catch {
+                // non-fatal — manual OS-04 handover remains available
+            }
+        }
+    }
+
+    /**
+     * @notice One-shot wiring of the OToken contract. Only callable while oToken
+     *         is unset. Allows Colony.enableElectionHandover() to bind the pair.
+     */
+    function setOToken(address oToken_) external {
+        require(oToken == address(0),         "Gov: oToken already set");
+        require(oToken_ != address(0),         "Gov: zero oToken");
+        oToken = oToken_;
+        emit OTokenLinked(oToken_);
     }
 
     // ── Role Resignation ─────────────────────────────────────────────────────
