@@ -663,16 +663,32 @@ App is self-custodial with an embedded wallet — no MetaMask required.
 | ~~M-20~~ | ~~Replace MCC CEO via election~~ | ✓ Completed 20 April 2026 — multi-candidate Governance.sol + full Votes.jsx UI |
 | F-08 | Auto S→V company conversion at epoch | Manual convertToV() workaround; requires Colony.sol v2 |
 
-### v2 contract blockers
+### Live in source — needs colony redeploy / beacon upgrade
 
-AToken.sol and CompanyImplementation v2 are deployed (April 2026). The remaining blocker is **Colony.sol v2** (new deploy):
+These features are fully tested in source and ship to new colony deploys via
+deployArtifacts.js. Existing Dave's Colony was deployed before they were
+added; redeploy or beacon-upgrade unlocks them there too.
+
+| Stories | Affected contract | Notes |
+|---|---|---|
+| F-26 per-tranche schedule | AToken | New `getVestingSchedule` getter; UI falls back to "unavailable" on older AToken |
+| M-22 election→handover | OToken + Governance + Colony | Opt-in via `Colony.enableElectionHandover()` after Governance deploy |
+| OS-11/OS-12/OS-13 | CompanyImplementation | New `registerAsset`/`transferAsset`/land relays; gated to onlySecretary |
+| A-05–A-11 | AToken + Colony | Full Harberger surface (claim/update/pay/force-purchase + LandData + events) |
+
+### Truly not built
 
 | Blocked stories | Blocker | Description |
-|----------------|---------|-------------|
-| F-16 | CompanyImpl v3 | Full share event history (vesting events, forfeitures, transfers) |
-| F-26 (full) | UI | Vesting schedule per-tranche view + dividend-by-tranche history (per-tranche works in new colonies; pre-existing Dave's Colony AToken needs redeploy for getVestingSchedule getter; dividend-history-per-tranche still pending) |
-| M-24–M-26 | CompanyImpl v3 + Colony v2 | MCC office-term equity (issue on election, redeem on term end) |
-| A-10 (full)/A-11/A-11a | UI / events | Harberger live; remaining: dashboard arrears warning surfacing on Dashboard.jsx (currently only on Land tab), per-parcel ownership history view, force-purchase notification |
+|---|---|---|
+| M-24–M-26 | Architecture: MCC-as-Company | MCC needs to be a CompanyImplementation instance with Governance auto-issuing equity at executeElection and auto-redeeming on resign/election. Multi-contract orchestration. |
+| M-10 / M-12 | Depends on M-24–M-26 | MCC dividend proposal + V-reserve display follow once MCC has its own equity register |
+| C-22 | V-token batch tracking | VToken has no per-mint timestamp; expiry warning needs new state |
+| FI-17 | New Governance election type | Budget spike vote needs a non-role referendum mechanism |
+| FI-20 | Earth USDC reserve mechanics | V→USDC boundary flow logging |
+| S-03 | Marketplace contract | Atomic share-for-S swap |
+| S-07 | Inheritance system | Designate beneficiaries; auto-transfer on registered death |
+| G-07 (and G-01–G-06 backend) | Guardian contract | Backup guardian + child wallet management on-chain |
+| F-11a | Pending dividend state | Current declareDividend is atomic; would need a "pending" state with citizen visibility |
 | Obligation auto-settlement | Colony v2 | advanceEpoch() must iterate AToken.activeObligationIds() and call markObligationPaid() |
 
 ---
