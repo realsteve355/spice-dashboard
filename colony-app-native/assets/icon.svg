@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="#0a0a0a"/>
+
+  <!-- Three forces converging on the central SPICE node:
+         left arc  = sovereign debt
+         right arc = AI / automation
+         lower arc = capital flight to crypto -->
+
+  <g fill="none" stroke="#D9A53D" stroke-linecap="round" stroke-width="34">
+    <!-- Left arc: opens right, sits ~120px left of centre -->
+    <path d="M 320 280 A 200 240 0 0 0 320 744"/>
+    <!-- Right arc: opens left -->
+    <path d="M 704 280 A 200 240 0 0 1 704 744"/>
+    <!-- Bottom arc: opens up, slightly wider than tall -->
+    <path d="M 296 880 A 240 180 0 0 0 728 880"/>
+  </g>
+
+  <!-- Connectors from each arc into the central node -->
+  <g stroke="#D9A53D" stroke-linecap="round" stroke-width="22">
+    <line x1="356" y1="512" x2="430" y2="512"/>
+    <line x1="668" y1="512" x2="594" y2="512"/>
+    <line x1="512" y1="826" x2="512" y2="612"/>
+  </g>
+
+  <!-- Central SPICE node -->
+  <circle cx="512" cy="512" r="100" fill="#D9A53D"/>
+  <circle cx="512" cy="512" r="100" fill="none" stroke="#0a0a0a" stroke-width="6"/>
+  <circle cx="512" cy="512" r="58"  fill="none" stroke="#0a0a0a" stroke-width="4" opacity="0.45"/>
+</svg>
