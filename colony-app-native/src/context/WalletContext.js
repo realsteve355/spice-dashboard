@@ -88,8 +88,8 @@ export function WalletProvider({ children }) {
     return w
   }, [])
 
-  const importWallet = useCallback(async (phrase) => {
-    const w = await _import(phrase)
+  const importWallet = useCallback(async (phrase, accountIndex = 0) => {
+    const w = await _import(phrase, accountIndex)
     setAddress(w.address)
     setIsSetup(true)
     setWallet(w)

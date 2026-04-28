@@ -1,26 +1,28 @@
-// Design tokens — matches colony-app/src/theme.js
+// Design tokens — dark scheme for the native app.
+// Web stays light per spice-dashboard CLAUDE.md design system; native diverges
+// because phones use dark UI more comfortably and OLED screens save power.
 import { Platform } from 'react-native'
 
 export const C = {
-  gold:    '#B8860B',
-  bg:      '#ffffff',
-  text:    '#111111',
-  sub:     '#555555',
-  faint:   '#999999',
-  border:  '#e2e2e2',
-  red:     '#ef4444',
-  purple:  '#8b5cf6',
-  blue:    '#3b82f6',
-  yellow:  '#eab308',
-  green:   '#16a34a',
-  white:   '#ffffff',
-  card:    '#f9f9f9',
+  gold:    '#D9A53D',   // slightly brighter gold for dark-bg contrast
+  bg:      '#0a0a0a',   // near-black, AMOLED-friendly
+  text:    '#f2f2f2',
+  sub:     '#a0a0a0',
+  faint:   '#666666',
+  border:  '#2a2a2a',
+  red:     '#f87171',
+  purple:  '#a78bfa',
+  blue:    '#60a5fa',
+  yellow:  '#facc15',
+  green:   '#4ade80',
+  white:   '#1a1a1a',   // "white" is the elevated card surface, not page-white
+  card:    '#141414',
 }
 
 export const font = Platform.OS === 'ios' ? 'Courier New' : 'monospace'
 
 export const card = {
-  backgroundColor: C.white,
+  backgroundColor: C.card,
   borderWidth: 1,
   borderColor: C.border,
   borderRadius: 8,

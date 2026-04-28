@@ -17,12 +17,13 @@ import { C, font, shortAddr } from '../theme'
 export default function Onboarding() {
   const { createWallet, importWallet } = useWallet()
 
-  const [mode,        setMode]        = useState('landing')   // landing | create_show | import
-  const [seedPhrase,  setSeedPhrase]  = useState('')
-  const [confirmed,   setConfirmed]   = useState(false)
-  const [importInput, setImportInput] = useState('')
-  const [loading,     setLoading]     = useState(false)
-  const [error,       setError]       = useState(null)
+  const [mode,         setMode]         = useState('landing')   // landing | create_show | import
+  const [seedPhrase,   setSeedPhrase]   = useState('')
+  const [confirmed,    setConfirmed]    = useState(false)
+  const [importInput,  setImportInput]  = useState('')
+  const [accountIndex, setAccountIndex] = useState('0')   // MetaMask account number minus 1
+  const [loading,      setLoading]      = useState(false)
+  const [error,        setError]        = useState(null)
 
   async function handleCreate() {
     setLoading(true); setError(null)
@@ -41,7 +42,8 @@ export default function Onboarding() {
   async function handleImport() {
     setLoading(true); setError(null)
     try {
-      await importWallet(importInput)
+      const idx = parseInt(accountIndex, 10) || 0
+      await importWallet(importInput, idx)
       // WalletContext sets isSetup → App.js navigates to Dashboard
     } catch (e) {
       setError(e.message)
@@ -155,6 +157,17 @@ export default function Onboarding() {
             secureTextEntry={false}
           />
 
+          <Text style={S.label}>Account index (MetaMask Account 1 = 0, Account 2 = 1, …)</Text>
+          <TextInput
+            style={S.indexInput}
+            keyboardType="number-pad"
+            placeholder="0"
+            placeholderTextColor={C.faint}
+            value={accountIndex}
+            onChangeText={setAccountIndex}
+            maxLength={3}
+          />
+
           {error && <Text style={S.error}>{error}</Text>}
 
           <TouchableOpacity
@@ -206,6 +219,8 @@ const S = StyleSheet.create({
   confirmText:   { fontSize: 12, color: C.sub, fontFamily: font, flex: 1 },
 
   phraseInput:   { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: font, color: C.text, minHeight: 90, textAlignVertical: 'top', marginBottom: 16 },
+  label:         { fontSize: 11, color: C.faint, fontFamily: font, marginBottom: 6 },
+  indexInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 10, fontSize: 13, fontFamily: font, color: C.text, marginBottom: 16, width: 80 },
 
   back:          { marginBottom: 20 },
   backText:      { fontSize: 12, color: C.sub, fontFamily: font },
