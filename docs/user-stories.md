@@ -125,7 +125,7 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-14a | As a company secretary, I want to issue open shares (no vesting) to an investor so they hold equity immediately | P2 | ✓ |
 | F-15 | As a shareholder, I want to transfer vested shares to another wallet atomically; unvested shares may not be transferred | P2 | ~ |
 | F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in S-tokens, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | ✓ |
-| F-16 | As a company owner, I want to see the full history of share issuances, vesting events, transfers, buybacks, and forfeitures | P2 | — |
+| F-16 | As a company owner, I want to see the full history of share issuances, vesting events, transfers, buybacks, and forfeitures | P2 | ✓ |
 
 ### Vesting Lifecycle
 
@@ -318,10 +318,10 @@ additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run 
 | FI-15 | As the MCC CEO, I want a warning if the draft total exceeds 120% of any version in the prior 12 months, indicating a citizen vote will be triggered | P2 | ✓ |
 | FI-16 | As any citizen, I want to see the full version history of published budgets with expandable per-version line item detail | P2 | ✓ |
 | FI-17 | As a citizen, I want to vote on a proposed budget spike (>20% increase) before it takes effect | P3 | — |
-| FI-18 | As any citizen (Earth colony), I want to see the USDC reserve balance and Fisc boundary status | P3 | — |
-| FI-19 | As any citizen (Earth colony), I want to see current Local Robot Tax (LRT) rates and filings | P3 | — |
+| FI-18 | As any citizen (Earth colony), I want to see the USDC reserve balance and Fisc boundary status | P3 | ✓ |
+| FI-19 | As any citizen (Earth colony), I want to see current Local Robot Tax (LRT) rates and filings | P3 | ~ |
 | FI-20 | As any citizen (Earth colony), I want to see V→USDC boundary flow history and current rate | P3 | — |
-| FI-21 | As any citizen, I want to see the Fisc rate algorithm components — external inflation pressure, abundance offset, policy stance from reserve health, and current daily adjustment — so I understand why the rate moves | P3 | — |
+| FI-21 | As any citizen, I want to see the Fisc rate algorithm components — external inflation pressure, abundance offset, policy stance from reserve health, and current daily adjustment — so I understand why the rate moves | P3 | ✓ |
 
 *FI-01–FI-16: Implemented April 2026. Fisc.jsx (/colony/:slug/fisc) + Budget.jsx (/colony/:slug/budget). CEO detected via Governance.roleHolder(0). Draft stored in Supabase budget_draft; published history in budget_published. Fisc rate = ($2.80 × (1 − discount%)) / breadPriceS. FI-17: spike vote UI warning shown, citizen vote flow not yet built. FI-18–FI-20: Earth-only placeholder cards in Fisc.jsx (opacity 0.5, "coming soon").*
 

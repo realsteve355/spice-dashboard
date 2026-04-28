@@ -22,6 +22,14 @@ const COLONY_EVENTS_ABI = [
   "event VDividendPaid(address indexed from, address indexed to, uint256 amount)",
 ]
 
+// CompanyImplementation v2 events surfaced for F-16 share-event history
+const COMPANY_EVENTS_ABI = [
+  "event SharesIssued(address indexed holder, uint256 stakeBps, bool hasVesting)",
+  "event SharesForfeited(uint256 indexed assetId, uint256 forfeitedBps)",
+  "event SharesBoughtBack(uint256 indexed assetId, uint256 bps, uint256 priceS)",
+  "event DividendDeclared(uint256 vAmount, uint256 holderCount)",
+]
+
 // CompanyImplementation v2 — no internal equity state, all equity via AToken
 const COMPANY_ABI = [
   "function name() view returns (string)",
@@ -185,6 +193,92 @@ export default function Company() {
   const company = onChain ? chainCo : null
 
   const [tab, setTab] = useState('overview')
+
+  // ── F-16: Share event history ──────────────────────────────────────────────
+  const [shareEvents,    setShareEvents]    = useState([])
+  const [eventsLoading,  setEventsLoading]  = useState(false)
+
+  useEffect(() => {
+    if (!onChain || !companyId) return
+    let cancelled = false
+    setEventsLoading(true)
+
+    async function loadShareEvents() {
+      try {
+        const rpc   = new ethers.JsonRpcProvider('https://sepolia.base.org')
+        const iface = new ethers.Interface(COMPANY_EVENTS_ABI)
+        const toBlock   = await rpc.getBlockNumber()
+        const fromBlock = Math.max(0, toBlock - 50000)
+        const logs = await rpc.getLogs({ address: companyId, fromBlock, toBlock })
+
+        // Resolve block timestamps
+        const blocks = [...new Set(logs.map(l => l.blockNumber))]
+        const blockMap = {}
+        await Promise.all(blocks.map(async n => {
+          const b = await rpc.getBlock(n)
+          if (b) blockMap[n] = b.timestamp
+        }))
+        const fmtDate = ts => ts
+          ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+          : ''
+
+        const parsedAddrs = new Set()
+        const parsed = logs.map(log => {
+          let p
+          try { p = iface.parseLog(log) } catch { return null }
+          if (!p) return null
+          if (p.name === 'SharesIssued') parsedAddrs.add(String(p.args[0]))
+          return { log, parsed: p }
+        }).filter(Boolean)
+
+        const cfg = deployedContracts?.colonies?.[slug]
+        const nameMap = await resolveNames([...parsedAddrs], cfg?.colony).catch(() => ({})) || {}
+
+        if (cancelled) return
+        const events = parsed.map(({ log, parsed: p }) => {
+          const date = fmtDate(blockMap[log.blockNumber])
+          if (p.name === 'SharesIssued') {
+            const holder = String(p.args[0])
+            return {
+              kind: 'issued', date, blockNumber: log.blockNumber,
+              text: `Issued ${Number(p.args[1])} bps to ${nameMap[holder.toLowerCase()] || shortAddr(holder)}${p.args[2] ? ' (vesting)' : ' (open)'}`,
+              color: C.green,
+            }
+          }
+          if (p.name === 'SharesForfeited') {
+            return {
+              kind: 'forfeit', date, blockNumber: log.blockNumber,
+              text: `Forfeited ${Number(p.args[1])} bps from asset #${String(p.args[0])}`,
+              color: C.red,
+            }
+          }
+          if (p.name === 'SharesBoughtBack') {
+            return {
+              kind: 'buyback', date, blockNumber: log.blockNumber,
+              text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for ${Number(ethers.formatEther(p.args[2]))} S`,
+              color: C.gold,
+            }
+          }
+          if (p.name === 'DividendDeclared') {
+            return {
+              kind: 'dividend', date, blockNumber: log.blockNumber,
+              text: `Declared ${Number(ethers.formatEther(p.args[0]))} V dividend across ${Number(p.args[1])} holders`,
+              color: C.purple,
+            }
+          }
+          return null
+        }).filter(Boolean).sort((a, b) => b.blockNumber - a.blockNumber)
+
+        setShareEvents(events)
+      } catch (e) {
+        console.warn('[Company] share events load failed:', e?.message || e)
+        if (!cancelled) setShareEvents([])
+      }
+      if (!cancelled) setEventsLoading(false)
+    }
+    loadShareEvents()
+    return () => { cancelled = true }
+  }, [onChain, companyId, deployedContracts, slug, reloadKey])
 
   // ── OS-05: Secretary handover history ──────────────────────────────────────
   const [secretaryHistory, setSecretaryHistory] = useState([])
@@ -1280,6 +1374,28 @@ export default function Company() {
 
               {company.equity.length === 0 && (
                 <div style={{ fontSize: 12, color: C.faint }}>No equity issued yet.</div>
+              )}
+            </div>
+
+            {/* F-16: Share event history */}
+            <div style={card}>
+              <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>SHARE HISTORY</div>
+              {eventsLoading ? (
+                <div style={{ fontSize: 12, color: C.faint }}>Loading…</div>
+              ) : shareEvents.length === 0 ? (
+                <div style={{ fontSize: 12, color: C.faint }}>No share events yet.</div>
+              ) : (
+                shareEvents.map((ev, i) => (
+                  <div key={i} style={{
+                    paddingBottom: i < shareEvents.length - 1 ? 8 : 0,
+                    marginBottom:  i < shareEvents.length - 1 ? 8 : 0,
+                    borderBottom:  i < shareEvents.length - 1 ? `1px solid ${C.border}` : 'none',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                  }}>
+                    <span style={{ fontSize: 11, color: ev.color, flex: 1 }}>{ev.text}</span>
+                    <span style={{ fontSize: 10, color: C.faint, marginLeft: 8 }}>{ev.date}</span>
+                  </div>
+                ))
               )}
             </div>
 
