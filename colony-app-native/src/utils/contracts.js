@@ -4,24 +4,25 @@
  * Uses ethers.JsonRpcProvider pointing directly at Base Sepolia RPC.
  * No MetaMask dependency.
  *
- * Colony addresses hardcoded for Dave's Colony (MVP demo colony).
+ * Colony addresses + chain config now imported from packages/spice-shared
+ * so a single edit there propagates to both web and native.
  * TODO: extend to read from ColonyRegistry for multi-colony support.
  */
 import { ethers } from 'ethers'
+import { RPC, CHAIN_ID, DEFAULT_COLONY, DEFAULT_COLONY_SLUG } from '../../../packages/spice-shared/addresses.js'
 
-export const RPC      = 'https://sepolia.base.org'
-export const CHAIN_ID = 84532
+export { RPC, CHAIN_ID }
 
-/** Dave's Colony — primary demo colony */
+/** Dave's Colony — primary demo colony. Sourced from shared package. */
 export const COLONY = {
-  colony:     '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5',
-  sToken:     '0x8B9B98cf05C5dC6e43C5b74320B2B858b92D6a04',
-  vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
-  gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
-  governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
-  fisc:       '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57',
-  name:       "Dave's Colony",
-  slug:       'daves-colony',
+  colony:     DEFAULT_COLONY.colony,
+  sToken:     DEFAULT_COLONY.sToken,
+  vToken:     DEFAULT_COLONY.vToken,
+  gToken:     DEFAULT_COLONY.gToken,
+  governance: DEFAULT_COLONY.governance,
+  fisc:       DEFAULT_COLONY.fisc,
+  name:       DEFAULT_COLONY.name,
+  slug:       DEFAULT_COLONY_SLUG,
 }
 
 // ── ABIs ────────────────────────────────────────────────────────────────────────

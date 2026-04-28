@@ -114,9 +114,13 @@ export default function Assets() {
             if (Number(depBps) > 0) {
               try { curRaw = await aToken.currentAssetValue(t.id, epoch) } catch {}
             }
+            // Prefer the on-chain assetLabel; fall back to local nickname
+            // so "My Assets" matches what the public Registry shows.
+            let onChainLabel = ''
+            try { onChainLabel = await aToken.assetLabel(t.id) } catch {}
             assets.push({
               id:              t.id,
-              name:            names[assetNameKey(cfg.colony, t.id)] || null,
+              name:            names[assetNameKey(cfg.colony, t.id)] || onChainLabel || null,
               value:           Math.floor(Number(ethers.formatEther(valRaw))),
               currentValue:    Math.floor(Number(ethers.formatEther(curRaw))),
               weightKg:        Number(wt),

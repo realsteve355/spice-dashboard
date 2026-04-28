@@ -238,7 +238,7 @@ export default function Mcc() {
       .then(data => {
         const published = data.published
         const history   = data.history || []
-        if (!published?.totalS) { setRecallRisk(null); return }
+        if (!published?.totalS) { setRecallRisk({ no_history: true }); return }
         const priorTotals = history
           .filter(h => h.version !== published.version)
           .slice(0, 12)
@@ -253,7 +253,7 @@ export default function Mcc() {
         else if (ratio >= 1.10) status = 'warning'
         setRecallRisk({ current, avg, ratio, status, sampleSize: priorTotals.length })
       })
-      .catch(() => setRecallRisk(null))
+      .catch(() => setRecallRisk({ no_history: true }))
   }, [cfg])
 
   async function handlePost() {
@@ -443,6 +443,15 @@ export default function Mcc() {
         </div>
 
         {/* M-09: Recall risk ───────────────────────────────────────── */}
+        {recallRisk && recallRisk.no_history && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>RECALL RISK</div>
+            <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
+              No prior budget versions to compare against. Recall risk activates once two or
+              more budgets have been published — current vs trailing 12-month rolling avg.
+            </div>
+          </div>
+        )}
         {recallRisk && !recallRisk.no_history && (() => {
           const risk = recallRisk
           const color = risk.status === 'recall' ? '#ef4444'
