@@ -213,9 +213,18 @@ export default function Company() {
       try {
         const rpc   = new ethers.JsonRpcProvider('https://sepolia.base.org')
         const iface = new ethers.Interface(COMPANY_EVENTS_ABI)
-        const toBlock   = await rpc.getBlockNumber()
-        const fromBlock = Math.max(0, toBlock - 50000)
-        const logs = await rpc.getLogs({ address: companyId, fromBlock, toBlock })
+        const toBlock = await rpc.getBlockNumber()
+        // sepolia.base.org getLogs is capped at 10,000 blocks per request — chunk
+        const CHUNK = 9000, N_CHUNKS = 6
+        const chunks = await Promise.all(
+          Array.from({ length: N_CHUNKS }, (_, i) => {
+            const cTo   = toBlock - i * CHUNK
+            const cFrom = Math.max(0, cTo - CHUNK)
+            return rpc.getLogs({ address: companyId, fromBlock: cFrom, toBlock: cTo })
+              .catch(() => [])
+          })
+        )
+        const logs = chunks.flat()
 
         // Resolve block timestamps
         const blocks = [...new Set(logs.map(l => l.blockNumber))]
@@ -312,19 +321,26 @@ export default function Company() {
         }
         if (companyTokenId === null) { setSecretaryHistory([]); setHistoryLoading(false); return }
 
-        // Query handover events filtered by tokenId
+        // Query handover events filtered by tokenId. sepolia.base.org caps
+        // eth_getLogs at 10,000 blocks; chunk to stay under.
         const iface = new ethers.Interface(OTOKEN_ABI)
         const tokenIdHex  = ethers.zeroPadValue(ethers.toBeHex(companyTokenId), 32)
         const handoverTopic = ethers.id("RoleHandedOver(uint256,address,address)")
         const registerTopic = ethers.id("OrgRegistered(uint256,address,uint8,string)")
-        const toBlock   = await rpc.getBlockNumber()
-        const fromBlock = Math.max(0, toBlock - 50000)
+        const toBlock = await rpc.getBlockNumber()
+        const CHUNK = 9000, N_CHUNKS = 6
+        const queryChunked = (topic) => Promise.all(
+          Array.from({ length: N_CHUNKS }, (_, i) => {
+            const cTo   = toBlock - i * CHUNK
+            const cFrom = Math.max(0, cTo - CHUNK)
+            return rpc.getLogs({ address: oTokenAddr, fromBlock: cFrom, toBlock: cTo,
+              topics: [topic, tokenIdHex] }).catch(() => [])
+          })
+        ).then(arrs => arrs.flat())
 
         const [handoverLogs, registerLogs] = await Promise.all([
-          rpc.getLogs({ address: oTokenAddr, fromBlock, toBlock,
-            topics: [handoverTopic, tokenIdHex] }),
-          rpc.getLogs({ address: oTokenAddr, fromBlock, toBlock,
-            topics: [registerTopic, tokenIdHex] }),
+          queryChunked(handoverTopic),
+          queryChunked(registerTopic),
         ])
 
         const events = []

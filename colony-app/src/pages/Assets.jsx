@@ -1116,12 +1116,20 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
         feePaid:  ethers.id("LandFeePaid(uint256,uint256)"),
         forced:   ethers.id("LandForcePurchased(uint256,address,address,uint256)"),
       }
-      const toBlock   = await rpc.getBlockNumber()
-      const fromBlock = Math.max(0, toBlock - 50000)
+      // sepolia.base.org caps eth_getLogs at 10,000 blocks; chunk to stay under
+      const toBlock = await rpc.getBlockNumber()
+      const CHUNK = 9000, N_CHUNKS = 6
       const all = []
       for (const [kind, topic] of Object.entries(topics)) {
-        const logs = await rpc.getLogs({ address: cfg.aToken, fromBlock, toBlock, topics: [topic, idHex] })
-        for (const log of logs) {
+        const chunkLogs = await Promise.all(
+          Array.from({ length: N_CHUNKS }, (_, i) => {
+            const cTo   = toBlock - i * CHUNK
+            const cFrom = Math.max(0, cTo - CHUNK)
+            return rpc.getLogs({ address: cfg.aToken, fromBlock: cFrom, toBlock: cTo,
+              topics: [topic, idHex] }).catch(() => [])
+          })
+        )
+        for (const log of chunkLogs.flat()) {
           let parsed
           try { parsed = iface.parseLog(log) } catch { continue }
           all.push({ kind, blockNumber: log.blockNumber, args: parsed.args })
