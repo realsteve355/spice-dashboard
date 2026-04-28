@@ -21,6 +21,7 @@ const ATOKEN_ABI = [
   "function getObligation(uint256) view returns (address, address, uint256, uint256, uint256, uint256, bool)",
   "function nextId() view returns (uint256)",
   "function assetLabel(uint256) view returns (string)",
+  "function escrowedFor(uint256) view returns (uint256)",
 ]
 
 const COLONY_ABI = [
@@ -221,6 +222,9 @@ export default function Assets() {
             }
             let label = ''
             try { label = await aToken.assetLabel(id) } catch {}
+            // A-14: pledged to which obligation? 0 = free
+            let escrowedFor = 0n
+            try { escrowedFor = await aToken.escrowedFor(id) } catch {}
             return {
               id:           String(id),
               holder,
@@ -230,6 +234,7 @@ export default function Assets() {
               currentValue: Math.floor(Number(ethers.formatEther(curRaw))),
               weightKg:     Number(wt),
               hasAI:        Boolean(hasAI),
+              escrowedFor:  String(escrowedFor),
             }
           } catch {
             return null
@@ -932,6 +937,11 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                   <> · was {a.value} S</>
                 )}
               </div>
+              {a.escrowedFor !== '0' && (
+                <div style={{ marginTop: 4, fontSize: 10, color: C.gold }}>
+                  🔒 pledged as collateral on obligation #{a.escrowedFor}
+                </div>
+              )}
             </div>
           )
         })}

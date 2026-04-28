@@ -10,11 +10,12 @@ import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
 import { fetchCitizens as fetchColonyCitizens } from '../utils/fetchCitizens'
 
 // Colony contract — for send() and citizen checks; includes the per-citizen
-// vesting-claim relay used for F-23.
+// vesting-claim relay used for F-23, and transferEquity for S-06 share gifting.
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
   "function isCitizen(address) view returns (bool)",
   "function claimVestedTranches(uint256) external returns (uint256 newlyVestedBps)",
+  "function transferEquity(uint256 assetId, address to, uint256 bps) external returns (uint256 newAssetId)",
 ]
 const COLONY_EVENTS_ABI = [
   "event Sent(address indexed from, address indexed to, uint256 amount, string note)",
@@ -529,6 +530,9 @@ export default function Company() {
   const [buybackPriceS,   setBuybackPriceS]  = useState('')
   const [scheduleForId,   setScheduleForId]  = useState(null)  // F-26: assetId showing schedule
   const [scheduleData,    setScheduleData]   = useState({})    // assetId → schedule object
+  const [giftForId,       setGiftForId]      = useState(null)  // S-06: assetId being gifted
+  const [giftTarget,      setGiftTarget]     = useState('')
+  const [giftBps,         setGiftBps]        = useState('')
   const [registeringAsset, setRegisteringAsset] = useState(false)  // OS-11
   const [assetLabel,      setAssetLabel]     = useState('')
   const [assetValue,      setAssetValue]     = useState('')
@@ -659,6 +663,27 @@ export default function Company() {
         [assetId]: { unavailable: true },
       }))
     }
+  }
+
+  // S-06: shareholder transfers vested equity as a gift via Colony relay.
+  async function handleGiftShares(assetId) {
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.colony || !signer) return
+    if (!ethers.isAddress(giftTarget)) { setActError('Invalid recipient address'); return }
+    const bps = Number(giftBps)
+    if (!(bps > 0)) { setActError('bps must be > 0'); return }
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const colonyContract = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colonyContract.transferEquity(BigInt(assetId), giftTarget, BigInt(bps))
+      await tx.wait()
+      setActDone(`Gifted ${bps} bps to ${shortAddr(giftTarget)}`)
+      setGiftForId(null); setGiftTarget(''); setGiftBps('')
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
   }
 
   // F-23: participant claims all newly-vested tranches via Colony relay.
@@ -1414,6 +1439,24 @@ export default function Company() {
                               Claim vested
                             </button>
                           )}
+                          {/* S-06: holder can gift vested shares to another wallet */}
+                          {e.assetId != null && e.wallet?.toLowerCase() === address?.toLowerCase() && e.vestedBps > 0 && (
+                            <button
+                              onClick={() => {
+                                if (giftForId === e.assetId) { setGiftForId(null) }
+                                else { setGiftForId(e.assetId); setGiftBps(String(Math.min(100, e.vestedBps))); setGiftTarget('') }
+                              }}
+                              disabled={actionPending}
+                              style={{
+                                fontSize: 9, padding: '2px 7px',
+                                background: 'none', border: `1px solid ${C.purple}`,
+                                color: C.purple, borderRadius: 4, cursor: 'pointer',
+                                opacity: actionPending ? 0.4 : 1,
+                              }}
+                            >
+                              {giftForId === e.assetId ? 'Cancel gift' : 'Gift'}
+                            </button>
+                          )}
                           {isSecretary && e.assetId != null && e.vestedBps > 0 && e.wallet?.toLowerCase() !== address?.toLowerCase() && (
                             <button
                               onClick={() => {
@@ -1447,6 +1490,44 @@ export default function Company() {
                           )}
                         </div>
                       </div>
+
+                      {/* S-06: inline gift form when this row's button is active */}
+                      {giftForId === e.assetId && (
+                        <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                          <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 8 }}>
+                            Gift vested bps from your stake to another wallet — recipient gets a fully-vested token. No payment exchanged.
+                          </div>
+                          <div style={{ marginBottom: 8 }}>
+                            <select
+                              style={{ ...inlineInput, width: '100%', fontFamily: "'IBM Plex Mono', monospace" }}
+                              value={giftTarget}
+                              onChange={ev => setGiftTarget(ev.target.value)}
+                            >
+                              <option value="">Select recipient citizen…</option>
+                              {citizens
+                                .filter(c => c.address.toLowerCase() !== address?.toLowerCase())
+                                .map(c => (
+                                  <option key={c.address} value={c.address}>{c.name}</option>
+                                ))
+                              }
+                            </select>
+                          </div>
+                          <input
+                            style={{ ...inlineInput, width: '100%', marginBottom: 8 }}
+                            type="number"
+                            placeholder={`bps to gift (max ${e.vestedBps})`}
+                            value={giftBps}
+                            onChange={ev => setGiftBps(ev.target.value)}
+                          />
+                          <button
+                            onClick={() => handleGiftShares(e.assetId)}
+                            disabled={actionPending || !giftTarget || !giftBps}
+                            style={{ ...actionBtn(C.purple), width: '100%', fontSize: 11, opacity: (actionPending || !giftTarget || !giftBps) ? 0.4 : 1 }}
+                          >
+                            {actionPending ? 'Gifting…' : `Gift ${giftBps || '0'} bps →`}
+                          </button>
+                        </div>
+                      )}
 
                       {/* F-26: per-tranche vesting schedule expandable */}
                       {e.assetId != null && e.totalBps > 0 && (

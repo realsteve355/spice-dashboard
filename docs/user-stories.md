@@ -235,7 +235,7 @@ Any citizen holding equity in one or more colony companies.
 | S-03 | As a shareholder, I want to buy shares by paying S-tokens (atomic on-chain swap) | P2 | — |
 | S-04 | As a shareholder, I want to sell shares to another citizen | P2 | ~ |
 | S-05 | As a shareholder, I want to see a company's revenue and V-token reserve before buying | P2 | ✓ |
-| S-06 | As a shareholder, I want to transfer shares as a gift | P2 | — |
+| S-06 | As a shareholder, I want to transfer shares as a gift | P2 | ✓ |
 | S-07 | As a shareholder, I want my shares included in my inheritance designation | P2 | — |
 
 *S-02: Dividend history section exists in Company page; populated from VDividendPaid events once secretary calls distributeVDividend() on-chain.*
@@ -526,7 +526,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 |---|-------|----------|--------|
 | A-12 | As a citizen or company, I want to create a secured fixed-obligation by pledging an A-token as collateral held in Fisc escrow, so I can borrow beyond the unsecured UBI cap | P2 | ~ |
 | A-13 | As a creditor, I want to see collateral A-tokens escrowed against obligations I hold, with a clear view of what I receive if the obligor defaults | P2 | ~ |
-| A-14 | As any citizen, I want to see the Fisc escrow registry — which collateral tokens are pledged against which obligations — so the system is fully transparent | P2 | — |
+| A-14 | As any citizen, I want to see the Fisc escrow registry — which collateral tokens are pledged against which obligations — so the system is fully transparent | P2 | ✓ |
 
 *A-12: Obligation creation uses Governance.sol mutual-consent flow: proposer calls `gov.proposeObligation()` (auto-signs their own side); counterparty calls `gov.signObligation()`. On second signature, `Colony.issueObligationGov()` fires automatically. Assets.jsx shows pending proposals awaiting counterparty signature. Collateral is locked in AToken.escrowedFor[] and cannot be transferred until obligation is settled/defaulted.*
 *A-13: Assets.jsx Obligations tab shows creditor's OBLIGATION_ASSET tokens with progress bars; secured obligations display the collateral asset name, current value, and lock status ("locked"). Full default-seizure detail view not yet built.*
