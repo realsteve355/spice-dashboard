@@ -508,12 +508,12 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| A-05 | As a citizen, I want to claim an unclaimed surface parcel by declaring a V-token value and paying the first epoch's stewardship fee (0.5% of declared value) — registering a Harberger A-token | P2 | — |
-| A-06 | As a land owner, I want to update my declared land value at any time, which also updates the force-purchase price and future stewardship fee | P2 | — |
-| A-07 | As a land owner, I want to see my outstanding stewardship fees and pay them in V-tokens before accruing arrears | P2 | — |
-| A-08 | As any citizen, I want to browse all land parcels with their declared values so I can identify land available for force-purchase | P2 | — |
-| A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the Fisc executes the transfer atomically; the current owner cannot refuse | P2 | — |
-| A-10 | As a land owner, I want to see a warning on my dashboard when I have unpaid stewardship epochs outstanding | P2 | — |
+| A-05 | As a citizen, I want to claim an unclaimed surface parcel by declaring a V-token value and paying the first epoch's stewardship fee (0.5% of declared value) — registering a Harberger A-token | P2 | ✓ |
+| A-06 | As a land owner, I want to update my declared land value at any time, which also updates the force-purchase price and future stewardship fee | P2 | ✓ |
+| A-07 | As a land owner, I want to see my outstanding stewardship fees and pay them in V-tokens before accruing arrears | P2 | ✓ |
+| A-08 | As any citizen, I want to browse all land parcels with their declared values so I can identify land available for force-purchase | P2 | ✓ |
+| A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the Fisc executes the transfer atomically; the current owner cannot refuse | P2 | ✓ |
+| A-10 | As a land owner, I want to see a warning on my dashboard when I have unpaid stewardship epochs outstanding | P2 | ~ |
 | A-11 | As a land owner, I want to see the ownership and valuation history of my parcel | P3 | — |
 | A-11a | As a land owner, I want a notification when another citizen force-purchases one of my parcels so I learn about the ownership change immediately | P3 | — |
 
@@ -671,7 +671,7 @@ AToken.sol and CompanyImplementation v2 are deployed (April 2026). The remaining
 | F-16 | CompanyImpl v3 | Full share event history (vesting events, forfeitures, transfers) |
 | F-26 (full) | UI | Vesting schedule per-tranche view + dividend-by-tranche history (per-tranche works in new colonies; pre-existing Dave's Colony AToken needs redeploy for getVestingSchedule getter; dividend-history-per-tranche still pending) |
 | M-24–M-26 | CompanyImpl v3 + Colony v2 | MCC office-term equity (issue on election, redeem on term end) |
-| A-05–A-11 | Colony v2 | Harberger land (stewardship fee collection at epoch advance) |
+| A-10 (full)/A-11/A-11a | UI / events | Harberger live; remaining: dashboard arrears warning surfacing on Dashboard.jsx (currently only on Land tab), per-parcel ownership history view, force-purchase notification |
 | Obligation auto-settlement | Colony v2 | advanceEpoch() must iterate AToken.activeObligationIds() and call markObligationPaid() |
 
 ---

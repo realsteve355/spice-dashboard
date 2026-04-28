@@ -22,11 +22,17 @@ const ATOKEN_ABI = [
   "function nextId() view returns (uint256)",
   "function assetLabel(uint256) view returns (string)",
   "function escrowedFor(uint256) view returns (uint256)",
+  "function getLandData(uint256) view returns (uint256 declaredValueV, uint256 lastFeeEpoch, bool isLand)",
+  "function outstandingLandFeeEpochs(uint256, uint256) view returns (uint256)",
 ]
 
 const COLONY_ABI = [
   "function registerAsset(string, uint256, uint256, bool, uint256) external returns (uint256)",
   "function transferAsset(uint256, address, uint256) external",
+  "function claimLand(string, uint256) external returns (uint256)",
+  "function updateLandValue(uint256, uint256) external",
+  "function payLandStewardship(uint256) external",
+  "function forcePurchaseLand(uint256, uint256) external",
   "function currentEpoch() view returns (uint256)",
   "function isCitizen(address) view returns (bool)",
   "function citizenName(address) view returns (string)",
@@ -64,6 +70,9 @@ export default function Assets() {
   const [reloadKey,     setReloadKey]     = useState(0)
   const [publicAssets,  setPublicAssets]  = useState(null) // A-03: full registry browse — null until loaded
   const [publicLoading, setPublicLoading] = useState(false)
+  const [landParcels,   setLandParcels]   = useState(null) // A-05+: Harberger land
+  const [landLoading,   setLandLoading]   = useState(false)
+  const [currentEpoch,  setCurrentEpoch]  = useState(0)
 
   useEffect(() => {
     const cfg = contracts?.colonies?.[slug]
@@ -187,6 +196,67 @@ export default function Assets() {
 
   function reload() { setReloadKey(k => k + 1) }
 
+  // A-05+: lazy-load all Harberger land parcels when the user opens the Land tab
+  useEffect(() => {
+    if (tab !== 'land' || landParcels !== null) return
+    const cfg = contracts?.colonies?.[slug]
+    if (!cfg?.aToken || !cfg?.colony) return
+    const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+    const aToken = new ethers.Contract(cfg.aToken, ATOKEN_ABI, rpc)
+    const colony = new ethers.Contract(cfg.colony, COLONY_ABI, rpc)
+    let cancelled = false
+    setLandLoading(true)
+
+    async function loadLand() {
+      try {
+        const [nextIdRaw, epoch] = await Promise.all([
+          aToken.nextId(),
+          colony.currentEpoch().then(Number),
+        ])
+        if (!cancelled) setCurrentEpoch(epoch)
+        const nextId = Number(nextIdRaw)
+        const ids    = Array.from({ length: Math.max(0, nextId - 1) }, (_, i) => i + 1)
+        const all = await Promise.all(ids.map(async (id) => {
+          try {
+            const t = await aToken.tokens(id)
+            const active = Boolean(t[4])
+            const form = Number(t[0])
+            if (!active || form !== FORM_UNILATERAL) return null
+            let isLand = false, declaredValueV = 0n, lastFeeEpoch = 0n
+            try {
+              const ld = await aToken.getLandData(id)
+              isLand = Boolean(ld[2])
+              if (!isLand) return null
+              declaredValueV = ld[0]
+              lastFeeEpoch   = ld[1]
+            } catch { return null }
+            const holder = String(t[1])
+            let label = ''
+            try { label = await aToken.assetLabel(id) } catch {}
+            const outstanding = Math.max(0, epoch - Number(lastFeeEpoch))
+            return {
+              id:             String(id),
+              label,
+              holder,
+              declaredValueV: Number(ethers.formatEther(declaredValueV)),
+              lastFeeEpoch:   Number(lastFeeEpoch),
+              outstanding,
+            }
+          } catch { return null }
+        }))
+        if (cancelled) return
+        const filtered = all.filter(Boolean).sort((a, b) => Number(b.id) - Number(a.id))
+        setLandParcels(filtered)
+      } catch (e) {
+        console.warn('[Assets] land load failed:', e?.message || e)
+        if (!cancelled) setLandParcels([])
+      }
+      if (!cancelled) setLandLoading(false)
+    }
+    loadLand()
+    return () => { cancelled = true }
+  }, [tab, landParcels, contracts, slug])
+
   // A-03: lazy-load all UNILATERAL assets in the colony when the user opens the public tab
   useEffect(() => {
     if (tab !== 'public' || publicAssets !== null) return
@@ -263,7 +333,7 @@ export default function Assets() {
 
         {/* Tab bar */}
         <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
-          {[['assets','My Assets'],['obligations','Obligations'],['public','Registry']].map(([t, label]) => (
+          {[['assets','My Assets'],['obligations','Obligations'],['public','Registry'],['land','Land']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{
               flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
               border: 'none', color: tab === t ? '#fff' : C.sub,
@@ -274,7 +344,19 @@ export default function Assets() {
           ))}
         </div>
 
-        {tab === 'public' ? (
+        {tab === 'land' ? (
+          <LandTab
+            parcels={landParcels}
+            loading={landLoading}
+            nameMap={nameMap}
+            myAddress={address}
+            signer={signer}
+            cfg={cfg}
+            isCitizen={isCitizen}
+            currentEpoch={currentEpoch}
+            onReload={() => { setLandParcels(null) }}
+          />
+        ) : tab === 'public' ? (
           <PublicRegistryTab
             assets={publicAssets}
             loading={publicLoading}
@@ -946,6 +1028,235 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ── Harberger Land tab (A-05–A-09) ───────────────────────────────────────────
+
+function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen, currentEpoch, onReload }) {
+  const [claiming,        setClaiming]        = useState(false)
+  const [claimLabel,      setClaimLabel]      = useState('')
+  const [claimValueV,     setClaimValueV]     = useState('')
+  const [pending,         setPending]         = useState(false)
+  const [error,           setError]           = useState(null)
+  const [done,            setDone]            = useState(null)
+  const [editForId,       setEditForId]       = useState(null)
+  const [newValueV,       setNewValueV]       = useState('')
+  const [forcePurchaseId, setForcePurchaseId] = useState(null)
+  const [purchaseValueV,  setPurchaseValueV]  = useState('')
+
+  async function withTx(fn) {
+    setPending(true); setError(null); setDone(null)
+    try { await fn() } catch (e) { setError(e?.reason || e?.shortMessage || e?.message || 'Transaction failed') }
+    setPending(false)
+  }
+
+  async function handleClaim() {
+    if (!signer || !cfg?.colony) return
+    if (!claimLabel.trim() || !(Number(claimValueV) > 0)) {
+      setError('Provide a label and declared V value > 0'); return
+    }
+    await withTx(async () => {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.claimLand(claimLabel.trim(), ethers.parseEther(String(claimValueV)))
+      await tx.wait()
+      setDone(`Parcel "${claimLabel}" claimed`)
+      setClaiming(false); setClaimLabel(''); setClaimValueV('')
+      onReload()
+    })
+  }
+
+  async function handleUpdate(id) {
+    if (!(Number(newValueV) > 0)) { setError('New value must be > 0'); return }
+    await withTx(async () => {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.updateLandValue(BigInt(id), ethers.parseEther(String(newValueV)))
+      await tx.wait()
+      setDone(`Parcel #${id} value updated to ${newValueV} V`)
+      setEditForId(null); setNewValueV('')
+      onReload()
+    })
+  }
+
+  async function handlePay(id) {
+    await withTx(async () => {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.payLandStewardship(BigInt(id))
+      await tx.wait()
+      setDone(`Stewardship paid for parcel #${id}`)
+      onReload()
+    })
+  }
+
+  async function handleForcePurchase(id) {
+    if (!(Number(purchaseValueV) > 0)) { setError('New declared value must be > 0'); return }
+    await withTx(async () => {
+      const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
+      const tx = await colony.forcePurchaseLand(BigInt(id), ethers.parseEther(String(purchaseValueV)))
+      await tx.wait()
+      setDone(`Force-purchased parcel #${id}`)
+      setForcePurchaseId(null); setPurchaseValueV('')
+      onReload()
+    })
+  }
+
+  return (
+    <div>
+      {done  && <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✓ {done}</div>}
+      {error && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{error}</div>}
+
+      {/* Claim panel — citizens only */}
+      {isCitizen && (
+        <div style={card}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: claiming ? 12 : 0 }}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>CLAIM A PARCEL</div>
+            <button onClick={() => setClaiming(v => !v)} style={{ ...ghostBtn, fontSize: 10 }}>
+              {claiming ? 'Cancel' : '+ New'}
+            </button>
+          </div>
+          {claiming && (
+            <div>
+              <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
+                Declare your Harberger V-token price. The first epoch's stewardship fee (0.5% of declared value)
+                is paid in V immediately. Anyone may force-purchase at your declared price at any time.
+              </div>
+              <Field label="Label (e.g. 'Sector-7 Plot A')" value={claimLabel} onChange={setClaimLabel} placeholder="describe the parcel" />
+              <Field label="Declared value (V)" value={claimValueV} onChange={setClaimValueV} placeholder="e.g. 1000" type="number" />
+              {Number(claimValueV) > 0 && (
+                <div style={{ fontSize: 11, color: C.gold, marginBottom: 10 }}>
+                  First-epoch fee: {(Number(claimValueV) * 0.005).toFixed(2)} V
+                </div>
+              )}
+              <button
+                onClick={handleClaim}
+                disabled={pending || !claimLabel.trim() || !(Number(claimValueV) > 0)}
+                style={{ ...actionBtn(C.gold), width: '100%', opacity: pending ? 0.4 : 1 }}
+              >
+                {pending ? 'Claiming…' : 'Claim parcel →'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* All parcels list */}
+      {loading || parcels === null ? (
+        <div style={{ textAlign: 'center', padding: 32, fontSize: 12, color: C.faint }}>Loading parcels…</div>
+      ) : parcels.length === 0 ? (
+        <div style={card}>
+          <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 24 }}>
+            No Harberger parcels claimed yet.
+          </div>
+        </div>
+      ) : (
+        <div style={card}>
+          <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+            ALL PARCELS · {parcels.length}
+          </div>
+          {parcels.map((p, i) => {
+            const isMine    = myAddress && p.holder.toLowerCase() === myAddress.toLowerCase()
+            const holderNm  = nameMap[p.holder.toLowerCase()] || `${p.holder.slice(0,6)}…${p.holder.slice(-4)}`
+            const monthlyFee = p.declaredValueV * 0.005
+            const owedV     = monthlyFee * p.outstanding
+            const isOverdue = p.outstanding > 0
+            return (
+              <div key={p.id} style={{
+                paddingBottom: i < parcels.length - 1 ? 14 : 0,
+                marginBottom:  i < parcels.length - 1 ? 14 : 0,
+                borderBottom:  i < parcels.length - 1 ? `1px solid ${C.border}` : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
+                    {p.label || `Parcel #${p.id}`}
+                    <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{p.id}</span>
+                    {isMine && <span style={{ fontSize: 10, color: C.gold, marginLeft: 6 }}>· yours</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.gold }}>{p.declaredValueV} V</div>
+                </div>
+                <div style={{ fontSize: 10, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>
+                  Holder: {holderNm} · monthly fee {monthlyFee.toFixed(2)} V
+                  {isOverdue && (
+                    <span style={{ color: C.red, marginLeft: 6 }}>
+                      · {p.outstanding} epoch{p.outstanding > 1 ? 's' : ''} owed ({owedV.toFixed(2)} V)
+                    </span>
+                  )}
+                </div>
+
+                {/* Owner actions */}
+                {isMine && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => { setEditForId(editForId === p.id ? null : p.id); setNewValueV(String(p.declaredValueV)) }}
+                      disabled={pending}
+                      style={{ fontSize: 9, padding: '2px 7px', background: 'none',
+                        border: `1px solid ${C.gold}`, color: C.gold, borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      {editForId === p.id ? 'Cancel' : 'Update value'}
+                    </button>
+                    {isOverdue && (
+                      <button
+                        onClick={() => handlePay(p.id)}
+                        disabled={pending}
+                        style={{ fontSize: 9, padding: '2px 7px', background: 'none',
+                          border: `1px solid ${C.red}`, color: C.red, borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        Pay {owedV.toFixed(2)} V stewardship
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Update value inline form */}
+                {isMine && editForId === p.id && (
+                  <div style={{ marginTop: 8, padding: 10, background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                    <input
+                      style={{ ...inlineInput, width: '100%', marginBottom: 8 }}
+                      type="number" placeholder="new declared value (V)"
+                      value={newValueV} onChange={e => setNewValueV(e.target.value)}
+                    />
+                    <button onClick={() => handleUpdate(p.id)} disabled={pending}
+                      style={{ ...actionBtn(C.gold), width: '100%', fontSize: 11, opacity: pending ? 0.4 : 1 }}>
+                      {pending ? 'Updating…' : 'Update declared value →'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Force-purchase action — only for non-holders */}
+                {!isMine && isCitizen && (
+                  <div style={{ marginTop: 8 }}>
+                    <button
+                      onClick={() => { setForcePurchaseId(forcePurchaseId === p.id ? null : p.id); setPurchaseValueV(String(p.declaredValueV)) }}
+                      disabled={pending}
+                      style={{ fontSize: 9, padding: '2px 7px', background: 'none',
+                        border: `1px solid ${C.purple}`, color: C.purple, borderRadius: 4, cursor: 'pointer' }}
+                    >
+                      {forcePurchaseId === p.id ? 'Cancel force purchase' : `Force-purchase at ${p.declaredValueV} V`}
+                    </button>
+                    {forcePurchaseId === p.id && (
+                      <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                        <div style={{ fontSize: 10, color: C.faint, marginBottom: 8, lineHeight: 1.6 }}>
+                          You will pay {p.declaredValueV} V to {holderNm} and become the new holder. Set your own
+                          declared value below — the first-epoch stewardship fee on it is also charged immediately.
+                        </div>
+                        <input
+                          style={{ ...inlineInput, width: '100%', marginBottom: 8 }}
+                          type="number" placeholder="your new declared value (V)"
+                          value={purchaseValueV} onChange={e => setPurchaseValueV(e.target.value)}
+                        />
+                        <button onClick={() => handleForcePurchase(p.id)} disabled={pending}
+                          style={{ ...actionBtn(C.purple), width: '100%', fontSize: 11, opacity: pending ? 0.4 : 1 }}>
+                          {pending ? 'Purchasing…' : 'Confirm force purchase →'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

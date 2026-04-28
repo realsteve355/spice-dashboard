@@ -73,6 +73,19 @@ interface IAToken {
     function transferAsset(uint256 id, address to, uint256 newValueS) external;
     function getTokenHolder(uint256 id) external view returns (address);
 
+    // Harberger land (A-05–A-11)
+    function claimLand(
+        address holder,
+        string  calldata label,
+        uint256 declaredValueV,
+        uint256 currentEpoch
+    ) external returns (uint256 id);
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external;
+    function markLandFeePaid(uint256 id, uint256 currentEpoch) external;
+    function forceLandPurchase(uint256 id, address newHolder, uint256 newDeclaredValueV) external;
+    function outstandingLandFeeEpochs(uint256 id, uint256 currentEpoch) external view returns (uint256);
+    function getLandData(uint256 id) external view returns (uint256 declaredValueV, uint256 lastFeeEpoch, bool isLand);
+
     // Obligations (citizen / company initiated)
     function issueObligation(
         address creditor,
@@ -610,6 +623,81 @@ contract Colony is Initializable {
         require(IAToken(aToken).getTokenHolder(id) == msg.sender, "Colony: not the asset owner");
         IAToken(aToken).transferAsset(id, to, newValueS);
         emit AssetTransferred(id, msg.sender, to, newValueS);
+    }
+
+    // ── Harberger land (A-05–A-09) ────────────────────────────────────────────
+
+    event LandClaimed(uint256 indexed id, address indexed holder, uint256 declaredValueV);
+    event LandValueUpdated(uint256 indexed id, uint256 newValueV);
+    event LandFeePaid(uint256 indexed id, uint256 epochs, uint256 totalV);
+    event LandForcePurchased(uint256 indexed id, address indexed from, address indexed to, uint256 priceV);
+
+    /**
+     * @notice A-05: claim an unowned surface parcel by declaring a V-token value
+     *         and paying the first epoch's stewardship fee (0.5% of declared value).
+     *         The first-month fee is transferred from the caller's V balance to
+     *         the colony treasury (this contract).
+     */
+    function claimLand(string calldata label, uint256 declaredValueV)
+        external requireAToken onlyCitizen returns (uint256 id)
+    {
+        require(declaredValueV > 0, "Colony: zero declared value");
+        uint256 fee = (declaredValueV * 50) / 10000; // STEWARDSHIP_BPS = 50
+        require(vToken.balanceOf(msg.sender) >= fee, "Colony: insufficient V for first stewardship");
+        if (fee > 0) vToken.colonyTransfer(msg.sender, address(this), fee);
+        id = IAToken(aToken).claimLand(msg.sender, label, declaredValueV, sToken.currentEpoch());
+        emit LandClaimed(id, msg.sender, declaredValueV);
+    }
+
+    /**
+     * @notice A-06: update the declared Harberger value of a parcel you own.
+     */
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external requireAToken onlyCitizen {
+        require(IAToken(aToken).getTokenHolder(id) == msg.sender, "Colony: not the land holder");
+        IAToken(aToken).updateLandValue(id, newDeclaredValueV);
+        emit LandValueUpdated(id, newDeclaredValueV);
+    }
+
+    /**
+     * @notice A-07: pay all outstanding stewardship epochs in V-tokens.
+     *         Fee = STEWARDSHIP_BPS × declaredValueV × epochsOutstanding.
+     */
+    function payLandStewardship(uint256 id) external requireAToken onlyCitizen {
+        require(IAToken(aToken).getTokenHolder(id) == msg.sender, "Colony: not the land holder");
+        uint256 currentEpoch = sToken.currentEpoch();
+        uint256 epochs = IAToken(aToken).outstandingLandFeeEpochs(id, currentEpoch);
+        require(epochs > 0, "Colony: no fee outstanding");
+        (uint256 declaredValueV, , bool isLand) = IAToken(aToken).getLandData(id);
+        require(isLand, "Colony: not land");
+        uint256 totalFee = (declaredValueV * 50 * epochs) / 10000;
+        require(vToken.balanceOf(msg.sender) >= totalFee, "Colony: insufficient V for stewardship");
+        if (totalFee > 0) vToken.colonyTransfer(msg.sender, address(this), totalFee);
+        IAToken(aToken).markLandFeePaid(id, currentEpoch);
+        emit LandFeePaid(id, epochs, totalFee);
+    }
+
+    /**
+     * @notice A-09: force-purchase a parcel at its declared price.
+     *         Caller pays declaredValueV in V to the current holder, then sets
+     *         their own declared value (and pays its first-epoch fee).
+     */
+    function forcePurchaseLand(uint256 id, uint256 newDeclaredValueV)
+        external requireAToken onlyCitizen
+    {
+        address currentHolder = IAToken(aToken).getTokenHolder(id);
+        require(currentHolder != msg.sender, "Colony: already the holder");
+        require(newDeclaredValueV > 0,        "Colony: zero new declared value");
+        (uint256 declaredValueV, , bool isLand) = IAToken(aToken).getLandData(id);
+        require(isLand, "Colony: not land");
+        require(vToken.balanceOf(msg.sender) >= declaredValueV, "Colony: insufficient V to purchase");
+        vToken.colonyTransfer(msg.sender, currentHolder, declaredValueV);
+        IAToken(aToken).forceLandPurchase(id, msg.sender, newDeclaredValueV);
+        // First stewardship epoch for the new owner
+        uint256 fee = (newDeclaredValueV * 50) / 10000;
+        require(vToken.balanceOf(msg.sender) >= fee, "Colony: insufficient V for new stewardship");
+        if (fee > 0) vToken.colonyTransfer(msg.sender, address(this), fee);
+        IAToken(aToken).markLandFeePaid(id, sToken.currentEpoch());
+        emit LandForcePurchased(id, currentHolder, msg.sender, declaredValueV);
     }
 
     // ── A-token relay — obligations ───────────────────────────────────────────

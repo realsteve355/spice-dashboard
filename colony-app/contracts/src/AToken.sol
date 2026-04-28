@@ -88,6 +88,16 @@ contract AToken is ERC721 {
         bool    defaulted;
     }
 
+    /// @notice A-05–A-11: Harberger land. Stored alongside the UNILATERAL asset.
+    struct LandData {
+        uint256 declaredValueV;     // owner-declared Harberger price in V-tokens
+        uint256 lastFeeEpoch;       // epoch when stewardship was last paid
+        bool    isLand;
+    }
+
+    /// @notice Stewardship fee per epoch, in basis points (50 = 0.5%) of declared V value.
+    uint256 public constant STEWARDSHIP_BPS = 50;
+
     // ── State ─────────────────────────────────────────────────────────────────
 
     address public colony;
@@ -98,6 +108,7 @@ contract AToken is ERC721 {
     mapping(uint256 => AssetData)      public assetData;
     mapping(uint256 => VestingData)    public vestingData;    // EQUITY_ASSET only
     mapping(uint256 => ObligationData) public obligationData; // OBLIGATION_LIABILITY only
+    mapping(uint256 => LandData)       public landData;       // UNILATERAL Harberger land only
 
     // Holder index: address → active token IDs
     mapping(address => uint256[])                        private _held;
@@ -155,6 +166,11 @@ contract AToken is ERC721 {
     event ObligationEpochSettled(uint256 indexed liabilityId, uint256 epochNumber, uint256 amountS);
     event ObligationCompleted(uint256 indexed liabilityId);
     event ObligationDefaulted(uint256 indexed liabilityId, uint256 collateralId, address creditor);
+
+    event LandClaimed(uint256 indexed id, address indexed holder, uint256 declaredValueV);
+    event LandValueUpdated(uint256 indexed id, uint256 oldValueV, uint256 newValueV);
+    event LandFeePaid(uint256 indexed id, uint256 epoch);
+    event LandForcePurchased(uint256 indexed id, address indexed from, address indexed to, uint256 priceV);
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -878,6 +894,113 @@ contract AToken is ERC721 {
             v.trancheBps,
             v.nextTranche
         );
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Harberger Land (A-05–A-11) — UNILATERAL form with stewardship semantics
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * @notice Mint a Harberger land parcel A-token (A-05).
+     *         Bypasses the standard registerAsset threshold — first-come-first-served
+     *         per spec §2.3. Stewardship epoch starts at currentEpoch.
+     */
+    function claimLand(
+        address holder,
+        string  calldata label,
+        uint256 declaredValueV,
+        uint256 currentEpoch
+    ) external onlyColony returns (uint256 id) {
+        require(holder != address(0),  "AToken: zero holder");
+        require(declaredValueV > 0,    "AToken: zero declared value");
+        id = _createToken(Form.UNILATERAL, holder, address(0), 0);
+        assetData[id] = AssetData({
+            valueSTokens:      0,
+            weightKg:          0,
+            hasAutonomousAI:   false,
+            depreciationBps:   0,
+            registrationEpoch: currentEpoch
+        });
+        if (bytes(label).length > 0) assetLabel[id] = label;
+        landData[id] = LandData({
+            declaredValueV: declaredValueV,
+            lastFeeEpoch:   currentEpoch,
+            isLand:         true
+        });
+        emit LandClaimed(id, holder, declaredValueV);
+    }
+
+    /**
+     * @notice Update the declared Harberger value of a parcel (A-06).
+     *         Authorisation enforced by Colony before relay — caller must hold the parcel.
+     */
+    function updateLandValue(uint256 id, uint256 newDeclaredValueV) external onlyColony {
+        LandData storage l = landData[id];
+        require(l.isLand,                 "AToken: not a land token");
+        require(newDeclaredValueV > 0,    "AToken: zero declared value");
+        uint256 old = l.declaredValueV;
+        l.declaredValueV = newDeclaredValueV;
+        emit LandValueUpdated(id, old, newDeclaredValueV);
+    }
+
+    /**
+     * @notice Mark stewardship as paid up to currentEpoch (A-07).
+     *         Colony settles the V-token transfer separately.
+     */
+    function markLandFeePaid(uint256 id, uint256 currentEpoch) external onlyColony {
+        LandData storage l = landData[id];
+        require(l.isLand, "AToken: not a land token");
+        l.lastFeeEpoch = currentEpoch;
+        emit LandFeePaid(id, currentEpoch);
+    }
+
+    /**
+     * @notice Force-purchase a parcel at its declared price (A-09).
+     *         Buyer sets a new declared value as part of the purchase.
+     *         Authorisation + payment handled by Colony before relay.
+     */
+    function forceLandPurchase(
+        uint256 id,
+        address newHolder,
+        uint256 newDeclaredValueV
+    ) external onlyColony {
+        Token    storage t = tokens[id];
+        LandData storage l = landData[id];
+        require(t.active,                  "AToken: inactive");
+        require(l.isLand,                  "AToken: not a land token");
+        require(newHolder != address(0),   "AToken: zero recipient");
+        require(newDeclaredValueV > 0,     "AToken: zero declared value");
+        address from = t.holder;
+        require(newHolder != from,         "AToken: already holder");
+        uint256 oldPrice = l.declaredValueV;
+        _moveToken(id, from, newHolder);
+        l.declaredValueV = newDeclaredValueV;
+        emit LandForcePurchased(id, from, newHolder, oldPrice);
+        if (newDeclaredValueV != oldPrice) {
+            emit LandValueUpdated(id, oldPrice, newDeclaredValueV);
+        }
+    }
+
+    /**
+     * @notice Number of epochs of stewardship currently outstanding for a parcel (A-07/A-10).
+     *         currentEpoch − lastFeeEpoch. Returns 0 if up to date or not land.
+     */
+    function outstandingLandFeeEpochs(uint256 id, uint256 currentEpoch)
+        external view returns (uint256)
+    {
+        LandData storage l = landData[id];
+        if (!l.isLand || currentEpoch <= l.lastFeeEpoch) return 0;
+        return currentEpoch - l.lastFeeEpoch;
+    }
+
+    /**
+     * @notice Read the LandData record for a parcel.
+     */
+    function getLandData(uint256 id)
+        external view returns (uint256 declaredValueV, uint256 lastFeeEpoch, bool isLand)
+    {
+        LandData storage l = landData[id];
+        return (l.declaredValueV, l.lastFeeEpoch, l.isLand);
     }
 
     /**

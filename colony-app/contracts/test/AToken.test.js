@@ -578,4 +578,99 @@ describe("AToken", () => {
       expect(sched[5]).to.equal(0n);
     });
   });
+
+  // ── Harberger Land (A-05–A-09) ───────────────────────────────────────────
+  describe("Harberger land", () => {
+    it("STEWARDSHIP_BPS constant is 50 (0.5%)", async () => {
+      const { at } = await loadFixture(deploy);
+      expect(await at.STEWARDSHIP_BPS()).to.equal(50n);
+    });
+
+    it("claimLand mints UNILATERAL token with land data and emits LandClaimed", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await expect(at.connect(colony).claimLand(alice.address, "Parcel-1", E(1000), 5))
+        .to.emit(at, "LandClaimed")
+        .withArgs(1, alice.address, E(1000));
+      expect(await at.ownerOf(1)).to.equal(alice.address);
+      const [v, lastEpoch, isLand] = await at.getLandData(1);
+      expect(v).to.equal(E(1000));
+      expect(lastEpoch).to.equal(5n);
+      expect(isLand).to.equal(true);
+    });
+
+    it("claimLand rejects zero declared value and zero holder", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await expect(
+        at.connect(colony).claimLand(alice.address, "x", 0, 1)
+      ).to.be.revertedWith("AToken: zero declared value");
+      await expect(
+        at.connect(colony).claimLand(ethers.ZeroAddress, "x", E(100), 1)
+      ).to.be.revertedWith("AToken: zero holder");
+    });
+
+    it("claimLand bypasses the regular registerAsset threshold (small parcels OK)", async () => {
+      // 100 V declared — well below the 500 S registerAsset threshold
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "Tiny", E(100), 1);
+      expect(await at.ownerOf(1)).to.equal(alice.address);
+    });
+
+    it("updateLandValue changes declared value and emits LandValueUpdated", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "P", E(1000), 1);
+      await expect(at.connect(colony).updateLandValue(1, E(1500)))
+        .to.emit(at, "LandValueUpdated")
+        .withArgs(1, E(1000), E(1500));
+      const [v] = await at.getLandData(1);
+      expect(v).to.equal(E(1500));
+    });
+
+    it("updateLandValue rejects non-land tokens", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).registerAsset(alice.address, "X", E(600), 0, false, 0, 1);
+      await expect(
+        at.connect(colony).updateLandValue(1, E(100))
+      ).to.be.revertedWith("AToken: not a land token");
+    });
+
+    it("outstandingLandFeeEpochs returns currentEpoch − lastFeeEpoch", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "P", E(1000), 5);
+      expect(await at.outstandingLandFeeEpochs(1, 5)).to.equal(0n);
+      expect(await at.outstandingLandFeeEpochs(1, 6)).to.equal(1n);
+      expect(await at.outstandingLandFeeEpochs(1, 12)).to.equal(7n);
+    });
+
+    it("markLandFeePaid resets outstanding to 0", async () => {
+      const { at, colony, alice } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "P", E(1000), 5);
+      await at.connect(colony).markLandFeePaid(1, 12);
+      expect(await at.outstandingLandFeeEpochs(1, 12)).to.equal(0n);
+      expect(await at.outstandingLandFeeEpochs(1, 13)).to.equal(1n);
+    });
+
+    it("forceLandPurchase moves the parcel and updates the declared value", async () => {
+      const { at, colony, alice, bob } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "P", E(1000), 1);
+      await expect(at.connect(colony).forceLandPurchase(1, bob.address, E(1500)))
+        .to.emit(at, "LandForcePurchased")
+        .withArgs(1, alice.address, bob.address, E(1000))
+        .and.to.emit(at, "LandValueUpdated")
+        .withArgs(1, E(1000), E(1500));
+      expect(await at.ownerOf(1)).to.equal(bob.address);
+      const [v] = await at.getLandData(1);
+      expect(v).to.equal(E(1500));
+    });
+
+    it("forceLandPurchase rejects self-purchase and zero declared value", async () => {
+      const { at, colony, alice, bob } = await loadFixture(deploy);
+      await at.connect(colony).claimLand(alice.address, "P", E(1000), 1);
+      await expect(
+        at.connect(colony).forceLandPurchase(1, alice.address, E(2000))
+      ).to.be.revertedWith("AToken: already holder");
+      await expect(
+        at.connect(colony).forceLandPurchase(1, bob.address, 0)
+      ).to.be.revertedWith("AToken: zero declared value");
+    });
+  });
 });
