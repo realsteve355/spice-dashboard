@@ -24,6 +24,10 @@ const ATOKEN_ABI = [
   "function escrowedFor(uint256) view returns (uint256)",
   "function getLandData(uint256) view returns (uint256 declaredValueV, uint256 lastFeeEpoch, bool isLand)",
   "function outstandingLandFeeEpochs(uint256, uint256) view returns (uint256)",
+  "event LandClaimed(uint256 indexed id, address indexed holder, uint256 declaredValueV)",
+  "event LandValueUpdated(uint256 indexed id, uint256 oldValueV, uint256 newValueV)",
+  "event LandFeePaid(uint256 indexed id, uint256 epoch)",
+  "event LandForcePurchased(uint256 indexed id, address indexed from, address indexed to, uint256 priceV)",
 ]
 
 const COLONY_ABI = [
@@ -1045,6 +1049,8 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
   const [newValueV,       setNewValueV]       = useState('')
   const [forcePurchaseId, setForcePurchaseId] = useState(null)
   const [purchaseValueV,  setPurchaseValueV]  = useState('')
+  const [historyForId,    setHistoryForId]    = useState(null)   // A-11
+  const [historyData,     setHistoryData]     = useState({})     // id → events array
 
   async function withTx(fn) {
     setPending(true); setError(null); setDone(null)
@@ -1089,13 +1095,83 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
     })
   }
 
+  // A-11: lazy-load ownership/valuation history for a parcel.
+  async function toggleHistory(id) {
+    if (historyForId === id) { setHistoryForId(null); return }
+    setHistoryForId(id)
+    if (historyData[id]) return
+    if (!cfg?.aToken) return
+    try {
+      const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+      const aToken = new ethers.Contract(cfg.aToken, ATOKEN_ABI, rpc)
+      const iface  = new ethers.Interface(ATOKEN_ABI)
+      const idHex  = ethers.zeroPadValue(ethers.toBeHex(BigInt(id)), 32)
+      const topics = {
+        claimed:  ethers.id("LandClaimed(uint256,address,uint256)"),
+        updated:  ethers.id("LandValueUpdated(uint256,uint256,uint256)"),
+        feePaid:  ethers.id("LandFeePaid(uint256,uint256)"),
+        forced:   ethers.id("LandForcePurchased(uint256,address,address,uint256)"),
+      }
+      const toBlock   = await rpc.getBlockNumber()
+      const fromBlock = Math.max(0, toBlock - 50000)
+      const all = []
+      for (const [kind, topic] of Object.entries(topics)) {
+        const logs = await rpc.getLogs({ address: cfg.aToken, fromBlock, toBlock, topics: [topic, idHex] })
+        for (const log of logs) {
+          let parsed
+          try { parsed = iface.parseLog(log) } catch { continue }
+          all.push({ kind, blockNumber: log.blockNumber, args: parsed.args })
+        }
+      }
+      // Resolve block timestamps
+      const blocks = [...new Set(all.map(e => e.blockNumber))]
+      const blockMap = {}
+      await Promise.all(blocks.map(async n => {
+        const b = await rpc.getBlock(n); if (b) blockMap[n] = b.timestamp
+      }))
+      const fmtDate = ts => ts
+        ? new Date(ts * 1000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : ''
+      all.sort((a, b) => a.blockNumber - b.blockNumber)
+      const events = all.map(e => {
+        const date = fmtDate(blockMap[e.blockNumber])
+        if (e.kind === 'claimed') return { date, text: `Claimed by ${nameMap[String(e.args[1]).toLowerCase()] || `${String(e.args[1]).slice(0,6)}…`} at ${Number(ethers.formatEther(e.args[2]))} V` }
+        if (e.kind === 'updated') return { date, text: `Declared value ${Number(ethers.formatEther(e.args[1]))} → ${Number(ethers.formatEther(e.args[2]))} V` }
+        if (e.kind === 'feePaid') return { date, text: `Stewardship paid (epoch ${Number(e.args[1])})` }
+        if (e.kind === 'forced')  return { date, text: `Force-purchased: ${nameMap[String(e.args[1]).toLowerCase()] || `${String(e.args[1]).slice(0,6)}…`} → ${nameMap[String(e.args[2]).toLowerCase()] || `${String(e.args[2]).slice(0,6)}…`} at ${Number(ethers.formatEther(e.args[3]))} V` }
+        return null
+      }).filter(Boolean)
+      setHistoryData(prev => ({ ...prev, [id]: events }))
+    } catch (e) {
+      setHistoryData(prev => ({ ...prev, [id]: [] }))
+    }
+  }
+
   async function handleForcePurchase(id) {
     if (!(Number(purchaseValueV) > 0)) { setError('New declared value must be > 0'); return }
+    // Capture the outgoing holder before the transfer so we can notify them (A-11a)
+    const parcel = parcels?.find(p => p.id === id)
+    const outgoingHolder = parcel?.holder
     await withTx(async () => {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
       const tx = await colony.forcePurchaseLand(BigInt(id), ethers.parseEther(String(purchaseValueV)))
       await tx.wait()
       setDone(`Force-purchased parcel #${id}`)
+      // A-11a: notify the outgoing holder that their parcel was force-purchased
+      if (outgoingHolder && cfg?.colony) {
+        fetch('/api/notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create',
+            colony: cfg.colony,
+            recipient: outgoingHolder,
+            kind: 'land_force_purchased',
+            title: `Parcel #${id} force-purchased`,
+            body: `Your land parcel was force-purchased at its declared price. Buyer set new declared value ${purchaseValueV} V.`,
+          }),
+        }).catch(() => {})
+      }
       setForcePurchaseId(null); setPurchaseValueV('')
       onReload()
     })
@@ -1221,6 +1297,38 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                     </button>
                   </div>
                 )}
+
+                {/* A-11: ownership / valuation history toggle */}
+                <div style={{ marginTop: 6 }}>
+                  <button
+                    onClick={() => toggleHistory(p.id)}
+                    style={{
+                      fontSize: 9, padding: 0, border: 'none', background: 'none',
+                      color: C.faint, cursor: 'pointer', textDecoration: 'underline', letterSpacing: '0.04em',
+                    }}
+                  >
+                    {historyForId === p.id ? 'Hide history' : 'History'}
+                  </button>
+                  {historyForId === p.id && (() => {
+                    const h = historyData[p.id]
+                    if (!h) return <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>Loading…</div>
+                    if (h.length === 0) return <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>No history available.</div>
+                    return (
+                      <div style={{ marginTop: 6, padding: 8, background: `${C.gold}06`, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                        {h.map((ev, j) => (
+                          <div key={j} style={{
+                            fontSize: 10, color: C.sub, lineHeight: 1.5,
+                            paddingTop: j > 0 ? 4 : 0,
+                            display: 'flex', justifyContent: 'space-between', gap: 8,
+                          }}>
+                            <span style={{ flex: 1 }}>{ev.text}</span>
+                            <span style={{ color: C.faint }}>{ev.date}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                </div>
 
                 {/* Force-purchase action — only for non-holders */}
                 {!isMine && isCitizen && (

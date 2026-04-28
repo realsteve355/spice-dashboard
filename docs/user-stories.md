@@ -514,8 +514,8 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 | A-08 | As any citizen, I want to browse all land parcels with their declared values so I can identify land available for force-purchase | P2 | ✓ |
 | A-09 | As a citizen, I want to force-purchase a land parcel at its declared V-token price — the Fisc executes the transfer atomically; the current owner cannot refuse | P2 | ✓ |
 | A-10 | As a land owner, I want to see a warning on my dashboard when I have unpaid stewardship epochs outstanding | P2 | ~ |
-| A-11 | As a land owner, I want to see the ownership and valuation history of my parcel | P3 | — |
-| A-11a | As a land owner, I want a notification when another citizen force-purchases one of my parcels so I learn about the ownership change immediately | P3 | — |
+| A-11 | As a land owner, I want to see the ownership and valuation history of my parcel | P3 | ✓ |
+| A-11a | As a land owner, I want a notification when another citizen force-purchases one of my parcels so I learn about the ownership change immediately | P3 | ✓ |
 
 *A-05–A-11: Require AToken.sol with Harberger variant support. Not yet deployed.*
 *Stewardship fee: 0.5% × declaredValueV × epochsDue, paid in V-tokens to colony treasury.*
