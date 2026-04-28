@@ -206,7 +206,7 @@ operations on behalf of the organisation.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| OS-06 | As an organisation secretary, I want to see the company wallet's S-token balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | — |
+| OS-06 | As an organisation secretary, I want to see the company wallet's S-token balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | ✓ |
 | OS-07 | As an organisation secretary, I want to convert the company's net S-token earnings to V-tokens in a single on-chain transaction | P1 | ✓ |
 | OS-08 | As an organisation secretary, I want to distribute V-token dividends to all equity holders in one transaction — amounts calculated automatically from the equity register in basis points | P1 | ✓ |
 | OS-09 | As an organisation secretary, I want to see a dividend history showing each distribution: date, total V-tokens distributed, and the per-holder breakdown | P2 | ~ |
@@ -216,8 +216,8 @@ operations on behalf of the organisation.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| OS-11 | As an organisation secretary, I want to register a physical asset to the company wallet so it appears on-chain as company-owned | P2 | — |
-| OS-12 | As an organisation secretary, I want to transfer a company-owned A-token to a citizen's wallet (e.g. on sale of company equipment) | P2 | — |
+| OS-11 | As an organisation secretary, I want to register a physical asset to the company wallet so it appears on-chain as company-owned | P2 | ✓ |
+| OS-12 | As an organisation secretary, I want to transfer a company-owned A-token to a citizen's wallet (e.g. on sale of company equipment) | P2 | ✓ |
 | OS-13 | As an organisation secretary, I want to file a Harberger land claim in the company's name, paying the first epoch's stewardship fee from the company's V-token reserve | P2 | — |
 
 *OS-01–OS-03: Completed April 2026. OToken.sol deployed, CompanyFactory mints O-token on deployCompany(). Dashboard shows Active Roles section. OS-04+ not yet built.*
@@ -263,8 +263,8 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| M-08 | As an MCC board member, I want to see the recall trigger status in real time | P1 | ~ |
-| M-09 | As an MCC board member, I want an alert when approaching the recall threshold | P2 | — |
+| M-08 | As an MCC board member, I want to see the recall trigger status in real time | P1 | ✓ |
+| M-09 | As an MCC board member, I want an alert when approaching the recall threshold | P2 | ✓ |
 | M-10 | As an MCC board member, I want to propose a dividend distribution | P2 | — |
 | M-11 | As an MCC board member, I want to see results of all G-token votes | P2 | ~ |
 | M-12 | As an MCC board member, I want to see MCC V-token reserve and profit | P2 | — |

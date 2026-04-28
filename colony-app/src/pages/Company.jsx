@@ -47,6 +47,8 @@ const COMPANY_ABI = [
   "function shareNAV(uint256) view returns (uint256)",
   "function setName(string) external",
   "function changeSecretary(address) external",
+  "function registerAsset(string, uint256, uint256, bool, uint256) external returns (uint256)",
+  "function transferAsset(uint256, address, uint256) external",
 ]
 
 // AToken — for reading equity token IDs (assetId lookups for forfeit/buyback)
@@ -54,6 +56,9 @@ const COMPANY_ABI = [
 // deployments compiled with the v3+ source; older colonies fall back gracefully).
 const ATOKEN_ABI = [
   "function tokensOf(address) view returns (uint256[])",
+  "function tokens(uint256) view returns (uint8 form, address holder, address counterparty, uint256 linkedId, bool active)",
+  "function assetData(uint256) view returns (uint256 valueSTokens, uint256 weightKg, bool hasAI, uint256 depreciationBps, uint256 registrationEpoch)",
+  "function assetLabel(uint256) view returns (string)",
   "function getVestingStake(uint256) view returns (uint256, uint256, address)",
   "function getVestingSchedule(uint256) view returns (uint256 totalStakeBps, uint256 vestedBps, address company, uint256[] vestingEpochs, uint256[] trancheBps, uint256 nextTranche)",
 ]
@@ -524,6 +529,12 @@ export default function Company() {
   const [buybackPriceS,   setBuybackPriceS]  = useState('')
   const [scheduleForId,   setScheduleForId]  = useState(null)  // F-26: assetId showing schedule
   const [scheduleData,    setScheduleData]   = useState({})    // assetId → schedule object
+  const [registeringAsset, setRegisteringAsset] = useState(false)  // OS-11
+  const [assetLabel,      setAssetLabel]     = useState('')
+  const [assetValue,      setAssetValue]     = useState('')
+  const [assetWeight,     setAssetWeight]    = useState('')
+  const [assetHasAI,      setAssetHasAI]     = useState(false)
+  const [companyAssets,   setCompanyAssets]  = useState([])     // OS-06: company-held A-tokens
   const [citizens,        setCitizens]       = useState([])
 
   useEffect(() => {
@@ -666,6 +677,90 @@ export default function Company() {
     }
     setActPending(false)
   }
+
+  // OS-11: secretary registers a physical asset to the company wallet.
+  async function handleRegisterAsset() {
+    const co = companyContract()
+    if (!co) return
+    const v = Number(assetValue)
+    const w = Number(assetWeight) || 0
+    if (!assetLabel.trim() || (!(v > 500) && !(w > 50) && !assetHasAI)) {
+      setActError('Asset must be > 500 S OR > 50 kg OR have autonomous AI')
+      return
+    }
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const tx = await co.registerAsset(
+        assetLabel.trim(),
+        ethers.parseEther(String(v || 0)),
+        BigInt(w),
+        Boolean(assetHasAI),
+        0n,  // no depreciation by default — secretary can set later via direct AToken call if needed
+      )
+      await tx.wait()
+      setActDone(`Asset "${assetLabel}" registered to company`)
+      setRegisteringAsset(false); setAssetLabel(''); setAssetValue(''); setAssetWeight(''); setAssetHasAI(false)
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
+  // OS-12: secretary transfers a company-held A-token to another wallet (sale).
+  async function handleTransferCompanyAsset(assetId, toAddr, newValueS) {
+    const co = companyContract()
+    if (!co) return
+    setActPending(true); setActError(null); setActDone(null)
+    try {
+      const tx = await co.transferAsset(BigInt(assetId), toAddr, ethers.parseEther(String(newValueS || 0)))
+      await tx.wait()
+      setActDone(`Asset transferred`)
+      refresh(); setReloadKey(k => k + 1)
+    } catch (e) {
+      setActError(e?.reason || e?.shortMessage || 'Transaction failed')
+    }
+    setActPending(false)
+  }
+
+  // OS-06: load company-held UNILATERAL A-tokens for the Overview asset card.
+  useEffect(() => {
+    if (!onChain || !companyId) return
+    const cfg = deployedContracts?.colonies?.[slug]
+    if (!cfg?.aToken) return
+    let cancelled = false
+
+    async function loadCompanyAssets() {
+      try {
+        const rpc    = new ethers.JsonRpcProvider('https://sepolia.base.org')
+        const aToken = new ethers.Contract(cfg.aToken, ATOKEN_ABI, rpc)
+        const ids    = await aToken.tokensOf(companyId)
+        const items  = await Promise.all(ids.map(async id => {
+          try {
+            const t = await aToken.tokens(id)
+            const form = Number(t[0])
+            const active = Boolean(t[4])
+            if (!active || form !== 0) return null  // UNILATERAL only
+            const [valRaw, wt, hasAI] = await aToken.assetData(id)
+            let label = ''
+            try { label = await aToken.assetLabel(id) } catch {}
+            return {
+              id:       String(id),
+              label,
+              value:    Math.floor(Number(ethers.formatEther(valRaw))),
+              weightKg: Number(wt),
+              hasAI:    Boolean(hasAI),
+            }
+          } catch { return null }
+        }))
+        if (!cancelled) setCompanyAssets(items.filter(Boolean))
+      } catch (e) {
+        console.warn('[Company] company assets load failed:', e?.message || e)
+      }
+    }
+    loadCompanyAssets()
+    return () => { cancelled = true }
+  }, [onChain, companyId, deployedContracts, slug, reloadKey])
 
   // F-15a: buy back vested equity from a holder at a secretary-set S-token price.
   // Cancels the bps from the holder's stake, increasing NAV for remaining shareholders.
@@ -1033,6 +1128,35 @@ export default function Company() {
                   </div>
                 )}
 
+                {/* Register company asset (OS-11) */}
+                <button onClick={() => setRegisteringAsset(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
+                  Register company asset
+                </button>
+                {registeringAsset && (
+                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
+                      Register a physical asset on-chain to the company wallet. Threshold: value &gt; 500 S, weight &gt; 50 kg, or autonomous AI.
+                    </div>
+                    <CField label="Label (e.g. 'Truck VIN-1234')" value={assetLabel} onChange={setAssetLabel} placeholder="describe the asset" />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <CField label="Declared value (S)" value={assetValue} onChange={setAssetValue} placeholder="600" type="number" />
+                      <CField label="Weight (kg, optional)" value={assetWeight} onChange={setAssetWeight} placeholder="0" type="number" />
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.sub, marginBottom: 10 }}>
+                      <input type="checkbox" checked={assetHasAI} onChange={e => setAssetHasAI(e.target.checked)} />
+                      Autonomous AI capability
+                    </label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setRegisteringAsset(false)} disabled={actionPending} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1, opacity: actionPending ? 0.4 : 1 }}>
+                        Cancel
+                      </button>
+                      <button onClick={handleRegisterAsset} disabled={actionPending || !assetLabel.trim()} style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !assetLabel.trim()) ? 0.4 : 1 }}>
+                        {actionPending ? 'Registering…' : 'Register asset →'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Hand over secretary role (OS-04) */}
                 <button onClick={() => setHandingOver(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
                   Hand over secretary role
@@ -1106,6 +1230,55 @@ export default function Company() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* OS-06 + OS-12: Company-held assets list, with secretary transfer action */}
+        {tab === 'overview' && companyAssets.length > 0 && (
+          <div style={card}>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
+              COMPANY ASSETS · {companyAssets.length}
+            </div>
+            {companyAssets.map((a, i) => (
+              <div key={a.id} style={{
+                paddingBottom: i < companyAssets.length - 1 ? 10 : 0,
+                marginBottom:  i < companyAssets.length - 1 ? 10 : 0,
+                borderBottom:  i < companyAssets.length - 1 ? `1px solid ${C.border}` : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div style={{ fontSize: 12, color: C.text }}>
+                    {a.label || `Asset #${a.id}`}
+                    <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{a.id}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: C.gold }}>{a.value} S</div>
+                </div>
+                <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
+                  {a.weightKg > 0 && <>{a.weightKg} kg · </>}
+                  {a.hasAI && <>autonomous AI · </>}
+                  declared value
+                </div>
+                {isSecretary && (
+                  <button
+                    onClick={() => {
+                      const to = window.prompt('Recipient wallet address:')
+                      if (!to || !ethers.isAddress(to)) return
+                      const newVal = window.prompt('Agreed transfer price (S):', String(a.value))
+                      if (!newVal || isNaN(Number(newVal))) return
+                      handleTransferCompanyAsset(a.id, to, newVal)
+                    }}
+                    disabled={actionPending}
+                    style={{
+                      marginTop: 6, fontSize: 9, padding: '2px 7px',
+                      background: 'none', border: `1px solid ${C.faint}`,
+                      color: C.faint, borderRadius: 4, cursor: 'pointer',
+                      opacity: actionPending ? 0.4 : 1,
+                    }}
+                  >
+                    Transfer →
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         )}
 

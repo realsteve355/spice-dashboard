@@ -78,6 +78,7 @@ export default function Mcc() {
   const [loading,       setLoading]       = useState(true)
   const [isAuthored,    setIsAuthored]    = useState(false)  // can post announcements
   const [oTokenHolder,  setOTokenHolder]  = useState(null)   // M-23: who holds the MCC O-token
+  const [recallRisk,    setRecallRisk]    = useState(null)   // M-09: budget-spike recall warning
 
   const [announcements, setAnnouncements] = useState([])
   const [annLoading,    setAnnLoading]    = useState(true)
@@ -226,6 +227,34 @@ export default function Mcc() {
   }
 
   useEffect(() => { loadAnnouncements() }, [slug])
+
+  // M-09: read budget history and compute recall-risk indicator. Per spec §1.4,
+  // recall fires when current MCC bill rises >20% above 12-month rolling avg.
+  // Yellow warning at >10%, red at >=20%.
+  useEffect(() => {
+    if (!cfg?.colony) return
+    fetch(`/api/budget?colony=${cfg.colony}`)
+      .then(r => r.json())
+      .then(data => {
+        const published = data.published
+        const history   = data.history || []
+        if (!published?.totalS) { setRecallRisk(null); return }
+        const priorTotals = history
+          .filter(h => h.version !== published.version)
+          .slice(0, 12)
+          .map(h => Number(h.totalS) || 0)
+          .filter(v => v > 0)
+        if (priorTotals.length === 0) { setRecallRisk({ no_history: true }); return }
+        const avg     = priorTotals.reduce((s, v) => s + v, 0) / priorTotals.length
+        const current = Number(published.totalS) || 0
+        const ratio   = current / avg
+        let status = 'ok'
+        if (ratio >= 1.20) status = 'recall'
+        else if (ratio >= 1.10) status = 'warning'
+        setRecallRisk({ current, avg, ratio, status, sampleSize: priorTotals.length })
+      })
+      .catch(() => setRecallRisk(null))
+  }, [cfg])
 
   async function handlePost() {
     if (!newTitle.trim()) return
@@ -412,6 +441,46 @@ export default function Mcc() {
             Go to Votes →
           </button>
         </div>
+
+        {/* M-09: Recall risk ───────────────────────────────────────── */}
+        {recallRisk && !recallRisk.no_history && (() => {
+          const risk = recallRisk
+          const color = risk.status === 'recall' ? '#ef4444'
+                      : risk.status === 'warning' ? '#eab308'
+                      : C.green
+          const label = risk.status === 'recall' ? 'RECALL TRIGGER ACTIVE'
+                      : risk.status === 'warning' ? 'APPROACHING THRESHOLD'
+                      : 'STABLE'
+          return (
+            <div style={{ ...card, borderColor: risk.status !== 'ok' ? color : C.border }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>RECALL RISK</div>
+                <span style={{
+                  fontSize: 10, color, border: `1px solid ${color}`,
+                  borderRadius: 10, padding: '3px 9px', letterSpacing: '0.04em',
+                }}>
+                  {label}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+                {[
+                  ['Current',         `${risk.current} S`],
+                  ['12-mo avg',       `${Math.round(risk.avg)} S`],
+                  ['Ratio',           `${(risk.ratio * 100).toFixed(0)}%`],
+                ].map(([k, v]) => (
+                  <div key={k}>
+                    <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.08em', marginBottom: 3 }}>{k.toUpperCase()}</div>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
+                Recall triggers automatically when current bill exceeds 120% of the 12-month rolling average (Constitution §1.4).
+                Yellow at 110%, based on {risk.sampleSize} prior published versions.
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Colony stats ────────────────────────────────────────────── */}
         <div style={card}>

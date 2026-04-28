@@ -60,6 +60,14 @@ interface IColony {
     ) external returns (uint256 assetId, uint256 liabilityId);
     function forfeitEquity(uint256 assetId) external returns (uint256 forfeitedBps);
     function cancelEquity(uint256 assetId, uint256 bps) external;
+    function registerAsset(
+        string calldata label,
+        uint256 valueSTokens,
+        uint256 weightKg,
+        bool    hasAI,
+        uint256 depreciationBps
+    ) external returns (uint256 id);
+    function transferAsset(uint256 id, address to, uint256 newValueS) external;
 }
 
 interface IERC20Minimal {
@@ -105,6 +113,8 @@ contract CompanyImplementation is Initializable {
     event OfficerAppointed(string role, address indexed addr);
     event OfficerRemoved(string role);
     event SecretaryChanged(address indexed from, address indexed to);
+    event AssetRegisteredByCompany(uint256 indexed assetId, string label, uint256 valueSTokens);
+    event AssetTransferredByCompany(uint256 indexed assetId, address indexed to, uint256 newValueS);
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -220,6 +230,33 @@ contract CompanyImplementation is Initializable {
     function convertToV(uint256 amount) external onlySecretary {
         IColony(colony).saveToVCompany(amount);
         emit ConvertedToV(amount);
+    }
+
+    // ── A-token relays — register / transfer company-held physical assets (OS-11/OS-12)
+
+    /**
+     * @notice Register a physical asset to this company wallet (OS-11).
+     *         Threshold rules from AToken still apply: value > 500 S OR
+     *         weight > 50 kg OR autonomous AI capability.
+     */
+    function registerAsset(
+        string  calldata label,
+        uint256 valueSTokens,
+        uint256 weightKg,
+        bool    hasAI,
+        uint256 depreciationBps
+    ) external onlySecretary returns (uint256 id) {
+        id = IColony(colony).registerAsset(label, valueSTokens, weightKg, hasAI, depreciationBps);
+        emit AssetRegisteredByCompany(id, label, valueSTokens);
+    }
+
+    /**
+     * @notice Transfer a company-held A-token to another wallet (OS-12).
+     *         Used for sale of company equipment, etc.
+     */
+    function transferAsset(uint256 id, address to, uint256 newValueS) external onlySecretary {
+        IColony(colony).transferAsset(id, to, newValueS);
+        emit AssetTransferredByCompany(id, to, newValueS);
     }
 
     // ── Equity issuance ──────────────────────────────────────────────────────
