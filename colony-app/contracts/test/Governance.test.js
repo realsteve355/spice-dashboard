@@ -424,6 +424,146 @@ describe("Governance", () => {
     });
   });
 
+  describe("M-24 / M-25 — auto-issue + auto-redeem MCC office equity", () => {
+    async function deployWithMcc() {
+      const fixt = await loadFixture(deploy);
+      const Mock = await ethers.getContractFactory("MockMccCompany");
+      const mcc  = await Mock.deploy();
+      await fixt.gov.setMccCompany(await mcc.getAddress());
+      return { ...fixt, mcc };
+    }
+
+    async function runCeoElection(fixt) {
+      const { gov, alice, dave } = fixt;
+      await gov.connect(alice).openElection(ROLE.CEO);
+      await gov.connect(alice).nominateCandidate(1, dave.address);
+      await time.increase(NOMINATION_WINDOW + 1);
+      await gov.connect(alice).vote(1, dave.address);
+      await time.increase(VOTING_WINDOW + 1);
+      await gov.connect(alice).finaliseElection(1);
+      await time.increase(TIMELOCK + 1);
+      return gov.connect(alice).executeElection(1);
+    }
+
+    it("setMccCompany rejects zero, can only be called once", async () => {
+      const { gov, alice } = await loadFixture(deploy);
+      await expect(gov.setMccCompany(ethers.ZeroAddress))
+        .to.be.revertedWith("Gov: zero mccCompany");
+      await gov.setMccCompany(alice.address);
+      await expect(gov.setMccCompany(alice.address))
+        .to.be.revertedWith("Gov: mccCompany already set");
+    });
+
+    it("default role equity bps: CEO=4000, CFO=3000, COO=3000", async () => {
+      const { gov } = await loadFixture(deploy);
+      expect(await gov.roleEquityBps(0)).to.equal(4000n);
+      expect(await gov.roleEquityBps(1)).to.equal(3000n);
+      expect(await gov.roleEquityBps(2)).to.equal(3000n);
+    });
+
+    it("first CEO election issues fresh equity to the winner; no redemption (nothing to redeem)", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, mcc, dave } = fixt;
+      await runCeoElection(fixt);
+      expect(await mcc.issuedCount()).to.equal(1n);
+      expect(await mcc.redeemedCount()).to.equal(0n);
+      const issued = await mcc.issuedRecord(0);
+      expect(issued.holder).to.equal(dave.address);
+      expect(issued.stakeBps).to.equal(4000n);
+      // Governance stores the resulting assetId
+      expect(await gov.roleEquityAssetId(ROLE.CEO)).to.equal(issued.assetId);
+    });
+
+    it("emits MccEquityIssued and MccCompanyLinked events", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, dave } = fixt;
+      await expect(runCeoElection(fixt))
+        .to.emit(gov, "MccEquityIssued")
+        .withArgs(ROLE.CEO, dave.address, 100, 4000);
+    });
+
+    it("subsequent CEO elections redeem outgoing's equity then issue to the new winner", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, mcc, alice, dave, erika } = fixt;
+      // First election: dave wins
+      await runCeoElection(fixt);
+      const firstAssetId = await gov.roleEquityAssetId(ROLE.CEO);
+
+      // Wait out dave's term then run another election with erika winning
+      await time.increase(TERM + 1);
+      await gov.connect(alice).openElection(ROLE.CEO);
+      await gov.connect(alice).nominateCandidate(2, erika.address);
+      await time.increase(NOMINATION_WINDOW + 1);
+      await gov.connect(alice).vote(2, erika.address);
+      await time.increase(VOTING_WINDOW + 1);
+      await gov.connect(alice).finaliseElection(2);
+      await time.increase(TIMELOCK + 1);
+      await gov.connect(alice).executeElection(2);
+
+      expect(await mcc.redeemedCount()).to.equal(1n);
+      expect(await mcc.redeemedRecord(0)).to.equal(firstAssetId);
+      expect(await mcc.issuedCount()).to.equal(2n);
+      expect((await mcc.issuedRecord(1)).holder).to.equal(erika.address);
+      expect((await mcc.issuedRecord(1)).stakeBps).to.equal(4000n);
+    });
+
+    it("CFO and COO elections use their own bps (3000)", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, mcc, alice, dave } = fixt;
+      // CFO election
+      await gov.connect(alice).openElection(ROLE.CFO);
+      await gov.connect(alice).nominateCandidate(1, dave.address);
+      await time.increase(NOMINATION_WINDOW + 1);
+      await gov.connect(alice).vote(1, dave.address);
+      await time.increase(VOTING_WINDOW + 1);
+      await gov.connect(alice).finaliseElection(1);
+      await time.increase(TIMELOCK + 1);
+      await gov.connect(alice).executeElection(1);
+      expect((await mcc.issuedRecord(0)).stakeBps).to.equal(3000n);
+    });
+
+    it("auto-issue/redeem failure is non-fatal — election still installs the winner", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, mcc, dave } = fixt;
+      await mcc.setIssueRevert(true);
+      await runCeoElection(fixt);
+      // Election still completed: dave is CEO
+      const [holder] = await gov.roleHolder(ROLE.CEO);
+      expect(holder).to.equal(dave.address);
+      // No assetId stored because issue reverted
+      expect(await gov.roleEquityAssetId(ROLE.CEO)).to.equal(0n);
+    });
+
+    it("when mccCompany is NOT wired, executeElection ignores equity entirely", async () => {
+      const fixt = await loadFixture(deploy);
+      const { gov, dave } = fixt;
+      await runCeoElection(fixt);
+      const [holder] = await gov.roleHolder(ROLE.CEO);
+      expect(holder).to.equal(dave.address);
+      // No equity tracking when unwired
+      expect(await gov.roleEquityAssetId(ROLE.CEO)).to.equal(0n);
+    });
+
+    it("resign auto-redeems the resigning role-holder's MCC equity (M-25)", async () => {
+      const fixt = await deployWithMcc();
+      const { gov, mcc, dave } = fixt;
+      await runCeoElection(fixt);
+      const firstAssetId = await gov.roleEquityAssetId(ROLE.CEO);
+
+      await gov.connect(dave).resign(ROLE.CEO);
+      expect(await mcc.redeemedCount()).to.equal(1n);
+      expect(await mcc.redeemedRecord(0)).to.equal(firstAssetId);
+      expect(await gov.roleEquityAssetId(ROLE.CEO)).to.equal(0n);
+    });
+
+    it("resign without wired mccCompany still works as before (no MCC calls)", async () => {
+      const { gov, alice } = await loadFixture(deploy);
+      await expect(gov.connect(alice).resign(ROLE.CEO))
+        .to.emit(gov, "RoleVacated")
+        .withArgs(ROLE.CEO, alice.address);
+    });
+  });
+
   describe("voter eligibility — age and join time", () => {
     it("under-18 cannot vote", async () => {
       const { gov, mock, alice, dave, erika } = await loadFixture(deploy);

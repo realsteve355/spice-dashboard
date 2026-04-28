@@ -41,6 +41,11 @@ interface IOTokenForGov {
     function electionHandOver(uint256 tokenId, address incoming) external;
 }
 
+interface IMccCompany {
+    function issueOfficeEquity(address holder, uint256 stakeBps) external returns (uint256 assetId);
+    function redeemOfficeEquity(uint256 assetId) external returns (uint256 vPaid);
+}
+
 contract Governance {
 
     // ── Constants ─────────────────────────────────────────────────────────────
@@ -89,6 +94,18 @@ contract Governance {
     /// @notice OToken wired for M-22 auto-handover. Zero means manual handover only.
     address public oToken;
 
+    /// @notice MCC Company instance wired for M-24/M-25/M-26 office-term equity.
+    ///         When set, executeElection auto-issues fresh equity to the incoming
+    ///         role-holder and auto-redeems the outgoing one's at NAV. Resign also
+    ///         redeems. Zero means MCC equity is not auto-managed by Governance.
+    address public mccCompany;
+
+    /// @notice Tracks the assetId of each role's currently-issued office equity.
+    mapping(uint8 => uint256) public roleEquityAssetId;
+
+    /// @notice Equity allotment per role in basis points: CEO=4000, CFO=3000, COO=3000.
+    uint256[3] public roleEquityBps = [uint256(4000), 3000, 3000];
+
     uint256 public nextId = 1;
 
     mapping(uint256 => Election)                         public elections;
@@ -114,6 +131,9 @@ contract Governance {
     event ObligationCreated(uint256 indexed id, uint256 assetId, uint256 liabilityId);
     event OTokenLinked(address indexed oToken);
     event MccOTokenAutoHandedOver(address indexed newCeo);
+    event MccCompanyLinked(address indexed mccCompany);
+    event MccEquityIssued(uint8 indexed role, address indexed holder, uint256 indexed assetId, uint256 stakeBps);
+    event MccEquityRedeemed(uint8 indexed role, uint256 indexed assetId);
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
@@ -328,6 +348,24 @@ contract Governance {
                 // non-fatal — manual OS-04 handover remains available
             }
         }
+
+        // M-24/M-25: auto-redeem outgoing role-holder's MCC equity, then auto-issue
+        // fresh equity to the incoming winner. Both calls are non-fatal — if either
+        // fails the election still completes; MCC equity can be reconciled manually.
+        if (e.role <= 2 && mccCompany != address(0)) {
+            uint256 oldAssetId = roleEquityAssetId[e.role];
+            if (oldAssetId != 0) {
+                try IMccCompany(mccCompany).redeemOfficeEquity(oldAssetId) returns (uint256) {
+                    emit MccEquityRedeemed(e.role, oldAssetId);
+                } catch {}
+                roleEquityAssetId[e.role] = 0;
+            }
+            uint256 stakeBps = roleEquityBps[e.role];
+            try IMccCompany(mccCompany).issueOfficeEquity(e.winner, stakeBps) returns (uint256 newAssetId) {
+                roleEquityAssetId[e.role] = newAssetId;
+                emit MccEquityIssued(e.role, e.winner, newAssetId, stakeBps);
+            } catch {}
+        }
     }
 
     /**
@@ -339,6 +377,19 @@ contract Governance {
         require(oToken_ != address(0),         "Gov: zero oToken");
         oToken = oToken_;
         emit OTokenLinked(oToken_);
+    }
+
+    /**
+     * @notice One-shot wiring of the MCC Company instance for office-term equity.
+     *         Only callable while mccCompany is unset. The MCC company secretary
+     *         must separately call CompanyImpl.setTrustedIssuer(governance) to
+     *         authorise this contract to issue and redeem equity on its behalf.
+     */
+    function setMccCompany(address mcc_) external {
+        require(mccCompany == address(0), "Gov: mccCompany already set");
+        require(mcc_       != address(0), "Gov: zero mccCompany");
+        mccCompany = mcc_;
+        emit MccCompanyLinked(mcc_);
     }
 
     // ── Role Resignation ─────────────────────────────────────────────────────
@@ -358,6 +409,18 @@ contract Governance {
             coo = address(0); cooTermEnd = 0;
         }
         emit RoleVacated(role, msg.sender);
+
+        // M-25: redeem the resigning role-holder's MCC office equity at NAV.
+        // Non-fatal — if redemption fails the resignation still completes.
+        if (role <= 2 && mccCompany != address(0)) {
+            uint256 oldAssetId = roleEquityAssetId[role];
+            if (oldAssetId != 0) {
+                try IMccCompany(mccCompany).redeemOfficeEquity(oldAssetId) returns (uint256) {
+                    emit MccEquityRedeemed(role, oldAssetId);
+                } catch {}
+                roleEquityAssetId[role] = 0;
+            }
+        }
     }
 
     // ── Views ─────────────────────────────────────────────────────────────────

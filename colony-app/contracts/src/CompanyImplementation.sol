@@ -104,6 +104,10 @@ contract CompanyImplementation is Initializable {
     address public ceo;
     address public fd;
 
+    /// @notice M-24/M-25/M-26: external authority (typically Governance) trusted to
+    ///         issue and redeem office-term equity. Set once via setTrustedIssuer.
+    address public trustedIssuer;
+
     // ── Events ───────────────────────────────────────────────────────────────
 
     event PaymentMade(address indexed to, uint256 amount, string note);
@@ -119,6 +123,9 @@ contract CompanyImplementation is Initializable {
     event SecretaryChanged(address indexed from, address indexed to);
     event AssetRegisteredByCompany(uint256 indexed assetId, string label, uint256 valueSTokens);
     event AssetTransferredByCompany(uint256 indexed assetId, address indexed to, uint256 newValueS);
+    event TrustedIssuerSet(address indexed issuer);
+    event OfficeEquityIssued(address indexed holder, uint256 indexed assetId, uint256 stakeBps);
+    event OfficeEquityRedeemed(uint256 indexed assetId, address indexed exHolder, uint256 vPaid);
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -285,6 +292,70 @@ contract CompanyImplementation is Initializable {
 
     function forcePurchaseLand(uint256 id, uint256 newDeclaredValueV) external onlySecretary {
         IColony(colony).forcePurchaseLand(id, newDeclaredValueV);
+    }
+
+    // ── Office-term equity (M-24/M-25/M-26) ────────────────────────────────
+
+    /**
+     * @notice Wire the external authority that may issue and redeem office-term
+     *         equity (typically the colony's Governance contract). One-shot.
+     */
+    function setTrustedIssuer(address issuer) external onlySecretary {
+        require(trustedIssuer == address(0), "Company: trusted issuer already set");
+        require(issuer != address(0),         "Company: zero issuer");
+        trustedIssuer = issuer;
+        emit TrustedIssuerSet(issuer);
+    }
+
+    /**
+     * @notice M-24: issue a fresh, fully-vested office-term equity stake to an
+     *         incoming role-holder. Only the trusted issuer (Governance) may call.
+     */
+    function issueOfficeEquity(address holder, uint256 stakeBps)
+        external returns (uint256 assetId)
+    {
+        require(msg.sender == trustedIssuer,  "Company: not trusted issuer");
+        require(holder != address(0),          "Company: zero holder");
+        require(stakeBps > 0,                  "Company: zero stake");
+        // Immediate-vest open-share semantics: empty arrays mean no schedule.
+        uint256[] memory empty = new uint256[](0);
+        (assetId, ) = IColony(colony).issueEquity(address(this), holder, stakeBps, empty, empty);
+        emit OfficeEquityIssued(holder, assetId, stakeBps);
+    }
+
+    /**
+     * @notice M-25: redeem a specific office-term equity stake at current NAV.
+     *         Pays the holder in V-tokens then cancels both vested and unvested
+     *         portions of the stake. Only the trusted issuer (Governance) may call.
+     */
+    function redeemOfficeEquity(uint256 assetId) external returns (uint256 vPaid) {
+        require(msg.sender == trustedIssuer, "Company: not trusted issuer");
+
+        IColony col = IColony(colony);
+        IAToken at  = IAToken(col.aToken());
+
+        address holder = at.getTokenHolder(assetId);
+        require(holder != address(0), "Company: token has no holder");
+        (uint256 totalBps, uint256 vestedBps, address tokenCompany) = at.getVestingStake(assetId);
+        require(tokenCompany == address(this), "Company: token not for this company");
+
+        // Snapshot NAV before any cancellation
+        (, uint256[] memory stakes, ) = at.getEquityTable(address(this));
+        uint256 totalOutstanding = 0;
+        for (uint256 i = 0; i < stakes.length; i++) {
+            totalOutstanding += stakes[i];
+        }
+
+        uint256 vBal = IERC20Minimal(col.vToken()).balanceOf(address(this));
+        vPaid = totalOutstanding > 0 ? (vBal * totalBps) / totalOutstanding : 0;
+
+        if (vPaid > 0) col.transferVDividend(holder, vPaid);
+
+        // Forfeit any unvested first, then cancel vested portion
+        if (totalBps > vestedBps) col.forfeitEquity(assetId);
+        if (vestedBps > 0)        col.cancelEquity(assetId, vestedBps);
+
+        emit OfficeEquityRedeemed(assetId, holder, vPaid);
     }
 
     // ── Equity issuance ──────────────────────────────────────────────────────

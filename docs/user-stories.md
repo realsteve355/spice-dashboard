@@ -364,9 +364,9 @@ redeemed at NAV when their term ends. The O-token is a pure identity token — i
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| M-24 | As an incoming MCC board member, I want to receive a fresh allotment of MCC equity shares at the start of my term — sized to my board role — so I am commercially aligned with MCC performance from day one | P2 | — |
-| M-25 | As a departing MCC board member (whether by election, resignation, or recall), I want the Fisc to automatically redeem all my MCC shares at current NAV and pay the proceeds to my wallet in V-tokens so no MCC equity accumulates in the hands of former directors | P2 | — |
-| M-26 | As any citizen, I want to see the current MCC equity register — who holds what stake and when it was issued — so I can verify that the board's commercial interest is properly constituted | P2 | — |
+| M-24 | As an incoming MCC board member, I want to receive a fresh allotment of MCC equity shares at the start of my term — sized to my board role — so I am commercially aligned with MCC performance from day one | P2 | ~ |
+| M-25 | As a departing MCC board member (whether by election, resignation, or recall), I want the Fisc to automatically redeem all my MCC shares at current NAV and pay the proceeds to my wallet in V-tokens so no MCC equity accumulates in the hands of former directors | P2 | ~ |
+| M-26 | As any citizen, I want to see the current MCC equity register — who holds what stake and when it was issued — so I can verify that the board's commercial interest is properly constituted | P2 | ~ |
 
 *M-01–M-03: Fully on-chain via MCCServices contract. Future: gate price changes to CFO role via Governance.*
 *M-04: Revenue MTD tracked on-chain via MCCBilling.totalRevenueMTD(); increments when CEO/CFO confirms payment.*
