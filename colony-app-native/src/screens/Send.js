@@ -189,7 +189,7 @@ const S = StyleSheet.create({
   heading:      { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 16 },
 
   addrRow:      { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  input:        { backgroundColor: '#f5f5f5', borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
+  input:        { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
   pickerBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10 },
   pickerBtnText:{ fontSize: 11, color: C.sub, fontFamily: font },
 

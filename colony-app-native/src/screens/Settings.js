@@ -164,7 +164,7 @@ const S = StyleSheet.create({
   revealBtnText:{ fontSize: 12, color: C.gold, fontFamily: font },
 
   phraseGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  wordCell:     { width: '28%', backgroundColor: '#f5f5f5', borderRadius: 4, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  wordCell:     { width: '28%', backgroundColor: C.card, borderRadius: 4, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
   wordNum:      { fontSize: 8, color: C.faint, fontFamily: font, width: 12 },
   word:         { fontSize: 11, color: C.text, fontFamily: font, fontWeight: '500' },
 

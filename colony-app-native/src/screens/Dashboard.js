@@ -15,6 +15,32 @@ import { fetchTxHistory, txClaimUbi, txSaveToV, COLONY } from '../utils/contract
 import { isNfcSupported, scanPayTag } from '../utils/nfc'
 import { C, font, shortAddr, card, label, value } from '../theme'
 
+// Map common Colony revert strings to human-friendly messages
+const FRIENDLY_REVERTS = {
+  'AlreadyClaimed':       'You have already claimed UBI this epoch. Try again next epoch.',
+  'already claimed':      'You have already claimed UBI this epoch. Try again next epoch.',
+  'NotCitizen':           'This wallet is not a citizen of this colony.',
+  'not citizen':          'This wallet is not a citizen of this colony.',
+  'InsufficientBalance':  'Insufficient S balance for this operation.',
+  'EpochCapExceeded':     'Epoch save cap exceeded — max 200 S can be saved per epoch.',
+  'Paused':               'The contract is paused.',
+}
+
+function parseRevertReason(e) {
+  // ethers v6 surfaces the revert reason in a few possible shapes
+  const blob = (e?.shortMessage || e?.reason || e?.data?.message || e?.message || '').toString()
+  for (const key of Object.keys(FRIENDLY_REVERTS)) {
+    if (blob.toLowerCase().includes(key.toLowerCase())) return FRIENDLY_REVERTS[key]
+  }
+  // Generic "transaction execution reverted" with no decode → most often UBI already claimed
+  if (/execution reverted/i.test(blob)) {
+    return 'Transaction reverted by contract — most likely UBI already claimed this epoch, ' +
+           'or epoch cap reached. Pull down to refresh and try again next epoch.'
+  }
+  // Shorten long hex/RPC dumps
+  return blob.length > 200 ? blob.slice(0, 200) + '…' : blob
+}
+
 const EVENT_LABELS = {
   sent:     { color: C.red,    sign: '−', label: 'Sent' },
   received: { color: C.green,  sign: '+', label: 'Received' },
@@ -85,10 +111,13 @@ export default function Dashboard() {
     setActionLoading('ubi')
     try {
       await txClaimUbi(w)
+      // Public Base Sepolia RPC has multiple replicas — give state a moment to propagate
+      await new Promise(r => setTimeout(r, 1500))
       await onRefresh()
       Alert.alert('UBI claimed', 'Your monthly UBI has been added to your S balance.')
     } catch (e) {
-      Alert.alert('Claim failed', e.message)
+      const msg = parseRevertReason(e)
+      Alert.alert('Claim failed', msg)
     } finally {
       setActionLoading(null)
     }
@@ -107,10 +136,12 @@ export default function Dashboard() {
         setActionLoading('save')
         try {
           await txSaveToV(w, amount)
+          // Wait for RPC replicas to converge before re-reading balances
+          await new Promise(r => setTimeout(r, 1500))
           await onRefresh()
           Alert.alert('Saved', `${amount} S converted to V.`)
         } catch (e) {
-          Alert.alert('Save failed', e.message)
+          Alert.alert('Save failed', parseRevertReason(e))
         } finally {
           setActionLoading(null)
         }
