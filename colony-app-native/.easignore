@@ -1,0 +1,26 @@
+# EAS Build ignore — keeps the upload archive minimal so EAS-side npm ci can
+# install fresh on the build worker. If this file is absent, EAS falls back to
+# .gitignore, but in some toolchain configurations that's incomplete.
+
+node_modules/
+.expo/
+dist/
+web-build/
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Build artifacts
+ios/build/
+android/build/
+android/app/build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
