@@ -582,8 +582,8 @@ App is self-custodial with an embedded wallet — no MetaMask required.
 | Status | Count | % |
 |--------|-------|---|
 | ✓ Done | 129 | 66% |
-| ~ Partial / UI mock | 32 | 16% |
-| — Not built | 19 | 10% |
+| ~ Partial / UI mock | 35 | 18% |
+| — Not built | 16 | 8% |
 | Superseded | 5 | 3% |
 | New (not yet built) | 10 | 5% |
 | **Total** | **195** | |
