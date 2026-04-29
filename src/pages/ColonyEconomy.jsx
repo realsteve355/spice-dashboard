@@ -591,7 +591,7 @@ export default function ColonyEconomy() {
                 <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
                 <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42"
-                  tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                  tickFormatter={v => `$${(v/1_000_000).toFixed(0)}M`} />
                 <ReferenceLine y={0} stroke={T3} strokeDasharray="3 3" />
                 <Tooltip contentStyle={tipStyle} formatter={v => `$${Math.round(v).toLocaleString()}`} />
                 <Legend wrapperStyle={{ fontSize: 10, color: T2 }} />
@@ -601,6 +601,17 @@ export default function ColonyEconomy() {
             </ResponsiveContainer>
           </ChartPanel>
 
+        </div>
+
+        {/* Solo-comparison strip — what each colony would experience alone */}
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 10, color: T3, letterSpacing: '0.2em', marginBottom: 8 }}>
+            IF EACH COLONY RAN SOLO · half the seed reserve, no partner
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <SoloPanel name={colA.name} colour={COL_A} solo={aAlone} />
+            <SoloPanel name={colB.name} colour={COL_B} solo={bAlone} />
+          </div>
         </div>
 
         {/* Read-out */}
@@ -756,6 +767,54 @@ function ChartPanel({ title, children }) {
     <div style={{ background: BG2, border: BD, padding: 12 }}>
       <div style={{ fontSize: 10, color: T3, letterSpacing: '0.15em', marginBottom: 8 }}>{title}</div>
       <div style={{ height: CH }}>{children}</div>
+    </div>
+  )
+}
+
+/**
+ * SoloPanel — what one colony's basket-cost trajectory looks like if it ran
+ * its own Fisc with no twin partner. The "this colony alone" perspective.
+ * Two charts side by side: basket cost in S, and reserve.
+ */
+function SoloPanel({ name, colour, solo }) {
+  const broke = solo.summary.pegBreakMonth !== null
+  return (
+    <div style={{ background: BG2, border: `1px solid ${colour}33`, borderTop: `2px solid ${colour}`, padding: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: colour, fontWeight: 700 }}>{name} — SOLO</div>
+        <div style={{ fontSize: 10, color: broke ? RED : GRN, fontWeight: 600 }}>
+          {broke ? `peg breaks month ${solo.summary.pegBreakMonth}` : 'survives'}
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div style={{ height: 140 }}>
+          <div style={{ fontSize: 8, color: T3, letterSpacing: '0.15em', marginBottom: 4 }}>BASKET COST IN S</div>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={solo.rows} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+              <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tick={{ fill: T3, fontSize: 9 }} stroke="#1e2a42" />
+              <YAxis tick={{ fill: T3, fontSize: 9 }} stroke="#1e2a42" domain={[20, 'auto']} />
+              <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" />
+              <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
+              <Line type="monotone" dataKey="basketInS" stroke={colour} strokeWidth={2} dot={false} isAnimationActive={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div style={{ height: 140 }}>
+          <div style={{ fontSize: 8, color: T3, letterSpacing: '0.15em', marginBottom: 4 }}>USDC RESERVE</div>
+          <ResponsiveContainer width="100%" height={120}>
+            <LineChart data={solo.rows} margin={{ top: 4, right: 8, left: 4, bottom: 0 }}>
+              <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tick={{ fill: T3, fontSize: 9 }} stroke="#1e2a42" />
+              <YAxis tick={{ fill: T3, fontSize: 9 }} stroke="#1e2a42"
+                tickFormatter={v => `$${(v/1_000_000).toFixed(0)}M`} />
+              <ReferenceLine y={0} stroke={T3} strokeDasharray="3 3" />
+              <Tooltip contentStyle={tipStyle} formatter={v => `$${Math.round(v).toLocaleString()}`} />
+              <Line type="monotone" dataKey="reserve" stroke={colour} strokeWidth={2} dot={false} isAnimationActive={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }
