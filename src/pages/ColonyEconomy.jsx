@@ -78,28 +78,28 @@ function makeColony(name, exports, imports, lat, cashout) {
 const PRESETS = {
   symmetric: {
     label: 'Symmetric (both balanced)',
-    A: makeColony('Colony A', 25_000, 12_000, 0.6, 0.02),
-    B: makeColony('Colony B', 25_000, 12_000, 0.6, 0.02),
+    A: makeColony('Colony A', 25_000, 12_000, 0, 0),
+    B: makeColony('Colony B', 25_000, 12_000, 0, 0),
   },
   exporter_importer: {
     label: 'Exporter ↔ Importer',
-    A: makeColony('Net exporter', 35_000, 8_000, 0.7, 0.02),
-    B: makeColony('Net importer',  6_000, 28_000, 0.4, 0.04),
+    A: makeColony('Net exporter', 35_000, 8_000, 0, 0),
+    B: makeColony('Net importer',  6_000, 28_000, 0, 0),
   },
   bellefontaine_lonepine: {
     label: 'Bellefontaine + Lone Pine',
     // Bellefontaine OH (~14k pop) — manufacturing-light residential, modest
     // outward services, real input-goods dependence (food, fuel, retail
     // supplies). Net importer.
-    A: makeColony('Bellefontaine, OH', 8_000, 30_000, 0.30, 0.03),
+    A: makeColony('Bellefontaine, OH', 8_000, 30_000, 0, 0),
     // Lone Pine CA (~2k pop) — tourism + film + ranching. Big external
     // earnings relative to size, low import cost. Net exporter.
-    B: makeColony('Lone Pine, CA',     32_000, 5_000, 0.65, 0.015),
+    B: makeColony('Lone Pine, CA',     32_000, 5_000, 0, 0),
   },
   both_failing: {
     label: 'Both net importers',
-    A: makeColony('Colony A', 5_000, 18_000, 0.3, 0.04),
-    B: makeColony('Colony B', 4_000, 16_000, 0.3, 0.04),
+    A: makeColony('Colony A', 5_000, 18_000, 0, 0),
+    B: makeColony('Colony B', 4_000, 16_000, 0, 0),
   },
 }
 
@@ -436,7 +436,7 @@ export default function ColonyEconomy() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
             <Slider label="UBI per citizen / month" value={ubi}
-              min={50} max={300} step={5} display={`${ubi} S`}
+              min={0} max={1000} step={10} display={`${ubi} S`}
               onChange={v => startTransition(() => setUbi(v))} />
             <Slider label="Citizens per colony" value={citizens}
               min={500} max={20000} step={500} display={citizens.toLocaleString()}
