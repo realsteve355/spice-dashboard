@@ -1,13 +1,37 @@
 # SPICE Economy
 ## Unified specification — Mars and Earth colony models
 
-*Version 1 — April 2026. Working document. Gaps are named explicitly.*
+*Version 2 — April 2026. Working document. Gaps are named explicitly.*
 
 ---
 
 ## Part 1 — Shared Foundations
 
 Both Mars and Earth colonies run the same token model, the same company model, and the same constitutional protections. The differences are extensions, not replacements.
+
+---
+
+### 1.0 Participants
+
+Four classes of natural person, four company officer roles, four institutions.
+
+**Natural persons:**
+- **Citizen** — adult holding one G-token. Receives monthly UBI, votes in colony governance, may hold V, equity, A-tokens.
+- **Guardian** — adult citizen managing a child's wallet until age 18.
+- **Founder** — citizen who deploys a colony or registers a company. No standing privileges except (for company founders) optional immediate-vest equity (§1.5).
+- **Sole Trader** — citizen providing goods or services for S with no equity relationship.
+
+**Company officers.** Every company has one Secretary. CEO, CFO, COO are optional. One person may hold all four roles (typical for sole-founder companies) or they may be distributed.
+- **Secretary** — holds the company's O-token. Authorised to register the company, issue and forfeit equity, transfer assets, set officer roles.
+- **CEO** — strategic direction; spokesperson.
+- **CFO** — financial direction; declares dividends, manages V reserve.
+- **COO** — operational direction; day-to-day ops, services, fulfilment.
+
+**Institutions:**
+- **MCC** — colony's essential-services provider. Citizen-elected CEO/CFO/COO board; commercial shareholders during their term. May not compete with private companies.
+- **Company** — any registered enterprise; on-chain wallet, equity register, optional officer roles.
+- **Fisc** — automated blockchain institution; mints, settles, registers. Not a person.
+- **Protocol** — the layer above any single colony; runs the Colony Registry, collects protocol fees. See §1.8.
 
 ---
 
@@ -22,9 +46,9 @@ Both Mars and Earth colonies run the same token model, the same company model, a
 | **Spending** | All day-to-day transactions | Via V→S redemption first, then spend as S |
 | **Asset valuation** | No | Yes — all significant assets and liabilities valued in V |
 
-**Why S expires:** the monthly reset is the inflation control mechanism. The Fisc mints a fixed quantity of S each month. Every unspent S is destroyed at month end. The money supply resets to zero. Persistent inflation requires a growing money supply — this system has none. No policy decision, no override, no exception.
+**S expiry is the inflation control.** Fixed monthly mint, full destruction at month end. Money supply resets to zero each month. No policy override.
 
-**Why two tokens:** S must expire to prevent hoarding and inflation. But citizens and companies need to carry wealth forward — to save, to invest, to fund large purchases. V is the permanent layer. Citizens convert S surplus to V. Companies convert all net S earnings to V. V is the colony's store of value.
+**Two tokens, two functions.** S forces velocity; V carries wealth. Citizens convert S surplus to V (capped). Companies convert net S earnings to V monthly.
 
 ---
 
@@ -44,11 +68,37 @@ Both Mars and Earth colonies run the same token model, the same company model, a
 
 1. **Unilateral asset** — physical object owned outright (robot, vehicle, land parcel). One A-token, one holder, no counterparty.
 2. **Paired equity** — a company share. Fisc creates two simultaneously: asset A-token to the shareholder (records stake, receives dividends); liability A-token to the company (records aggregate distribution obligation). Fisc settles dividends automatically at month end.
-3. **Paired fixed-obligation** — a bilateral payment agreement (loan, hire-purchase). Asset A-token to the creditor; liability A-token to the debtor. Fisc deducts from debtor before UBI is credited. Structural default is impossible for any Fisc-registered unsecured obligation — the Fisc will not register one that would push monthly obligations above the UBI floor.
+3. **Paired fixed-obligation** — a bilateral payment agreement (loan, hire-purchase, instalment sale). Asset A-token to the creditor records the entitlement to receive payments; liability A-token to the obligor records the obligation to pay. Two variants: **unsecured** (subject to UBI cap) and **secured** (collateralised by a unilateral A-token escrowed for the term). Fisc settles each epoch automatically. Structural default is impossible for unsecured obligations — see §1.2a.
 
 **Net worth:** V-tokens + S-tokens + Σ(positive A-token values) − Σ(liability A-token values).
 
 **Registration threshold:** A-tokens required for assets above 500 S-equivalent in value, above 50 kg, or with autonomous AI capability. Below threshold, possession implies ownership.
+
+---
+
+### 1.2a Obligation Lifecycle
+
+**Creation.** Either party drafts a proposal (counterparty, monthly amount, term, optional collateral). Both must sign within a fixed window. Unsigned proposals expire.
+
+**Cap check.** For citizen obligors on unsecured obligations, the Fisc enforces:
+
+```
+Σ(existing unsecured monthly obligations) + new monthly amount  ≤  UBI
+```
+
+Proposals breaching the cap are rejected at the consent stage. Companies and secured obligations have no cap — collateral is the protection, escrowed for the term.
+
+**Settlement** runs each epoch, before UBI mint:
+
+| Obligor balance | Type | Action |
+|---|---|---|
+| ≥ monthly amount | any | Transfer S → creditor. Mark epoch paid. |
+| < monthly amount | secured | Collateral → creditor. Default. |
+| < monthly amount | unsecured | Missed payment recorded. (See §2.5 for Phase 2 enforcement.) |
+
+**Completion.** Final epoch paid → both A-tokens deactivate, escrow releases.
+
+**Forfeiture is not confiscation.** Secured default transfers consented collateral. Protection 11 (§1.7) prohibits seizure, not contractual forfeiture.
 
 ---
 
@@ -68,9 +118,9 @@ The Fisc is the colony's fully automated blockchain institution. Not a company. 
 - Publishes all transaction data publicly
 - Processes inheritance on registered death
 
-**Why the Fisc must be separate from MCC:** the body that sets its own revenue cannot control the institution that issues currency. The Fisc serves all participants equally. No elected body has authority over its operation.
+**Fisc is not under MCC.** The body setting its own revenue cannot also issue currency.
 
-**Only the Fisc mints.** No private entity may create S or V tokens by any mechanism — including lending, debt issuance, or securitisation. Fractional reserve banking is constitutionally prohibited and mechanically impossible.
+**Only the Fisc mints.** No private entity creates S or V — no lending, debt issuance, or securitisation. Fractional reserve is constitutionally prohibited.
 
 ---
 
@@ -79,7 +129,7 @@ The Fisc is the colony's fully automated blockchain institution. Not a company. 
 The MCC (colony's essential services provider — named Mars Colony Company on Mars, may have any name on Earth) provides the services every citizen depends on that cannot safely be left to market competition.
 
 - Provides essential shared services and bills in S-tokens
-- The board are commercial shareholders — they own MCC during their term and receive profits as dividends
+- The board comprises a CEO, CFO, and COO — commercial shareholders who own MCC during their term and receive profits as dividends
 - Citizens hold G-tokens — governance rights only, not commercial ownership
 - Board serves one-year terms, elected annually by G-token holders
 - All MCC revenue, costs, and profit publicly visible on-chain in real time
@@ -94,8 +144,9 @@ Companies have no wages. This is not a constraint — it is the design.
 
 - Any citizen may register a company with the Fisc (administrative registration, not a licence)
 - Companies earn S from customers, pay suppliers and contractors in S
-- At month end: all net S earnings convert to V. The Finance Director declares a dividend. Fisc distributes declared V pro-rata to all shareholders automatically.
+- At month end: all net S earnings convert to V. The CFO declares a dividend. Fisc distributes declared V pro-rata to all shareholders automatically.
 - Participants hold vesting equity — monthly tranches over 1–12 months. Month-12 tranche is larger (commitment bonus). Unvested shares pay dividends but cannot be transferred. Unvested shares forfeited if participant leaves; vested shares are permanent.
+- **Founder exception:** founders may receive equity that vests immediately at founding (no tranches). The only exception to the vesting requirement.
 - One-off goods and services between parties are paid in S as commerce. This is trade, not employment.
 - A **sole trader** is a citizen providing goods or services for S with no equity relationship. Accumulates wealth by converting S surplus to V.
 - Companies fail if they cannot cover costs. No subsidy, no bailout.
@@ -134,6 +185,17 @@ The following require 80% of all registered citizens to amend.
 
 ---
 
+### 1.8 Protocol Layer
+
+A colony is one node in a global protocol.
+
+- **Colony Registry.** A protocol-level registry records every colony. On registration, the Registry mints a soulbound non-transferable token to the colony itself — proof of identity, not ownership. Deregister and re-register operations are supported; the same token ID re-mints on re-registration.
+- **Protocol fee.** Each colony pays a protocol fee on external settlement, denominated in the settlement asset (BTC/ETH on testnet). Split between protocol treasury and colony founder per a configurable ratio.
+- **Founder share.** A permanent claim on the colony's external settlement activity. Default 25%; per-colony overrides set at founding. Held by a designated wallet, transferable between founders.
+- **Constitutional independence.** No colony's MCC or citizenry has authority over the Registry. No protocol authority can override a colony's constitution.
+
+---
+
 ## Part 2 — Mars Colony Economy
 
 Mars is a closed economy. S and V have no value outside the colony. There is no external currency boundary. The economy is self-contained by design and by physical necessity.
@@ -150,7 +212,7 @@ Mars is a closed economy. S and V have no value outside the colony. There is no 
 | Fractional reserve | Prohibited |
 | Inflation | Impossible — see §1.3 |
 
-**Why 1,000 is fixed:** in a closed colony the S-token is pure scrip. Its value comes from what MCC and participating companies accept. The fixed quantity and monthly reset is the complete inflation control mechanism. No basket anchor is needed — prices are set by supply and demand within the fixed monthly budget.
+**Fixed amount, no anchor.** S is closed-colony scrip. Value comes from what MCC and companies accept. The monthly reset is the complete inflation control; prices clear within the fixed monthly budget.
 
 ---
 
@@ -164,7 +226,7 @@ Mars is a closed economy. S and V have no value outside the colony. There is no 
 | External value | None |
 | Redemption | V → S at 1:1, uncapped, at any time |
 
-**Why the citizen cap exists on Mars:** in a small founding colony, an uncapped conversion would allow a handful of participants to accumulate V rapidly and dominate the economy before competition develops. The cap is a founding-phase protection. It may be relaxed by referendum as the colony matures.
+**Citizen cap is a founding-phase protection.** Uncapped conversion in a small colony would let a handful dominate before competition develops. Relaxable by referendum.
 
 ---
 
@@ -194,6 +256,7 @@ Atmosphere, water, power, habitat, food baseline, medical AI, communications, wa
 | V cap relaxation schedule | Open — at what colony size or maturity does the 200/month cap become counterproductive? |
 | UBI floor adjustments | Open — the founding UBI is fixed. What is the mechanism for a colony-wide vote to raise it? |
 | Multiple colonies, one Fisc | Open — do colonies share a Fisc instance or run independent instances? |
+| Unsecured obligation enforcement | Open — if an obligor empties their S balance before settlement, the missed payment is recorded but no recovery is taken. Phase 2: V-token attachment, late fees, public delinquency record, or contractual remedies. |
 
 ---
 
@@ -221,9 +284,9 @@ Same as Mars. UBI amount set at colony founding. Expires monthly. Internal only.
 | Asset valuation | V | V (same) |
 | Expiry | 100 years | 100 years (same) |
 
-**Why no cap on Earth:** wealth arrives from outside the colony in V (dollar imports, asset valuations, dividend income). A cap would penalise citizens whose wealth is in assets rather than accumulated from UBI savings — the asset-poor would have room to save; the asset-rich would be arbitrarily constrained. The cap is a small-colony founding protection, not a permanent principle.
+**No cap on Earth.** Wealth arrives from outside in V (dollar imports, asset valuations, dividends). A cap would penalise asset-poor citizens with room to save while constraining the asset-rich arbitrarily.
 
-**Why V, not S, for dollar imports:** someone converting $200,000 for a property purchase is not buying groceries. S is the spending layer and expires monthly — the wrong instrument for wealth storage or large asset transactions. V is permanent, the correct destination for any capital entering the colony from outside.
+**Dollar imports → V, not S.** S is the monthly spending layer and expires. Capital entering from outside belongs in V, the permanent layer.
 
 ---
 
@@ -243,9 +306,9 @@ The Fisc rate ($/V) is set so the colony's reference basket always costs a fixed
 3. Pays out dollars at current Fisc rate
 4. Burns the redeemed V
 
-**Why BTC, not dollars, in the reserve:** the entire premise of the Earth model is that the dollar is debasing. Holding dollars in reserve means the backing for V erodes alongside the dollar — defeating the purpose. BTC appreciates as the dollar weakens. The reserve strengthens as conditions deteriorate.
+**BTC, not dollars, in the reserve.** Dollar debasement is the premise of the Earth model. Dollar-backed V erodes with the currency. BTC appreciates as the dollar weakens — the reserve strengthens as conditions deteriorate.
 
-**Why two-way conversion matters for adoption:** a one-way street feels like a trap. If participants know they can exit to dollars if the colony fails, they are far less reluctant to convert in. The reserve must be large enough to honour redemptions — see §3.6 (open gaps).
+**Two-way conversion is required for adoption.** A one-way street feels like a trap. The reserve must be sized to honour redemptions — see §3.10.
 
 ---
 
@@ -275,7 +338,7 @@ The Fisc offers on-chain denomination of any asset or liability in V-tokens.
 - Valuation **floats** — updates as dollar price and Fisc rate change
 - Asset is now in the colony ecosystem: tradeable in V, usable as collateral, visible on ledger
 
-**Why floating, not fixed:** a fixed valuation is a hedge. A floating valuation is a denomination service — it brings the asset inside the S/V economy without making a promise about future dollar value. The value in V changes as the world changes. Citizens who want to hedge should hold V in the reserve, not fix asset valuations.
+**Floating, not fixed.** A fixed valuation is a hedge. A floating valuation is a denomination service — it brings the asset inside the V economy without promising future dollar value. Citizens who want to hedge should hold V, not fix asset valuations.
 
 **Liability standoff:** debtors do not want their liabilities S-valued (they prefer dollar debt to inflate away). Creditors do. Resolved by original contract terms or negotiation. The Fisc will register either party's position — it does not adjudicate the dispute.
 
@@ -290,9 +353,7 @@ External companies — national chains, regional employers — may voluntarily r
 - Optionally: pay a voluntary LAT (Local Automation Tax) on declared automation profits, distributed as additional UBI via the Fisc
 - In return: recognised as colony participants, listed on-chain, access to the S-token customer base
 
-**LAT is opt-in, not compulsory.** A legally enforceable tax requires legislative authority the colony does not have. Voluntary LAT is a partnership agreement — companies sign because their customers have UBI and their participation makes business sense. The automation dividend flows to citizens not through coercion but through the price mechanism and voluntary commitment.
-
-**The incentive:** a company whose customers are colony citizens needs those citizens to have spending power. UBI creates the customer base. Accepting S and contributing to UBI is not charity — it is the price of having customers in an automated world.
+**LAT is opt-in.** The colony has no legislative authority for compulsory taxation. Companies sign because their customer base has UBI; participation is a commercial decision, not charity.
 
 ---
 
@@ -329,12 +390,12 @@ The colony's S economy is dominated by UBI-minted S in daily circulation. Purcha
 
 ### 3.9 The Flipping Point
 
-The Earth model has a transition dynamic that Mars does not: a gradual shift from dollar as reference currency to V as reference currency.
+Earth has a transition dynamic Mars does not: a gradual shift from dollar to V as reference currency.
 
-- **Pre-flip:** assets quoted in dollars, V value derived. Dollar is the anchor.
-- **Post-flip:** assets quoted in V, dollar value irrelevant or unavailable. V is the anchor.
+- **Pre-flip:** assets quoted in $; V value derived.
+- **Post-flip:** assets quoted in V; $ value irrelevant or unavailable.
 
-The flip is not decreed. It happens when enough assets are denominated in V on-chain that buyers and sellers naturally quote in V — because that is where the liquidity is. The Fisc valuation service and the purchase scheme accelerate it. The dollar collapse accelerates it further.
+The flip is not decreed — it happens when enough liquidity sits in V that buyers and sellers naturally quote there. The Fisc valuation service, the purchase scheme, and dollar collapse all accelerate it.
 
 ---
 
@@ -372,6 +433,128 @@ The flip is not decreed. It happens when enough assets are denominated in V on-c
 
 ---
 
-*SPICE Economy · Unified Specification · v1 · April 2026*
+## Part 4 — Model Results
+
+A 24-month deterministic simulation of an Earth colony — 1,000 citizens,
+50 companies, monthly tick — to test whether the design is self-sustaining
+and to identify the failure mode.
+
+The model is in `docs/economy-model/model.py`. Three scenarios are run with
+identical default behaviour, varying only the colony's external trade
+position: a healthy net exporter, a balanced colony, and a net importer.
+
+### 4.1 Method
+
+Each month the model executes, in order:
+
+1. **UBI mint** — MCC issues new S to citizens (95% claim rate)
+2. **Citizens spend** — 85% of held S, distributed across companies and P2P
+3. **Companies pay wages** — 50% of revenue back to citizens
+4. **Companies pay MCC bills** — 5% of revenue
+5. **S → V conversions** — 10% of company revenue, 5% of citizen S, locked into V-reserve
+6. **Citizen cashouts** — a fraction of citizens convert V → USDC at the current Fisc rate
+7. **Exports** — large companies' USD revenue is deposited at Fisc; new S minted at the prevailing rate
+8. **LAT** — voluntary contribution from participating exporters into the reserve
+9. **Dividends** — V dividend declared from company V-reserve to citizen shareholders
+10. **MCC consumes** — 80% of collected S spent on services (treated as removed from supply)
+11. **Fisc rate update** — if reserve cover ratio < 30% target, rate compresses linearly toward zero
+
+### 4.2 Scenarios
+
+| Parameter | Healthy exporter | Balanced | Net importer |
+|---|---|---|---|
+| Large companies (exporters) | 5 | 5 | **1** |
+| Export USD per large co/month | $8,000 | $5,000 | **$1,500** |
+| LAT participation | 80% | 60% | **20%** |
+| Citizen cashout rate / month | 1% | 2% | **5%** |
+| Citizen cashout fraction (of V) | 30% | 30% | **50%** |
+| Initial USDC reserve | $50,000 | $50,000 | **$30,000** |
+
+Everything else (1,000 citizens, $100/month UBI, 95% UBI claim, 30% reserve target) is held constant.
+
+### 4.3 Results — 24 months
+
+| Metric | Healthy exporter | Balanced | Net importer |
+|---|---:|---:|---:|
+| End S supply | 1,258,455 | 1,110,431 | 940,300 |
+| End V supply | 1,494,597 | 1,313,901 | 992,070 |
+| End USDC reserve | $1,023,626 | $624,208 | **$32,578** |
+| End Fisc rate ($/S) | 1.00 | 1.00 | **0.11** |
+| End cover ratio | 0.685 | 0.475 | **0.033** |
+| Total UBI minted (24mo) | 2,280,000 S | 2,280,000 S | 2,280,000 S |
+| Total exports (24mo) | $960,000 | $600,000 | **$36,000** |
+| Total cashouts (24mo) | $24,774 | $43,792 | $33,782 |
+| Net USD inflow | $973,626 | $574,208 | **$2,578** |
+| Fisc rate first dip | never | never | **month 7** |
+| Reserve floor breach | never | never | **month 12** |
+
+### 4.4 Charts
+
+![Reserve cover ratio across the three scenarios](economy-model/results/cover_compare.png)
+
+![Fisc rate across the three scenarios](economy-model/results/rate_compare.png)
+
+![USDC reserve over time](economy-model/results/reserve_compare.png)
+
+![S supply over time](economy-model/results/supply_compare.png)
+
+### 4.5 Findings
+
+**The peg's life depends on net USD inflow, not S volume.** All three scenarios
+mint identical UBI ($2.28m S over 24 months) and run identical citizen
+behaviour. What separates a thriving colony from a failing one is the
+USDC entering through the Fisc — exports plus LAT contributions — minus
+the USDC leaving through citizen cashouts. The healthy and balanced
+colonies hold the peg flat at $1 the whole way. The net importer holds
+it for six months while the seed reserve drains, then the peg compresses
+hard from month 7 onward, ending at 11¢ on the dollar.
+
+**The system is structurally honest.** When the reserve runs low, the Fisc
+rate falls; citizens still holding V take a real loss measured in USD.
+There's no hidden mechanism propping it up, no debt issuance, no
+counterparty taking the loss. The asset-side and liability-side numbers
+match by construction.
+
+**Reserve cover ratio is the leading indicator, not the lagging one.** In
+the failing scenario, by month 7 the reserve has already dropped to ~25%
+of the V supply (below the 30% target), even though the rate is still
+$1.00. From there the rate compression is locked in. Earlier action — e.g.
+inviting new exporters, bumping LAT, capping citizen cashout — would
+have to start before month 6 to be effective.
+
+**LAT is not a marginal sweetener; it's structurally important.** Dropping
+LAT participation from 60% (balanced) to 20% (net importer) removes
+roughly $17,640 of cumulative reserve top-up over 24 months. That's
+1.5× the entire seed reserve of the failing colony. A small voluntary
+contribution from the colony's biggest exporters has outsized effect on
+the peg's durability.
+
+**For the colony designer:** the practical question at colony founding is
+*"how much external revenue per citizen per month, sustained, do we need
+to defend a peg?"* In this model, with default behaviour, a colony of
+1,000 citizens needs roughly **$3-4/citizen/month of net USD inflow** to
+hold the peg comfortably. A colony that can't realistically project at
+least that much external earnings should consider either (a) a Mars-style
+closed economy with no $ peg, or (b) a lower UBI and slower V
+accumulation to reduce the redemption liability.
+
+### 4.6 Caveats
+
+- The model is **deterministic**. Real colonies experience shocks (export
+  collapse, cashout panic). Stochastic variants are a future extension.
+- Citizen and company behaviour parameters are **defensible defaults, not
+  measured** — they should be tuned against any real data we collect from
+  Dave's Colony usage.
+- **MCC operations are simplified** — collected S is treated as consumed,
+  not as wages re-paid to MCC employees. Re-circulation of MCC S would
+  slightly increase money velocity and citizen income.
+- The model does **not yet handle**: company-to-company supply chains,
+  asset-token (A-token) economic flow, intra-month obligations, or
+  dividend reinvestment.
+
+---
+
+*SPICE Economy · Unified Specification · v3 · April 2026*
+*v3 changes (29 April 2026): Added Part 4 — Model Results. 24-month deterministic simulation across three scenarios. Model code at docs/economy-model/model.py.*
+*v2 changes: trimmed verbose "Why" paragraphs throughout. Added §1.0 Participants, §1.2a Obligation Lifecycle, §1.8 Protocol Layer, founder vesting carve-out.*
 *Supersedes: mars_colony_economy.md (economic model sections). mars_colony_economy.md remains the reference for operational detail (robot fleet, founding colony, frontier stories).*
-*Earth model extensions are new — not yet reflected in any prior document.*
