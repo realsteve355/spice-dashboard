@@ -23,6 +23,7 @@ import CreateColony from './pages/CreateColony.jsx'
 import FairbrookSim from './pages/FairbrookSim.jsx'
 import PathwayToUBI from './pages/PathwayToUBI.jsx'
 import Abundance from './pages/Abundance.jsx'
+import ColonyEconomy from './pages/ColonyEconomy.jsx'
 
 function Nav() {
   return (
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="/fairbrook" element={<FairbrookSim />} />
           <Route path="/pathway" element={<PathwayToUBI />} />
           <Route path="/abundance" element={<Abundance />} />
+          <Route path="/colony-economy" element={<ColonyEconomy />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}
