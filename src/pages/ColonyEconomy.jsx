@@ -41,9 +41,17 @@ const CH = 180
 
 // ── Defaults & presets ───────────────────────────────────────────────────────
 
+// ── Basket anchor ────────────────────────────────────────────────────────────
+// SPICE keeps a fixed basket of goods costing a constant number of S.
+// USD volatility is absorbed by the floating Fisc rate; citizens see S as
+// stable in real (basket) terms.
+const TARGET_BASKET_S        = 28        // basket always costs 28 S to a citizen
+const INITIAL_BASKET_USD     = 28        // basket starts at $28 → initial rate $1/S
+
 const SHARED_DEFAULTS = {
   ubiPerMonth:            100,
   initialUsdcReserve:     50_000_000,
+  usdInflationAnnual:     0.05,            // 5%/yr USD debasement (post-Collision baseline)
   citizenSpendRate:       0.85,
   citizenSaveRate:        0.05,
   citizenCashoutSize:     0.30,
@@ -54,7 +62,6 @@ const SHARED_DEFAULTS = {
   reserveTargetRatio:     0.30,
   reserveFloorRatio:      0.10,
   mccConsumesPct:         0.80,
-  targetFiscRate:         1.00,
   ubiClaimRate:           0.95,
   spendLargeCo:           0.25,
   spendMidCo:             0.35,
@@ -137,12 +144,30 @@ function freshColonyState() {
   }
 }
 
-function updateFiscRate(combinedV, sharedReserve, p) {
-  if (combinedV <= 0) return p.targetFiscRate
-  const r = sharedReserve / combinedV
-  if (r >= p.reserveTargetRatio) return p.targetFiscRate
-  if (r <= 0) return 0.01
-  return Math.max(0.01, p.targetFiscRate * (r / p.reserveTargetRatio))
+/**
+ * Compute the target Fisc rate for a given month (USD inflation factored in)
+ * and the actual rate the Fisc can pay given reserve adequacy.
+ *
+ * Target rate floats to keep the basket constant at TARGET_BASKET_S in S terms.
+ * Actual rate compresses if reserve can't cover V supply at the target rate.
+ */
+function basketCostUsd(monthIdx, p) {
+  const monthlyInflation = Math.pow(1 + p.usdInflationAnnual, 1/12) - 1
+  return INITIAL_BASKET_USD * Math.pow(1 + monthlyInflation, monthIdx)
+}
+
+function targetRateAt(monthIdx, p) {
+  return basketCostUsd(monthIdx, p) / TARGET_BASKET_S
+}
+
+function actualRate(targetRate, combinedV, reserve, p) {
+  if (combinedV <= 0) return targetRate
+  // Cover ratio in target-rate terms: reserve / (V × target_rate)
+  // = how many V tokens worth of redemption we can honour at target
+  const coverAtTarget = reserve / (combinedV * targetRate)
+  if (coverAtTarget >= p.reserveTargetRatio) return targetRate
+  if (coverAtTarget <= 0) return targetRate * 0.01
+  return Math.max(targetRate * 0.01, targetRate * (coverAtTarget / p.reserveTargetRatio))
 }
 
 /**
@@ -293,11 +318,17 @@ function runSim(p, colA, colB) {
   let A = freshColonyState()
   let B = freshColonyState()
   let reserve = p.initialUsdcReserve
-  let rate    = p.targetFiscRate
+  let rate    = targetRateAt(0, p)
+  let target  = rate
 
   const rows = [{
     month: 0,
-    reserve, rate, coverRatio: null,
+    reserve,
+    rate, target,
+    basketUsd:    INITIAL_BASKET_USD,
+    basketInS:    TARGET_BASKET_S,
+    coverRatio:   null,
+    coverAtTarget: null,
     aSSupply: 0, bSSupply: 0,
     aVSupply: 0, bVSupply: 0,
     tradeBalanceA: 0, tradeBalanceB: 0,
@@ -305,28 +336,26 @@ function runSim(p, colA, colB) {
   let totals = { exports: 0, imports: 0, cashouts: 0, lat: 0, shortfall: 0,
                  aExports: 0, aImports: 0, bExports: 0, bImports: 0 }
   let pegBreakMonth = null
-  let aSoloFloorMonth = null  // when colony A would have hit floor alone
-  let bSoloFloorMonth = null
 
   for (let m = 1; m <= p.months; m++) {
-    // Run internal flows in parallel for both colonies
+    target = targetRateAt(m, p)
+
+    // Run internal flows in parallel for both colonies (uses *current* rate)
     const aRun = runInternalFlows(A, colA, p, rate)
     const bRun = runInternalFlows(B, colB, p, rate)
 
-    // Settle shared reserve
     const settle = settleSharedReserve(reserve, aRun, bRun, p, rate)
     reserve = settle.reserve
     A = aRun.state
     B = bRun.state
 
-    // Update Fisc rate based on combined cover
-    rate = updateFiscRate(A.vSupply + B.vSupply, reserve, p)
+    // Update actual rate against new target + reserve adequacy
+    rate = actualRate(target, A.vSupply + B.vSupply, reserve, p)
 
-    if (pegBreakMonth === null && rate < p.targetFiscRate * 0.99) {
+    if (pegBreakMonth === null && rate < target * 0.99) {
       pegBreakMonth = m
     }
 
-    // Track totals
     totals.exports   += settle.flows.exportUsd
     totals.imports   += settle.flows.importUsd
     totals.cashouts  += settle.flows.cashoutUsd
@@ -337,11 +366,17 @@ function runSim(p, colA, colB) {
     totals.bExports  += settle.flows.b.export
     totals.bImports  += settle.flows.b.import
 
+    const v = A.vSupply + B.vSupply
+    const basketUsd = basketCostUsd(m, p)
     rows.push({
       month: m,
       reserve: Math.round(reserve),
       rate:    +rate.toFixed(4),
-      coverRatio: (A.vSupply + B.vSupply) > 0 ? +(reserve / (A.vSupply + B.vSupply)).toFixed(4) : null,
+      target:  +target.toFixed(4),
+      basketUsd: +basketUsd.toFixed(2),
+      basketInS: +(basketUsd / rate).toFixed(2),  // citizen's experience: rises if peg breaks
+      coverRatio:   v > 0 ? +(reserve / v).toFixed(4) : null,
+      coverAtTarget: v > 0 ? +(reserve / (v * target)).toFixed(4) : null,
       aSSupply: Math.round(A.sSupply),
       bSSupply: Math.round(B.sSupply),
       aVSupply: Math.round(A.vSupply),
@@ -355,17 +390,20 @@ function runSim(p, colA, colB) {
   return {
     rows,
     summary: {
-      endReserve:   end.reserve,
-      endRate:      end.rate,
-      endCover:     end.coverRatio,
+      endReserve:    end.reserve,
+      endRate:       end.rate,
+      endTarget:     end.target,
+      endBasketInS:  end.basketInS,
+      endCover:      end.coverRatio,
+      endCoverAtTarget: end.coverAtTarget,
       pegBreakMonth,
-      totalExports: Math.round(totals.exports),
-      totalImports: Math.round(totals.imports),
+      totalExports:  Math.round(totals.exports),
+      totalImports:  Math.round(totals.imports),
       totalCashouts: Math.round(totals.cashouts),
-      totalLat:     Math.round(totals.lat),
+      totalLat:      Math.round(totals.lat),
       totalShortfall: Math.round(totals.shortfall),
-      tradeBalance: Math.round(totals.exports - totals.imports),
-      netUsdInflow: Math.round(totals.exports + totals.lat - totals.imports - totals.cashouts),
+      tradeBalance:  Math.round(totals.exports - totals.imports),
+      netUsdInflow:  Math.round(totals.exports + totals.lat - totals.imports - totals.cashouts),
       aTradeBalance: Math.round(totals.aExports - totals.aImports),
       bTradeBalance: Math.round(totals.bExports - totals.bImports),
     },
@@ -375,8 +413,9 @@ function runSim(p, colA, colB) {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function ColonyEconomy() {
-  const [ubi,     setUbi]     = useState(SHARED_DEFAULTS.ubiPerMonth)
-  const [reserve, setReserve] = useState(SHARED_DEFAULTS.initialUsdcReserve)
+  const [ubi,        setUbi]        = useState(SHARED_DEFAULTS.ubiPerMonth)
+  const [reserve,    setReserve]    = useState(SHARED_DEFAULTS.initialUsdcReserve)
+  const [usdInflation, setUsdInflation] = useState(SHARED_DEFAULTS.usdInflationAnnual)
 
   const [colA, setColA] = useState(PRESETS.ohio.A)
   const [colB, setColB] = useState(PRESETS.ohio.B)
@@ -393,9 +432,10 @@ export default function ColonyEconomy() {
     ...SHARED_DEFAULTS,
     ubiPerMonth: ubi,
     initialUsdcReserve: reserve,
+    usdInflationAnnual: usdInflation,
   }
   const { rows, summary } = useMemo(() => runSim(params, colA, colB), [
-    ubi, reserve, colA, colB,
+    ubi, reserve, usdInflation, colA, colB,
   ])
 
   // "What if alone" — re-run each colony with partner zeroed and reserve halved
@@ -405,11 +445,11 @@ export default function ColonyEconomy() {
   const aAlone = useMemo(() => runSim(
     { ...params, initialUsdcReserve: reserve / 2 },
     colA, partnerless(colB),
-  ), [ubi, reserve, colA, colB])
+  ), [ubi, reserve, usdInflation, colA, colB])
   const bAlone = useMemo(() => runSim(
     { ...params, initialUsdcReserve: reserve / 2 },
     partnerless(colA), colB,
-  ), [ubi, reserve, colA, colB])
+  ), [ubi, reserve, usdInflation, colA, colB])
 
   const pegBroken = summary.pegBreakMonth !== null
 
@@ -420,12 +460,14 @@ export default function ColonyEconomy() {
         <div style={{ fontSize: 11, color: GOLD, letterSpacing: '0.3em', marginBottom: 8 }}>
           SPICE COLONY ECONOMY · TWINNED SIMULATION
         </div>
-        <div style={{ fontSize: 13, color: T2, lineHeight: 1.6, maxWidth: 820 }}>
-          Two SPICE colonies sharing one Fisc reserve. The thesis: a colony alone
-          may be a net importer that would collapse, but twinned with a
-          net-exporter colony, the combined reserve stays healthy. Same logic
-          as a national currency union — Mississippi imports, Connecticut
-          exports, the dollar holds because they share a Fed.
+        <div style={{ fontSize: 13, color: T2, lineHeight: 1.6, maxWidth: 880 }}>
+          Two SPICE colonies sharing one Fisc reserve. S-tokens are anchored
+          to a fixed basket of goods costing 28 S — the Fisc rate floats
+          against USD as USD inflates or deflates, so citizens experience S
+          as stable in real terms. The peg "breaks" when the reserve can't
+          honour V redemption at the basket-anchored rate. The thesis: a
+          colony that can't survive alone can be viable inside a currency
+          union with a partner whose trade balance offsets it.
         </div>
       </div>
 
@@ -454,7 +496,7 @@ export default function ColonyEconomy() {
           <div style={{ fontSize: 9, color: T3, letterSpacing: '0.15em', marginBottom: 10 }}>
             SHARED · APPLIES TO BOTH COLONIES
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
             <Slider label="UBI per citizen / month" value={ubi}
               min={0} max={1000} step={10} display={`${ubi} S`}
               onChange={v => startTransition(() => setUbi(v))} />
@@ -462,6 +504,10 @@ export default function ColonyEconomy() {
               min={1_000_000} max={500_000_000} step={1_000_000}
               display={`$${(reserve/1_000_000).toFixed(0)}M`}
               onChange={v => startTransition(() => setReserve(v))} />
+            <Slider label="USD inflation / yr" value={usdInflation}
+              min={-0.10} max={0.50} step={0.01}
+              display={`${(usdInflation*100).toFixed(0)}%`}
+              onChange={v => startTransition(() => setUsdInflation(v))} />
           </div>
         </div>
 
@@ -473,14 +519,25 @@ export default function ColonyEconomy() {
             soloSummary={bAlone.summary} />
         </div>
 
-        {/* KPI strip — combined. Numbers in $M for readability. */}
+        {/* KPI strip — combined. Basket cost is the citizen-facing health metric. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginBottom: 14 }}>
-          <Kpi label="End reserve"     value={`$${(summary.endReserve/1_000_000).toFixed(1)}M`}        colour={summary.endReserve > 0 ? GRN : RED} />
-          <Kpi label="End rate ($/S)"  value={summary.endRate.toFixed(2)}                              colour={summary.endRate >= 0.99 ? GRN : RED} />
-          <Kpi label="Cover ratio"      value={summary.endCover != null ? (summary.endCover * 100).toFixed(0) + '%' : '—'}  colour={summary.endCover >= 0.30 ? GRN : summary.endCover >= 0.10 ? GOLD : RED} />
-          <Kpi label="Peg breaks"       value={pegBroken ? `month ${summary.pegBreakMonth}` : 'never'} colour={pegBroken ? RED : GRN} />
-          <Kpi label="Combined trade (24mo)" value={`$${(summary.tradeBalance/1_000_000).toFixed(0)}M`}      colour={summary.tradeBalance > 0 ? GRN : RED} />
-          <Kpi label="Net $ inflow (24mo)"   value={`$${(summary.netUsdInflow/1_000_000).toFixed(0)}M`}      colour={summary.netUsdInflow > 0 ? GRN : RED} />
+          <Kpi label="End basket cost"
+               value={`${summary.endBasketInS.toFixed(1)} S`}
+               sub={`target ${TARGET_BASKET_S} S`}
+               colour={summary.endBasketInS <= TARGET_BASKET_S * 1.02 ? GRN
+                     : summary.endBasketInS <= TARGET_BASKET_S * 1.10 ? GOLD : RED} />
+          <Kpi label="End rate ($/S)"
+               value={summary.endRate.toFixed(2)}
+               sub={`target $${summary.endTarget.toFixed(2)}`}
+               colour={summary.endRate >= summary.endTarget * 0.99 ? GRN : RED} />
+          <Kpi label="End reserve" value={`$${(summary.endReserve/1_000_000).toFixed(1)}M`}
+               colour={summary.endReserve > 0 ? GRN : RED} />
+          <Kpi label="Peg breaks"  value={pegBroken ? `month ${summary.pegBreakMonth}` : 'never'}
+               colour={pegBroken ? RED : GRN} />
+          <Kpi label="Combined trade (24mo)" value={`$${(summary.tradeBalance/1_000_000).toFixed(0)}M`}
+               colour={summary.tradeBalance > 0 ? GRN : RED} />
+          <Kpi label="Net $ inflow (24mo)"   value={`$${(summary.netUsdInflow/1_000_000).toFixed(0)}M`}
+               colour={summary.netUsdInflow > 0 ? GRN : RED} />
         </div>
 
         {/* Charts — 2x2 */}
@@ -499,32 +556,31 @@ export default function ColonyEconomy() {
             </ResponsiveContainer>
           </ChartPanel>
 
-          <ChartPanel title="FISC RATE — combined ($/S, peg = $1)">
+          <ChartPanel title="BASKET COST IN S — citizen experience (target = 28 S)">
             <ResponsiveContainer width="100%" height={CH}>
               <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
                 <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
                 <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42"
-                  domain={[0, 1.2]} ticks={[0, 0.25, 0.5, 0.75, 1.0]} />
-                <ReferenceLine y={1.0} stroke={T3} strokeDasharray="3 3" />
-                <Tooltip contentStyle={tipStyle} formatter={v => `$${Number(v).toFixed(3)}`} />
-                <Line type="monotone" dataKey="rate" stroke={GOLD} strokeWidth={2} dot={false} isAnimationActive={false} />
+                  domain={[20, 'auto']} />
+                <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" label={{ value: 'target', fill: GRN, fontSize: 9, position: 'right' }} />
+                <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
+                <Line type="monotone" dataKey="basketInS" stroke={GOLD} strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartPanel>
 
-          <ChartPanel title="RESERVE COVER RATIO — combined">
+          <ChartPanel title="FISC RATE ($/S) — actual vs target">
             <ResponsiveContainer width="100%" height={CH}>
               <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
                 <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
                 <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42"
-                  domain={[0, 1.0]} ticks={[0, 0.25, 0.5, 0.75]}
-                  tickFormatter={v => `${(v*100).toFixed(0)}%`} />
-                <ReferenceLine y={0.30} stroke={BLU} strokeDasharray="3 3" label={{ value: 'target', fill: BLU, fontSize: 9, position: 'right' }} />
-                <ReferenceLine y={0.10} stroke={RED} strokeDasharray="3 3" label={{ value: 'floor', fill: RED, fontSize: 9, position: 'right' }} />
-                <Tooltip contentStyle={tipStyle} formatter={v => `${(Number(v)*100).toFixed(1)}%`} />
-                <Line type="monotone" dataKey="coverRatio" stroke={PRP} strokeWidth={2} dot={false} isAnimationActive={false} />
+                  domain={[0, 'auto']} />
+                <Tooltip contentStyle={tipStyle} formatter={v => `$${Number(v).toFixed(3)}`} />
+                <Legend wrapperStyle={{ fontSize: 10, color: T2 }} />
+                <Line type="monotone" dataKey="target" name="target" stroke={T3} strokeDasharray="4 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
+                <Line type="monotone" dataKey="rate"   name="actual" stroke={PRP} strokeWidth={2} dot={false} isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </ChartPanel>
@@ -558,14 +614,14 @@ export default function ColonyEconomy() {
             <>
               <strong style={{ color: RED }}>Peg breaks at month {summary.pegBreakMonth}.</strong>{' '}
               Combined trade balance: <strong style={{ color: T1 }}>${(summary.tradeBalance/1_000_000).toFixed(0)}M</strong>{' '}
-              over 24 months. The twinned colonies together can't keep the reserve covered.
-              By month 24 the rate is ${summary.endRate.toFixed(2)}/S.
+              over 24 months. The reserve can't honour V redemption at the basket-anchored rate.
+              By month 24 the basket costs <strong style={{ color: T1 }}>{summary.endBasketInS.toFixed(1)} S</strong>{' '}
+              (target {TARGET_BASKET_S}) — a {(((summary.endBasketInS / TARGET_BASKET_S) - 1) * 100).toFixed(0)}% real-terms loss for V holders.
             </>
-          ) : summary.endCover < 0.40 ? (
+          ) : summary.endBasketInS > TARGET_BASKET_S * 1.02 ? (
             <>
-              <strong style={{ color: GOLD }}>Peg holds, cover thin.</strong>{' '}
-              Combined trade balance ${(summary.tradeBalance/1_000_000).toFixed(0)}M over 24 months.
-              End cover {(summary.endCover * 100).toFixed(0)}%. Workable but no margin for shocks.
+              <strong style={{ color: GOLD }}>Peg holds, citizens drifting off-anchor.</strong>{' '}
+              Basket cost {summary.endBasketInS.toFixed(1)} S vs target {TARGET_BASKET_S} S — citizens are losing some real-terms purchasing power. Cover thin against shocks.
             </>
           ) : (
             <>
@@ -573,7 +629,9 @@ export default function ColonyEconomy() {
               Combined trade balance ${(summary.tradeBalance/1_000_000).toFixed(0)}M{' '}
               ({colA.name}: ${(summary.aTradeBalance/1_000_000).toFixed(0)}M,{' '}
               {colB.name}: ${(summary.bTradeBalance/1_000_000).toFixed(0)}M).{' '}
-              End cover {(summary.endCover * 100).toFixed(0)}% — well above the 30% target.{' '}
+              Basket holds at {summary.endBasketInS.toFixed(1)} S — citizens experience S as stable
+              even though USD has {usdInflation >= 0 ? 'inflated' : 'deflated'} by{' '}
+              {Math.abs(((rows[rows.length-1].basketUsd / INITIAL_BASKET_USD) - 1) * 100).toFixed(0)}% over 24 months.
               The colonies' surpluses and deficits offset each other across the shared Fisc.
             </>
           )}
@@ -681,13 +739,14 @@ function Slider({ label, value, min, max, step, display, onChange }) {
   )
 }
 
-function Kpi({ label, value, colour }) {
+function Kpi({ label, value, sub, colour }) {
   return (
     <div style={{ background: BG2, border: BD, padding: '8px 10px' }}>
       <div style={{ fontSize: 9, color: T3, letterSpacing: '0.15em', marginBottom: 4 }}>
         {label.toUpperCase()}
       </div>
       <div style={{ fontSize: 14, color: colour, fontWeight: 700, fontFamily: F }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: T3, fontFamily: F, marginTop: 2 }}>{sub}</div>}
     </div>
   )
 }
