@@ -26,7 +26,11 @@ const EVENT_LABELS = {
 
 export default function Dashboard() {
   const navigation = useNavigation()
-  const { address, colonyState, fiscState, stateLoading, refreshState, authenticate, wallet, merchantMode } = useWallet()
+  const {
+    address, colonyState, fiscState, stateLoading, refreshState,
+    authenticate, wallet, merchantMode,
+    companies, identityKey, setIdentityKey, actingAs,
+  } = useWallet()
 
   const [history,      setHistory]      = useState([])
   const [histLoading,  setHistLoading]  = useState(false)
@@ -136,38 +140,70 @@ export default function Dashboard() {
       >
         {/* Header */}
         <View style={S.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={S.colonyName}>{COLONY.name.toUpperCase()}</Text>
-            <Text style={S.address}>{shortAddr(address)}</Text>
+            <Text style={S.address}>{shortAddr(actingAs.addr)}</Text>
           </View>
           <View style={[S.badge, { borderColor: C.gold }]}>
             <Text style={[S.badgeText, { color: C.gold }]}>EARTH</Text>
           </View>
         </View>
 
+        {/* Identity switcher — shown only if user has companies they're secretary of */}
+        {companies.length > 0 && (
+          <View style={S.identityRow}>
+            <TouchableOpacity
+              style={[S.idChip, identityKey === 'citizen' && S.idChipOn]}
+              onPress={() => setIdentityKey('citizen')}
+            >
+              <Text style={[S.idChipText, identityKey === 'citizen' && S.idChipTextOn]}>
+                CITIZEN · {colonyState?.citizenName || shortAddr(address)}
+              </Text>
+            </TouchableOpacity>
+            {companies.map(c => (
+              <TouchableOpacity
+                key={c.addr}
+                style={[S.idChip, identityKey === c.addr && S.idChipOn]}
+                onPress={() => setIdentityKey(c.addr)}
+              >
+                <Text style={[S.idChipText, identityKey === c.addr && S.idChipTextOn]}>
+                  COMPANY · {c.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {stateLoading && !s ? (
           <ActivityIndicator color={C.gold} style={{ marginTop: 40 }} />
         ) : (
           <>
-            {/* Citizen status */}
-            {s && (
+            {/* Identity badge — citizen status (citizen mode) or company name (company mode) */}
+            {actingAs.kind === 'citizen' && s && (
               <View style={[S.citizenBadge, { borderColor: s.isCitizen ? C.green : C.faint }]}>
                 <Text style={[S.citizenText, { color: s.isCitizen ? C.green : C.faint }]}>
                   {s.isCitizen ? `CITIZEN · ${s.citizenName}` : 'NOT A CITIZEN OF THIS COLONY'}
                 </Text>
               </View>
             )}
+            {actingAs.kind === 'company' && (
+              <View style={[S.citizenBadge, { borderColor: C.gold }]}>
+                <Text style={[S.citizenText, { color: C.gold }]}>
+                  COMPANY · {actingAs.name.toUpperCase()}
+                </Text>
+              </View>
+            )}
 
-            {/* Balance cards */}
+            {/* Balance cards — show whichever identity is active */}
             <View style={S.balanceRow}>
               <View style={[card, S.balCard]}>
                 <Text style={label}>S BALANCE</Text>
-                <Text style={value}>{s?.sBalance ?? '—'}</Text>
+                <Text style={value}>{actingAs.sBalance}</Text>
                 <Text style={S.tokenSub}>spending · monthly</Text>
               </View>
               <View style={[card, S.balCard]}>
                 <Text style={label}>V BALANCE</Text>
-                <Text style={[value, { color: C.purple }]}>{s?.vBalance ?? '—'}</Text>
+                <Text style={[value, { color: C.purple }]}>{actingAs.vBalance}</Text>
                 <Text style={S.tokenSub}>savings · permanent</Text>
               </View>
             </View>
@@ -206,8 +242,8 @@ export default function Dashboard() {
               </View>
             )}
 
-            {/* Merchant-only: Receive payment */}
-            {merchantMode && (
+            {/* Receive payment — always visible in company mode; merchant-mode toggle for citizens */}
+            {(actingAs.kind === 'company' || merchantMode) && (
               <TouchableOpacity
                 style={S.receiveBtn}
                 onPress={() => navigation.navigate('Receive')}
@@ -249,30 +285,32 @@ export default function Dashboard() {
               </View>
             )}
 
-            {/* Action buttons — row 2 */}
-            <View style={S.actions}>
-              <TouchableOpacity
-                style={[S.actionBtn, S.actionBtnOutline]}
-                onPress={handleClaimUbi}
-                disabled={actionLoading === 'ubi'}
-              >
-                {actionLoading === 'ubi'
-                  ? <ActivityIndicator size="small" color={C.gold} />
-                  : <Text style={S.actionBtnTextOutline}>Claim UBI</Text>
-                }
-              </TouchableOpacity>
+            {/* Action buttons — row 2 (citizen-only: UBI + Save→V) */}
+            {actingAs.kind === 'citizen' && (
+              <View style={S.actions}>
+                <TouchableOpacity
+                  style={[S.actionBtn, S.actionBtnOutline]}
+                  onPress={handleClaimUbi}
+                  disabled={actionLoading === 'ubi'}
+                >
+                  {actionLoading === 'ubi'
+                    ? <ActivityIndicator size="small" color={C.gold} />
+                    : <Text style={S.actionBtnTextOutline}>Claim UBI</Text>
+                  }
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[S.actionBtn, S.actionBtnOutline]}
-                onPress={handleSaveToV}
-                disabled={actionLoading === 'save'}
-              >
-                {actionLoading === 'save'
-                  ? <ActivityIndicator size="small" color={C.purple} />
-                  : <Text style={S.actionBtnTextOutline}>Save → V</Text>
-                }
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity
+                  style={[S.actionBtn, S.actionBtnOutline]}
+                  onPress={handleSaveToV}
+                  disabled={actionLoading === 'save'}
+                >
+                  {actionLoading === 'save'
+                    ? <ActivityIndicator size="small" color={C.purple} />
+                    : <Text style={S.actionBtnTextOutline}>Save → V</Text>
+                  }
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Tx history */}
             <View style={card}>
@@ -346,6 +384,12 @@ const S = StyleSheet.create({
 
   receiveBtn:     { backgroundColor: C.green, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
   receiveBtnText: { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
+
+  identityRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
+  idChip:         { borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingVertical: 5, paddingHorizontal: 10 },
+  idChipOn:       { borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  idChipText:     { fontSize: 9, color: C.sub, fontFamily: font, letterSpacing: 0.6 },
+  idChipTextOn:   { color: C.gold },
 
   empty:          { fontSize: 11, color: C.faint, fontFamily: font },
   txRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },

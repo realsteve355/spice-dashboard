@@ -17,14 +17,15 @@ export const CHAIN_ID = 84532
 
 /** Dave's Colony — primary demo colony */
 export const COLONY = {
-  colony:     '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5',
-  sToken:     '0x8B9B98cf05C5dC6e43C5b74320B2B858b92D6a04',
-  vToken:     '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
-  gToken:     '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
-  governance: '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
-  fisc:       '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57',
-  name:       "Dave's Colony",
-  slug:       'daves-colony',
+  colony:         '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5',
+  sToken:         '0x8B9B98cf05C5dC6e43C5b74320B2B858b92D6a04',
+  vToken:         '0x86bC95CeD14E3fC1782393E63bc22ef142BEe433',
+  gToken:         '0x08318fC33f0e57a6D196D5a3cF8d443A54C41449',
+  governance:     '0xe2af55fe189B18678187eF48eB49b9bA8bF24534',
+  fisc:           '0xbeF1Dd5f09AE72EBc0565AF72e798866e691eA57',
+  companyFactory: '0x00a41D63eF6fa60e15f26Dc46d6aad8994042e1a',
+  name:           "Dave's Colony",
+  slug:           'daves-colony',
 }
 
 // ── ABIs ────────────────────────────────────────────────────────────────────────
@@ -290,4 +291,72 @@ export async function findPayment({ to, amount, fromBlock, toBlock }) {
 /** Get the current block number — used as the start point for findPayment polling. */
 export async function currentBlock() {
   return await getProvider().getBlockNumber()
+}
+
+// ── Companies ────────────────────────────────────────────────────────────────
+
+const FACTORY_ABI = [
+  'function companyCount() view returns (uint256)',
+  'function getCompany(uint256) view returns (string, address, address, uint256, uint256)',
+]
+
+const COMPANY_ABI = [
+  'function name() view returns (string)',
+  'function secretary() view returns (address)',
+]
+
+/**
+ * Find every company in this colony where the given wallet is the secretary.
+ * Returns array of { addr, name, secretary } — the merchant will pick one.
+ *
+ * The first call is O(N) over all colony companies; cheap enough for now
+ * (Dave's Colony has a handful) but will need to be cached or paginated
+ * if companies grow into the hundreds.
+ */
+export async function fetchMyCompanies(myAddress) {
+  if (!myAddress || !COLONY.companyFactory) return []
+  const me  = myAddress.toLowerCase()
+  const rpc = getProvider()
+  const factory = new ethers.Contract(COLONY.companyFactory, FACTORY_ABI, rpc)
+
+  let count = 0
+  try { count = Number(await factory.companyCount()) } catch { return [] }
+  if (count === 0) return []
+
+  const entries = await Promise.all(
+    Array.from({ length: count }, (_, i) => factory.getCompany(i).catch(() => null))
+  )
+
+  const results = await Promise.all(
+    entries.map(async (e) => {
+      if (!e) return null
+      const [name, wallet] = e
+      if (!wallet || wallet === ethers.ZeroAddress) return null
+      try {
+        const co  = new ethers.Contract(wallet, COMPANY_ABI, rpc)
+        const sec = await co.secretary()
+        if (sec.toLowerCase() !== me) return null
+        return { addr: wallet, name: name || '(unnamed)', secretary: sec }
+      } catch {
+        return null
+      }
+    })
+  )
+  return results.filter(Boolean)
+}
+
+/** Fetch S + V balances for a given address (works for both citizens and company contracts). */
+export async function fetchBalances(addr) {
+  if (!addr) return { sBalance: 0, vBalance: 0 }
+  const rpc    = getProvider()
+  const sToken = new ethers.Contract(COLONY.sToken, ERC20_ABI, rpc)
+  const vToken = new ethers.Contract(COLONY.vToken, ERC20_ABI, rpc)
+  const [sRaw, vRaw] = await Promise.all([
+    sToken.balanceOf(addr),
+    vToken.balanceOf(addr),
+  ])
+  return {
+    sBalance: Math.floor(Number(ethers.formatEther(sRaw))),
+    vBalance: Math.floor(Number(ethers.formatEther(vRaw))),
+  }
 }

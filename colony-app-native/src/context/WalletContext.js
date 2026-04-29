@@ -23,9 +23,10 @@ import {
   loadWallet   as _load,
   clearWallet  as _clear,
 } from '../utils/wallet'
-import { fetchColonyState, fetchFiscState } from '../utils/contracts'
+import { fetchColonyState, fetchFiscState, fetchMyCompanies, fetchBalances } from '../utils/contracts'
 
-const MERCHANT_MODE_KEY = 'spice_merchant_mode'
+const MERCHANT_MODE_KEY    = 'spice_merchant_mode'
+const ACTIVE_IDENTITY_KEY  = 'spice_active_identity'   // 'citizen' or company addr
 
 const Ctx = createContext(null)
 export const useWallet = () => useContext(Ctx)
@@ -39,6 +40,8 @@ export function WalletProvider({ children }) {
   const [stateLoading, setStateLoading] = useState(false)
   const [initialising, setInitialising] = useState(true)  // true while checking SecureStore on boot
   const [merchantMode, _setMerchantMode] = useState(false)
+  const [companies,  setCompanies]     = useState([])         // [{ addr, name, secretary }]
+  const [identityKey, _setIdentityKey] = useState('citizen')  // 'citizen' or company addr
 
   // On mount: check if wallet exists (no auth) and load address + merchant mode
   useEffect(() => {
@@ -52,6 +55,8 @@ export function WalletProvider({ children }) {
         }
         const mm = await SecureStore.getItemAsync(MERCHANT_MODE_KEY)
         _setMerchantMode(mm === '1')
+        const ident = await SecureStore.getItemAsync(ACTIVE_IDENTITY_KEY)
+        if (ident) _setIdentityKey(ident)
       } catch (e) {
         console.warn('[WalletContext] init error:', e.message)
       } finally {
@@ -70,25 +75,55 @@ export function WalletProvider({ children }) {
   useEffect(() => {
     if (!address) return
     setStateLoading(true)
-    Promise.all([fetchColonyState(address), fetchFiscState()])
-      .then(([colony, fisc]) => { setColonyState(colony); setFiscState(fisc) })
+    Promise.all([fetchColonyState(address), fetchFiscState(), fetchMyCompanies(address)])
+      .then(([colony, fisc, cos]) => {
+        setColonyState(colony)
+        setFiscState(fisc)
+        setCompanies(cos)
+      })
       .catch(e => console.warn('[WalletContext] fetch error:', e.message))
       .finally(() => setStateLoading(false))
   }, [address])
+
+  // Active company state — re-fetched whenever identityKey changes to one
+  const activeCompany = identityKey === 'citizen'
+    ? null
+    : companies.find(c => c.addr.toLowerCase() === identityKey.toLowerCase()) || null
+  const [companyState, setCompanyState] = useState(null)  // { sBalance, vBalance }
+  useEffect(() => {
+    if (!activeCompany) { setCompanyState(null); return }
+    fetchBalances(activeCompany.addr)
+      .then(setCompanyState)
+      .catch(e => console.warn('[WalletContext] company fetch error:', e.message))
+  }, [activeCompany?.addr])
+
+  const setIdentityKey = useCallback(async (k) => {
+    _setIdentityKey(k)
+    try { await SecureStore.setItemAsync(ACTIVE_IDENTITY_KEY, k) } catch {}
+  }, [])
 
   const refreshState = useCallback(async () => {
     if (!address) return
     setStateLoading(true)
     try {
-      const [colony, fisc] = await Promise.all([fetchColonyState(address), fetchFiscState()])
+      const [colony, fisc, cos] = await Promise.all([
+        fetchColonyState(address),
+        fetchFiscState(),
+        fetchMyCompanies(address),
+      ])
       setColonyState(colony)
       setFiscState(fisc)
+      setCompanies(cos)
+      if (activeCompany) {
+        const bal = await fetchBalances(activeCompany.addr)
+        setCompanyState(bal)
+      }
     } catch (e) {
       console.warn('[WalletContext] refresh error:', e.message)
     } finally {
       setStateLoading(false)
     }
-  }, [address])
+  }, [address, activeCompany?.addr])
 
   const createWallet = useCallback(async (onShowPhrase) => {
     const w = await _create()
@@ -123,6 +158,25 @@ export function WalletProvider({ children }) {
     setColonyState(null)
   }, [])
 
+  // Acting identity — what gets displayed and used as the recipient address
+  // for Receive QR. When acting as a company, the *signing* key is still the
+  // user's EOA; only the recipient + display change.
+  const actingAs = activeCompany
+    ? {
+        kind:    'company',
+        addr:    activeCompany.addr,
+        name:    activeCompany.name,
+        sBalance: companyState?.sBalance ?? 0,
+        vBalance: companyState?.vBalance ?? 0,
+      }
+    : {
+        kind:    'citizen',
+        addr:    address,
+        name:    colonyState?.citizenName || '',
+        sBalance: colonyState?.sBalance ?? 0,
+        vBalance: colonyState?.vBalance ?? 0,
+      }
+
   const ctx = {
     address,
     isSetup,
@@ -133,6 +187,11 @@ export function WalletProvider({ children }) {
     initialising,
     merchantMode,
     setMerchantMode,
+    companies,
+    identityKey,
+    setIdentityKey,
+    activeCompany,
+    actingAs,
     createWallet,
     importWallet,
     authenticate,

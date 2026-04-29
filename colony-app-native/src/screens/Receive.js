@@ -27,7 +27,13 @@ const POLL_MS = 3000
 
 export default function Receive() {
   const navigation = useNavigation()
-  const { address, colonyState } = useWallet()
+  const { address, colonyState, actingAs } = useWallet()
+  // Recipient is whoever the user is currently acting as — citizen address
+  // for personal payments, or the company contract address when acting as company.
+  const receiveTo   = actingAs?.addr || address
+  const receiveName = actingAs?.kind === 'company'
+    ? actingAs.name
+    : (colonyState?.citizenName || '')
 
   // step: 'enter' | 'wait' | 'paid'
   const [step,    setStep]    = useState('enter')
@@ -45,9 +51,8 @@ export default function Receive() {
     return () => stopPolling()
   }, [])
 
-  const merchantName = colonyState?.citizenName || ''
-  const url = (step === 'wait' && address && amount)
-    ? buildPayUrl({ to: address, amount, note: note.trim(), merchantName })
+  const url = (step === 'wait' && receiveTo && amount)
+    ? buildPayUrl({ to: receiveTo, amount, note: note.trim(), merchantName: receiveName })
     : ''
 
   function stopPolling() {
@@ -63,7 +68,7 @@ export default function Receive() {
       Alert.alert('Missing amount', 'Please enter an amount in S.')
       return
     }
-    if (!address) {
+    if (!receiveTo) {
       Alert.alert('No wallet', 'Set up a wallet first.')
       return
     }
@@ -82,7 +87,7 @@ export default function Receive() {
       try {
         const head = await currentBlock()
         const evt = await findPayment({
-          to:        address,
+          to:        receiveTo,
           amount:    amt,
           fromBlock: fromBlock.current,
           toBlock:   head,
@@ -139,11 +144,13 @@ export default function Receive() {
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text style={S.back}>← Dashboard</Text>
             </TouchableOpacity>
-            <Text style={S.balance}>Receiving as {shortAddr(address)}</Text>
+            <Text style={S.balance}>{shortAddr(receiveTo)}</Text>
           </View>
 
           <Text style={S.heading}>New sale</Text>
-          <Text style={S.subheading}>{COLONY.name}</Text>
+          <Text style={S.subheading}>
+            {receiveName ? `${receiveName.toUpperCase()} · ` : ''}{COLONY.name}
+          </Text>
 
           <View style={card}>
             <Text style={[label, { marginBottom: 8 }]}>AMOUNT (S)</Text>
