@@ -7,6 +7,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "eas-build-pre-install": "chmod -R u+w . 2>/dev/null; rm -rf node_modules .expo ios/build android/build dist 2>/dev/null; true"
   },
   "dependencies": {
@@ -31,6 +33,7 @@
   },
   "private": true,
   "devDependencies": {
-    "babel-preset-expo": "~54.0.10"
+    "babel-preset-expo": "~54.0.10",
+    "vitest": "^4.1.5"
   }
 }

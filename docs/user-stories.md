@@ -168,7 +168,7 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | F-29 | As a company secretary, I want to list a product in the colony Mall with name, price in S, and description so citizens can browse and buy without coordinating off-chain | P1 | ✓ |
-| F-30 | As a company secretary, I want to edit or remove product listings from my company's Mall page | P2 | ~ |
+| F-30 | As a company secretary, I want to edit or remove product listings from my company's Mall page | P2 | ✓ |
 
 *F-08: Auto-conversion is a smart contract concern — requires Colony.sol v2 epoch advance trigger. Manual convertToV() call available in deployed v1 contracts.*
 *F-11: Live. `CompanyImplementation.declareDividend(uint256 vAmount)` deployed; UI in `Company.jsx:354–369`. CFO declares specific V amount; remainder stays in V reserve.*
@@ -570,10 +570,48 @@ App is self-custodial with an embedded wallet — no MetaMask required.
 |---|-------|----------|--------|
 | MB-12 | As a mobile citizen at a merchant, I want to tap my phone to an NFC tag and have the payment details pre-filled automatically | P1 | ✓ |
 | MB-13 | As a mobile citizen, I want to review the payment (merchant name, amount, note) before confirming, and cancel if wrong | P1 | ✓ |
-| MB-14 | As a mobile citizen, I want to confirm payment with Face ID, and see a success screen with the transaction hash | P1 | ✓ |
+| MB-14 | As a mobile citizen, I want to confirm payment with Face ID / Touch ID, and see a success screen with the transaction hash | P1 | ✓ |
 | MB-15 | As a mobile citizen without NFC hardware, I want to fall back to scanning a QR code that opens the same payment confirmation flow | P1 | ✓ |
+| MB-16 | As a mobile citizen scanning a merchant QR with cart items, I want to see the products I'm buying — name, photo, qty × price, line totals — before signing | P1 | ✓ |
+| MB-17 | As a mobile citizen, I want a tactile vibration when my payment confirms so I feel that the transaction landed without watching the screen | P2 | ✓ |
 
 *MB-12–MB-15: Implemented April 2026 (step 4). react-native-nfc-manager reads NDEF URI tag (spice://pay?...). Two paths: (A) in-app "Tap to Pay" button triggers active NFC scan → Pay screen; (B) app closed → OS reads tag via spice:// scheme → deep link → Pay screen. QR fallback: till.html shows QR code of the same URL when NFC is unavailable. Till page at app.zpc.finance/till.html. EAS dev build required for NFC + biometrics; Expo Go supports read-only features.*
+
+*MB-16: Pay screen reads `items=id1x2,id2x1` from the QR URL, fetches the company catalogue via /api/products, displays a "YOU'RE BUYING" panel with photo + name + qty × price + line total. Note panel suppressed when items render to avoid duplication.*
+
+*MB-17: triple-pulse Vibration pattern (short / short / long) fires on both Pay success and Receive PAID screens — same beat for both ends of the transaction.*
+
+### Mobile Merchant (acting-as-company)
+
+The merchant POS surface in the same native app: the wallet's secretary
+relationship to one or more company contracts is detected on chain, and
+an identity switcher lets the user act as either themselves (citizen)
+or one of their companies.
+
+| # | Story | Priority | Status |
+|---|-------|----------|--------|
+| MB-20 | As a mobile user who is the secretary of a company, I want my dashboard to show a chip strip ("CITIZEN · Carla / COMPANY · Carla's Coffee") and switch identity with one tap | P1 | ✓ |
+| MB-21 | As a mobile merchant in company mode, I want the dashboard to show the company contract's S/V balances (not my personal balances) and hide UBI / Save→V actions which don't apply | P1 | ✓ |
+| MB-22 | As a mobile merchant in company mode, I want a "Today's takings" card showing total S received and number of sales in the last 24h | P2 | ✓ |
+| MB-23 | As a mobile merchant, I want a "Receive payment →" button that opens a sale flow: enter amount + note OR tap products from the company's Mall catalogue | P1 | ✓ |
+| MB-24 | As a mobile merchant tapping products, I want a tappable grid with photos, qty badges that increment per tap, long-press to remove, and a live cart total | P1 | ✓ |
+| MB-25 | As a mobile merchant, I want a big QR code on screen encoding the recipient (company contract address), total, and cart items so the customer can scan and pay in one motion | P1 | ✓ |
+| MB-26 | As a mobile merchant on iPhone, I want to write the same payment URL to a re-writable NFC sticker on the till so any customer phone tapping the sticker opens their SPICE app pre-filled | P1 | ~ |
+| MB-27 | As a mobile merchant, I want the QR/wait screen to poll the chain and flip to "PAID ✓" automatically when the customer's transaction is mined — no manual confirmation step | P1 | ✓ |
+| MB-28 | As a mobile merchant, I want the PAID screen to show the sender, amount, tx hash, and refresh the company balance so "Back to dashboard" already shows the new total | P1 | ✓ |
+| MB-29 | As a mobile merchant on iPad, I want the same app — supportsTablet:true — accepting the architectural compromise that NFC tag write isn't available on iPad (Core NFC is iPhone-only) so QR is the only presentation mode | P1 | ✓ |
+
+*MB-20: WalletContext.fetchMyCompanies enumerates CompanyFactory.companyCount + getCompany(i), filters where the company's secretary() matches the loaded wallet. Active identity ('citizen' or company addr) persisted in expo-secure-store.*
+
+*MB-21–MB-22: Dashboard.js shows actingAs.{sBalance, vBalance} from the company contract. Today's takings via sumIncoming() — chunked getLogs over the last ~43,200 blocks (24h on Base Sepolia at 2s/block) for Sent events with the company as recipient.*
+
+*MB-23–MB-25: Receive.js — fetchCompanyProducts pulls Mall catalogue. ProductThumb shows a half-width centred image with initials fallback. buildPayUrl encodes cart as items=id1x2,id2x1 (~5 products comfortably fit within NTAG215's 504-byte capacity).*
+
+*MB-26: writeNdefPayUrl ready in src/utils/nfc.js — pending physical NTAG215 sticker testing (24h delivery). iPad path hidden because Apple does not expose Core NFC writing on iPad.*
+
+*MB-27: findPayment polls Base Sepolia every 3s for Sent(*, companyAddr, amount, *) — looks back 2 blocks at start to catch fast-customer race conditions where the tx mines between currentBlock() and the first poll.*
+
+*MB-29: app.json supportsTablet:true. ProductImage hidden write-to-tag button when isNfcSupported() returns false.*
 
 ---
 
@@ -581,12 +619,14 @@ App is self-custodial with an embedded wallet — no MetaMask required.
 
 | Status | Count | % |
 |--------|-------|---|
-| ✓ Done | 129 | 66% |
-| ~ Partial / UI mock | 35 | 18% |
+| ✓ Done | 139 | 68% |
+| ~ Partial / UI mock | 35 | 17% |
 | — Not built | 16 | 8% |
-| Superseded | 5 | 3% |
+| Superseded | 5 | 2% |
 | New (not yet built) | 10 | 5% |
-| **Total** | **195** | |
+| **Total** | **205** | |
+
+*v24 changes (29 April 2026): Mobile merchant POS landed. New section "Mobile Merchant (acting-as-company)" with stories MB-20 through MB-29 (9 ✓, 1 ~). MB-16 (line items with photos on Pay screen) and MB-17 (haptic on payment confirm) added under existing NFC tap-to-pay group. F-30 flipped ✓ — product edit/remove confirmed working via web Store.jsx edit dialog. Architecture: native app reuses on-chain CompanyFactory.secretary() detection, no parallel architecture; identity switcher UI, company-contract balance display, products-with-photos cart, today's takings counter, chain-polling auto-PAID, company-mode iPad support all shipped. New unit tests in colony-app-native: vitest + 38 tests covering payurl.js (build/parse/decode roundtrips, URL encoding, items array) + txErrors.js (network errors, contract reverts, ethers v6 error shapes, fallback messages). Total tests: 307 → 345.*
 
 *v23 changes (28 April 2026, deep push): Major Mars milestone — full Harberger land lifecycle implemented (A-05/A-06/A-07/A-08/A-09 ✓, A-10 ~). New AToken LandData struct + claimLand/updateLandValue/markLandFeePaid/forceLandPurchase/outstandingLandFeeEpochs/getLandData; STEWARDSHIP_BPS=50 (0.5%/epoch). Colony relays for citizens + companies (OS-13 ✓) with V-token fee transfers to colony treasury. New 'Land' tab in Assets.jsx with claim/browse/update/pay/force-purchase flows. M-08 ✓ + M-09 ✓ — Mcc.jsx Recall Risk card computes 12-month rolling avg from /api/budget history, status-coded STABLE / APPROACHING / RECALL TRIGGER. F-16 ✓ — Share History card reads SharesIssued/Forfeited/BoughtBack/DividendDeclared from company contract. OS-06 ✓ — Company Assets card lists company-held UNILATERAL A-tokens. OS-11 ✓ — secretary 'Register company asset' form; OS-12 ✓ — inline Transfer button per row. CompanyImplementation v3 adds registerAsset/transferAsset relays + AssetRegisteredByCompany/AssetTransferredByCompany events. A-14 ✓ — escrow status badge on Registry rows (🔒 pledged on obligation #N). S-06 ✓ — equity row Gift button + inline form calling Colony.transferEquity. M-13 ✓ — already operational via Governance election flow. FI-18 ✓ + FI-21 ✓ — already-built UI confirmed; FI-19 ~. 10 new contract tests (Harberger). Total contract tests: 212 → 222.*
 *v22 changes (28 April 2026, continued): OS-05 ✓ — Company.jsx Overview tab Secretary History card reads RoleHandedOver + OrgRegistered events filtered by tokenId from rpc.getLogs. F-23 ✓ — participant 'Claim vested' button on equity row calls Colony.claimVestedTranches relay. F-24 ✓ — declareDividend already pays vested + unvested holders pro-rata; status corrected. F-26 ~ — added AToken.getVestingSchedule view returning per-tranche detail; Company.jsx 'Show schedule' expandable per equity row with graceful fallback for older AToken deployments. M-22 ~ — opt-in mechanism: OToken.electionHandOver(authority-only, MCC-only) + Governance.setOToken (once) + try/catch auto-call inside executeElection when role==CEO; Colony.enableElectionHandover(founder) wires both. 14 new contract tests covering OToken authority gating + Governance auto-handover happy/unwired/non-CEO paths. Total contract tests: 198 → 212.*
@@ -693,7 +733,7 @@ added; redeploy or beacon-upgrade unlocks them there too.
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v23*
+*SPICE Colony · User Stories & Requirements Spec · v24*
 *Last updated: 28 April 2026*
 *v14 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5). Dave's Colony redeployed (slug: daves-colony). Assets.jsx built — citizen asset registration, transfer, obligation creation, and A-token portfolio view at /colony/:slug/assets. On-chain table updated: asset registration, asset transfer, obligation creation, citizen portfolio, V dividend tx history all live. A-01/A-02/A-04/A-12/A-13 updated to ~ partial. C-31 updated to ~. F-22 updated to ~. C-14 updated to include V dividends. v2 blockers section rewritten: AToken.sol removed as blocker; CompanyImpl v2 and Colony.sol v2 are the remaining blockers with specific story mapping.*
 *v15 changes (19 April 2026): Governance.sol deployed and wired. Dave's Colony redeployed — all addresses updated. Colony.join() updated: birth year DOB (not Unix timestamp) — C-04 note added. Obligation mutual-consent flow: A-12 footnote updated to describe Governance.proposeObligation/signObligation path; direct issueObligation() retired. On-chain table updated: obligation creation row updated for Governance flow; colony directory corrected to getActive(). M-20 updated to ~ partial (Governance.sol live; Votes.jsx UI pending). M-27/M-28 added — MCC double-entry ledger in Admin.jsx (live). C-24/C-25/C-27/C-29 governance footnote updated with Governance contract address and remaining UI gap. addrLabel.js utility (shortAddr, namedAddr, resolveNames) added — names shown next to addresses in Dashboard.jsx, Company.jsx, Assets.jsx. Status summary not recounted (minor net change).*
