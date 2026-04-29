@@ -15,12 +15,15 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
 import { txSend } from '../utils/contracts'
+import { useBiometricLabel } from '../utils/biometric'
+import { friendlyTxError } from '../utils/txErrors'
 import { C, font, shortAddr, card, label } from '../theme'
 
 export default function Pay() {
   const navigation = useNavigation()
   const route = useRoute()
   const { colonyState, authenticate, wallet, refreshState } = useWallet()
+  const bio = useBiometricLabel()
 
   const { to = '', amount = '', note = '', merchantName = '' } = route.params || {}
 
@@ -53,7 +56,7 @@ export default function Pay() {
       await refreshState()
       setDone(true)
     } catch (e) {
-      Alert.alert('Payment failed', e.message)
+      Alert.alert('Payment failed', friendlyTxError(e))
     } finally {
       setLoading(false)
     }
@@ -141,7 +144,7 @@ export default function Pay() {
         >
           {loading
             ? <ActivityIndicator color={C.bg} />
-            : <Text style={S.payBtnText}>Confirm with Face ID</Text>
+            : <Text style={S.payBtnText}>Confirm with {bio}</Text>
           }
         </TouchableOpacity>
 

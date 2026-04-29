@@ -17,12 +17,15 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
 import { txSend, fetchCitizens, COLONY } from '../utils/contracts'
+import { useBiometricLabel } from '../utils/biometric'
+import { friendlyTxError } from '../utils/txErrors'
 import { C, font, shortAddr, card, label } from '../theme'
 
 export default function Send() {
   const navigation = useNavigation()
   const route      = useRoute()
   const { address, colonyState, authenticate, wallet, refreshState } = useWallet()
+  const bio = useBiometricLabel()
 
   // Pre-fill from NFC/QR params if passed
   const [to,       setTo]       = useState(route.params?.to      || '')
@@ -68,7 +71,7 @@ export default function Send() {
         { text: 'OK', onPress: () => navigation.goBack() }
       ])
     } catch (e) {
-      Alert.alert('Send failed', e.message)
+      Alert.alert('Send failed', friendlyTxError(e))
     } finally {
       setLoading(false)
     }
@@ -170,7 +173,7 @@ export default function Send() {
         >
           {loading
             ? <ActivityIndicator color={C.bg} />
-            : <Text style={S.btnGoldText}>Send → confirm with Face ID</Text>
+            : <Text style={S.btnGoldText}>Send → confirm with {bio}</Text>
           }
         </TouchableOpacity>
 

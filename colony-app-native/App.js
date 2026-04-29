@@ -52,10 +52,8 @@ const Stack = createNativeStackNavigator()
 function HeaderSettingsBtn() {
   const navigation = useNavigation()
   return (
-    <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={8}>
-      <Text style={{ fontFamily: font, fontSize: 11, color: C.gold, letterSpacing: 1 }}>
-        ⚙
-      </Text>
+    <TouchableOpacity onPress={() => navigation.navigate('Settings')} hitSlop={12}>
+      <Text style={{ fontFamily: font, fontSize: 18, color: C.gold }}>⚙</Text>
     </TouchableOpacity>
   )
 }

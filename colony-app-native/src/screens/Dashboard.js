@@ -13,33 +13,8 @@ import { useNavigation } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
 import { fetchTxHistory, txClaimUbi, txSaveToV, COLONY } from '../utils/contracts'
 import { isNfcSupported, scanPayTag } from '../utils/nfc'
+import { friendlyTxError } from '../utils/txErrors'
 import { C, font, shortAddr, card, label, value } from '../theme'
-
-// Map common Colony revert strings to human-friendly messages
-const FRIENDLY_REVERTS = {
-  'AlreadyClaimed':       'You have already claimed UBI this epoch. Try again next epoch.',
-  'already claimed':      'You have already claimed UBI this epoch. Try again next epoch.',
-  'NotCitizen':           'This wallet is not a citizen of this colony.',
-  'not citizen':          'This wallet is not a citizen of this colony.',
-  'InsufficientBalance':  'Insufficient S balance for this operation.',
-  'EpochCapExceeded':     'Epoch save cap exceeded — max 200 S can be saved per epoch.',
-  'Paused':               'The contract is paused.',
-}
-
-function parseRevertReason(e) {
-  // ethers v6 surfaces the revert reason in a few possible shapes
-  const blob = (e?.shortMessage || e?.reason || e?.data?.message || e?.message || '').toString()
-  for (const key of Object.keys(FRIENDLY_REVERTS)) {
-    if (blob.toLowerCase().includes(key.toLowerCase())) return FRIENDLY_REVERTS[key]
-  }
-  // Generic "transaction execution reverted" with no decode → most often UBI already claimed
-  if (/execution reverted/i.test(blob)) {
-    return 'Transaction reverted by contract — most likely UBI already claimed this epoch, ' +
-           'or epoch cap reached. Pull down to refresh and try again next epoch.'
-  }
-  // Shorten long hex/RPC dumps
-  return blob.length > 200 ? blob.slice(0, 200) + '…' : blob
-}
 
 const EVENT_LABELS = {
   sent:     { color: C.red,    sign: '−', label: 'Sent' },
@@ -116,7 +91,7 @@ export default function Dashboard() {
       await onRefresh()
       Alert.alert('UBI claimed', 'Your monthly UBI has been added to your S balance.')
     } catch (e) {
-      const msg = parseRevertReason(e)
+      const msg = friendlyTxError(e)
       Alert.alert('Claim failed', msg)
     } finally {
       setActionLoading(null)
@@ -141,7 +116,7 @@ export default function Dashboard() {
           await onRefresh()
           Alert.alert('Saved', `${amount} S converted to V.`)
         } catch (e) {
-          Alert.alert('Save failed', parseRevertReason(e))
+          Alert.alert('Save failed', friendlyTxError(e))
         } finally {
           setActionLoading(null)
         }

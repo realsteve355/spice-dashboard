@@ -7,8 +7,8 @@ export const C = {
   gold:    '#D9A53D',   // slightly brighter gold for dark-bg contrast
   bg:      '#0a0a0a',   // near-black, AMOLED-friendly
   text:    '#f2f2f2',
-  sub:     '#a0a0a0',
-  faint:   '#666666',
+  sub:     '#b8b8b8',
+  faint:   '#8a8a8a',
   border:  '#2a2a2a',
   red:     '#f87171',
   purple:  '#a78bfa',

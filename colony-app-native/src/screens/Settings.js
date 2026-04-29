@@ -10,10 +10,12 @@ import * as Clipboard from 'expo-clipboard'
 import { useWallet } from '../context/WalletContext'
 import { loadMnemonic } from '../utils/wallet'
 import { COLONY } from '../utils/contracts'
+import { useBiometricLabel } from '../utils/biometric'
 import { C, font, shortAddr, card, label } from '../theme'
 
 export default function Settings() {
   const { address, colonyState, reset, merchantMode, setMerchantMode } = useWallet()
+  const bio = useBiometricLabel()
   const [phrase,   setPhrase]   = useState(null)
   const [loading,  setLoading]  = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -105,7 +107,7 @@ export default function Settings() {
             <TouchableOpacity style={S.revealBtn} onPress={handleRevealPhrase} disabled={loading}>
               {loading
                 ? <ActivityIndicator size="small" color={C.gold} />
-                : <Text style={S.revealBtnText}>Reveal with Face ID</Text>
+                : <Text style={S.revealBtnText}>Reveal with {bio}</Text>
               }
             </TouchableOpacity>
           ) : (
