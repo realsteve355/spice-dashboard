@@ -1,26 +1,20 @@
 /**
- * Audio + haptic feedback for celebration moments (PAID, etc).
+ * Haptic feedback for celebration moments (PAID, payment-sent, etc).
  *
- * Today: just a "ka-ching"-shaped vibration pattern (no native deps, no
- * rebuild needed). The visual KERRRCHING text + animation carries most of
- * the impact.
+ * Audio playback in RN requires a native module (expo-audio) and therefore
+ * a fresh EAS build, so for now we lean entirely on Vibration. The pattern
+ * below approximates a "ka-ching" rhythm: short pulse, gap, longer pulse.
  *
- * Tomorrow: bundle a real cash-register sample and play it via expo-audio.
- * That requires `npx expo install expo-audio` + a fresh EAS build.
+ * To upgrade to real audio later: `npx expo install expo-audio`, drop a
+ * sample at assets/kaching.mp3, queue a rebuild, then load + play here.
  */
-import { Vibration, Platform } from 'react-native'
+import { Vibration } from 'react-native'
 
 /**
- * Play the "ka-ching" feedback.
- * Two short pulses with a brief gap — the rhythm of an old cash-register bell.
+ * Triple-pulse vibration — short / short / long. Distinct enough on iOS
+ * that you'll notice it through the table at the till; not so long that
+ * it feels alarming.
  */
 export async function playKaChing() {
-  // Pattern: [delay, vibrate, gap, vibrate]. iOS only respects pattern lengths,
-  // not amplitudes — so we keep it simple. Total ~340ms.
-  if (Platform.OS === 'ios') {
-    // iOS treats each value as a duration to vibrate, alternating on/off
-    Vibration.vibrate([0, 80, 60, 200])
-  } else {
-    Vibration.vibrate([0, 80, 60, 200])
-  }
+  Vibration.vibrate([0, 60, 50, 60, 70, 250])
 }
