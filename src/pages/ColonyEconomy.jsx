@@ -43,8 +43,7 @@ const CH = 180
 
 const SHARED_DEFAULTS = {
   ubiPerMonth:            100,
-  citizensPerColony:      1000,
-  initialUsdcReserve:     80_000,
+  initialUsdcReserve:     50_000_000,
   citizenSpendRate:       0.85,
   citizenSaveRate:        0.05,
   citizenCashoutSize:     0.30,
@@ -64,10 +63,15 @@ const SHARED_DEFAULTS = {
   months:                 24,
 }
 
-// Per-colony tunables
-function makeColony(name, exports, imports, lat, cashout) {
+// Per-colony tunables. Citizens per-colony so towns of different sizes
+// can be paired. Numbers below for real towns are PLAUSIBLE-MAGNITUDE
+// estimates derived from public industry/employment knowledge — not
+// measured balance-of-payments figures. A defensible methodology
+// using BEA county GDP + Census County Business Patterns + USTR state
+// export data is a separate piece of work.
+function makeColony(name, citizens, exports, imports, lat, cashout) {
   return {
-    name,
+    name, citizens,
     monthlyExportUsd:    exports,
     monthlyImportUsd:    imports,
     latParticipation:    lat,
@@ -76,30 +80,50 @@ function makeColony(name, exports, imports, lat, cashout) {
 }
 
 const PRESETS = {
+  // ── Synthetic ────────────────────────────────────────────────────────
   symmetric: {
     label: 'Symmetric (both balanced)',
-    A: makeColony('Colony A', 25_000, 12_000, 0, 0),
-    B: makeColony('Colony B', 25_000, 12_000, 0, 0),
+    A: makeColony('Colony A', 10_000,  5_000_000,  3_000_000, 0, 0),
+    B: makeColony('Colony B', 10_000,  5_000_000,  3_000_000, 0, 0),
   },
   exporter_importer: {
-    label: 'Exporter ↔ Importer',
-    A: makeColony('Net exporter', 35_000, 8_000, 0, 0),
-    B: makeColony('Net importer',  6_000, 28_000, 0, 0),
+    label: 'Pure exporter ↔ pure importer',
+    A: makeColony('Net exporter', 10_000,  20_000_000,  4_000_000, 0, 0),
+    B: makeColony('Net importer', 10_000,   2_000_000, 18_000_000, 0, 0),
   },
-  bellefontaine_lonepine: {
-    label: 'Bellefontaine + Lone Pine',
-    // Bellefontaine OH (~14k pop) — manufacturing-light residential, modest
-    // outward services, real input-goods dependence (food, fuel, retail
-    // supplies). Net importer.
-    A: makeColony('Bellefontaine, OH', 8_000, 30_000, 0, 0),
-    // Lone Pine CA (~2k pop) — tourism + film + ranching. Big external
-    // earnings relative to size, low import cost. Net exporter.
-    B: makeColony('Lone Pine, CA',     32_000, 5_000, 0, 0),
+
+  // ── Ohio ─────────────────────────────────────────────────────────────
+  // Marysville is the home of Honda of America's flagship assembly plant
+  // (~4,400 employees, ~$0.5-1B/yr value-added, exports cars worldwide).
+  // Bellefontaine is a smaller residential/retail centre 25 miles north,
+  // with some Honda-parts suppliers but mostly serving Logan County
+  // consumption demand.
+  ohio: {
+    label: 'Ohio · Marysville + Bellefontaine',
+    A: makeColony('Marysville, OH',    25_000, 40_000_000, 25_000_000, 0, 0),
+    B: makeColony('Bellefontaine, OH', 14_000,  5_000_000, 18_000_000, 0, 0),
   },
-  both_failing: {
-    label: 'Both net importers',
-    A: makeColony('Colony A', 5_000, 18_000, 0, 0),
-    B: makeColony('Colony B', 4_000, 16_000, 0, 0),
+
+  // ── Michigan ─────────────────────────────────────────────────────────
+  // Midland is the global HQ of Dow Inc. — chemicals plant + corporate
+  // employment drives huge external earnings. Saginaw is a post-GM
+  // decline town: ongoing population loss, residual auto-parts industry,
+  // weakening retail.
+  michigan: {
+    label: 'Michigan · Midland + Saginaw',
+    A: makeColony('Midland, MI',  42_000, 60_000_000, 30_000_000, 0, 0),
+    B: makeColony('Saginaw, MI',  44_000, 12_000_000, 32_000_000, 0, 0),
+  },
+
+  // ── Indiana ──────────────────────────────────────────────────────────
+  // Bloomington is home to Indiana University (~45k students, mostly
+  // out-of-state tuition $) plus a medical/tech employer base. Terre
+  // Haute is a faded manufacturing town; the federal penitentiary and
+  // Indiana State University are smaller anchors.
+  indiana: {
+    label: 'Indiana · Bloomington + Terre Haute',
+    A: makeColony('Bloomington, IN', 85_000, 80_000_000, 50_000_000, 0, 0),
+    B: makeColony('Terre Haute, IN', 60_000, 25_000_000, 55_000_000, 0, 0),
   },
 }
 
@@ -132,8 +156,8 @@ function updateFiscRate(combinedV, sharedReserve, p) {
 function runInternalFlows(colState, colCfg, p, currentRate) {
   const s = { ...colState }
 
-  // 1. UBI mint
-  const ubi = p.citizensPerColony * p.ubiPerMonth * p.ubiClaimRate
+  // 1. UBI mint — uses this colony's citizen count, not a shared one
+  const ubi = colCfg.citizens * p.ubiPerMonth * p.ubiClaimRate
   s.sCitizens += ubi
 
   // 2. Citizens spend
@@ -351,12 +375,11 @@ function runSim(p, colA, colB) {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function ColonyEconomy() {
-  const [ubi,         setUbi]      = useState(SHARED_DEFAULTS.ubiPerMonth)
-  const [citizens,    setCitizens] = useState(SHARED_DEFAULTS.citizensPerColony)
-  const [reserve,     setReserve]  = useState(SHARED_DEFAULTS.initialUsdcReserve)
+  const [ubi,     setUbi]     = useState(SHARED_DEFAULTS.ubiPerMonth)
+  const [reserve, setReserve] = useState(SHARED_DEFAULTS.initialUsdcReserve)
 
-  const [colA, setColA] = useState(PRESETS.exporter_importer.A)
-  const [colB, setColB] = useState(PRESETS.exporter_importer.B)
+  const [colA, setColA] = useState(PRESETS.ohio.A)
+  const [colB, setColB] = useState(PRESETS.ohio.B)
 
   function applyPreset(name) {
     const p = PRESETS[name]
@@ -369,27 +392,24 @@ export default function ColonyEconomy() {
   const params = {
     ...SHARED_DEFAULTS,
     ubiPerMonth: ubi,
-    citizensPerColony: citizens,
     initialUsdcReserve: reserve,
   }
   const { rows, summary } = useMemo(() => runSim(params, colA, colB), [
-    ubi, citizens, reserve, colA, colB,
+    ubi, reserve, colA, colB,
   ])
 
-  // Twin sim for individual colony "what if alone" — re-run twice with the
-  // partner zeroed out, to see whether either colony would survive on its own
+  // "What if alone" — re-run each colony with partner zeroed and reserve halved
+  const partnerless = (c) => ({ ...c, citizens: 0, monthlyExportUsd: 0,
+                                monthlyImportUsd: 0, latParticipation: 0,
+                                citizenCashoutRate: 0 })
   const aAlone = useMemo(() => runSim(
     { ...params, initialUsdcReserve: reserve / 2 },
-    colA,
-    { ...colB, monthlyExportUsd: 0, monthlyImportUsd: 0,
-              latParticipation: 0, citizenCashoutRate: 0 },
-  ), [ubi, citizens, reserve, colA, colB])
+    colA, partnerless(colB),
+  ), [ubi, reserve, colA, colB])
   const bAlone = useMemo(() => runSim(
     { ...params, initialUsdcReserve: reserve / 2 },
-    { ...colA, monthlyExportUsd: 0, monthlyImportUsd: 0,
-              latParticipation: 0, citizenCashoutRate: 0 },
-    colB,
-  ), [ubi, citizens, reserve, colA, colB])
+    partnerless(colA), colB,
+  ), [ubi, reserve, colA, colB])
 
   const pegBroken = summary.pegBreakMonth !== null
 
@@ -434,15 +454,13 @@ export default function ColonyEconomy() {
           <div style={{ fontSize: 9, color: T3, letterSpacing: '0.15em', marginBottom: 10 }}>
             SHARED · APPLIES TO BOTH COLONIES
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
             <Slider label="UBI per citizen / month" value={ubi}
               min={0} max={1000} step={10} display={`${ubi} S`}
               onChange={v => startTransition(() => setUbi(v))} />
-            <Slider label="Citizens per colony" value={citizens}
-              min={500} max={20000} step={500} display={citizens.toLocaleString()}
-              onChange={v => startTransition(() => setCitizens(v))} />
             <Slider label="Shared initial USDC reserve" value={reserve}
-              min={20000} max={500000} step={5000} display={`$${reserve.toLocaleString()}`}
+              min={1_000_000} max={500_000_000} step={1_000_000}
+              display={`$${(reserve/1_000_000).toFixed(0)}M`}
               onChange={v => startTransition(() => setReserve(v))} />
           </div>
         </div>
@@ -455,14 +473,14 @@ export default function ColonyEconomy() {
             soloSummary={bAlone.summary} />
         </div>
 
-        {/* KPI strip — combined */}
+        {/* KPI strip — combined. Numbers in $M for readability. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginBottom: 14 }}>
-          <Kpi label="End reserve"     value={`$${summary.endReserve.toLocaleString()}`} colour={summary.endReserve > 50000 ? GRN : RED} />
-          <Kpi label="End rate ($/S)"  value={summary.endRate.toFixed(2)}                colour={summary.endRate >= 0.99 ? GRN : RED} />
+          <Kpi label="End reserve"     value={`$${(summary.endReserve/1_000_000).toFixed(1)}M`}        colour={summary.endReserve > 0 ? GRN : RED} />
+          <Kpi label="End rate ($/S)"  value={summary.endRate.toFixed(2)}                              colour={summary.endRate >= 0.99 ? GRN : RED} />
           <Kpi label="Cover ratio"      value={summary.endCover != null ? (summary.endCover * 100).toFixed(0) + '%' : '—'}  colour={summary.endCover >= 0.30 ? GRN : summary.endCover >= 0.10 ? GOLD : RED} />
-          <Kpi label="Peg breaks"       value={pegBroken ? `month ${summary.pegBreakMonth}` : 'never'}  colour={pegBroken ? RED : GRN} />
-          <Kpi label="Combined trade"   value={`$${summary.tradeBalance.toLocaleString()}`}            colour={summary.tradeBalance > 0 ? GRN : RED} />
-          <Kpi label="Net $ inflow"     value={`$${summary.netUsdInflow.toLocaleString()}`}            colour={summary.netUsdInflow > 0 ? GRN : RED} />
+          <Kpi label="Peg breaks"       value={pegBroken ? `month ${summary.pegBreakMonth}` : 'never'} colour={pegBroken ? RED : GRN} />
+          <Kpi label="Combined trade (24mo)" value={`$${(summary.tradeBalance/1_000_000).toFixed(0)}M`}      colour={summary.tradeBalance > 0 ? GRN : RED} />
+          <Kpi label="Net $ inflow (24mo)"   value={`$${(summary.netUsdInflow/1_000_000).toFixed(0)}M`}      colour={summary.netUsdInflow > 0 ? GRN : RED} />
         </div>
 
         {/* Charts — 2x2 */}
@@ -533,28 +551,28 @@ export default function ColonyEconomy() {
         <div style={{ marginTop: 18, padding: 14, background: BG2, border: BD, fontSize: 12, color: T2, lineHeight: 1.7 }}>
           {summary.totalShortfall > 0 && (
             <div style={{ marginBottom: 10, color: GOLD }}>
-              <strong>⚠ Combined import + cashout shortfall:</strong> ${summary.totalShortfall.toLocaleString()} of demand could not be met from the shared reserve over 24 months.
+              <strong>⚠ Combined import + cashout shortfall:</strong> ${(summary.totalShortfall/1_000_000).toFixed(1)}M of demand could not be met from the shared reserve over 24 months.
             </div>
           )}
           {pegBroken ? (
             <>
               <strong style={{ color: RED }}>Peg breaks at month {summary.pegBreakMonth}.</strong>{' '}
-              Combined trade balance: <strong style={{ color: T1 }}>${summary.tradeBalance.toLocaleString()}</strong>{' '}
+              Combined trade balance: <strong style={{ color: T1 }}>${(summary.tradeBalance/1_000_000).toFixed(0)}M</strong>{' '}
               over 24 months. The twinned colonies together can't keep the reserve covered.
               By month 24 the rate is ${summary.endRate.toFixed(2)}/S.
             </>
           ) : summary.endCover < 0.40 ? (
             <>
               <strong style={{ color: GOLD }}>Peg holds, cover thin.</strong>{' '}
-              Combined trade balance ${summary.tradeBalance.toLocaleString()} over 24 months.
+              Combined trade balance ${(summary.tradeBalance/1_000_000).toFixed(0)}M over 24 months.
               End cover {(summary.endCover * 100).toFixed(0)}%. Workable but no margin for shocks.
             </>
           ) : (
             <>
               <strong style={{ color: GRN }}>Twinning works.</strong>{' '}
-              Combined trade balance ${summary.tradeBalance.toLocaleString()}{' '}
-              ({colA.name}: ${summary.aTradeBalance.toLocaleString()},{' '}
-              {colB.name}: ${summary.bTradeBalance.toLocaleString()}).{' '}
+              Combined trade balance ${(summary.tradeBalance/1_000_000).toFixed(0)}M{' '}
+              ({colA.name}: ${(summary.aTradeBalance/1_000_000).toFixed(0)}M,{' '}
+              {colB.name}: ${(summary.bTradeBalance/1_000_000).toFixed(0)}M).{' '}
               End cover {(summary.endCover * 100).toFixed(0)}% — well above the 30% target.{' '}
               The colonies' surpluses and deficits offset each other across the shared Fisc.
             </>
@@ -616,16 +634,20 @@ function ColonyPanel({ name, colour, colony, setColony, soloSummary }) {
         }}
       />
       <div style={{ fontSize: 10, color: trade >= 0 ? GRN : RED, marginBottom: 12 }}>
-        Monthly trade balance: ${trade.toLocaleString()} ({trade >= 0 ? 'net exporter' : 'net importer'})
+        {colony.citizens.toLocaleString()} citizens · monthly trade ${(trade/1_000_000).toFixed(1)}M ({trade >= 0 ? 'net exporter' : 'net importer'})
       </div>
 
+      <Slider label="Citizens"
+        value={colony.citizens} min={500} max={200_000} step={500}
+        display={colony.citizens.toLocaleString()}
+        onChange={v => startTransition(() => set('citizens', v))} />
       <Slider label="Monthly exports (USD)"
-        value={colony.monthlyExportUsd} min={0} max={60000} step={1000}
-        display={`$${colony.monthlyExportUsd.toLocaleString()}`}
+        value={colony.monthlyExportUsd} min={0} max={100_000_000} step={500_000}
+        display={`$${(colony.monthlyExportUsd/1_000_000).toFixed(1)}M`}
         onChange={v => startTransition(() => set('monthlyExportUsd', v))} />
       <Slider label="Monthly imports (USD)"
-        value={colony.monthlyImportUsd} min={0} max={60000} step={1000}
-        display={`$${colony.monthlyImportUsd.toLocaleString()}`}
+        value={colony.monthlyImportUsd} min={0} max={100_000_000} step={500_000}
+        display={`$${(colony.monthlyImportUsd/1_000_000).toFixed(1)}M`}
         onChange={v => startTransition(() => set('monthlyImportUsd', v))} />
       <Slider label="LAT participation"
         value={colony.latParticipation} min={0} max={1} step={0.05}
