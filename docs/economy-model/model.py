@@ -65,6 +65,10 @@ class Params:
     lat_participation:    float = 0.60     # of large companies opting into LAT
     lat_rate_on_revenue:  float = 0.05     # of USD revenue paid to MCC for redistribution
 
+    # Imports — companies buy input goods from outside the colony.
+    # Total monthly USD outflow; capped at available reserve.
+    monthly_import_usd:   float = 12_000.0
+
     # Fisc reserve
     initial_usdc_reserve:    float = 50_000.0   # seeded at colony launch
     reserve_target_ratio:    float = 0.30       # USDC / V_supply target (30% cover)
@@ -127,6 +131,8 @@ class MonthlyFlows:
     cashouts_usd: float = 0.0
     export_usd_in: float = 0.0
     export_s_minted_via_fisc: float = 0.0
+    import_usd_out:    float = 0.0
+    import_shortfall:  float = 0.0
     lat_usd_in:   float = 0.0
     mcc_consumed: float = 0.0
     dividends_paid: float = 0.0
@@ -236,6 +242,22 @@ def step(prev: State, p: Params) -> tuple[State, MonthlyFlows]:
         s_minted_for_exporters = 0
     f.export_s_minted_via_fisc = s_minted_for_exporters
     s.s_large_co += s_minted_for_exporters
+
+    # 8a. Imports — companies sell S → USD via Fisc to pay external suppliers.
+    #     USD leaves the reserve; equivalent S burnt from company holdings.
+    wanted = p.monthly_import_usd
+    actual_imports = min(wanted, s.usdc_reserve)
+    s.usdc_reserve -= actual_imports
+    if s.fisc_rate > 0 and actual_imports > 0:
+        s_burned = actual_imports / s.fisc_rate
+        total_co_s = s.s_large_co + s.s_mid_co + s.s_small_co
+        if total_co_s > 0:
+            burn_frac = min(1.0, s_burned / total_co_s)
+            s.s_large_co *= (1 - burn_frac)
+            s.s_mid_co   *= (1 - burn_frac)
+            s.s_small_co *= (1 - burn_frac)
+    f.import_usd_out = actual_imports
+    f.import_shortfall = wanted - actual_imports
 
     # 9. LAT — voluntary tax on large companies' USD revenue, top-up UBI fund
     lat_usd = export_usd * p.lat_participation * p.lat_rate_on_revenue
@@ -434,20 +456,22 @@ def summarise(states: list[State], flows: list[MonthlyFlows], p: Params) -> dict
 
 SCENARIOS = {
     "healthy_exporter": Params(
-        # Strong export base, broad LAT participation, low cashout pressure
+        # Strong export base, broad LAT, low imports + low cashout pressure
         export_usd_per_large_co_per_month = 8_000.0,
         lat_participation                  = 0.80,
         citizen_cashout_rate               = 0.01,
+        monthly_import_usd                 = 8_000.0,
     ),
-    "balanced": Params(),  # default — moderate exports, moderate cashouts
+    "balanced": Params(monthly_import_usd = 12_000.0),  # default — moderate everything
     "net_importer": Params(
-        # Few exporters, low LAT, citizens losing faith and cashing out fast
+        # Few exporters, heavy import dependence, citizens cashing out
         n_large_companies                  = 1,
         export_usd_per_large_co_per_month  = 1_500.0,
         lat_participation                  = 0.20,
         citizen_cashout_rate               = 0.05,
         citizen_cashout_size               = 0.50,
         initial_usdc_reserve               = 30_000.0,
+        monthly_import_usd                 = 15_000.0,
     ),
 }
 

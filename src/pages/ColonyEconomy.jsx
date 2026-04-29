@@ -72,14 +72,17 @@ const PRESETS = {
   healthy: {
     nLargeCompanies: 5,  exportUsdPerLargeCo: 8000, latParticipation: 0.80,
     citizenCashoutRate: 0.01, ubiPerMonth: 100, initialUsdcReserve: 50000,
+    monthlyImportUsd: 8000,
   },
   balanced: {
     nLargeCompanies: 5,  exportUsdPerLargeCo: 5000, latParticipation: 0.60,
     citizenCashoutRate: 0.02, ubiPerMonth: 100, initialUsdcReserve: 50000,
+    monthlyImportUsd: 12000,
   },
   importer: {
     nLargeCompanies: 1,  exportUsdPerLargeCo: 1500, latParticipation: 0.20,
     citizenCashoutRate: 0.05, ubiPerMonth: 100, initialUsdcReserve: 30000,
+    monthlyImportUsd: 15000,
   },
 }
 
@@ -146,13 +149,34 @@ function step(prev, p) {
   s.usdcReserve -= actualPaid
   f.cashoutUsd = actualPaid
 
-  // 8. Exports
+  // 8. Exports — large companies sell externally, USD enters reserve
   const exportUsd = p.nLargeCompanies * p.exportUsdPerLargeCo
   s.usdcReserve += exportUsd
   if (s.fiscRate > 0) s.sLargeCo += exportUsd / s.fiscRate
   f.exportUsd = exportUsd
 
-  // 9. LAT
+  // 8a. Imports — companies buy input goods from outside the colony.
+  //     They pay by selling S to the Fisc at the current rate, USD leaves
+  //     the reserve. Capped at available reserve (if reserve is dry the
+  //     imports simply can't happen — but the read-out will flag this).
+  const wantedImports = p.monthlyImportUsd
+  const actualImports = Math.min(wantedImports, s.usdcReserve)
+  s.usdcReserve -= actualImports
+  // Burn the equivalent S from companies, proportional to current holdings
+  if (s.fiscRate > 0 && actualImports > 0) {
+    const sBurned = actualImports / s.fiscRate
+    const totalCoS = s.sLargeCo + s.sMidCo + s.sSmallCo
+    if (totalCoS > 0) {
+      const burnFrac = Math.min(1, sBurned / totalCoS)
+      s.sLargeCo *= (1 - burnFrac)
+      s.sMidCo   *= (1 - burnFrac)
+      s.sSmallCo *= (1 - burnFrac)
+    }
+  }
+  f.importUsd      = actualImports
+  f.importShortfall = wantedImports - actualImports  // > 0 = colony couldn't import all it wanted
+
+  // 9. LAT — voluntary tax on USD revenue → reserve
   const latUsd = exportUsd * p.latParticipation * p.latRateOnRevenue
   s.usdcReserve += latUsd
   f.latUsd = latUsd
@@ -186,11 +210,16 @@ function runSim(p) {
   let totalExportUsd = 0, totalCashoutUsd = 0, totalLatUsd = 0
   let pegBreakMonth = null, floorBreachMonth = null
 
+  let totalImportUsd = 0
+  let totalImportShortfall = 0
+
   for (let m = 0; m < p.months; m++) {
     const { state, flow } = step(states[states.length - 1], p)
     totalExportUsd  += flow.exportUsd
     totalCashoutUsd += flow.cashoutUsd
     totalLatUsd     += flow.latUsd
+    totalImportUsd  += flow.importUsd
+    totalImportShortfall += flow.importShortfall
     if (pegBreakMonth === null && state.fiscRate < p.targetFiscRate * 0.99) {
       pegBreakMonth = state.month
     }
@@ -217,10 +246,12 @@ function runSim(p) {
     endSSupply:      end.sSupply,
     pegBreakMonth,
     floorBreachMonth,
-    totalExportUsd:  Math.round(totalExportUsd),
-    totalCashoutUsd: Math.round(totalCashoutUsd),
-    totalLatUsd:     Math.round(totalLatUsd),
-    netUsdInflow:    Math.round(totalExportUsd + totalLatUsd - totalCashoutUsd),
+    totalExportUsd:       Math.round(totalExportUsd),
+    totalImportUsd:       Math.round(totalImportUsd),
+    totalCashoutUsd:      Math.round(totalCashoutUsd),
+    totalLatUsd:          Math.round(totalLatUsd),
+    totalImportShortfall: Math.round(totalImportShortfall),
+    netUsdInflow:         Math.round(totalExportUsd + totalLatUsd - totalCashoutUsd - totalImportUsd),
   }
   return { rows, summary }
 }
@@ -235,15 +266,16 @@ export default function ColonyEconomy() {
   const [citizenCashoutRate,   setCashout]   = useState(PRESETS.balanced.citizenCashoutRate)
   const [ubiPerMonth,          setUbi]       = useState(PRESETS.balanced.ubiPerMonth)
   const [initialUsdcReserve,   setReserve]   = useState(PRESETS.balanced.initialUsdcReserve)
+  const [monthlyImportUsd,     setImports]   = useState(PRESETS.balanced.monthlyImportUsd)
 
   const params = {
     ...DEFAULTS,
     nLargeCompanies, exportUsdPerLargeCo, latParticipation,
-    citizenCashoutRate, ubiPerMonth, initialUsdcReserve,
+    citizenCashoutRate, ubiPerMonth, initialUsdcReserve, monthlyImportUsd,
   }
   const { rows, summary } = useMemo(() => runSim(params), [
     nLargeCompanies, exportUsdPerLargeCo, latParticipation,
-    citizenCashoutRate, ubiPerMonth, initialUsdcReserve,
+    citizenCashoutRate, ubiPerMonth, initialUsdcReserve, monthlyImportUsd,
   ])
 
   function applyPreset(name) {
@@ -255,6 +287,7 @@ export default function ColonyEconomy() {
       setCashout(p.citizenCashoutRate)
       setUbi(p.ubiPerMonth)
       setReserve(p.initialUsdcReserve)
+      setImports(p.monthlyImportUsd)
     })
   }
 
@@ -300,11 +333,19 @@ export default function ColonyEconomy() {
           />
           <Slider
             label="USD per exporter / month"
-            sub="Average external revenue"
+            sub="Average external revenue per exporter"
             value={exportUsdPerLargeCo}
             min={0} max={15000} step={100}
             display={`$${exportUsdPerLargeCo.toLocaleString()}`}
             onChange={v => startTransition(() => setExportUsd(v))}
+          />
+          <Slider
+            label="Monthly imports"
+            sub="USD the colony spends on input goods from outside"
+            value={monthlyImportUsd}
+            min={0} max={50000} step={500}
+            display={`$${monthlyImportUsd.toLocaleString()}`}
+            onChange={v => startTransition(() => setImports(v))}
           />
           <Slider
             label="LAT participation"
@@ -354,11 +395,12 @@ export default function ColonyEconomy() {
         <div style={{ flex: 1, padding: 18 }}>
 
           {/* KPI strip */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 18 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8, marginBottom: 18 }}>
             <Kpi label="End reserve"    value={`$${summary.endReserve.toLocaleString()}`} colour={summary.endReserve > 50000 ? GRN : RED} />
             <Kpi label="End rate ($/S)" value={summary.endRate.toFixed(2)}                 colour={summary.endRate >= 0.99 ? GRN : RED} />
             <Kpi label="Cover ratio"     value={summary.endCover != null ? (summary.endCover * 100).toFixed(0) + '%' : '—'}  colour={summary.endCover >= 0.30 ? GRN : summary.endCover >= 0.10 ? GOLD : RED} />
             <Kpi label="Peg breaks"      value={pegBroken ? `month ${summary.pegBreakMonth}` : 'never'}               colour={pegBroken ? RED : GRN} />
+            <Kpi label="Trade balance"   value={`$${(summary.totalExportUsd - summary.totalImportUsd).toLocaleString()}`} colour={(summary.totalExportUsd - summary.totalImportUsd) > 0 ? GRN : RED} />
             <Kpi label="Net $ inflow"    value={`$${summary.netUsdInflow.toLocaleString()}`} colour={summary.netUsdInflow > 0 ? GRN : RED} />
           </div>
 
@@ -425,24 +467,33 @@ export default function ColonyEconomy() {
 
           {/* Read-out */}
           <div style={{ marginTop: 18, padding: 14, background: BG2, border: BD, fontSize: 12, color: T2, lineHeight: 1.7 }}>
+            {summary.totalImportShortfall > 0 && (
+              <div style={{ marginBottom: 10, color: GOLD }}>
+                <strong>⚠ Import shortfall:</strong> the colony wanted to import ${(summary.totalImportShortfall + summary.totalImportUsd).toLocaleString()} of input goods over 24 months but only managed ${summary.totalImportUsd.toLocaleString()} — the reserve ran dry. In real terms, companies couldn't get the inputs they needed for {Math.round(summary.totalImportShortfall / Math.max(summary.totalImportUsd + summary.totalImportShortfall, 1) * 100)}% of their orders.
+              </div>
+            )}
             {pegBroken ? (
               <>
                 <strong style={{ color: RED }}>Peg breaking at month {summary.pegBreakMonth}.</strong>{' '}
-                Reserve cover fell below 30% — the Fisc no longer has enough USDC to honour all V deposits.
-                The exchange rate compresses each month from there. By month 24 it's at <strong style={{ color: T1 }}>${summary.endRate.toFixed(2)}/S</strong>.
+                Trade balance over 24 months: <strong style={{ color: T1 }}>${(summary.totalExportUsd - summary.totalImportUsd).toLocaleString()}</strong>{' '}
+                ({summary.totalExportUsd > summary.totalImportUsd ? 'net exporter' : 'net importer'}).
+                Reserve cover fell below 30% — the Fisc no longer has enough USDC to honour all V deposits or to pay for imports.
+                By month 24 the rate is <strong style={{ color: T1 }}>${summary.endRate.toFixed(2)}/S</strong>.
                 Citizens holding V take a real loss measured in dollars.
               </>
             ) : summary.endCover < 0.40 ? (
               <>
                 <strong style={{ color: GOLD }}>Peg holds, but cover is thin.</strong>{' '}
-                Reserve ends at {(summary.endCover * 100).toFixed(0)}% — above the 30% target but
-                with little margin for shock. A cashout wave or export collapse would tip it over.
+                Trade balance ${(summary.totalExportUsd - summary.totalImportUsd).toLocaleString()} over 24 months.
+                End cover {(summary.endCover * 100).toFixed(0)}% — above the 30% target but
+                with little margin for shock. A cashout wave, export hiccup or import-cost spike would tip it over.
               </>
             ) : (
               <>
                 <strong style={{ color: GRN }}>Peg holds comfortably.</strong>{' '}
-                Net inflow of ${summary.netUsdInflow.toLocaleString()} over 24 months. End cover {(summary.endCover * 100).toFixed(0)}% — well above the 30% target.
-                The colony's exports comfortably outpace its cashout liability.
+                Trade surplus of ${(summary.totalExportUsd - summary.totalImportUsd).toLocaleString()} over 24 months,
+                net USD inflow ${summary.netUsdInflow.toLocaleString()}. End cover {(summary.endCover * 100).toFixed(0)}% — well above the 30% target.
+                The colony's exports comfortably outpace its imports + cashouts.
               </>
             )}
           </div>
@@ -458,6 +509,7 @@ export default function ColonyEconomy() {
               <li>S → V conversions — 10% of company revenue, 5% of citizen S</li>
               <li>Citizen cashouts — V → USDC at current Fisc rate</li>
               <li>Exports — USD deposited at Fisc, S minted at current rate</li>
+              <li>Imports — companies sell S → USD via Fisc to pay external suppliers; USD leaves the reserve</li>
               <li>LAT — voluntary tax on USD revenue → reserve top-up</li>
               <li>Dividends — V from companies to citizen shareholders</li>
               <li>MCC consumes — 80% of collected S spent on services</li>

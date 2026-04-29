@@ -465,6 +465,7 @@ Each month the model executes, in order:
 |---|---|---|---|
 | Large companies (exporters) | 5 | 5 | **1** |
 | Export USD per large co/month | $8,000 | $5,000 | **$1,500** |
+| **Monthly imports (USD)** | **$8,000** | **$12,000** | **$15,000** |
 | LAT participation | 80% | 60% | **20%** |
 | Citizen cashout rate / month | 1% | 2% | **5%** |
 | Citizen cashout fraction (of V) | 30% | 30% | **50%** |
@@ -472,21 +473,29 @@ Each month the model executes, in order:
 
 Everything else (1,000 citizens, $100/month UBI, 95% UBI claim, 30% reserve target) is held constant.
 
+**Imports model the realistic case:** companies in the colony buy input goods
+from outside (coffee shops need beans; workshops need tools). They pay by
+selling S to the Fisc at the current rate; USD leaves the reserve;
+equivalent S is burnt from company holdings. If the reserve runs dry, the
+imports simply can't happen — companies don't get the inputs they need,
+which the read-out flags as an "import shortfall".
+
 ### 4.3 Results — 24 months
 
 | Metric | Healthy exporter | Balanced | Net importer |
 |---|---:|---:|---:|
-| End S supply | 1,258,455 | 1,110,431 | 940,300 |
-| End V supply | 1,494,597 | 1,313,901 | 992,070 |
-| End USDC reserve | $1,023,626 | $624,208 | **$32,578** |
-| End Fisc rate ($/S) | 1.00 | 1.00 | **0.11** |
-| End cover ratio | 0.685 | 0.475 | **0.033** |
+| End S supply | 1,179,509 | 992,207 | 859,635 |
+| End V supply | 1,409,697 | 1,188,477 | 936,817 |
+| End USDC reserve | $832,954 | $340,190 | **$15** |
+| End Fisc rate ($/S) | 1.00 | 0.95 | **0.01** |
+| End cover ratio | 0.591 | 0.286 | **0.000** |
 | Total UBI minted (24mo) | 2,280,000 S | 2,280,000 S | 2,280,000 S |
-| Total exports (24mo) | $960,000 | $600,000 | **$36,000** |
-| Total cashouts (24mo) | $24,774 | $43,792 | $33,782 |
-| Net USD inflow | $973,626 | $574,208 | **$2,578** |
-| Fisc rate first dip | never | never | **month 7** |
-| Reserve floor breach | never | never | **month 12** |
+| Total exports (24mo) | $960,000 | $600,000 | $36,000 |
+| Total imports (24mo) | $192,000 | $288,000 | **(capped at reserve)** |
+| Total cashouts (24mo) | $23,446 | $39,810 | $1,761 |
+| Net USD inflow | $782,954 | $290,190 | **−$26,401** |
+| Fisc rate first dip | never | **month 23** | **month 2** |
+| Reserve floor breach | never | never | **month 3** |
 
 ### 4.4 Charts
 
@@ -500,14 +509,17 @@ Everything else (1,000 citizens, $100/month UBI, 95% UBI claim, 30% reserve targ
 
 ### 4.5 Findings
 
-**The peg's life depends on net USD inflow, not S volume.** All three scenarios
-mint identical UBI ($2.28m S over 24 months) and run identical citizen
-behaviour. What separates a thriving colony from a failing one is the
-USDC entering through the Fisc — exports plus LAT contributions — minus
-the USDC leaving through citizen cashouts. The healthy and balanced
-colonies hold the peg flat at $1 the whole way. The net importer holds
-it for six months while the seed reserve drains, then the peg compresses
-hard from month 7 onward, ending at 11¢ on the dollar.
+**Trade balance is the dominant driver — even more than cashout pressure.**
+All three scenarios mint identical UBI ($2.28m S over 24 months) and run
+identical citizen behaviour. What separates a thriving colony from a
+failing one is the trade balance: USD inflows (exports + LAT) minus USD
+outflows (imports + cashouts). The healthy exporter holds peg flat at $1.
+The balanced colony — which would have held peg with no imports — now
+wobbles late in the run because imports gradually erode the reserve. The
+net importer is catastrophic: peg dips at month 2, reserve floor breached
+month 3, reserve effectively zero by month 24, and a chronic *import
+shortfall* across the whole period — companies couldn't get the inputs
+they needed.
 
 **The system is structurally honest.** When the reserve runs low, the Fisc
 rate falls; citizens still holding V take a real loss measured in USD.
@@ -530,13 +542,19 @@ contribution from the colony's biggest exporters has outsized effect on
 the peg's durability.
 
 **For the colony designer:** the practical question at colony founding is
-*"how much external revenue per citizen per month, sustained, do we need
-to defend a peg?"* In this model, with default behaviour, a colony of
-1,000 citizens needs roughly **$3-4/citizen/month of net USD inflow** to
-hold the peg comfortably. A colony that can't realistically project at
-least that much external earnings should consider either (a) a Mars-style
-closed economy with no $ peg, or (b) a lower UBI and slower V
-accumulation to reduce the redemption liability.
+*"can the colony's exports cover both its imports and its citizen cashout
+liability?"* Imports are not optional — every business uses some inputs
+from outside. A colony of 1,000 citizens with the default behaviour
+needs **net USD inflow (exports + LAT − imports − cashouts) of roughly
+$15-20/citizen/month** to defend the peg comfortably. Below that and
+the cover ratio drifts down; substantially below that and the peg breaks
+hard.
+
+A colony that can't project enough net external earnings should consider
+either (a) a Mars-style closed economy with no $ peg, (b) a lower UBI and
+slower V accumulation to reduce redemption liability, or (c) finding a
+way to substitute imports with internal production (a shoe workshop using
+local leather instead of imported, etc).
 
 ### 4.6 Caveats
 
@@ -548,13 +566,14 @@ accumulation to reduce the redemption liability.
 - **MCC operations are simplified** — collected S is treated as consumed,
   not as wages re-paid to MCC employees. Re-circulation of MCC S would
   slightly increase money velocity and citizen income.
-- The model does **not yet handle**: company-to-company supply chains,
-  asset-token (A-token) economic flow, intra-month obligations, or
-  dividend reinvestment.
+- The model does **not yet handle**: company-to-company supply chains
+  (imports are aggregated, not per-company), asset-token (A-token)
+  economic flow, intra-month obligations, or dividend reinvestment.
 
 ---
 
 *SPICE Economy · Unified Specification · v3 · April 2026*
+*v3.1 changes (29 April 2026, later): Added imports to the model — companies sell S → USD to pay external suppliers, USD leaves the reserve. Materially changes the balanced and net-importer scenario outcomes. Net importer now insolvent by month 3; balanced wobbles late. Both Python (`model.py`) and JS (`/colony-economy` interactive page) updated. Trade balance is now the headline finding.*
 *v3 changes (29 April 2026): Added Part 4 — Model Results. 24-month deterministic simulation across three scenarios. Model code at docs/economy-model/model.py.*
 *v2 changes: trimmed verbose "Why" paragraphs throughout. Added §1.0 Participants, §1.2a Obligation Lifecycle, §1.8 Protocol Layer, founder vesting carve-out.*
 *Supersedes: mars_colony_economy.md (economic model sections). mars_colony_economy.md remains the reference for operational detail (robot fleet, founding colony, frontier stories).*
