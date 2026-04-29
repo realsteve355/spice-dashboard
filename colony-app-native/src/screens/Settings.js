@@ -13,7 +13,7 @@ import { COLONY } from '../utils/contracts'
 import { C, font, shortAddr, card, label } from '../theme'
 
 export default function Settings() {
-  const { address, colonyState, reset } = useWallet()
+  const { address, colonyState, reset, merchantMode, setMerchantMode } = useWallet()
   const [phrase,   setPhrase]   = useState(null)
   const [loading,  setLoading]  = useState(false)
   const [revealed, setRevealed] = useState(false)
@@ -128,6 +128,24 @@ export default function Settings() {
           )}
         </View>
 
+        {/* Merchant mode */}
+        <View style={card}>
+          <Text style={[label, { marginBottom: 8 }]}>MERCHANT MODE</Text>
+          <Text style={S.merchantBlurb}>
+            Adds a "Receive →" button on the dashboard to take payments from
+            customers via QR code (any device) or by writing a SPICE payment
+            URL to a till NFC sticker (iPhone only).
+          </Text>
+          <TouchableOpacity
+            style={[S.toggleBtn, merchantMode && S.toggleBtnOn]}
+            onPress={() => setMerchantMode(!merchantMode)}
+          >
+            <Text style={[S.toggleBtnText, merchantMode && S.toggleBtnTextOn]}>
+              {merchantMode ? '✓ Merchant mode ON' : 'Enable merchant mode'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Network */}
         <View style={card}>
           <Text style={[label, { marginBottom: 8 }]}>NETWORK</Text>
@@ -174,4 +192,10 @@ const S = StyleSheet.create({
 
   resetBtn:     { borderWidth: 1, borderColor: C.red, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8 },
   resetText:    { fontSize: 13, color: C.red, fontFamily: font },
+
+  merchantBlurb:{ fontSize: 11, color: C.sub, fontFamily: font, lineHeight: 17, marginBottom: 10 },
+  toggleBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, alignItems: 'center' },
+  toggleBtnOn:  { borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  toggleBtnText:{ fontSize: 12, color: C.sub, fontFamily: font },
+  toggleBtnTextOn: { color: C.gold },
 })

@@ -1,19 +1,32 @@
 /**
- * NFC utilities — tag scanning for tap-to-pay.
+ * NFC utilities — read / write NDEF tags for tap-to-pay.
  *
- * Flow:
- *   1. Till writes NDEF URI tag: "spice://pay?to=0xADDR&amount=N&note=TEXT"
+ * Read flow (citizen):
+ *   1. Till tag holds NDEF URI: "spice://pay?to=0xADDR&amount=N&note=TEXT"
  *   2. Citizen opens app, taps "Tap to Pay" → scanPayTag()
  *   3. App reads tag → parsePayUrl() → navigate to Pay screen
  *
- * react-native-nfc-manager must be installed (not in Expo Go).
+ * Write flow (merchant — iPhone only):
+ *   1. Merchant enters amount + note → writeNdefPayUrl(url)
+ *   2. Merchant holds phone near a blank/rewritable NTAG sticker on the till
+ *   3. Tag is overwritten with the new payment URL
+ *   4. Customer phone taps the same sticker → reads URL → opens SPICE app
+ *
+ * react-native-nfc-manager is not in Expo Go.
  * Use: npx eas build --profile development for NFC testing.
  */
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager'
+import { parsePayUrl } from './payurl'
 
 let _started = false
 
-/** Returns true if this device has NFC hardware. */
+async function ensureStarted() {
+  if (_started) return
+  await NfcManager.start()
+  _started = true
+}
+
+/** Returns true if this device has NFC hardware (iPhone yes, iPad no). */
 export async function isNfcSupported() {
   try {
     return await NfcManager.isSupported()
@@ -24,13 +37,10 @@ export async function isNfcSupported() {
 
 /**
  * Scan an NDEF NFC tag and return parsed payment params.
- * Resolves to { to, amount, note } or throws on error/cancel.
+ * Resolves to { to, amount, note, merchantName } or throws on error/cancel.
  */
 export async function scanPayTag() {
-  if (!_started) {
-    await NfcManager.start()
-    _started = true
-  }
+  await ensureStarted()
 
   try {
     await NfcManager.requestTechnology([NfcTech.Ndef])
@@ -40,10 +50,9 @@ export async function scanPayTag() {
       throw new Error('NFC tag is empty or unreadable.')
     }
 
-    // First record — expect a URI record
-    const record = tag.ndefMessage[0]
+    const record  = tag.ndefMessage[0]
     const payload = new Uint8Array(record.payload)
-    const uri = Ndef.uri.decodePayload(payload)
+    const uri     = Ndef.uri.decodePayload(payload)
 
     const params = parsePayUrl(uri)
     if (!params) {
@@ -56,30 +65,26 @@ export async function scanPayTag() {
 }
 
 /**
- * Parse "spice://pay?to=0x…&amount=5&note=Lunch" into { to, amount, note }.
- * Returns null if the URL is not a valid pay URL.
+ * Write a SPICE payment URL to a writable NDEF tag.
+ * iPhone-only (iPad has no app-accessible NFC writer).
+ *
+ * The user must hold their phone near the tag while this promise is pending.
+ * iOS shows a system NFC sheet automatically.
  */
-export function parsePayUrl(urlStr) {
+export async function writeNdefPayUrl(url) {
+  await ensureStarted()
+
   try {
-    const qIdx = urlStr.indexOf('?')
-    if (qIdx < 0) return null
-    const params = {}
-    urlStr.slice(qIdx + 1).split('&').forEach(pair => {
-      const eq = pair.indexOf('=')
-      if (eq < 0) return
-      const k = decodeURIComponent(pair.slice(0, eq))
-      const v = decodeURIComponent(pair.slice(eq + 1).replace(/\+/g, ' '))
-      params[k] = v
-    })
-    // Require at least a recipient address
-    if (!params.to || !/^0x[0-9a-fA-F]{40}$/.test(params.to)) return null
-    return {
-      to:           params.to,
-      amount:       params.amount  || '',
-      note:         params.note    || '',
-      merchantName: params.name    || '',
-    }
-  } catch {
-    return null
+    await NfcManager.requestTechnology([NfcTech.Ndef])
+
+    const bytes = Ndef.encodeMessage([Ndef.uriRecord(url)])
+    if (!bytes) throw new Error('Could not encode payment URL.')
+
+    await NfcManager.ndefHandler.writeNdefMessage(bytes)
+  } finally {
+    NfcManager.cancelTechnologyRequest().catch(() => {})
   }
 }
+
+// Re-export so callers don't have to import from two places
+export { parsePayUrl } from './payurl'

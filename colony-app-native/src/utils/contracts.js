@@ -242,3 +242,52 @@ export async function txJoin(wallet, name, birthYear) {
   const tx     = await colony.join(name, birthYear, GAS)
   return tx.wait()
 }
+
+/**
+ * Poll the chain for a Sent event matching (recipient, amount) since startBlock.
+ * Returns the matching event { from, amount, note, txHash, block } or null.
+ *
+ * Used by the merchant Receive screen to auto-confirm "PAID" once the
+ * customer's transaction lands. Caller should poll on a setInterval and
+ * advance startBlock as they go to keep getLogs windows small.
+ */
+export async function findPayment({ to, amount, fromBlock, toBlock }) {
+  const rpc = getProvider()
+  const SENT_TOPIC = ethers.id('Sent(address,address,uint256,string)')
+  const toTopic    = '0x' + to.slice(2).toLowerCase().padStart(64, '0')
+
+  const logs = await rpc.getLogs({
+    address: COLONY.colony,
+    fromBlock,
+    toBlock,
+    topics:  [SENT_TOPIC, null, toTopic],
+  })
+
+  const iface = new ethers.Interface([
+    'event Sent(address indexed from, address indexed to, uint256 amount, string note)',
+  ])
+
+  const wantWei = ethers.parseEther(String(amount))
+
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog(log)
+      if (!parsed) continue
+      if (parsed.args.amount === wantWei) {
+        return {
+          from:   parsed.args.from,
+          amount: Math.floor(Number(ethers.formatEther(parsed.args.amount))),
+          note:   parsed.args.note,
+          txHash: log.transactionHash,
+          block:  log.blockNumber,
+        }
+      }
+    } catch {}
+  }
+  return null
+}
+
+/** Get the current block number — used as the start point for findPayment polling. */
+export async function currentBlock() {
+  return await getProvider().getBlockNumber()
+}

@@ -21,6 +21,8 @@ import Dashboard   from './src/screens/Dashboard'
 import Send        from './src/screens/Send'
 import Settings    from './src/screens/Settings'
 import Pay         from './src/screens/Pay'
+import Receive     from './src/screens/Receive'
+import ScanPay     from './src/screens/ScanPay'
 import { C, font } from './src/theme'
 
 /**
@@ -108,6 +110,16 @@ function Navigator() {
             <Stack.Screen
               name="Pay"
               component={Pay}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="Receive"
+              component={Receive}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="ScanPay"
+              component={ScanPay}
               options={{ headerShown: false }}
             />
           </>

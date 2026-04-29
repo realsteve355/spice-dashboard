@@ -14,11 +14,12 @@
       "backgroundColor": "#0a0a0a"
     },
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
       "bundleIdentifier": "finance.zpc.colony",
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID is used to authenticate access to your SPICE wallet and sign transactions.",
         "NFCReaderUsageDescription": "NFC is used to read payment tags for tap-to-pay at colony merchants.",
+        "NSCameraUsageDescription": "The camera is used to scan SPICE payment QR codes at merchants.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -26,19 +27,26 @@
       "package": "finance.zpc.colony",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#B8860B"
+        "backgroundColor": "#0a0a0a"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.NFC",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA"
       ]
     },
     "plugins": [
       "expo-secure-store",
       "expo-local-authentication",
-      "react-native-nfc-manager"
+      "react-native-nfc-manager",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "The camera is used to scan SPICE payment QR codes at merchants."
+        }
+      ]
     ],
     "extra": {
       "eas": {

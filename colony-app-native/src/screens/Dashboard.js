@@ -51,7 +51,7 @@ const EVENT_LABELS = {
 
 export default function Dashboard() {
   const navigation = useNavigation()
-  const { address, colonyState, fiscState, stateLoading, refreshState, authenticate, wallet } = useWallet()
+  const { address, colonyState, fiscState, stateLoading, refreshState, authenticate, wallet, merchantMode } = useWallet()
 
   const [history,      setHistory]      = useState([])
   const [histLoading,  setHistLoading]  = useState(false)
@@ -231,7 +231,17 @@ export default function Dashboard() {
               </View>
             )}
 
-            {/* Action buttons — row 1 */}
+            {/* Merchant-only: Receive payment */}
+            {merchantMode && (
+              <TouchableOpacity
+                style={S.receiveBtn}
+                onPress={() => navigation.navigate('Receive')}
+              >
+                <Text style={S.receiveBtnText}>＄ Receive payment →</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Action buttons — row 1: Send + Pay flows */}
             <View style={S.actions}>
               <TouchableOpacity
                 style={[S.actionBtn, S.actionBtnGold]}
@@ -240,19 +250,29 @@ export default function Dashboard() {
                 <Text style={S.actionBtnTextGold}>Send S →</Text>
               </TouchableOpacity>
 
-              {nfcAvail && (
+              <TouchableOpacity
+                style={[S.actionBtn, S.actionBtnNfc]}
+                onPress={() => navigation.navigate('ScanPay')}
+              >
+                <Text style={S.actionBtnTextNfc}>▢ Scan QR</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* NFC tap-to-pay (iPhone only — hidden on iPad / no-NFC) */}
+            {nfcAvail && (
+              <View style={S.actions}>
                 <TouchableOpacity
-                  style={[S.actionBtn, S.actionBtnNfc]}
+                  style={[S.actionBtn, S.actionBtnNfc, { flex: 1 }]}
                   onPress={handleNfcPay}
                   disabled={actionLoading === 'nfc'}
                 >
                   {actionLoading === 'nfc'
                     ? <ActivityIndicator size="small" color={C.bg} />
-                    : <Text style={S.actionBtnTextNfc}>⬡ Tap to Pay</Text>
+                    : <Text style={S.actionBtnTextNfc}>⬡ Tap to Pay (NFC)</Text>
                   }
                 </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            )}
 
             {/* Action buttons — row 2 */}
             <View style={S.actions}>
@@ -348,6 +368,9 @@ const S = StyleSheet.create({
   reserveRow:     { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8 },
   reserveDot:     { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
   reserveText:    { fontSize: 9, color: C.faint, fontFamily: font, flex: 1 },
+
+  receiveBtn:     { backgroundColor: C.green, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
+  receiveBtnText: { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
 
   empty:          { fontSize: 11, color: C.faint, fontFamily: font },
   txRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
