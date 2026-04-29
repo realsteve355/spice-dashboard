@@ -17,6 +17,7 @@ import { useWallet } from '../context/WalletContext'
 import { txSend } from '../utils/contracts'
 import { useBiometricLabel } from '../utils/biometric'
 import { friendlyTxError } from '../utils/txErrors'
+import { playKaChing } from '../utils/sound'
 import { C, font, shortAddr, card, label } from '../theme'
 
 export default function Pay() {
@@ -55,6 +56,9 @@ export default function Pay() {
       setTxHash(receipt.hash)
       await refreshState()
       setDone(true)
+      // Tactile confirmation — same buzz as merchant's PAID screen so both
+      // ends of the transaction feel the same beat.
+      playKaChing().catch(() => {})
     } catch (e) {
       Alert.alert('Payment failed', friendlyTxError(e))
     } finally {

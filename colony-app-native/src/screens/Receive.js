@@ -371,15 +371,6 @@ export default function Receive() {
           <Text style={S.paidIcon}>✓</Text>
         </Animated.View>
 
-        <Animated.Text
-          style={[
-            S.kerching,
-            { opacity: tickScale, transform: [{ scale: tickScale }] },
-          ]}
-        >
-          KERRRCHING!
-        </Animated.Text>
-
         <Text style={S.paidTitle}>Paid</Text>
         <Text style={S.paidAmount}>{payment?.amount} S</Text>
         <Text style={S.paidFrom}>from {shortAddr(payment?.from)}</Text>
@@ -476,10 +467,9 @@ const S = StyleSheet.create({
 
   // Paid screen
   paidWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  paidIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  paidIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   paidIcon:     { fontSize: 48, color: '#0a0a0a', fontWeight: '700' },
-  kerching:     { fontSize: 28, fontWeight: '700', color: C.gold, fontFamily: font, letterSpacing: 4, marginBottom: 16 },
-  paidTitle:    { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
+  paidTitle:    { fontSize: 22, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
   paidAmount:   { fontSize: 52, fontWeight: '700', color: C.gold, fontFamily: font },
   paidFrom:     { fontSize: 13, color: C.sub, fontFamily: font, marginTop: 6, marginBottom: 4 },
   paidNote:     { fontSize: 12, color: C.faint, fontFamily: font, fontStyle: 'italic', marginTop: 4, marginBottom: 8 },
