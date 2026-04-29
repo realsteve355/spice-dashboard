@@ -1,35 +1,35 @@
 /**
- * Receive — merchant payment flow.
+ * Receive — merchant payment flow with product cart.
  *
- * Three-step:
- *   1. Enter amount + optional note
- *   2. Show QR (always) + offer "Write to NFC sticker" on iPhone
- *      — poll chain for matching Sent event in the background
- *   3. PAID ✓ — show sender, amount, tx hash, then return to step 1
+ * Three steps:
+ *   1. enter — show product grid (when acting as company); tap to add to cart
+ *      Manual entry below for ad-hoc amounts not in the catalogue
+ *   2. wait  — show QR encoding total + line-item summary, poll chain
+ *   3. paid  — animated tick + amount + sender, with optional ka-ching sound
  *
- * NFC tag write is iPhone-only — iPad has no app-accessible NFC writer,
- * so the button is hidden when isNfcSupported() returns false.
+ * NFC tag write is iPhone-only — hidden where isNfcSupported() returns false.
  */
 import React, { useState, useEffect, useRef } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert, SafeAreaView, Platform,
+  StyleSheet, ActivityIndicator, Alert, SafeAreaView, Animated,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import QRCode from 'react-native-qrcode-svg'
 import { useWallet } from '../context/WalletContext'
 import { buildPayUrl } from '../utils/payurl'
 import { isNfcSupported, writeNdefPayUrl } from '../utils/nfc'
-import { findPayment, currentBlock, COLONY } from '../utils/contracts'
+import {
+  findPayment, currentBlock, fetchCompanyProducts, COLONY,
+} from '../utils/contracts'
 import { C, font, shortAddr, card, label } from '../theme'
+import { playKaChing } from '../utils/sound'
 
 const POLL_MS = 3000
 
 export default function Receive() {
   const navigation = useNavigation()
   const { address, colonyState, actingAs, refreshState } = useWallet()
-  // Recipient is whoever the user is currently acting as — citizen address
-  // for personal payments, or the company contract address when acting as company.
   const receiveTo   = actingAs?.addr || address
   const receiveName = actingAs?.kind === 'company'
     ? actingAs.name
@@ -37,22 +37,81 @@ export default function Receive() {
 
   // step: 'enter' | 'wait' | 'paid'
   const [step,    setStep]    = useState('enter')
-  const [amount,  setAmount]  = useState('')
-  const [note,    setNote]    = useState('')
-  const [payment, setPayment] = useState(null)        // { from, amount, note, txHash } when paid
+  const [cart,    setCart]    = useState({})            // { [productId]: quantity }
+  const [products,setProducts]= useState([])
+  const [loadingProducts, setLoadingProducts] = useState(false)
+  const [manualAmount, setManualAmount] = useState('')
+  const [manualNote,   setManualNote]   = useState('')
+  const [payment, setPayment] = useState(null)
   const [nfcAvail, setNfcAvail] = useState(false)
   const [writingTag, setWritingTag] = useState(false)
 
   const pollTimer = useRef(null)
   const fromBlock = useRef(null)
+  const tickScale = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     isNfcSupported().then(setNfcAvail).catch(() => setNfcAvail(false))
     return () => stopPolling()
   }, [])
 
-  const url = (step === 'wait' && receiveTo && amount)
-    ? buildPayUrl({ to: receiveTo, amount, note: note.trim(), merchantName: receiveName })
+  // Fetch products when acting as a company
+  useEffect(() => {
+    if (actingAs?.kind !== 'company') { setProducts([]); return }
+    setLoadingProducts(true)
+    fetchCompanyProducts(actingAs.addr)
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setLoadingProducts(false))
+  }, [actingAs?.kind, actingAs?.addr])
+
+  // Animate the PAID tick on entry
+  useEffect(() => {
+    if (step !== 'paid') return
+    tickScale.setValue(0)
+    Animated.spring(tickScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 80,
+      useNativeDriver: true,
+    }).start()
+    playKaChing().catch(() => {})
+  }, [step])
+
+  // ── Cart helpers ──────────────────────────────────────────────────────────
+  const cartItems = products
+    .filter(p => cart[p.id] > 0)
+    .map(p => ({ ...p, qty: cart[p.id], lineTotal: p.price * cart[p.id] }))
+  const cartTotal = cartItems.reduce((s, i) => s + i.lineTotal, 0)
+  const cartNote  = cartItems.length === 0
+    ? ''
+    : cartItems
+        .map(i => `${i.qty}× ${i.name}`)
+        .join(', ')
+        .slice(0, 60)   // keep within NTAG215 + readable URL bounds
+
+  function addToCart(id) {
+    setCart(c => ({ ...c, [id]: (c[id] || 0) + 1 }))
+  }
+  function removeFromCart(id) {
+    setCart(c => {
+      const next = { ...c }
+      if (!next[id]) return c
+      next[id] = next[id] - 1
+      if (next[id] <= 0) delete next[id]
+      return next
+    })
+  }
+  function clearCart() { setCart({}); setManualAmount(''); setManualNote('') }
+
+  // Final amount/note: cart wins if anything's in it, else manual entry
+  const useCart = cartItems.length > 0
+  const amount  = useCart ? cartTotal      : (parseInt(manualAmount, 10) || 0)
+  const note    = useCart ? cartNote       : manualNote.trim()
+  const canShowQr = amount > 0 && !!receiveTo
+
+  const url = (step === 'wait' && canShowQr)
+    ? buildPayUrl({ to: receiveTo, amount, note, merchantName: receiveName })
     : ''
 
   function stopPolling() {
@@ -63,18 +122,11 @@ export default function Receive() {
   }
 
   async function startWaiting() {
-    const amt = parseInt(amount, 10)
-    if (!amt || amt <= 0) {
-      Alert.alert('Missing amount', 'Please enter an amount in S.')
-      return
-    }
-    if (!receiveTo) {
-      Alert.alert('No wallet', 'Set up a wallet first.')
+    if (!canShowQr) {
+      Alert.alert('Empty sale', 'Add products to the cart or enter an amount.')
       return
     }
     try {
-      // Look back a couple of blocks in case a fast customer paid in the same
-      // ~6s window between us calling currentBlock() and the poll starting.
       const head = await currentBlock()
       fromBlock.current = Math.max(0, head - 2)
     } catch (e) {
@@ -88,7 +140,7 @@ export default function Receive() {
         const head = await currentBlock()
         const evt = await findPayment({
           to:        receiveTo,
-          amount:    amt,
+          amount,
           fromBlock: fromBlock.current,
           toBlock:   head,
         })
@@ -96,7 +148,6 @@ export default function Receive() {
           stopPolling()
           setPayment(evt)
           setStep('paid')
-          // Refresh balance so Dashboard shows the new total when user goes back
           refreshState().catch(() => {})
         } else {
           fromBlock.current = head + 1
@@ -115,8 +166,7 @@ export default function Receive() {
 
   function newSale() {
     setStep('enter')
-    setAmount('')
-    setNote('')
+    clearCart()
     setPayment(null)
     fromBlock.current = null
   }
@@ -128,7 +178,6 @@ export default function Receive() {
       await writeNdefPayUrl(url)
       Alert.alert('Tag written', 'The till sticker now holds this payment URL. Customer can tap it.')
     } catch (e) {
-      // User-cancelled NFC sheet is not an error worth alerting
       if (!/cancel/i.test(e.message || '')) {
         Alert.alert('Write failed', e.message || 'Could not write tag.')
       }
@@ -137,7 +186,7 @@ export default function Receive() {
     }
   }
 
-  // ── Step 1: Enter amount ──────────────────────────────────────────────────
+  // ── Step 1: Enter (cart + manual) ─────────────────────────────────────────
   if (step === 'enter') {
     return (
       <SafeAreaView style={S.safe}>
@@ -154,37 +203,102 @@ export default function Receive() {
             {receiveName ? `${receiveName.toUpperCase()} · ` : ''}{COLONY.name}
           </Text>
 
-          <View style={card}>
-            <Text style={[label, { marginBottom: 8 }]}>AMOUNT (S)</Text>
-            <TextInput
-              style={S.amountInput}
-              placeholder="0"
-              placeholderTextColor={C.faint}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="number-pad"
-              autoFocus
-            />
-          </View>
+          {/* Product grid (company mode only) */}
+          {actingAs?.kind === 'company' && (
+            <View style={card}>
+              <Text style={[label, { marginBottom: 8 }]}>PRODUCTS</Text>
+              {loadingProducts ? (
+                <ActivityIndicator size="small" color={C.gold} style={{ marginVertical: 16 }} />
+              ) : products.length === 0 ? (
+                <Text style={S.emptyHint}>
+                  No products listed yet. Add them via the company page on app.zpc.finance, or use manual entry below.
+                </Text>
+              ) : (
+                <View style={S.productGrid}>
+                  {products.map(p => {
+                    const qty = cart[p.id] || 0
+                    return (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[S.productCell, qty > 0 && S.productCellOn]}
+                        onPress={() => addToCart(p.id)}
+                        onLongPress={() => removeFromCart(p.id)}
+                        delayLongPress={300}
+                      >
+                        <Text style={S.productName} numberOfLines={2}>{p.name}</Text>
+                        <Text style={S.productPrice}>{p.price} S</Text>
+                        {qty > 0 && (
+                          <View style={S.qtyBadge}>
+                            <Text style={S.qtyBadgeText}>{qty}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              )}
+              {products.length > 0 && (
+                <Text style={S.gridHint}>Tap to add · long-press to remove</Text>
+              )}
+            </View>
+          )}
 
-          <View style={card}>
-            <Text style={[label, { marginBottom: 8 }]}>NOTE (optional)</Text>
-            <TextInput
-              style={S.noteInput}
-              placeholder="What is this sale for?"
-              placeholderTextColor={C.faint}
-              value={note}
-              onChangeText={setNote}
-              maxLength={60}
-            />
-          </View>
+          {/* Cart summary */}
+          {useCart && (
+            <View style={[card, { borderColor: C.gold }]}>
+              <Text style={[label, { marginBottom: 8 }]}>CART</Text>
+              {cartItems.map(i => (
+                <View key={i.id} style={S.cartRow}>
+                  <Text style={S.cartLine}>{i.qty}× {i.name}</Text>
+                  <Text style={S.cartLineTotal}>{i.lineTotal} S</Text>
+                </View>
+              ))}
+              <View style={S.cartTotalRow}>
+                <Text style={S.cartTotalLabel}>TOTAL</Text>
+                <Text style={S.cartTotalValue}>{cartTotal} S</Text>
+              </View>
+              <TouchableOpacity onPress={clearCart} style={S.clearCartBtn}>
+                <Text style={S.clearCartText}>Clear cart</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Manual entry — collapsed when cart is in use */}
+          {!useCart && (
+            <>
+              <View style={card}>
+                <Text style={[label, { marginBottom: 8 }]}>AMOUNT (S)</Text>
+                <TextInput
+                  style={S.amountInput}
+                  placeholder="0"
+                  placeholderTextColor={C.faint}
+                  value={manualAmount}
+                  onChangeText={setManualAmount}
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={card}>
+                <Text style={[label, { marginBottom: 8 }]}>NOTE (optional)</Text>
+                <TextInput
+                  style={S.noteInput}
+                  placeholder="What is this sale for?"
+                  placeholderTextColor={C.faint}
+                  value={manualNote}
+                  onChangeText={setManualNote}
+                  maxLength={60}
+                />
+              </View>
+            </>
+          )}
 
           <TouchableOpacity
-            style={[S.btnGold, !amount && S.btnDisabled]}
+            style={[S.btnGold, !canShowQr && S.btnDisabled]}
             onPress={startWaiting}
-            disabled={!amount}
+            disabled={!canShowQr}
           >
-            <Text style={S.btnGoldText}>Show payment QR →</Text>
+            <Text style={S.btnGoldText}>
+              {amount > 0 ? `Show QR · ${amount} S →` : 'Show payment QR →'}
+            </Text>
           </TouchableOpacity>
 
           <Text style={S.hint}>
@@ -195,7 +309,7 @@ export default function Receive() {
     )
   }
 
-  // ── Step 2: Show QR + poll ────────────────────────────────────────────────
+  // ── Step 2: QR + poll ─────────────────────────────────────────────────────
   if (step === 'wait') {
     return (
       <SafeAreaView style={S.safe}>
@@ -207,7 +321,7 @@ export default function Receive() {
           </View>
 
           <Text style={S.heading}>Awaiting payment</Text>
-          <Text style={S.bigAmount}>{parseInt(amount, 10)} S</Text>
+          <Text style={S.bigAmount}>{amount} S</Text>
           {note ? <Text style={S.bigNote}>{note}</Text> : null}
 
           <View style={S.qrWrap}>
@@ -246,13 +360,26 @@ export default function Receive() {
     )
   }
 
-  // ── Step 3: Paid ──────────────────────────────────────────────────────────
+  // ── Step 3: PAID ──────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={S.safe}>
       <View style={S.paidWrap}>
-        <View style={S.paidIconWrap}>
+        <Animated.View style={[
+          S.paidIconWrap,
+          { transform: [{ scale: tickScale }] },
+        ]}>
           <Text style={S.paidIcon}>✓</Text>
-        </View>
+        </Animated.View>
+
+        <Animated.Text
+          style={[
+            S.kerching,
+            { opacity: tickScale, transform: [{ scale: tickScale }] },
+          ]}
+        >
+          KERRRCHING!
+        </Animated.Text>
+
         <Text style={S.paidTitle}>Paid</Text>
         <Text style={S.paidAmount}>{payment?.amount} S</Text>
         <Text style={S.paidFrom}>from {shortAddr(payment?.from)}</Text>
@@ -285,6 +412,48 @@ const S = StyleSheet.create({
   heading:      { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 4 },
   subheading:   { fontSize: 11, color: C.faint, fontFamily: font, marginBottom: 16, letterSpacing: 1 },
 
+  // Product grid
+  productGrid:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  productCell:  {
+    width:           '31%',
+    backgroundColor: C.card,
+    borderWidth:     1,
+    borderColor:     C.border,
+    borderRadius:    8,
+    padding:         10,
+    minHeight:       72,
+    justifyContent:  'space-between',
+    position:        'relative',
+  },
+  productCellOn:{ borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  productName:  { fontSize: 11, color: C.text, fontFamily: font, marginBottom: 6 },
+  productPrice: { fontSize: 12, color: C.gold, fontFamily: font, fontWeight: '600' },
+  qtyBadge:     {
+    position:        'absolute',
+    top:             -6,
+    right:           -6,
+    width:           22,
+    height:          22,
+    borderRadius:    11,
+    backgroundColor: C.gold,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  qtyBadgeText: { fontSize: 11, fontWeight: '700', color: '#0a0a0a', fontFamily: font },
+  gridHint:     { fontSize: 10, color: C.faint, fontFamily: font, marginTop: 10, textAlign: 'center' },
+  emptyHint:    { fontSize: 11, color: C.faint, fontFamily: font, lineHeight: 17, textAlign: 'center', paddingVertical: 12 },
+
+  // Cart
+  cartRow:        { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  cartLine:       { fontSize: 12, color: C.text, fontFamily: font },
+  cartLineTotal:  { fontSize: 12, color: C.text, fontFamily: font, fontWeight: '600' },
+  cartTotalRow:   { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8, marginTop: 8 },
+  cartTotalLabel: { fontSize: 11, color: C.faint, fontFamily: font, letterSpacing: 1 },
+  cartTotalValue: { fontSize: 18, color: C.gold, fontFamily: font, fontWeight: '700' },
+  clearCartBtn:   { alignSelf: 'flex-start', marginTop: 8 },
+  clearCartText:  { fontSize: 11, color: C.sub, fontFamily: font, textDecorationLine: 'underline' },
+
+  // Manual amount/note
   amountInput:  { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 16, fontSize: 28, fontWeight: '600', fontFamily: font, color: C.gold, textAlign: 'center' },
   noteInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
 
@@ -307,10 +476,11 @@ const S = StyleSheet.create({
 
   // Paid screen
   paidWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  paidIconWrap: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  paidIcon:     { fontSize: 40, color: '#0a0a0a', fontWeight: '700' },
-  paidTitle:    { fontSize: 22, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
-  paidAmount:   { fontSize: 48, fontWeight: '700', color: C.gold, fontFamily: font },
+  paidIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  paidIcon:     { fontSize: 48, color: '#0a0a0a', fontWeight: '700' },
+  kerching:     { fontSize: 28, fontWeight: '700', color: C.gold, fontFamily: font, letterSpacing: 4, marginBottom: 16 },
+  paidTitle:    { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
+  paidAmount:   { fontSize: 52, fontWeight: '700', color: C.gold, fontFamily: font },
   paidFrom:     { fontSize: 13, color: C.sub, fontFamily: font, marginTop: 6, marginBottom: 4 },
   paidNote:     { fontSize: 12, color: C.faint, fontFamily: font, fontStyle: 'italic', marginTop: 4, marginBottom: 8 },
   txHash:       { fontSize: 10, color: C.faint, fontFamily: font, marginBottom: 28 },

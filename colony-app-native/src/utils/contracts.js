@@ -210,6 +210,24 @@ export async function fetchCitizens() {
   }
 }
 
+/**
+ * Fetch a company's product catalogue from /api/products.
+ * Returns array of { id, name, description, price, category, available }.
+ * Only returns available products (filters out hidden ones).
+ */
+export async function fetchCompanyProducts(companyAddr) {
+  if (!companyAddr) return []
+  try {
+    const url = `https://app.zpc.finance/api/products` +
+                `?colony=${COLONY.slug}&companyAddr=${companyAddr.toLowerCase()}`
+    const r = await fetch(url)
+    const d = await r.json()
+    return (d.products || []).filter(p => p.available)
+  } catch {
+    return []
+  }
+}
+
 // ── Write operations (require ethers.Wallet instance) ───────────────────────────
 
 const GAS = { gasLimit: 150000 }
@@ -291,6 +309,55 @@ export async function findPayment({ to, amount, fromBlock, toBlock }) {
 /** Get the current block number — used as the start point for findPayment polling. */
 export async function currentBlock() {
   return await getProvider().getBlockNumber()
+}
+
+/**
+ * Sum incoming Sent events for an address since the given block.
+ * Used by the Dashboard "today's takings" counter when in company mode.
+ *
+ * Base Sepolia mines a block every ~2s, so 24h ≈ 43,200 blocks.
+ * We chunk into 6×9000-block windows to stay under the 10k getLogs limit.
+ */
+export async function sumIncoming(toAddress, fromBlock) {
+  if (!toAddress) return { count: 0, total: 0 }
+  const rpc = getProvider()
+  const SENT_TOPIC = ethers.id('Sent(address,address,uint256,string)')
+  const toTopic    = '0x' + toAddress.slice(2).toLowerCase().padStart(64, '0')
+
+  const head = await rpc.getBlockNumber()
+  const start = Math.max(0, fromBlock)
+  const CHUNK = 9000
+
+  const queries = []
+  for (let from = start; from <= head; from += CHUNK + 1) {
+    const to = Math.min(head, from + CHUNK)
+    queries.push(
+      rpc.getLogs({
+        address: COLONY.colony,
+        fromBlock: from,
+        toBlock:   to,
+        topics:    [SENT_TOPIC, null, toTopic],
+      }).catch(() => [])
+    )
+  }
+  const results = await Promise.all(queries)
+  const logs    = results.flat()
+
+  const iface = new ethers.Interface([
+    'event Sent(address indexed from, address indexed to, uint256 amount, string note)',
+  ])
+
+  let count = 0
+  let total = 0
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog(log)
+      if (!parsed) continue
+      count += 1
+      total += Math.floor(Number(ethers.formatEther(parsed.args.amount)))
+    } catch {}
+  }
+  return { count, total }
 }
 
 // ── Companies ────────────────────────────────────────────────────────────────

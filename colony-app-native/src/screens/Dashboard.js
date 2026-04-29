@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
-import { fetchTxHistory, txClaimUbi, txSaveToV, COLONY } from '../utils/contracts'
+import { fetchTxHistory, txClaimUbi, txSaveToV, sumIncoming, currentBlock, COLONY } from '../utils/contracts'
 import { isNfcSupported, scanPayTag } from '../utils/nfc'
 import { friendlyTxError } from '../utils/txErrors'
 import { C, font, shortAddr, card, label, value } from '../theme'
@@ -37,6 +37,7 @@ export default function Dashboard() {
   const [refreshing,   setRefreshing]   = useState(false)
   const [actionLoading,setActionLoading]= useState(null)  // 'ubi' | 'save' | 'nfc' | null
   const [nfcAvail,     setNfcAvail]     = useState(null)  // null=checking, true/false
+  const [takings,      setTakings]      = useState(null)  // { count, total } for company mode
 
   useEffect(() => {
     isNfcSupported().then(setNfcAvail).catch(() => setNfcAvail(false))
@@ -54,11 +55,27 @@ export default function Dashboard() {
 
   useEffect(() => { loadHistory() }, [loadHistory])
 
+  // Company-mode "today's takings" — chain query for incoming Sent events
+  // since 24h ago (~43,200 blocks at 2s/block on Base Sepolia).
+  const loadTakings = useCallback(async () => {
+    if (actingAs.kind !== 'company' || !actingAs.addr) { setTakings(null); return }
+    try {
+      const head = await currentBlock()
+      const fromBlock = Math.max(0, head - 43200)
+      const result = await sumIncoming(actingAs.addr, fromBlock)
+      setTakings(result)
+    } catch {
+      // Silent — header just won't show takings
+    }
+  }, [actingAs.kind, actingAs.addr])
+
+  useEffect(() => { loadTakings() }, [loadTakings])
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await Promise.all([refreshState(), loadHistory()])
+    await Promise.all([refreshState(), loadHistory(), loadTakings()])
     setRefreshing(false)
-  }, [refreshState, loadHistory])
+  }, [refreshState, loadHistory, loadTakings])
 
   async function handleNfcPay() {
     setActionLoading('nfc')
@@ -187,11 +204,22 @@ export default function Dashboard() {
               </View>
             )}
             {actingAs.kind === 'company' && (
-              <View style={[S.citizenBadge, { borderColor: C.gold }]}>
-                <Text style={[S.citizenText, { color: C.gold }]}>
-                  COMPANY · {actingAs.name.toUpperCase()}
-                </Text>
-              </View>
+              <>
+                <View style={[S.citizenBadge, { borderColor: C.gold }]}>
+                  <Text style={[S.citizenText, { color: C.gold }]}>
+                    COMPANY · {actingAs.name.toUpperCase()}
+                  </Text>
+                </View>
+                {takings && takings.count > 0 && (
+                  <View style={S.takingsCard}>
+                    <Text style={S.takingsLabel}>TODAY'S TAKINGS</Text>
+                    <View style={S.takingsRow}>
+                      <Text style={S.takingsValue}>{takings.total} S</Text>
+                      <Text style={S.takingsCount}>· {takings.count} sale{takings.count === 1 ? '' : 's'}</Text>
+                    </View>
+                  </View>
+                )}
+              </>
             )}
 
             {/* Balance cards — show whichever identity is active */}
@@ -384,6 +412,12 @@ const S = StyleSheet.create({
 
   receiveBtn:     { backgroundColor: C.green, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
   receiveBtnText: { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
+
+  takingsCard:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.gold, borderRadius: 8, padding: 12, marginBottom: 12, alignItems: 'center' },
+  takingsLabel:   { fontSize: 9, color: C.faint, fontFamily: font, letterSpacing: 1.5, marginBottom: 4 },
+  takingsRow:     { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  takingsValue:   { fontSize: 22, fontWeight: '700', color: C.gold, fontFamily: font },
+  takingsCount:   { fontSize: 11, color: C.sub, fontFamily: font },
 
   identityRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
   idChip:         { borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingVertical: 5, paddingHorizontal: 10 },
