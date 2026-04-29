@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert, SafeAreaView, Animated,
+  StyleSheet, ActivityIndicator, Alert, SafeAreaView, Animated, Image,
 } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import QRCode from 'react-native-qrcode-svg'
@@ -20,7 +20,7 @@ import { useWallet } from '../context/WalletContext'
 import { buildPayUrl } from '../utils/payurl'
 import { isNfcSupported, writeNdefPayUrl } from '../utils/nfc'
 import {
-  findPayment, currentBlock, fetchCompanyProducts, COLONY,
+  findPayment, currentBlock, fetchCompanyProducts, productImageUrl, COLONY,
 } from '../utils/contracts'
 import { C, font, shortAddr, card, label } from '../theme'
 import { playKaChing } from '../utils/sound'
@@ -225,6 +225,7 @@ export default function Receive() {
                         onLongPress={() => removeFromCart(p.id)}
                         delayLongPress={300}
                       >
+                        <ProductThumb productId={p.id} name={p.name} />
                         <Text style={S.productName} numberOfLines={2}>{p.name}</Text>
                         <Text style={S.productPrice}>{p.price} S</Text>
                         {qty > 0 && (
@@ -393,6 +394,32 @@ export default function Receive() {
   )
 }
 
+/**
+ * ProductThumb — square photo for a product card, with a graceful fallback
+ * to the product's initials when the image is missing or fails to load.
+ */
+function ProductThumb({ productId, name }) {
+  const [errored, setErrored] = useState(false)
+  const url = productImageUrl(productId)
+  const initials = (name || '??').slice(0, 2).toUpperCase()
+
+  if (!url || errored) {
+    return (
+      <View style={S.thumbPlaceholder}>
+        <Text style={S.thumbInitials}>{initials}</Text>
+      </View>
+    )
+  }
+  return (
+    <Image
+      source={{ uri: url }}
+      style={S.thumbImage}
+      onError={() => setErrored(true)}
+      resizeMode="cover"
+    />
+  )
+}
+
 const S = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: C.bg },
   content:      { padding: 16, paddingBottom: 48 },
@@ -411,14 +438,17 @@ const S = StyleSheet.create({
     borderWidth:     1,
     borderColor:     C.border,
     borderRadius:    8,
-    padding:         10,
-    minHeight:       72,
-    justifyContent:  'space-between',
+    padding:         8,
+    justifyContent:  'flex-start',
     position:        'relative',
   },
   productCellOn:{ borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
-  productName:  { fontSize: 11, color: C.text, fontFamily: font, marginBottom: 6 },
+  productName:  { fontSize: 11, color: C.text, fontFamily: font, marginTop: 6, marginBottom: 4, minHeight: 28 },
   productPrice: { fontSize: 12, color: C.gold, fontFamily: font, fontWeight: '600' },
+
+  thumbImage:       { width: '100%', aspectRatio: 1, borderRadius: 4, backgroundColor: C.bg },
+  thumbPlaceholder: { width: '100%', aspectRatio: 1, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
+  thumbInitials:    { fontSize: 18, color: C.faint, fontFamily: font, fontWeight: '600' },
   qtyBadge:     {
     position:        'absolute',
     top:             -6,

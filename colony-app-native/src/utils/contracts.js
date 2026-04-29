@@ -15,6 +15,16 @@ import { ethers } from 'ethers'
 export const RPC      = 'https://sepolia.base.org'
 export const CHAIN_ID = 84532
 
+// Supabase storage public URL — used to construct product/company image URLs.
+// Same value as VITE_SUPABASE_URL in the web app's env.
+export const SUPABASE_URL = 'https://jhzbxiolczviwremgalv.supabase.co'
+
+/** Public URL for a product photo. Returns null if productId is missing. */
+export function productImageUrl(productId) {
+  if (!productId) return null
+  return `${SUPABASE_URL}/storage/v1/object/public/colony-media/${COLONY.slug}/product/${productId}.jpg`
+}
+
 /** Dave's Colony — primary demo colony */
 export const COLONY = {
   colony:         '0x536ea5d89Fb34D7C4983De73c3A4AC894C1D3cE5',
