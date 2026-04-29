@@ -23,6 +23,7 @@ import Settings    from './src/screens/Settings'
 import Pay         from './src/screens/Pay'
 import Receive     from './src/screens/Receive'
 import ScanPay     from './src/screens/ScanPay'
+import { decodeItems } from './src/utils/payurl'
 import { C, font } from './src/theme'
 
 /**
@@ -40,6 +41,9 @@ const linking = {
           amount:       (v) => v,
           note:         (v) => v,
           merchantName: (v) => v,
+          // QR scans pre-parse via parsePayUrl, but a raw NFC/deep-link
+          // arrival hits this path — decode items string to array here too.
+          items:        (v) => decodeItems(v),
         },
       },
     },

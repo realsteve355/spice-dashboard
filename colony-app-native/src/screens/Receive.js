@@ -111,7 +111,13 @@ export default function Receive() {
   const canShowQr = amount > 0 && !!receiveTo
 
   const url = (step === 'wait' && canShowQr)
-    ? buildPayUrl({ to: receiveTo, amount, note, merchantName: receiveName })
+    ? buildPayUrl({
+        to:           receiveTo,
+        amount,
+        note,
+        merchantName: receiveName,
+        items:        useCart ? cartItems.map(i => ({ id: i.id, qty: i.qty })) : [],
+      })
     : ''
 
   function stopPolling() {
@@ -446,9 +452,9 @@ const S = StyleSheet.create({
   productName:  { fontSize: 11, color: C.text, fontFamily: font, marginTop: 6, marginBottom: 4, minHeight: 28 },
   productPrice: { fontSize: 12, color: C.gold, fontFamily: font, fontWeight: '600' },
 
-  thumbImage:       { width: '100%', aspectRatio: 1, borderRadius: 4, backgroundColor: C.bg },
-  thumbPlaceholder: { width: '100%', aspectRatio: 1, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
-  thumbInitials:    { fontSize: 18, color: C.faint, fontFamily: font, fontWeight: '600' },
+  thumbImage:       { width: '60%', aspectRatio: 1, borderRadius: 4, backgroundColor: C.bg, alignSelf: 'center' },
+  thumbPlaceholder: { width: '60%', aspectRatio: 1, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  thumbInitials:    { fontSize: 14, color: C.faint, fontFamily: font, fontWeight: '600' },
   qtyBadge:     {
     position:        'absolute',
     top:             -6,

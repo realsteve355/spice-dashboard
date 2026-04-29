@@ -7,14 +7,14 @@
  *
  * Shows payment summary → FaceID confirm → txSend → success.
  */
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
-  Alert, ActivityIndicator, SafeAreaView,
+  Alert, ActivityIndicator, SafeAreaView, Image,
 } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { useWallet } from '../context/WalletContext'
-import { txSend } from '../utils/contracts'
+import { txSend, fetchCompanyProducts, productImageUrl } from '../utils/contracts'
 import { useBiometricLabel } from '../utils/biometric'
 import { friendlyTxError } from '../utils/txErrors'
 import { playKaChing } from '../utils/sound'
@@ -26,11 +26,30 @@ export default function Pay() {
   const { colonyState, authenticate, wallet, refreshState } = useWallet()
   const bio = useBiometricLabel()
 
-  const { to = '', amount = '', note = '', merchantName = '' } = route.params || {}
+  const { to = '', amount = '', note = '', merchantName = '', items = [] } = route.params || {}
 
   const [loading,  setLoading]  = useState(false)
   const [done,     setDone]     = useState(false)
   const [txHash,   setTxHash]   = useState(null)
+  const [lineItems,setLineItems]= useState([])  // [{ id, qty, name, price }]
+
+  // If the QR encoded item IDs, fetch the company's catalogue to enrich
+  // them with names + prices for display
+  useEffect(() => {
+    if (!items || items.length === 0 || !to) { setLineItems([]); return }
+    fetchCompanyProducts(to)
+      .then(catalogue => {
+        const byId = Object.fromEntries(catalogue.map(p => [p.id, p]))
+        const enriched = items.map(i => {
+          const p = byId[i.id]
+          return p
+            ? { id: i.id, qty: i.qty, name: p.name, price: p.price }
+            : { id: i.id, qty: i.qty, name: '(unknown item)', price: 0 }
+        })
+        setLineItems(enriched)
+      })
+      .catch(() => setLineItems([]))
+  }, [JSON.stringify(items), to])
 
   const parsedAmount = parseInt(amount, 10) || 0
   const displayName  = merchantName || shortAddr(to)
@@ -114,14 +133,31 @@ export default function Pay() {
           ) : null}
         </View>
 
+        {/* Line items — only when the QR encoded a cart */}
+        {lineItems.length > 0 && (
+          <View style={card}>
+            <Text style={[label, { marginBottom: 10 }]}>YOU'RE BUYING</Text>
+            {lineItems.map(it => (
+              <View key={it.id} style={S.lineRow}>
+                <PayThumb productId={it.id} name={it.name} />
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={S.lineName} numberOfLines={2}>{it.name}</Text>
+                  <Text style={S.lineMeta}>{it.qty} × {it.price} S</Text>
+                </View>
+                <Text style={S.lineTotal}>{it.qty * it.price} S</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Amount */}
         <View style={[card, S.amountCard]}>
           <Text style={S.amountValue}>{parsedAmount}</Text>
           <Text style={S.amountToken}> S</Text>
         </View>
 
-        {/* Note */}
-        {note ? (
+        {/* Note (only show if no line items, otherwise it's redundant) */}
+        {note && lineItems.length === 0 ? (
           <View style={card}>
             <Text style={[label, { marginBottom: 6 }]}>NOTE</Text>
             <Text style={S.noteText}>{note}</Text>
@@ -163,6 +199,29 @@ export default function Pay() {
   )
 }
 
+/** Small thumbnail with initials fallback — twin of ProductThumb in Receive.js. */
+function PayThumb({ productId, name }) {
+  const [errored, setErrored] = useState(false)
+  const url = productImageUrl(productId)
+  const initials = (name || '??').slice(0, 2).toUpperCase()
+
+  if (!url || errored) {
+    return (
+      <View style={S.payThumbPlaceholder}>
+        <Text style={S.payThumbInitials}>{initials}</Text>
+      </View>
+    )
+  }
+  return (
+    <Image
+      source={{ uri: url }}
+      style={S.payThumbImage}
+      onError={() => setErrored(true)}
+      resizeMode="cover"
+    />
+  )
+}
+
 const S = StyleSheet.create({
   safe:            { flex: 1, backgroundColor: C.bg },
   content:         { padding: 16, paddingBottom: 48 },
@@ -180,6 +239,15 @@ const S = StyleSheet.create({
   amountToken:     { fontSize: 20, color: C.gold, fontFamily: font },
 
   noteText:        { fontSize: 13, color: C.sub, fontFamily: font },
+
+  // Line items
+  lineRow:           { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
+  lineName:          { fontSize: 13, color: C.text, fontFamily: font },
+  lineMeta:          { fontSize: 11, color: C.faint, fontFamily: font, marginTop: 2 },
+  lineTotal:         { fontSize: 13, color: C.gold, fontFamily: font, fontWeight: '600' },
+  payThumbImage:     { width: 44, height: 44, borderRadius: 4, backgroundColor: C.bg },
+  payThumbPlaceholder:{ width: 44, height: 44, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
+  payThumbInitials:  { fontSize: 12, color: C.faint, fontFamily: font, fontWeight: '600' },
 
   balHint:         { fontSize: 11, color: C.faint, fontFamily: font, textAlign: 'center', marginBottom: 12 },
 
