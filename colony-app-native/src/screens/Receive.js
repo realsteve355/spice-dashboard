@@ -27,7 +27,7 @@ const POLL_MS = 3000
 
 export default function Receive() {
   const navigation = useNavigation()
-  const { address, colonyState, actingAs } = useWallet()
+  const { address, colonyState, actingAs, refreshState } = useWallet()
   // Recipient is whoever the user is currently acting as — citizen address
   // for personal payments, or the company contract address when acting as company.
   const receiveTo   = actingAs?.addr || address
@@ -96,6 +96,8 @@ export default function Receive() {
           stopPolling()
           setPayment(evt)
           setStep('paid')
+          // Refresh balance so Dashboard shows the new total when user goes back
+          refreshState().catch(() => {})
         } else {
           fromBlock.current = head + 1
         }
