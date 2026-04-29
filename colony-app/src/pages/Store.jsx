@@ -552,10 +552,16 @@ function ProductImage({ slug, productId, name, isSecretary, size, version = 0, o
       if (r.ok) {
         setLocalUrl(dataUrl)
         setImgError(false)
-        // Notify Store so it can bump the version on the product card's ProductImage
         onUpload?.(productId)
+      } else {
+        const err = await r.text().catch(() => '')
+        console.error('[product-image upload] HTTP', r.status, err)
+        alert(`Upload failed: ${r.status} ${err.slice(0, 200)}`)
       }
-    } catch {}
+    } catch (e) {
+      console.error('[product-image upload] threw:', e)
+      alert(`Upload error: ${e?.message || e}`)
+    }
     setUploading(false)
   }
 
