@@ -60,7 +60,6 @@
   margin: 0 0 36px;
   position: relative;
   background: #11141a;
-  border-radius: 3px;
   overflow: hidden;
   border: 1px solid #232831;
   min-height: 200px;
@@ -69,10 +68,14 @@
   justify-content: center;
 }
 
+/* Treatment 1 — warm monochrome (redesign §5.2). Desaturates and warm-tints
+   chapter imagery so it lives inside the mission-control palette. */
 .mars-dome-img {
   width: 100%;
   height: auto;
   display: block;
+  filter: grayscale(1) contrast(1.05) brightness(0.85) sepia(0.18);
+  mix-blend-mode: luminosity;
 }
 
 .mars-dome-placeholder {

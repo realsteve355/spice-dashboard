@@ -1,10 +1,13 @@
 import { C, F } from "../tokens";
-import TopBar     from "../components/spice/TopBar";
-import TickerTape from "../components/spice/TickerTape";
-import SectionHead from "../components/spice/SectionHead";
-import Button     from "../components/spice/Button";
-import StatusPill from "../components/spice/StatusPill";
-import Footer     from "../components/spice/Footer";
+import TopBar             from "../components/spice/TopBar";
+import TickerTape         from "../components/spice/TickerTape";
+import SectionHead        from "../components/spice/SectionHead";
+import Button             from "../components/spice/Button";
+import StatusPill         from "../components/spice/StatusPill";
+import Footer             from "../components/spice/Footer";
+import TelemetryGrid      from "../components/spice/TelemetryGrid";
+import ColonyStatusPanel  from "../components/spice/ColonyStatusPanel";
+import EventLog           from "../components/spice/EventLog";
 
 const S = {
   page: { minHeight: "calc(100vh - 57px)", background: C.bg, color: C.txt, fontFamily: F.mono },
@@ -88,6 +91,59 @@ export default function Components() {
             <StatusPill status="warn" label="Caution · monitoring" />
             <StatusPill status="crit" label="Breach · reserve floor" />
             <StatusPill status="txt"  label="Standby" />
+          </div>
+        </div>
+
+        <div style={S.block}>
+          <div style={S.label}>TelemetryGrid (4 columns × 2 rows)</div>
+          <TelemetryGrid
+            columns={4}
+            cells={[
+              { label: "SPICE Level",   value: "7.20 / 10",  delta: "+0.12 wk", dir: "up", progress: 0.72 },
+              { label: "US Debt / GDP", value: "123 %",      delta: "+1.4 yr",  dir: "down", status: "crit", progress: 0.70 },
+              { label: "10Y Yield",     value: "4.10 %",     delta: "±0.00",    dir: "flat" },
+              { label: "Real Rate",     value: "1.80 %",     delta: "+0.08",    dir: "up" },
+              { label: "CPI YoY",       value: "3.40 %",     delta: "+0.10 pp", dir: "down" },
+              { label: "DXY",           value: "99.21",      delta: "−0.30 %",  dir: "up" },
+              { label: "BTC",           value: "$112,400",   delta: "+1.40 %",  dir: "up" },
+              { label: "Crisis Window", value: "2029—33",    delta: "CONF 0.74", dir: "flat", status: "crit" },
+            ]}
+          />
+        </div>
+
+        <div style={S.block}>
+          <div style={S.label}>ColonyStatusPanel</div>
+          <div style={{ maxWidth: 360 }}>
+            <ColonyStatusPanel
+              title="Colony Status"
+              meta="v0.7 · TESTNET"
+              rows={[
+                { k: "Active colonies",   v: "1" },
+                { k: "Citizens enrolled", v: "5" },
+                { k: "S-token supply",    v: "12,440" },
+                { k: "V-token supply",    v: "3,820" },
+                { k: "Current epoch",     v: "13" },
+                { k: "Network",           v: "Base Sepolia" },
+              ]}
+            />
+          </div>
+        </div>
+
+        <div style={S.block}>
+          <div style={S.label}>EventLog</div>
+          <div style={{ maxWidth: 720 }}>
+            <EventLog
+              title="Event Log"
+              meta="LIVE"
+              events={[
+                { time: "14:31", level: "INFO", msg: "Oracle sync · price feed nominal" },
+                { time: "14:18", level: "INFO", msg: "Rebalance check · within band" },
+                { time: "13:42", level: "WARN", msg: "CPI YoY rising · monitor" },
+                { time: "12:05", level: "INFO", msg: "Deposit · 0.50 ₿ · 0xA1…2c" },
+                { time: "09:51", level: "WARN", msg: "SPICE level → 7.20 (+0.12)" },
+                { time: "08:30", level: "INFO", msg: "Treasury auction · 4.11% stop" },
+              ]}
+            />
           </div>
         </div>
 

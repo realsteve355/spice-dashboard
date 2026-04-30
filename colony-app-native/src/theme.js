@@ -26,7 +26,7 @@ export const card = {
   backgroundColor: C.card,
   borderWidth: 1,
   borderColor: C.border,
-  borderRadius: 8,
+  borderRadius: 0,
   padding: 16,
   marginBottom: 12,
 }

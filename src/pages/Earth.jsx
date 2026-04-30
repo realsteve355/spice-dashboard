@@ -142,6 +142,35 @@ export default function Earth() {
   return (
     <div style={{ background: BG0, minHeight: "100vh", fontFamily: F }}>
 
+      {/* ── Hero image — Treatment 1 (warm monochrome) per redesign §5.2 ── */}
+      <div style={{
+        background: BG1, borderBottom: BD,
+        height: 320, position: "relative", overflow: "hidden",
+      }}>
+        <img
+          src="/spice-town.png"
+          alt="Earth colony — town view"
+          style={{
+            width: "100%", height: "100%", objectFit: "cover",
+            display: "block",
+            filter: "grayscale(1) contrast(1.05) brightness(0.85) sepia(0.18)",
+            mixBlendMode: "luminosity",
+          }}
+        />
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `linear-gradient(to bottom, transparent 50%, ${BG0} 100%)`,
+          pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", left: "50%", bottom: 28,
+          transform: "translateX(-50%)",
+          fontSize: 9, color: T3, letterSpacing: "0.3em", textTransform: "uppercase",
+        }}>
+          Act III · Earth Implementation
+        </div>
+      </div>
+
       {/* ── I. Hero ── */}
       <Section>
         <SectionLabel>Earth Colony · SPICE Protocol</SectionLabel>

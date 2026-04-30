@@ -4,10 +4,11 @@ import { ethers } from "ethers";
 import { C, F } from "../tokens";
 import { SPICE_PARAMS, LEVEL_LABELS } from "../data/spice-params";
 import { COLONIES, BASE_SEPOLIA_RPC, COLONY_APP_HOST } from "../data/colonies";
-import StatusPill  from "../components/spice/StatusPill";
-import SectionHead from "../components/spice/SectionHead";
-import Button      from "../components/spice/Button";
-import TickerTape  from "../components/spice/TickerTape";
+import StatusPill     from "../components/spice/StatusPill";
+import SectionHead    from "../components/spice/SectionHead";
+import Button         from "../components/spice/Button";
+import TickerTape     from "../components/spice/TickerTape";
+import TelemetryGrid  from "../components/spice/TelemetryGrid";
 
 const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
@@ -58,16 +59,6 @@ const S = {
     color: C.dim, marginBottom: 14,
   },
   videoMeta: { fontSize: 11.5, color: C.faint, letterSpacing: "0.06em", marginBottom: 56 },
-
-  telemetry: {
-    display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-    border: `1px solid ${C.line}`,
-    background: C.panel, marginBottom: 56,
-  },
-  telCell: { padding: "20px 22px", borderRight: `1px solid ${C.line}` },
-  telLab:  { fontSize: 9.5, color: C.dim, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8 },
-  telVal:  { fontSize: 22, fontWeight: 500, color: C.txt, fontFamily: F.mono },
-  telDelta:{ fontSize: 11, color: C.dim, marginTop: 6 },
 
   dispatches: {
     display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
@@ -190,27 +181,16 @@ export default function Home() {
 
         {/* TELEMETRY */}
         <SectionHead tag="T-01" title="Field Telemetry · Live" timestamp="BASE SEPOLIA · 84532" />
-        <div style={S.telemetry}>
-          <div style={S.telCell}>
-            <div style={S.telLab}>SPICE Level</div>
-            <div style={S.telVal}>{level} / 4</div>
-            <div style={S.telDelta}>{levelLabel}</div>
-          </div>
-          <div style={S.telCell}>
-            <div style={S.telLab}>Active Colonies</div>
-            <div style={S.telVal}>{colonies.length}</div>
-            <div style={S.telDelta}>on-chain registry</div>
-          </div>
-          <div style={S.telCell}>
-            <div style={S.telLab}>Citizens Enrolled</div>
-            <div style={S.telVal}>{totalCitizens}</div>
-            <div style={S.telDelta}>across all colonies</div>
-          </div>
-          <div style={{ ...S.telCell, borderRight: 0 }}>
-            <div style={S.telLab}>Crisis Window</div>
-            <div style={{ ...S.telVal, color: C.crit }}>2029—33</div>
-            <div style={S.telDelta}>conf 0.74</div>
-          </div>
+        <div style={{ marginBottom: 56 }}>
+          <TelemetryGrid
+            columns={4}
+            cells={[
+              { label: "SPICE Level",       value: `${level} / 4`,         delta: levelLabel },
+              { label: "Active Colonies",   value: String(colonies.length), delta: "on-chain registry" },
+              { label: "Citizens Enrolled", value: String(totalCitizens),   delta: "across all colonies" },
+              { label: "Crisis Window",     value: "2029—33",               delta: "conf 0.74", status: "crit" },
+            ]}
+          />
         </div>
 
         {/* DISPATCHES */}
