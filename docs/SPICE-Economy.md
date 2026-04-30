@@ -572,7 +572,158 @@ local leather instead of imported, etc).
 
 ---
 
-*SPICE Economy · Unified Specification · v3 · April 2026*
+## Part 5 — Interactive Exploration
+
+The Python sim in Part 4 is a one-shot batch. To let a reader interrogate
+the model — push a slider and watch the peg break or hold in real time —
+the same equations are reimplemented as two interactive React pages on
+`zpc.finance`. Building these pages forced two methodological shifts that
+also feed back into the canonical model.
+
+### 5.1 Two pages, two questions
+
+| Page | URL | Question |
+|---|---|---|
+| **Balance of Payments** | `/balance-of-payments` | Can a single colony, on its own, defend the peg using only its own export/import balance and citizen cashout pressure? |
+| **Colony Economy** | `/colony-economy` | Under heterogeneous USD inflation across categories of goods, can the Fisc keep the citizen-facing basket priced flat in S? |
+
+Both run the same monthly tick as `model.py`: UBI mint → citizen spend →
+company wages → MCC bills → S→V conversion → cashout → exports → LAT →
+dividends → MCC consumption → Fisc rate update. The differences are the
+sliders and the framing.
+
+### 5.2 Methodological shift — basket-anchored, not $-pegged
+
+Part 4 treats the Fisc rate as $/S and treats "peg holds" as "rate stays
+near 1.00". This conflates two questions: (a) is S stable in real terms,
+(b) does USD trade at par with S? Under a USD experiencing real
+inflation, those answers diverge — S can be perfectly stable in real
+terms while $/S drifts upward with USD debasement.
+
+The interactive pages adopt the basket-anchored framing:
+
+- **Reference quantity:** a fixed basket of goods that costs **28 S**.
+- **What's stable:** the basket's price in S (citizens never see their
+  weekly shop costing more in S over time).
+- **What floats:** the $/S Fisc rate. As USD inflates, the target rate
+  rises proportionally (a basket that costs $28 today costs $30.94 next
+  year at 5% USD inflation, so the target rate moves from $1.00 to $1.10
+  to keep the basket at 28 S).
+- **What "peg breaks" means:** the *actual* rate falls below the *target*
+  rate because reserve cover is insufficient. The basket-cost-in-S then
+  rises above 28 — citizens take a real-terms loss.
+
+This is the right framing. SPICE's design promise is real-terms
+stability for citizens, not nominal-USD stability for outsiders. Part 4's
+results are unchanged because they assume zero USD inflation; the
+basket-anchored framing is a strict generalisation.
+
+### 5.3 Multi-good basket
+
+`/colony-economy` decomposes the basket into four categories, each with
+its own annualised USD inflation rate:
+
+| Category | Initial $ | Default rate driver |
+|---|---:|---|
+| Energy | $8 | Gas, fuel, electricity — typically inflating |
+| Food | $9 | Volatile — automation deflation vs climate inflation |
+| Hard goods | $5 | Electronics, clothing — typically deflating under automation |
+| Services | $6 | Sticky-up — labour-driven, tracks wages |
+| **Total** | **$28** | **= 28 S at initial rate $1/S** |
+
+The Fisc's job is *not* to track any one category. It tracks the basket
+total. The page's headline chart is total basket cost in S — flat at 28
+across every scenario where reserve cover holds — even when individual
+categories swing wildly in USD terms.
+
+Five inflation presets ship with the page:
+
+- **Baseline (mild)** — 5/3/−2/4 % across energy/food/goods/services
+- **Collision-era** — 20/6/−10/8 % (energy spike, AI eats hard goods, services sticky-up)
+- **USD hyperinflation** — 40/30/20/35 %
+- **Broad deflation** — −5/−8/−15/−3 %
+- **No inflation** — all zero, recovers Part 4's framing
+
+### 5.4 Real-magnitude town presets
+
+Both pages ship with US-municipality presets at full population scale,
+not toy numbers. Six small-to-mid US towns the colony movement could
+plausibly anchor in post-Collision:
+
+| Preset | Citizens | $ exports/mo | $ imports/mo | Character |
+|---|---:|---:|---:|---|
+| Marysville, OH | 25,000 | $40m | $25m | Honda assembly — net exporter |
+| Bellefontaine, OH | 14,000 | $5m | $18m | Residential — net importer |
+| Midland, MI | 42,000 | $60m | $30m | Dow Chemical — strong exporter |
+| Saginaw, MI | 44,000 | $12m | $32m | Post-GM — net importer |
+| Bloomington, IN | 85,000 | $80m | $50m | University town — net exporter |
+| Terre Haute, IN | 60,000 | $25m | $55m | Faded mfg — net importer |
+
+These are **plausible-magnitude estimates, not sourced figures**. A
+defensible methodology — using BEA county GDP, Census County Business
+Patterns, USTR state export data, and per-industry export-orientation
+factors — is a future task (see §5.7).
+
+`/colony-economy` runs a single merged colony "MaryFontaine"
+(Marysville + Bellefontaine politically twinned into one ~39,000-citizen
+unit) with combined trade flows that approximately balance. This is the
+demo configuration where the basket-anchoring is most legible.
+
+### 5.5 Currency-union / twinning — explored, set aside
+
+An earlier iteration paired two colonies sharing one Fisc — net-exporter
+Marysville subsidising net-importer Bellefontaine through a common
+reserve. The mechanism works (the combined colony defends the peg where
+neither would alone) and the political analogy is German reunification
+or a small currency union. It's design-space worth knowing about but
+sets the bar lower than the question we want answered, so the live pages
+were rebuilt around the harder single-colony case. The merged colony
+("MaryFontaine") in `/colony-economy` is the consequence: politically
+one colony, sharing one Fisc by definition, but trying to balance its
+own books rather than relying on a partner.
+
+### 5.6 Inflation model — pending
+
+The basket-anchored model says *what happens* when USD inflation hits
+the basket: the target rate rises, the actual rate keeps up if reserve
+cover holds, citizens are real-terms stable. It does not yet say *why
+that level of inflation arrives* or *how the colony reacts* beyond the
+mechanical Fisc rate update.
+
+A genuine inflation model would close that loop:
+
+- **Wage feedback** — services and labour-priced categories should
+  respond to colony-internal wage growth, not be exogenous.
+- **Import substitution** — when imports become expensive, companies
+  should partially substitute internal production, dampening sensitivity.
+- **Citizen response** — sustained real-terms stability should affect
+  V→S→USD cashout behaviour (less defensive cashout when peg is durable).
+- **Policy levers** — the Fisc has tools beyond rate compression (UBI
+  adjustment, LAT changes, reserve target). None are exercised yet.
+
+This is the next major extension to the model.
+
+### 5.7 What this isn't (yet)
+
+- **Sourced BoP methodology.** Town export/import figures are
+  plausible-magnitude estimates from public sources, not a defensible
+  pipeline. A proper version pulls BEA county GDP, Census CBP, and USTR
+  state export data through per-industry export-orientation factors.
+- **Stochastic outcomes.** Both pages are deterministic. Real colonies
+  experience shocks (export collapse, cashout panic, supplier failure).
+  Distributions of outcomes vs single trajectories are a future variant.
+- **Calibration against real data.** Citizen behaviour parameters
+  (spend/save/cashout rates) are defensible defaults. Once Dave's Colony
+  has months of usage they should be retuned against measurements.
+- **Cross-page reconciliation.** `/balance-of-payments` and
+  `/colony-economy` share the same monthly tick but the second adds the
+  multi-good basket. Edits to the citizen-behaviour block need to be
+  applied to both files until the shared logic is extracted.
+
+---
+
+*SPICE Economy · Unified Specification · v3.2 · April 2026*
+*v3.2 changes (30 April 2026): Added Part 5 — Interactive Exploration. Documents the two web pages (`/balance-of-payments`, `/colony-economy`), the basket-anchored framing (the methodological shift), the multi-good basket, real-magnitude US town presets, the abandoned twinning iteration, and the pending inflation model.*
 *v3.1 changes (29 April 2026, later): Added imports to the model — companies sell S → USD to pay external suppliers, USD leaves the reserve. Materially changes the balanced and net-importer scenario outcomes. Net importer now insolvent by month 3; balanced wobbles late. Both Python (`model.py`) and JS (`/colony-economy` interactive page) updated. Trade balance is now the headline finding.*
 *v3 changes (29 April 2026): Added Part 4 — Model Results. 24-month deterministic simulation across three scenarios. Model code at docs/economy-model/model.py.*
 *v2 changes: trimmed verbose "Why" paragraphs throughout. Added §1.0 Participants, §1.2a Obligation Lifecycle, §1.8 Protocol Layer, founder vesting carve-out.*
