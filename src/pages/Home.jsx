@@ -25,14 +25,15 @@ const STOKEN_ABI = ["function currentEpoch() view returns (uint256)"];
 
 const { meta: M } = SPICE_PARAMS;
 
-const SAMPLE_TICKER = [
-  { k: "BTC",       v: "$112,400", d: "+1.40%",  dir: "up" },
-  { k: "PAXG",      v: "$3,840",   d: "+0.62%",  dir: "up" },
-  { k: "DXY",       v: "99.21",    d: "−0.30%",  dir: "down" },
-  { k: "10Y",       v: "4.10%",    d: "±0.00",   dir: "flat" },
-  { k: "CPI",       v: "3.40%",    d: "+0.10pp", dir: "down" },
-  { k: "Debt/GDP",  v: "123%",     d: "+1.4yr",  dir: "down" },
-  { k: "SPICE Lvl", v: "7.20",     d: "+0.12",   dir: "up" },
+// Note: Crisis Level + Crisis Window are injected dynamically inside the
+// component so the level is sourced from spice-params + cache.
+const STATIC_TICKER = [
+  { k: "BTC",      v: "$112,400", d: "+1.40%",  dir: "up" },
+  { k: "PAXG",     v: "$3,840",   d: "+0.62%",  dir: "up" },
+  { k: "DXY",      v: "99.21",    d: "−0.30%",  dir: "down" },
+  { k: "10Y",      v: "4.10%",    d: "±0.00",   dir: "flat" },
+  { k: "CPI",      v: "3.40%",    d: "+0.10pp", dir: "down" },
+  { k: "Debt/GDP", v: "123%",     d: "+1.4yr",  dir: "down" },
 ];
 
 const S = {
@@ -55,11 +56,18 @@ const S = {
 
   videoWrap: {
     background: C.panel, border: `1px solid ${C.lineHot}`,
-    aspectRatio: "16 / 9", maxWidth: 960,
+    aspectRatio: "16 / 9", maxWidth: 720, margin: "0 auto",
     display: "flex", alignItems: "center", justifyContent: "center",
     color: C.dim, marginBottom: 14,
   },
-  videoMeta: { fontSize: 11.5, color: C.faint, letterSpacing: "0.06em", marginBottom: 56 },
+  videoMeta: { fontSize: 11.5, color: C.faint, letterSpacing: "0.06em", marginBottom: 24, textAlign: "center" },
+  videoSegments: {
+    display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
+    marginBottom: 56,
+  },
+  handoff: {
+    display: "flex", justifyContent: "center", marginTop: 24, marginBottom: 56,
+  },
 
   dispatches: {
     display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
@@ -143,9 +151,21 @@ export default function Home() {
   const levelLabel = LEVEL_LABELS[level];
   const totalCitizens = Object.values(colonyData).reduce((sum, d) => sum + (d?.citizens || 0), 0);
 
+  // TODO: derive Mars/Earth colony counts from on-chain colonyType (currently
+  // stored in localStorage on the colony app). All current on-chain colonies
+  // are Earth — Mars exists as a simulation only.
+  const earthCount = colonies.length;
+  const marsCount  = 0;
+
+  const tickerItems = [
+    { k: "Crisis Level",  v: `${level} / 4`, d: levelLabel,    dir: level >= 3 ? "down" : "flat" },
+    { k: "Crisis Window", v: "2029—33",      d: "conf 0.74",   dir: "down" },
+    ...STATIC_TICKER,
+  ];
+
   return (
     <div style={S.page}>
-      <TickerTape items={SAMPLE_TICKER} speed={60} />
+      <TickerTape items={tickerItems} speed={60} />
       <div style={S.inner}>
 
         {/* HERO */}
@@ -167,11 +187,6 @@ export default function Home() {
             The SPICE product exists today and is available for demonstration
             and pilot implementation.
           </p>
-          <div style={S.ctas}>
-            <Button variant="primary" to="/collision">Read the thesis →</Button>
-            <Button to="/mars">View Mars colony</Button>
-            <Button href={COLONY_APP_HOST}>Enter colony app</Button>
-          </div>
         </div>
 
         {/* INTRO VIDEO */}
@@ -187,18 +202,28 @@ export default function Home() {
           Two-minute overview of the colony economy — citizens, companies, the Fisc, S/V tokens.
         </div>
 
+        {/* VIDEO SEGMENTS — chapter tours */}
+        <div style={S.videoSegments}>
+          <Button to="/collision">Collision</Button>
+          <Button to="/mars">Mars Colony Tour</Button>
+          <Button to="/earth">Earth Colony Tour</Button>
+        </div>
+
         {/* TELEMETRY */}
         <SectionHead tag="T-01" title="Field Telemetry · Live" timestamp="BASE SEPOLIA · 84532" />
-        <div style={{ marginBottom: 56 }}>
+        <div>
           <TelemetryGrid
             columns={4}
             cells={[
-              { label: "SPICE Level",       value: `${level} / 4`,         delta: levelLabel },
               { label: "Active Colonies",   value: String(colonies.length), delta: "on-chain registry" },
               { label: "Citizens Enrolled", value: String(totalCitizens),   delta: "across all colonies" },
-              { label: "Crisis Window",     value: "2029—33",               delta: "conf 0.74", status: "crit" },
+              { label: "Mars Colonies",     value: String(marsCount),       delta: "simulation only" },
+              { label: "Earth Colonies",    value: String(earthCount),      delta: "live on testnet" },
             ]}
           />
+        </div>
+        <div style={S.handoff}>
+          <Button variant="primary" href={COLONY_APP_HOST}>Browse all colonies →</Button>
         </div>
 
         {/* DISPATCHES */}
