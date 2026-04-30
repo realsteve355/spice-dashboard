@@ -153,16 +153,19 @@ export default function Home() {
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>UBI Product for a Capitalist Economy</h1>
           <p style={{ ...S.lead, marginBottom: 18 }}>
-            Driven by tremendous advances in AI, robotics and automation, for
-            the first time in human history, the World's political and economic
-            systems will have to navigate the transition from an economy
-            designed to manage scarcity, to an economy designed to manage
-            abundance.
+            Driven by recent advances in AI, robotics and automation, for the
+            first time in human history, the world's political and economic
+            systems will navigate the transition from an economy designed to
+            manage scarcity, to an economy designed to manage abundance.
+          </p>
+          <p style={{ ...S.lead, marginBottom: 18 }}>
+            SPICE is a blockchain-based product designed to implement a rollout
+            of a UBI system, featuring near-zero inflation, near-zero taxation,
+            in an automated, low regulation environment.
           </p>
           <p style={S.lead}>
-            SPICE is a cryptocurrency product designed to implement a phased
-            rollout of a UBI system, featuring near-zero inflation, near-zero
-            taxation, in an automated, low regulation environment.
+            The SPICE product exists today and is available for demonstration
+            and pilot implementation.
           </p>
           <div style={S.ctas}>
             <Button variant="primary" to="/collision">Read the thesis →</Button>
