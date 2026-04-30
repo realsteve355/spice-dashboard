@@ -37,7 +37,7 @@ const SAMPLE_TICKER = [
 const S = {
   page:  { background: C.bg, color: C.txt, fontFamily: F.mono, minHeight: "calc(100vh - 57px)" },
   inner: { maxWidth: 1280, margin: "0 auto", padding: "0 36px" },
-  hero:  { padding: "48px 0 56px", borderBottom: `1px solid ${C.line}`, marginBottom: 48 },
+  hero:  { padding: "48px 0 56px", borderBottom: `1px solid ${C.lineHot}`, marginBottom: 48 },
   h1: {
     fontSize: "clamp(30px, 4vw, 52px)",
     fontWeight: 700, color: C.headline,
@@ -53,7 +53,7 @@ const S = {
   ctas: { display: "flex", gap: 12, flexWrap: "wrap" },
 
   videoWrap: {
-    background: C.panel, border: `1px solid ${C.line}`,
+    background: C.panel, border: `1px solid ${C.lineHot}`,
     aspectRatio: "16 / 9", maxWidth: 960,
     display: "flex", alignItems: "center", justifyContent: "center",
     color: C.dim, marginBottom: 14,
@@ -65,7 +65,7 @@ const S = {
     gap: 24, marginBottom: 56,
   },
   dispatch: {
-    background: C.panel, border: `1px solid ${C.line}`,
+    background: C.panel, border: `1px solid ${C.lineHot}`,
     padding: 24, textDecoration: "none", color: C.txt,
     display: "flex", flexDirection: "column", gap: 14,
     transition: "border-color 0.2s",

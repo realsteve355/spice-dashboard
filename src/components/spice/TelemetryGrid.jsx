@@ -3,7 +3,7 @@ import { C, F } from "../../tokens";
 const S = {
   grid: {
     display: "grid",
-    border: `1px solid ${C.line}`,
+    border: `1px solid ${C.lineHot}`,
     background: C.panel,
     fontFamily: F.mono,
   },

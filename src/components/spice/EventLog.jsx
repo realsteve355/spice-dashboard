@@ -9,7 +9,7 @@ const tone = {
 const S = {
   panel: {
     background: C.panel,
-    border: `1px solid ${C.line}`,
+    border: `1px solid ${C.lineHot}`,
     fontFamily: F.mono,
   },
   head: {
