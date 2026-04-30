@@ -152,8 +152,15 @@ export default function Home() {
         <div style={S.hero}>
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>UBI Product for a Capitalist Economy</h1>
+          <p style={{ ...S.lead, marginBottom: 18 }}>
+            Driven by tremendous advances in AI, robotics and automation, for
+            the first time in human history, the World's political and economic
+            systems will have to navigate the transition from an economy
+            designed to manage scarcity, to an economy designed to manage
+            abundance.
+          </p>
           <p style={S.lead}>
-            Spice is a cryptocurrency system designed to implement a phased
+            SPICE is a cryptocurrency system designed to implement a phased
             rollout of a UBI system across a market economy, featuring
             near-zero inflation, near-zero taxation, in an automated,
             low regulation micro-economy.
