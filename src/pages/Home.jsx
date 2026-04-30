@@ -9,6 +9,7 @@ import SectionHead    from "../components/spice/SectionHead";
 import Button         from "../components/spice/Button";
 import TickerTape     from "../components/spice/TickerTape";
 import TelemetryGrid  from "../components/spice/TelemetryGrid";
+import CornerFrame    from "../components/spice/CornerFrame";
 
 const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
@@ -65,7 +66,8 @@ const S = {
     gap: 24, marginBottom: 56,
   },
   dispatch: {
-    background: C.panel, border: `1px solid ${C.lineHot}`,
+    position: "relative",
+    background: C.panel, border: `1px solid ${C.line}`,
     padding: 24, textDecoration: "none", color: C.txt,
     display: "flex", flexDirection: "column", gap: 14,
     transition: "border-color 0.2s",
@@ -197,6 +199,7 @@ export default function Home() {
         <SectionHead tag="T-02" title="Dispatches · Three Acts" timestamp="3 ENTRIES" />
         <div style={S.dispatches}>
           <Link to="/collision" style={S.dispatch}>
+            <CornerFrame />
             <span style={S.dTag}>Act I · The Collision</span>
             <h3 style={S.dTtl}>Why fiat breaks first.</h3>
             <p style={S.dBody}>
@@ -207,6 +210,7 @@ export default function Home() {
             <div style={S.dSep}>Read the thesis →</div>
           </Link>
           <Link to="/mars" style={S.dispatch}>
+            <CornerFrame />
             <span style={S.dTag}>Act II · Mars Colony</span>
             <h3 style={S.dTtl}>Capitalist UBI. Every citizen a shareholder.</h3>
             <p style={S.dBody}>
@@ -217,6 +221,7 @@ export default function Home() {
             <div style={S.dSep}>Enter simulation →</div>
           </Link>
           <Link to="/earth" style={S.dispatch}>
+            <CornerFrame />
             <span style={S.dTag}>Act III · Earth Implementation</span>
             <h3 style={S.dTtl}>Bringing the model home.</h3>
             <p style={S.dBody}>

@@ -8,6 +8,7 @@ import Footer             from "../components/spice/Footer";
 import TelemetryGrid      from "../components/spice/TelemetryGrid";
 import ColonyStatusPanel  from "../components/spice/ColonyStatusPanel";
 import EventLog           from "../components/spice/EventLog";
+import CornerFrame        from "../components/spice/CornerFrame";
 
 const S = {
   page: { minHeight: "calc(100vh - 57px)", background: C.bg, color: C.txt, fontFamily: F.mono },
@@ -144,6 +145,35 @@ export default function Components() {
                 { time: "08:30", level: "INFO", msg: "Treasury auction · 4.11% stop" },
               ]}
             />
+          </div>
+        </div>
+
+        <div style={S.block}>
+          <div style={S.label}>CornerFrame — decorated bracket corners</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+            {[
+              { id: "VEC-01", title: "The algorithm", body: "Persistent downward pressure on the price of cognitive labour. Mass underemployment is the social translation of structural deflation.", k: "Displacement 2035", v: "40 %" },
+              { id: "VEC-02", title: "The debt",      body: "U.S. obligations on track to 175% of GDP. The arithmetic requires inflation, repression, or default — two of three remain available.", k: "Debt / GDP 2054", v: "199 %" },
+              { id: "VEC-03", title: "The exit",      body: "Capital can leave the system without leaving any country. The non-sovereign exit is liquid, settled, and continuously priced.",       k: "Crypto market cap", v: "$3.8T" },
+            ].map((v) => (
+              <article key={v.id} style={{
+                position: "relative", background: C.panel,
+                border: `1px solid ${C.line}`,
+                padding: "22px 22px 24px",
+              }}>
+                <CornerFrame />
+                <div style={{ fontSize: 10, color: C.dim, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 14 }}>{v.id}</div>
+                <h3 style={{ fontFamily: F.mono, fontWeight: 500, fontSize: 19, color: C.txt, margin: "0 0 10px", letterSpacing: "-0.01em" }}>{v.title}</h3>
+                <p style={{ fontSize: 13, lineHeight: 1.6, color: C.txt2, margin: "0 0 18px" }}>{v.body}</p>
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: `1px solid ${C.line}`, fontSize: 11 }}>
+                  <span style={{ color: C.dim, letterSpacing: "0.12em", textTransform: "uppercase", fontSize: 10 }}>{v.k}</span>
+                  <span style={{ color: C.txt, fontWeight: 500 }}>{v.v}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+          <div style={S.meta}>
+            Drop <code style={{ color: C.dim }}>&lt;CornerFrame /&gt;</code> as a child inside any <code style={{ color: C.dim }}>position: relative</code> bordered container. 10px L-brackets default to <code style={{ color: C.dim }}>C.txt2</code> — the brighter cell-frame marker on top of the subtle <code style={{ color: C.dim }}>C.line</code> outer border.
           </div>
         </div>
 
