@@ -19,13 +19,13 @@ import {
 } from 'recharts'
 
 const F    = "'IBM Plex Mono', monospace"
-const BG0  = "#0a0e1a"
-const BG1  = "#080c16"
-const BG2  = "#0f1520"
-const BD   = "1px solid #1e2a42"
-const T1   = "#e8eaf0"
-const T2   = "#8899bb"
-const T3   = "#4a5878"
+const BG0  = "#06070a"
+const BG1  = "#0d0f12"
+const BG2  = "#11141a"
+const BD   = "1px solid #232831"
+const T1   = "#ede5d4"
+const T2   = "#b8b0a0"
+const T3   = "#8a8170"
 const GOLD = "#c8a96e"
 const RED  = "#ef4444"
 const GRN  = "#3dffa0"
@@ -351,9 +351,9 @@ export default function BalanceOfPayments() {
               <ChartPanel title="USDC RESERVE">
                 <ResponsiveContainer width="100%" height={CH}>
                   <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
-                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42"
+                    <CartesianGrid stroke="#232831" strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
+                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831"
                       tickFormatter={v => `$${(v/1_000_000).toFixed(0)}M`} />
                     <Tooltip contentStyle={tipStyle} formatter={v => `$${Math.round(v).toLocaleString()}`} />
                     <Line type="monotone" dataKey="reserve" stroke={GRN} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -364,9 +364,9 @@ export default function BalanceOfPayments() {
               <ChartPanel title="BASKET COST IN S — citizen experience">
                 <ResponsiveContainer width="100%" height={CH}>
                   <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
-                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" domain={[20, 'auto']} />
+                    <CartesianGrid stroke="#232831" strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
+                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831" domain={[20, 'auto']} />
                     <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" label={{ value: 'target', fill: GRN, fontSize: 9, position: 'right' }} />
                     <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
                     <Line type="monotone" dataKey="basketInS" stroke={GOLD} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -377,9 +377,9 @@ export default function BalanceOfPayments() {
               <ChartPanel title="FISC RATE ($/S) — actual vs target">
                 <ResponsiveContainer width="100%" height={CH}>
                   <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
-                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" domain={[0, 'auto']} />
+                    <CartesianGrid stroke="#232831" strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
+                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831" domain={[0, 'auto']} />
                     <Tooltip contentStyle={tipStyle} formatter={v => `$${Number(v).toFixed(3)}`} />
                     <Legend wrapperStyle={{ fontSize: 10, color: T2 }} />
                     <Line type="monotone" dataKey="target" name="target" stroke={T3} strokeDasharray="4 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
@@ -391,9 +391,9 @@ export default function BalanceOfPayments() {
               <ChartPanel title="CUMULATIVE TRADE BALANCE">
                 <ResponsiveContainer width="100%" height={CH}>
                   <LineChart data={rows} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid stroke="#1e2a42" strokeDasharray="3 3" />
-                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42" />
-                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#1e2a42"
+                    <CartesianGrid stroke="#232831" strokeDasharray="3 3" />
+                    <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
+                    <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831"
                       tickFormatter={v => `$${(v/1_000_000).toFixed(0)}M`} />
                     <ReferenceLine y={0} stroke={T3} strokeDasharray="3 3" />
                     <Tooltip contentStyle={tipStyle} formatter={v => `$${Math.round(v).toLocaleString()}`} />

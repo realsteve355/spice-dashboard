@@ -54,7 +54,7 @@ const YCC_SLIDER = {
 
 const AXIS_STYLE  = { fontFamily:"'IBM Plex Mono',monospace", fontSize:9, fill:'#666' };
 const GRID_PROPS  = { stroke:'#E0E0E0', strokeDasharray:'3 3' };
-const TOOLTIP_STY = { background:'#1a1d23', border:'1px solid #333', borderRadius:3, fontSize:10, fontFamily:"'IBM Plex Mono',monospace", color:'#e8eaf0' };
+const TOOLTIP_STY = { background:'#1a1d23', border:'1px solid #333', borderRadius:3, fontSize:10, fontFamily:"'IBM Plex Mono',monospace", color:'#ede5d4' };
 
 // ── Shared micro-components ────────────────────────────────────────────────
 

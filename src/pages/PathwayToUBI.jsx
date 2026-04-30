@@ -6,14 +6,14 @@ import {
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const F    = "'IBM Plex Mono', monospace"
-const BG0  = "#0a0e1a"
-const BG1  = "#080c16"
-const BG2  = "#0f1520"
+const BG0  = "#06070a"
+const BG1  = "#0d0f12"
+const BG2  = "#11141a"
 const BG3  = "#0d1828"
-const BD   = "1px solid #1e2a42"
-const T1   = "#e8eaf0"
-const T2   = "#8899bb"
-const T3   = "#4a5878"
+const BD   = "1px solid #232831"
+const T1   = "#ede5d4"
+const T2   = "#b8b0a0"
+const T3   = "#8a8170"
 const GOLD = "#c8a96e"
 const RED  = "#ef4444"
 const GRN  = "#3dffa0"
@@ -181,7 +181,7 @@ function IncomeChart({ data, highlightPct }) {
     <div style={{ height: CH }}>
       <ResponsiveContainer width="100%" height={CH}>
         <LineChart data={data} margin={{ top: 36, right: 20, bottom: 20, left: 50 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e2a42" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#232831" />
           <XAxis
             dataKey="pct"
             tick={{ fontFamily: F, fontSize: 9, fill: T3 }}
@@ -243,7 +243,7 @@ function RealPowerChart({ data, highlightPct }) {
     <div style={{ height: CH }}>
       <ResponsiveContainer width="100%" height={CH}>
         <LineChart data={data} margin={{ top: 10, right: 20, bottom: 20, left: 50 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e2a42" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#232831" />
           <XAxis
             dataKey="pct"
             tick={{ fontFamily: F, fontSize: 9, fill: T3 }}

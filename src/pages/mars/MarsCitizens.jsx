@@ -5,8 +5,8 @@ import {
 } from 'recharts'
 
 const CS = {
-  backgroundColor: '#0f1520', border: '1px solid #1e2a42', borderRadius: 2,
-  fontSize: 10, fontFamily: 'Share Tech Mono, monospace', color: '#8899bb',
+  backgroundColor: '#11141a', border: '1px solid #232831', borderRadius: 2,
+  fontSize: 10, fontFamily: 'Share Tech Mono, monospace', color: '#b8b0a0',
 }
 
 function fmt(n) {
@@ -43,13 +43,13 @@ export default function MarsCitizens() {
         <div className="md-panel" style={{ maxHeight: 600, overflowY: 'auto' }}>
           <div className="md-panel-title">
             <span
-              style={{ cursor:'pointer', color: filter==='stories' ? '#c8a96e' : '#4a5878', marginRight: 16 }}
+              style={{ cursor:'pointer', color: filter==='stories' ? '#c8a96e' : '#8a8170', marginRight: 16 }}
               onClick={() => { setSelected(null); setFilter('stories') }}
             >
               Life Stories ({Object.keys(stories).length})
             </span>
             <span
-              style={{ cursor:'pointer', color: filter==='all' ? '#c8a96e' : '#4a5878' }}
+              style={{ cursor:'pointer', color: filter==='all' ? '#c8a96e' : '#8a8170' }}
               onClick={() => { setSelected(null); setFilter('all') }}
             >
               All Citizens (first 100)
@@ -68,7 +68,7 @@ export default function MarsCitizens() {
                   {c.profession || 'Citizen'}{c.is_board_member ? ' · MCC Board' : ''}
                 </div>
                 <div className="md-citizen-v">{fmt(c.final_v_tokens)} V</div>
-                <div style={{ fontSize: 9, color: '#4a5878', marginTop: 4 }}>
+                <div style={{ fontSize: 9, color: '#8a8170', marginTop: 4 }}>
                   {c.death_year
                     ? `Yr ${c.birth_year < 1 ? 1 : c.birth_year} – Yr ${c.death_year}`
                     : `Born Yr ${c.birth_year < 1 ? 1 : c.birth_year}`}
@@ -88,9 +88,9 @@ export default function MarsCitizens() {
                 {selSnaps.length > 1 ? (
                   <ResponsiveContainer width="100%" height={140}>
                     <LineChart data={selSnaps} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                      <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-                      <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} />
-                      <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} tickFormatter={fmt} width={44} />
+                      <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+                      <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} />
+                      <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} tickFormatter={fmt} width={44} />
                       <Tooltip contentStyle={CS} formatter={v => [fmt(v) + ' V', 'Savings']} />
                       <Line type="monotone" dataKey="v_tokens" stroke="#c8a96e" dot={false} strokeWidth={1.5} isAnimationActive={false} />
                     </LineChart>

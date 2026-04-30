@@ -193,7 +193,7 @@ export default function MarsHealth() {
           <div style={{ fontSize: 12, color: verdictColor[overall], letterSpacing: '0.12em' }}>
             {overallText}
           </div>
-          <div style={{ fontSize: 9, color: '#4a5878', marginTop: 4, letterSpacing: '0.1em' }}>
+          <div style={{ fontSize: 9, color: '#8a8170', marginTop: 4, letterSpacing: '0.1em' }}>
             {verdicts.filter(v=>v==='green').length} passed ·{' '}
             {verdicts.filter(v=>v==='amber').length} warnings ·{' '}
             {verdicts.filter(v=>v==='red').length} failed
@@ -212,7 +212,7 @@ export default function MarsHealth() {
             <div className={`md-health-metric ${chk.verdict}`}>{chk.metric}</div>
             <div className="md-health-interp">{chk.interp}</div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end' }}>
-              <div style={{ fontSize: 8, color: '#4a5878' }}>200-year trend</div>
+              <div style={{ fontSize: 8, color: '#8a8170' }}>200-year trend</div>
               {sparkSVG(chk.spark, chk.sparkMax, verdictColor[chk.verdict])}
             </div>
           </div>

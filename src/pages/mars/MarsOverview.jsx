@@ -5,12 +5,12 @@ import {
 } from 'recharts'
 
 const CS = {
-  backgroundColor: '#0f1520',
-  border: '1px solid #1e2a42',
+  backgroundColor: '#11141a',
+  border: '1px solid #232831',
   borderRadius: 2,
   fontSize: 10,
   fontFamily: 'Share Tech Mono, monospace',
-  color: '#8899bb',
+  color: '#b8b0a0',
 }
 
 function fmt(n) {
@@ -20,7 +20,7 @@ function fmt(n) {
   return Math.round(n).toLocaleString()
 }
 
-function StatCard({ label, value, sub, color = '#e8eaf0' }) {
+function StatCard({ label, value, sub, color = '#ede5d4' }) {
   return (
     <div className="md-stat">
       <div className="md-stat-label">{label}</div>
@@ -74,9 +74,9 @@ export default function MarsOverview() {
                   <stop offset="95%" stopColor={infraColor} stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={39} />
-              <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} domain={[0, 100]} unit="%" width={38} />
+              <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={39} />
+              <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} domain={[0, 100]} unit="%" width={38} />
               <Tooltip contentStyle={CS} formatter={v => [v + '%', 'Health']} />
               <ReferenceLine x={year} stroke={infraColor} strokeDasharray="3 3" strokeOpacity={0.5} />
               <Area type="monotone" dataKey="health" stroke={infraColor} fill="url(#infraGrad)"
@@ -89,9 +89,9 @@ export default function MarsOverview() {
           <div className="md-panel-title">Colony Economic Output — Cumulative GDP</div>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={annual} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={39} />
-              <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} tickFormatter={fmt} width={44} />
+              <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={39} />
+              <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} tickFormatter={fmt} width={44} />
               <Tooltip contentStyle={CS} formatter={v => [fmt(v) + ' S', 'GDP']} />
               <ReferenceLine x={year} stroke="#9966ff" strokeDasharray="3 3" strokeOpacity={0.5} />
               <Line type="monotone" dataKey="colony_gdp" stroke="#9966ff" dot={false}
@@ -113,9 +113,9 @@ export default function MarsOverview() {
                   <stop offset="95%" stopColor="#c8a96e" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={49} />
-              <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} tickFormatter={fmt} width={40} />
+              <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={49} />
+              <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} tickFormatter={fmt} width={40} />
               <Tooltip contentStyle={CS} formatter={v => [fmt(v) + ' V', 'Total']} />
               <Area type="monotone" dataKey="total_v_tokens" stroke="#c8a96e" fill="url(#vtGrad)"
                 strokeWidth={1.5} dot={false} isAnimationActive={false} />
@@ -127,9 +127,9 @@ export default function MarsOverview() {
           <div className="md-panel-title">Mean · Median · Max</div>
           <ResponsiveContainer width="100%" height={130}>
             <LineChart data={annual} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={49} />
-              <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} tickFormatter={fmt} width={40} />
+              <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={49} />
+              <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} tickFormatter={fmt} width={40} />
               <Tooltip contentStyle={CS} formatter={(v, n) => [fmt(v) + ' V', n]} />
               <Line type="monotone" dataKey="mean_v"   stroke="#4488ff" dot={false} strokeWidth={1.5} name="Mean"   isAnimationActive={false} />
               <Line type="monotone" dataKey="median_v" stroke="#3dffa0" dot={false} strokeWidth={1.5} name="Median" isAnimationActive={false} />
@@ -148,9 +148,9 @@ export default function MarsOverview() {
                   <stop offset="95%" stopColor="#9966ff" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={49} />
-              <YAxis tick={{ fontSize: 9, fill: '#4a5878' }} width={30} />
+              <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+              <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={49} />
+              <YAxis tick={{ fontSize: 9, fill: '#8a8170' }} width={30} />
               <Tooltip contentStyle={CS} formatter={v => [v, 'Companies']} />
               <Area type="monotone" dataKey="active_companies" stroke="#9966ff" fill="url(#coGrad)"
                 strokeWidth={1.5} dot={false} isAnimationActive={false} />

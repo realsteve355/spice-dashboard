@@ -5,12 +5,12 @@ import {
 } from 'recharts'
 
 const CS = {
-  backgroundColor: '#0f1520',
-  border: '1px solid #1e2a42',
+  backgroundColor: '#11141a',
+  border: '1px solid #232831',
   borderRadius: 2,
   fontSize: 10,
   fontFamily: 'Share Tech Mono, monospace',
-  color: '#8899bb',
+  color: '#b8b0a0',
 }
 
 function fmt(n) {
@@ -83,10 +83,10 @@ export default function MarsTimeline() {
             <div className="md-panel-title">{chart.title}</div>
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={withAnnualGdp} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="#1e2a42" strokeDasharray="2 4" />
-                <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#4a5878' }} interval={49} />
+                <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
+                <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={49} />
                 <YAxis
-                  tick={{ fontSize: 9, fill: '#4a5878' }}
+                  tick={{ fontSize: 9, fill: '#8a8170' }}
                   tickFormatter={fmt}
                   width={44}
                   domain={chart.domain}

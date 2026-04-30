@@ -2,8 +2,8 @@
 
 .mars-dash {
   min-height: 100vh;
-  background: #0a0e1a;
-  color: #e8eaf0;
+  background: #06070a;
+  color: #ede5d4;
   font-family: 'Share Tech Mono', monospace;
 }
 
@@ -11,8 +11,8 @@
 .mars-subnav {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #1e2a42;
-  background: #0a0e1a;
+  border-bottom: 1px solid #232831;
+  background: #06070a;
   position: sticky;
   top: 57px;   /* height of the SPICE main nav */
   z-index: 50;
@@ -25,7 +25,7 @@
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #4a5878;
+  color: #8a8170;
   text-decoration: none;
   padding: 12px 18px;
   border-bottom: 2px solid transparent;
@@ -34,7 +34,7 @@
 }
 
 .mars-subnav-link:hover {
-  color: #8899bb;
+  color: #b8b0a0;
 }
 
 .mars-subnav-link.active {
@@ -56,7 +56,7 @@
   justify-content: center;
   min-height: 300px;
   font-size: 11px;
-  color: #4a5878;
+  color: #8a8170;
   letter-spacing: 0.15em;
 }
 
@@ -75,13 +75,13 @@
 
 .mars-error-hint {
   font-size: 10px;
-  color: #4a5878;
+  color: #8a8170;
 }
 
 /* ── Shared panel ── */
 .md-panel {
-  background: #0f1520;
-  border: 1px solid #1e2a42;
+  background: #11141a;
+  border: 1px solid #232831;
   border-radius: 2px;
   padding: 20px 22px;
   margin-bottom: 16px;
@@ -90,7 +90,7 @@
 .md-panel-title {
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   margin-bottom: 16px;
   padding-bottom: 10px;
@@ -106,8 +106,8 @@
 }
 
 .md-stat {
-  background: #0f1520;
-  border: 1px solid #1e2a42;
+  background: #11141a;
+  border: 1px solid #232831;
   border-radius: 2px;
   padding: 14px 16px;
 }
@@ -115,21 +115,21 @@
 .md-stat-label {
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   margin-bottom: 8px;
 }
 
 .md-stat-value {
   font-size: 22px;
-  color: #e8eaf0;
+  color: #ede5d4;
   line-height: 1;
   margin-bottom: 4px;
 }
 
 .md-stat-sub {
   font-size: 9px;
-  color: #4a5878;
+  color: #8a8170;
   letter-spacing: 0.08em;
 }
 
@@ -176,7 +176,7 @@
 }
 
 .md-svc-name {
-  color: #8899bb;
+  color: #b8b0a0;
   min-width: 160px;
   letter-spacing: 0.03em;
 }
@@ -197,7 +197,7 @@
 }
 
 .md-svc-val {
-  color: #4a5878;
+  color: #8a8170;
   min-width: 50px;
   text-align: right;
   letter-spacing: 0.05em;
@@ -219,17 +219,17 @@
 .md-table th {
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   text-align: left;
   padding: 6px 8px;
-  border-bottom: 1px solid #1e2a42;
+  border-bottom: 1px solid #232831;
 }
 
 .md-table td {
   padding: 8px 8px;
   border-bottom: 1px solid #141c2e;
-  color: #8899bb;
+  color: #b8b0a0;
 }
 
 .md-table tr:last-child td {
@@ -242,7 +242,7 @@
 }
 
 .md-table .val {
-  color: #e8eaf0;
+  color: #ede5d4;
   text-align: right;
 }
 
@@ -283,10 +283,10 @@
 .md-label {
   font-size: 9px;
   letter-spacing: 0.22em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   margin-bottom: 14px;
-  border-bottom: 1px solid #1e2a42;
+  border-bottom: 1px solid #232831;
   padding-bottom: 8px;
 }
 
@@ -301,15 +301,15 @@
   align-items: center;
   gap: 14px;
   padding: 10px 28px;
-  background: #080c16;
-  border-bottom: 1px solid #1e2a42;
+  background: #0d0f12;
+  border-bottom: 1px solid #232831;
   font-family: 'Share Tech Mono', monospace;
 }
 
 .mars-year-label {
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -336,7 +336,7 @@
 .mars-year-txns {
   margin-left: auto;
   font-size: 9px;
-  color: #4a5878;
+  color: #8a8170;
   letter-spacing: 0.12em;
   white-space: nowrap;
 }
@@ -348,7 +348,7 @@
   gap: 14px;
   margin-bottom: 20px;
   font-size: 10px;
-  color: #4a5878;
+  color: #8a8170;
 }
 
 .md-year-control input[type=range] {
@@ -374,9 +374,9 @@
 }
 
 .md-health-card {
-  background: #0f1520;
-  border: 1px solid #1e2a42;
-  border-left: 3px solid #1e2a42;
+  background: #11141a;
+  border: 1px solid #232831;
+  border-left: 3px solid #232831;
   border-radius: 2px;
   padding: 14px 16px;
 }
@@ -388,7 +388,7 @@
 .md-health-name {
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: #4a5878;
+  color: #8a8170;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -404,7 +404,7 @@
 
 .md-health-interp {
   font-size: 10px;
-  color: #4a5878;
+  color: #8a8170;
   line-height: 1.6;
   margin-bottom: 10px;
 }
@@ -418,7 +418,7 @@
 
 .md-story-meta {
   font-size: 10px;
-  color: #4a5878;
+  color: #8a8170;
   margin-bottom: 16px;
 }
 
@@ -437,7 +437,7 @@
 }
 
 .md-event-text {
-  color: #8899bb;
+  color: #b8b0a0;
 }
 
 /* ── Citizen list ── */
@@ -448,8 +448,8 @@
 }
 
 .md-citizen-card {
-  background: #0f1520;
-  border: 1px solid #1e2a42;
+  background: #11141a;
+  border: 1px solid #232831;
   border-radius: 2px;
   padding: 12px 14px;
   cursor: pointer;
@@ -462,13 +462,13 @@
 
 .md-citizen-name {
   font-size: 12px;
-  color: #e8eaf0;
+  color: #ede5d4;
   margin-bottom: 4px;
 }
 
 .md-citizen-prof {
   font-size: 10px;
-  color: #4a5878;
+  color: #8a8170;
   margin-bottom: 8px;
 }
 

@@ -9,14 +9,14 @@ import { ANCHORS, FISCAL_POLICIES, MONETARY_POLICIES, SIM_LEVELS, runSim, loadSi
 // ─── CHART HELPERS ─────────────────────────────────────────────────────────
 
 const CH   = 148;
-const BG0  = "#0a0e1a";
-const BG1  = "#080c16";
-const BG2  = "#0f1520";
-const BD   = "1px solid #1e2a42";
+const BG0  = "#06070a";
+const BG1  = "#0d0f12";
+const BG2  = "#11141a";
+const BD   = "1px solid #232831";
 const BD2  = "1px solid #141c2e";
-const T1   = "#e8eaf0";
-const T2   = "#8899bb";
-const T3   = "#4a5878";
+const T1   = "#ede5d4";
+const T2   = "#b8b0a0";
+const T3   = "#8a8170";
 const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:T3 };
 
 function PanelHead({ label, color, children }) {
@@ -67,8 +67,8 @@ function DebtChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[100,310]} ticks={[125,175,225,275]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#ef4444" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={130} stroke="#ef444440" strokeDasharray="3 4" label={{ value:"130%", fill:"#ef444460", fontSize:7, position:"insideTopRight" }} />
@@ -98,8 +98,8 @@ function UnempChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[0,50]} ticks={[5,15,25,35,45]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#8b5cf6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={10} stroke="#8b5cf640" strokeDasharray="3 4" label={{ value:"10%", fill:"#8b5cf660", fontSize:7, position:"insideTopRight" }} />
@@ -129,8 +129,8 @@ function InflChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[-12,20]} ticks={[-10,-5,0,5,10,15]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#3b82f6" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={0} stroke="#3b82f680" strokeDasharray="3 4" label={{ value:"0%", fill:"#3b82f680", fontSize:7, position:"insideTopRight" }} />
@@ -160,8 +160,8 @@ function YieldChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[2,14]} ticks={[3,5,7,9,11,13]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={p => <SimpleTip {...p} color="#eab308" unit="%" rows={rows} fogYear={fogYear} />} />
             <ReferenceLine y={4.5} stroke="#eab30850" strokeDasharray="3 4" label={{ value:"YCC cap", fill:"#eab30870", fontSize:7, position:"insideTopRight" }} />
@@ -215,8 +215,8 @@ function BitcoinChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:36, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis yAxisId="idx" domain={[0, axMax]} ticks={idxTicks}
               tick={axTick} tickLine={false} axisLine={false} width={52}
               tickFormatter={v => v >= 1000000 ? `$${(v/1000000).toFixed(1)}M` : v >= 1000 ? `$${(v/1000).toFixed(0)}k` : `$${v}`} />
@@ -282,8 +282,8 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
       <div style={{ width:"100%", height:CH }}>
         <ResponsiveContainer width="100%" height={CH}>
           <LineChart data={rows} margin={{ top:4, right:6, left:0, bottom:0 }}>
-            <CartesianGrid strokeDasharray="2 5" stroke="#1e2a42" vertical={false} />
-            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#1e2a42" }} ticks={rows.map(r => r.year)} />
+            <CartesianGrid strokeDasharray="2 5" stroke="#232831" vertical={false} />
+            <XAxis dataKey="year" tick={axTick} tickLine={false} axisLine={{ stroke:"#232831" }} ticks={rows.map(r => r.year)} />
             <YAxis domain={[20,65]} ticks={[25,35,45,55]} tick={axTick} tickLine={false} axisLine={false} width={42} tickFormatter={v => `${v}%`} />
             <Tooltip content={({ active, payload, label }) => {
               if (!active || !payload?.length) return null;
@@ -332,7 +332,7 @@ function KShapeChart({ rows, firstRedYear, fogYear }) {
 function KPI({ label, value, color, warn }) {
   return (
     <div style={{ background:warn?"rgba(239,68,68,0.08)":BG2,
-      border:`1px solid ${warn?"#ef444450":"#1e2a42"}`, padding:"5px 8px" }}>
+      border:`1px solid ${warn?"#ef444450":"#232831"}`, padding:"5px 8px" }}>
       <div style={{ fontSize:7, color:T3, fontFamily:"'IBM Plex Mono',monospace",
         textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:2 }}>{label}</div>
       <div style={{ fontSize:14, fontWeight:700, color,
@@ -557,7 +557,7 @@ export default function Chart3Simulation() {
       height:"100vh", overflow:"hidden", maxWidth:1200, margin:"0 auto" }}>
 
       {/* HEADER */}
-      <div style={{ borderBottom:`2px solid #1e2a42`, padding:"7px 18px",
+      <div style={{ borderBottom:`2px solid #232831`, padding:"7px 18px",
         display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
         <div>
           <span style={{ fontSize:15, fontWeight:700 }}>
@@ -589,7 +589,7 @@ export default function Chart3Simulation() {
               <div key={lm.label}
                 style={{ padding:"3px 7px", fontSize:9, fontWeight:700, cursor:"default",
                   background: yr ? `${lm.color}18` : BG2,
-                  border:`1px solid ${yr ? lm.color : "#1e2a42"}`,
+                  border:`1px solid ${yr ? lm.color : "#232831"}`,
                   color: yr ? lm.color : "#2a3a5c",
                   minWidth:38, textAlign:"center" }}>
                 {yr ? String(yr).slice(2) : "—"}
@@ -694,7 +694,7 @@ export default function Chart3Simulation() {
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
                 background:fiscalId===opt.id?"rgba(34,197,94,0.1)":"transparent",
-                border:`1px solid ${fiscalId===opt.id?"#22c55e":"#1e2a42"}`,
+                border:`1px solid ${fiscalId===opt.id?"#22c55e":"#232831"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
                 color:fiscalId===opt.id?"#22c55e":T2 }}>{opt.label}</div>
@@ -709,7 +709,7 @@ export default function Chart3Simulation() {
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
                 background:monetaryId===opt.id?"rgba(239,68,68,0.1)":"transparent",
-                border:`1px solid ${monetaryId===opt.id?"#ef4444":"#1e2a42"}`,
+                border:`1px solid ${monetaryId===opt.id?"#ef4444":"#232831"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
                 color:monetaryId===opt.id?"#ef4444":T2 }}>{opt.label}</div>
@@ -730,7 +730,7 @@ export default function Chart3Simulation() {
               style={{ display:"block", width:"100%", textAlign:"left", cursor:"pointer",
                 padding:"5px 7px", marginBottom:3,
                 background:cryptoPolicy===opt.id?"rgba(147,197,253,0.1)":"transparent",
-                border:`1px solid ${cryptoPolicy===opt.id?"#93c5fd":"#1e2a42"}`,
+                border:`1px solid ${cryptoPolicy===opt.id?"#93c5fd":"#232831"}`,
                 fontFamily:"'IBM Plex Mono',monospace" }}>
               <div style={{ fontSize:9, fontWeight:700,
                 color:cryptoPolicy===opt.id?"#93c5fd":T2 }}>{opt.label}</div>
@@ -847,7 +847,7 @@ export default function Chart3Simulation() {
           {/* Crisis classification box — always visible */}
           {(() => {
             const bg    = collisionStatus === "COLLISION" ? "rgba(220,38,38,0.1)" : collisionStatus === "CONVENTIONAL" ? "rgba(202,138,4,0.1)" : BG2;
-            const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#1e2a42";
+            const bdr   = collisionStatus === "COLLISION" ? "#dc262640" : collisionStatus === "CONVENTIONAL" ? "#ca8a0440" : "#232831";
             const hdClr = collisionStatus === "COLLISION" ? "#dc2626"   : collisionStatus === "CONVENTIONAL" ? "#ca8a04"   : "#22c55e";
             const hdTxt = collisionStatus === "COLLISION" ? `◈ THE COLLISION — ${collisionYear}`
                         : collisionStatus === "CONVENTIONAL" ? `CONVENTIONAL CRISIS — ${collisionYear}`

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 
 // Dark palette
-const BG0  = "#0a0e1a";
-const BG1  = "#080c16";
-const BG2  = "#0f1520";
-const BD   = "#1e2a42";
-const T1   = "#e8eaf0";
-const T2   = "#8899bb";
-const T3   = "#4a5878";
+const BG0  = "#06070a";
+const BG1  = "#0d0f12";
+const BG2  = "#11141a";
+const BD   = "#232831";
+const T1   = "#ede5d4";
+const T2   = "#b8b0a0";
+const T3   = "#8a8170";
 const GOLD = "#c8a96e";
 
 // ─── Level metadata ────────────────────────────────────────────────────────────
