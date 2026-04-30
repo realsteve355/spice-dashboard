@@ -1,22 +1,23 @@
-// Design tokens — dark scheme for the native app.
-// Web stays light per spice-dashboard CLAUDE.md design system; native diverges
-// because phones use dark UI more comfortably and OLED screens save power.
+// Design tokens — mission-control scheme for the native app.
+// Mirrors src/tokens.js on the research site (see docs/redesign.md §2).
+// Native uses warm-tinted near-black instead of the previous cool grey scheme,
+// and shares the same warm-white text colour with the web side.
 import { Platform } from 'react-native'
 
 export const C = {
-  gold:    '#D9A53D',   // slightly brighter gold for dark-bg contrast
-  bg:      '#0a0a0a',   // near-black, AMOLED-friendly
-  text:    '#f2f2f2',
-  sub:     '#b8b8b8',
-  faint:   '#8a8a8a',
-  border:  '#2a2a2a',
+  gold:    '#D9A53D',   // legacy data accent — survives in chart panels
+  bg:      '#06070a',   // near-black, slightly warm — same as web
+  text:    '#ede5d4',   // primary warm-white
+  sub:     '#b8b0a0',   // secondary text — labels
+  faint:   '#8a8170',   // muted / timestamps
+  border:  '#232831',   // hairline divider
   red:     '#f87171',
   purple:  '#a78bfa',
   blue:    '#60a5fa',
   yellow:  '#facc15',
-  green:   '#4ade80',
-  white:   '#1a1a1a',   // "white" is the elevated card surface, not page-white
-  card:    '#141414',
+  green:   '#5dd39e',   // muted green — ok / positive deltas
+  white:   '#11141a',   // elevated card surface (legacy name)
+  card:    '#0d0f12',   // raised surface — top bar, panel
 }
 
 export const font = Platform.OS === 'ios' ? 'Courier New' : 'monospace'
