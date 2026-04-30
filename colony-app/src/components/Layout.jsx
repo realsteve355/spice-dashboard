@@ -168,8 +168,8 @@ export default function Layout({ children, title, back, colonySlug }) {
       {/* ── Top bar ── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: C.white,
-        borderBottom: `1px solid ${C.border}`,
+        background: C.panel || C.white,
+        borderBottom: `1px solid ${C.borderHot || C.border}`,
         padding: '0 16px',
         height: 52,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -178,12 +178,12 @@ export default function Layout({ children, title, back, colonySlug }) {
           {back && (
             <button
               onClick={() => navigate(back)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: C.gold, padding: '4px 8px 4px 0', lineHeight: 1 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: C.text, padding: '4px 8px 4px 0', lineHeight: 1 }}
             >
               ←
             </button>
           )}
-          <span style={{ fontSize: 13, fontWeight: 500, color: C.text, letterSpacing: '0.03em' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: C.text, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono', monospace" }}>
             {title || 'SPICE Colony'}
           </span>
         </div>
@@ -198,8 +198,8 @@ export default function Layout({ children, title, back, colonySlug }) {
                   title="Notifications"
                   style={{
                     background: 'none', border: `1px solid ${C.border}`,
-                    borderRadius: '50%', width: 24, height: 24,
-                    cursor: 'pointer', color: unseenCount > 0 ? C.gold : C.faint,
+                    borderRadius: 0, width: 24, height: 24,
+                    cursor: 'pointer', color: unseenCount > 0 ? C.text : C.faint,
                     fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     padding: 0, lineHeight: 1, flexShrink: 0,
                   }}
@@ -221,8 +221,9 @@ export default function Layout({ children, title, back, colonySlug }) {
               </div>
             )}
             <div style={{
-              fontSize: 11, color: C.gold, border: `1px solid ${C.gold}`,
-              borderRadius: 20, padding: '4px 10px', letterSpacing: '0.04em',
+              fontSize: 10, color: C.text, border: `1px solid ${C.text}`,
+              borderRadius: 0, padding: '4px 10px', letterSpacing: '0.18em', textTransform: 'uppercase',
+              fontFamily: "'IBM Plex Mono', monospace",
             }}>
               {address?.slice(0, 6)}…{address?.slice(-4)}
             </div>
@@ -231,7 +232,7 @@ export default function Layout({ children, title, back, colonySlug }) {
               title="Disconnect wallet"
               style={{
                 background: 'none', border: `1px solid ${C.border}`,
-                borderRadius: '50%', width: 22, height: 22,
+                borderRadius: 0, width: 22, height: 22,
                 cursor: 'pointer', color: C.faint, fontSize: 12,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: 0, lineHeight: 1, flexShrink: 0,
@@ -244,9 +245,10 @@ export default function Layout({ children, title, back, colonySlug }) {
           <button
             onClick={connect}
             style={{
-              fontSize: 11, color: C.bg, background: C.gold,
-              border: 'none', borderRadius: 20, padding: '5px 12px',
-              cursor: 'pointer', letterSpacing: '0.04em',
+              fontSize: 11, color: C.bg, background: C.text,
+              border: `1px solid ${C.text}`, borderRadius: 0, padding: '6px 14px',
+              cursor: 'pointer', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 600,
+              fontFamily: "'IBM Plex Mono', monospace",
             }}
           >
             Connect Wallet
