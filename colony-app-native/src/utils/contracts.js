@@ -154,7 +154,7 @@ export async function fetchTxHistory(address) {
 
   const toBlock  = await rpc.getBlockNumber()
   const CHUNK    = 9000
-  const N_CHUNKS = 5
+  const N_CHUNKS = 15  // 15 × 9000 ≈ 6 days of Base Sepolia history
 
   const queries = []
   for (let i = 0; i < N_CHUNKS; i++) {

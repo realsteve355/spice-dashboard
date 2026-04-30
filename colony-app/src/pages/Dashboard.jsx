@@ -157,9 +157,9 @@ export default function Dashboard() {
           try { return await rpc.getLogs(filter) } catch { return [] }
         }
 
-        // 15 chunks × 9,000 blocks ≈ 75 hours of Base Sepolia history (~2s/block)
+        // 30 chunks × 9,000 blocks ≈ 6 days of Base Sepolia history (~2s/block)
         const chunkResults = await Promise.all(
-          Array.from({ length: 15 }, (_, i) => {
+          Array.from({ length: 30 }, (_, i) => {
             const chunkTo   = toBlock - i * CHUNK
             const chunkFrom = Math.max(0, chunkTo - CHUNK)
             const base      = { address: cfg.colony, fromBlock: chunkFrom, toBlock: chunkTo }
