@@ -38,7 +38,7 @@ function Nav() {
             <span style={S.logoBracket}>[ZPC]</span>
           </div>
         </NavLink>
-        <span style={S.tagline}>CRISIS HEDGE PROTOCOL</span>
+        <span style={S.tagline}>CAPITALIST UBI PROTOCOL</span>
       </div>
       <nav style={S.nav}>
         <NavLink to="/" end style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
