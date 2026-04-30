@@ -10,12 +10,12 @@
 <script src="config.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8eaf0; font-size: 13px; min-height: 100vh; }
+body { font-family: 'IBM Plex Mono', monospace; background: #06070a; color: #ede5d4; font-size: 13px; min-height: 100vh; }
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 24px; height: 52px; border-bottom: 1px solid #1e2a42;
-  position: sticky; top: 0; background: #0a0e1a; z-index: 10;
+  padding: 0 24px; height: 52px; border-bottom: 1px solid #232831;
+  position: sticky; top: 0; background: #06070a; z-index: 10;
 }
 .topbar-title { font-size: 11px; color: #c8a96e; letter-spacing: 0.18em; font-weight: 700; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
@@ -25,42 +25,42 @@ body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8e
 .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
 @media (max-width: 800px) { .stats { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 480px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-.stat { background: #0f1520; border: 1px solid #1e2a42; border-radius: 6px; padding: 14px 16px; }
-.stat-label { font-size: 9px; color: #4a5878; letter-spacing: 0.16em; margin-bottom: 6px; }
+.stat { background: #11141a; border: 1px solid #232831; border-radius: 6px; padding: 14px 16px; }
+.stat-label { font-size: 9px; color: #8a8170; letter-spacing: 0.16em; margin-bottom: 6px; }
 .stat-value { font-size: 20px; font-weight: 700; }
-.stat-sub { font-size: 9px; color: #4a5878; margin-top: 4px; }
+.stat-sub { font-size: 9px; color: #8a8170; margin-top: 4px; }
 
-.card { background: #0f1520; border: 1px solid #1e2a42; border-radius: 6px; padding: 18px 20px; margin-bottom: 16px; }
-.card-title { font-size: 9px; color: #4a5878; letter-spacing: 0.2em; margin-bottom: 14px; }
+.card { background: #11141a; border: 1px solid #232831; border-radius: 6px; padding: 18px 20px; margin-bottom: 16px; }
+.card-title { font-size: 9px; color: #8a8170; letter-spacing: 0.2em; margin-bottom: 14px; }
 
 /* colony rows */
 .col-row {
   display: grid; grid-template-columns: 1fr auto auto auto;
   align-items: center; gap: 12px;
-  background: #0f1520; border: 1px solid #1e2a42;
+  background: #11141a; border: 1px solid #232831;
   border-radius: 6px; padding: 12px 16px; margin-bottom: 8px;
   cursor: pointer; transition: border-color 0.15s;
 }
 .col-row:hover { border-color: #c8a96e40; }
 .col-row.has-fee { border-left: 3px solid #c8a96e; }
 .col-row.dereg { opacity: 0.45; }
-.col-name { font-size: 13px; color: #e8eaf0; font-weight: 500; }
-.col-meta { font-size: 10px; color: #4a5878; margin-top: 2px; }
+.col-name { font-size: 13px; color: #ede5d4; font-weight: 500; }
+.col-meta { font-size: 10px; color: #8a8170; margin-top: 2px; }
 
 .fee-pill {
   font-size: 10px; padding: 3px 8px; border-radius: 10px; white-space: nowrap;
   background: #c8a96e20; color: #c8a96e; border: 1px solid #c8a96e40;
 }
-.fee-pill.zero { background: transparent; color: #4a5878; border-color: #1e2a42; }
+.fee-pill.zero { background: transparent; color: #8a8170; border-color: #232831; }
 .fee-pill.custom { background: #3b82f620; color: #3b82f6; border-color: #3b82f640; }
 
 /* forms */
 .field { margin-bottom: 12px; }
-.field label { display: block; font-size: 9px; color: #4a5878; letter-spacing: 0.14em; margin-bottom: 5px; }
+.field label { display: block; font-size: 9px; color: #8a8170; letter-spacing: 0.14em; margin-bottom: 5px; }
 .inp {
   width: 100%; padding: 8px 11px;
-  background: #060910; border: 1px solid #1e2a42;
-  border-radius: 5px; font-size: 12px; color: #e8eaf0;
+  background: #06070a; border: 1px solid #232831;
+  border-radius: 5px; font-size: 12px; color: #ede5d4;
   font-family: 'IBM Plex Mono', monospace; outline: none;
 }
 .inp:focus { border-color: #c8a96e60; }
@@ -71,18 +71,18 @@ body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8e
 .btn { padding: 7px 14px; border-radius: 5px; font-size: 11px; font-family: inherit; cursor: pointer; letter-spacing: 0.05em; font-weight: 600; border: none; transition: opacity 0.1s; white-space: nowrap; }
 .btn:hover { opacity: 0.82; }
 .btn:disabled { opacity: 0.3; cursor: default; }
-.btn-gold  { background: #c8a96e; color: #0a0e1a; }
+.btn-gold  { background: #c8a96e; color: #06070a; }
 .btn-ghost { background: none; color: #c8a96e; border: 1px solid #c8a96e50; }
 .btn-red   { background: #ef444420; color: #ef4444; border: 1px solid #ef444440; }
-.btn-grey  { background: none; color: #4a5878; border: 1px solid #1e2a42; }
+.btn-grey  { background: none; color: #8a8170; border: 1px solid #232831; }
 .btn-sm    { padding: 4px 10px; font-size: 10px; }
 .btn-connect { background: none; color: #c8a96e; border: 1px solid #c8a96e; border-radius: 20px; padding: 5px 14px; font-size: 11px; cursor: pointer; font-family: inherit; letter-spacing: 0.06em; }
-.addr-chip { background: none; border: 1px solid #1e2a42; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #8899bb; font-family: monospace; }
+.addr-chip { background: none; border: 1px solid #232831; border-radius: 20px; padding: 4px 12px; font-size: 11px; color: #b8b0a0; font-family: monospace; }
 
 /* badges */
 .badge { font-size: 9px; padding: 3px 8px; border-radius: 10px; letter-spacing: 0.08em; }
 .badge-owner { background: #16a34a20; color: #16a34a; border: 1px solid #16a34a40; }
-.badge-ro    { background: #4a587820; color: #4a5878;  border: 1px solid #4a587840; }
+.badge-ro    { background: #8a817020; color: #8a8170;  border: 1px solid #8a817040; }
 .badge-net   { background: #3b82f620; color: #3b82f6;  border: 1px solid #3b82f640; }
 .badge-dereg { background: #ef444420; color: #ef4444;  border: 1px solid #ef444440; }
 
@@ -93,32 +93,32 @@ body { font-family: 'IBM Plex Mono', monospace; background: #0a0e1a; color: #e8e
 /* detail drawer */
 .drawer {
   position: fixed; top: 0; right: 0; bottom: 0; width: 400px;
-  background: #0d1220; border-left: 1px solid #1e2a42;
+  background: #0d1220; border-left: 1px solid #232831;
   overflow-y: auto; padding: 20px 22px;
   transform: translateX(100%); transition: transform 0.2s ease; z-index: 100;
 }
 .drawer.open { transform: translateX(0); }
-.drawer-close { float: right; background: none; border: none; color: #4a5878; font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px; }
+.drawer-close { float: right; background: none; border: none; color: #8a8170; font-size: 20px; cursor: pointer; line-height: 1; padding: 0 4px; }
 .drawer-title { font-size: 16px; font-weight: 700; color: #c8a96e; margin-bottom: 4px; }
-.drawer-slug  { font-size: 10px; color: #4a5878; margin-bottom: 18px; }
+.drawer-slug  { font-size: 10px; color: #8a8170; margin-bottom: 18px; }
 
 .kv { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
-.kv-label { font-size: 10px; color: #4a5878; }
-.kv-val   { font-size: 10px; color: #e8eaf0; text-align: right; max-width: 65%; word-break: break-all; }
-.kv-val a { color: #8899bb; text-decoration: none; }
+.kv-label { font-size: 10px; color: #8a8170; }
+.kv-val   { font-size: 10px; color: #ede5d4; text-align: right; max-width: 65%; word-break: break-all; }
+.kv-val a { color: #b8b0a0; text-decoration: none; }
 .kv-val a:hover { color: #c8a96e; }
 
-hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
+hr.div { border: none; border-top: 1px solid #232831; margin: 14px 0; }
 
 /* tx history */
-.tx-row { padding: 8px 0; border-bottom: 1px solid #1e2a4250; }
+.tx-row { padding: 8px 0; border-bottom: 1px solid #23283150; }
 .tx-row:last-child { border-bottom: none; }
 .tx-amount { font-size: 12px; color: #c8a96e; font-weight: 600; }
-.tx-date   { font-size: 10px; color: #4a5878; margin-top: 2px; }
-.tx-hash   { font-size: 9px; color: #4a5878; font-family: monospace; margin-top: 1px; }
+.tx-date   { font-size: 10px; color: #8a8170; margin-top: 2px; }
+.tx-hash   { font-size: 9px; color: #8a8170; font-family: monospace; margin-top: 1px; }
 
-.loading { font-size: 11px; color: #4a5878; padding: 20px 0; text-align: center; }
-.section-hd { font-size: 9px; color: #4a5878; letter-spacing: 0.18em; margin-bottom: 10px; }
+.loading { font-size: 11px; color: #8a8170; padding: 20px 0; text-align: center; }
+.section-hd { font-size: 9px; color: #8a8170; letter-spacing: 0.18em; margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -136,9 +136,9 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
 <div class="wrap">
 
   <div style="margin-bottom:24px">
-    <div style="font-size:9px;color:#4a5878;letter-spacing:0.2em;margin-bottom:4px">PROTOCOL ADMINISTRATION</div>
+    <div style="font-size:9px;color:#8a8170;letter-spacing:0.2em;margin-bottom:4px">PROTOCOL ADMINISTRATION</div>
     <div style="font-size:20px;font-weight:700;color:#c8a96e;margin-bottom:4px">Colony Registry</div>
-    <div style="font-size:11px;color:#8899bb;line-height:1.6">
+    <div style="font-size:11px;color:#b8b0a0;line-height:1.6">
       Manage registered colonies, per-colony fee rates, and protocol settings.
       One wallet controls everything — it owns the registry and receives all fee settlements.
     </div>
@@ -153,12 +153,12 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
     </div>
     <div class="stat">
       <div class="stat-label">GLOBAL FEE / TX</div>
-      <div class="stat-value" id="stat-fee" style="color:#e8eaf0;font-size:15px;margin-top:4px">—</div>
+      <div class="stat-value" id="stat-fee" style="color:#ede5d4;font-size:15px;margin-top:4px">—</div>
       <div class="stat-sub">default rate</div>
     </div>
     <div class="stat">
       <div class="stat-label">PROTOCOL WALLET</div>
-      <div id="stat-owner" style="font-size:10px;color:#8899bb;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
+      <div id="stat-owner" style="font-size:10px;color:#b8b0a0;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
       <div class="stat-sub" style="margin-top:4px">owns registry · receives fee settlements</div>
     </div>
     <div class="stat">
@@ -173,15 +173,15 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
     </div>
     <div class="stat" style="grid-column: span 5">
       <div class="stat-label">COLONY BEACON</div>
-      <div id="stat-colony-beacon" style="font-size:10px;color:#8899bb;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
-      <div id="stat-colony-impl" style="font-size:9px;color:#4a5878;margin-top:3px;word-break:break-all;font-family:monospace"></div>
+      <div id="stat-colony-beacon" style="font-size:10px;color:#b8b0a0;margin-top:6px;word-break:break-all;font-family:monospace">—</div>
+      <div id="stat-colony-impl" style="font-size:9px;color:#8a8170;margin-top:3px;word-break:break-all;font-family:monospace"></div>
       <div class="stat-sub" style="margin-top:4px">UpgradeableBeacon — upgrades all colony proxies simultaneously</div>
     </div>
   </div>
 
   <!-- Owner: global fee + register -->
   <div id="owner-panel">
-  <div id="owner-lock" style="font-size:11px;color:#4a5878;padding:10px 16px;border:1px solid #1e2a42;border-radius:6px;margin-bottom:14px">
+  <div id="owner-lock" style="font-size:11px;color:#8a8170;padding:10px 16px;border:1px solid #232831;border-radius:6px;margin-bottom:14px">
     Owner actions locked. Click any action button below — MetaMask will prompt you to connect the Protocol Wallet shown in the stat box above.
   </div>
     <div class="card">
@@ -195,9 +195,9 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
               <input class="inp" id="inp-global-fee" placeholder="e.g. 0.000001" type="number" step="0.0000001" />
               <button class="btn btn-gold owner-action" onclick="setGlobalFee()">Update →</button>
             </div>
-            <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-fee"></div>
+            <div style="font-size:9px;color:#8a8170;margin-top:4px" id="cur-fee"></div>
           </div>
-          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+          <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:8px">
             ETH accrued per colony per S-token send(). Applies to all colonies unless overridden in the colony detail drawer.
           </div>
           <div class="err" id="err-global-fee"></div>
@@ -211,9 +211,9 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
               <input class="inp" id="inp-global-founder-share" placeholder="e.g. 25" type="number" step="1" min="0" max="50" />
               <button class="btn btn-gold owner-action" onclick="setGlobalFounderShare()">Update →</button>
             </div>
-            <div style="font-size:9px;color:#4a5878;margin-top:4px" id="cur-founder-share"></div>
+            <div style="font-size:9px;color:#8a8170;margin-top:4px" id="cur-founder-share"></div>
           </div>
-          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+          <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:8px">
             % of the fee sent to the colony founder wallet. Max 50%. Per-colony overrides set in the colony detail drawer.
           </div>
           <div class="err" id="err-global-founder-share"></div>
@@ -228,7 +228,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
               <button class="btn btn-red owner-action" onclick="transferOwnership()">Change</button>
             </div>
           </div>
-          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+          <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:8px">
             Transfers registry ownership and fee destination to a new wallet. The current wallet loses all admin access. Cannot be undone without the new wallet's cooperation.
           </div>
           <div class="err" id="err-owner"></div>
@@ -240,7 +240,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
     <!-- Register a colony -->
     <div class="card">
       <div class="card-title">MANUALLY REGISTER A COLONY</div>
-      <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:14px">
+      <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:14px">
         New colonies register themselves automatically when deployed via zpc.finance/create.
         Use this only for colonies that were deployed before the registry existed, or deployed without going through the create flow.
         You will need the colony's contract address (from the deployer's MetaMask activity or Basescan).
@@ -268,7 +268,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
     <!-- Colony beacon upgrade -->
     <div class="card">
       <div class="card-title">COLONY IMPLEMENTATION UPGRADE</div>
-      <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:14px">
+      <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:14px">
         All colony contracts are BeaconProxy instances pointing at a single UpgradeableBeacon.
         Upgrading the beacon's implementation upgrades every colony simultaneously — no re-registration needed.
         Deploy a new Colony implementation, verify it on Basescan, then enter its address below.
@@ -283,7 +283,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
               <button class="btn btn-red owner-action" onclick="upgradeColonyBeacon()">Upgrade all →</button>
             </div>
           </div>
-          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+          <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:8px">
             Calls beacon.upgradeTo(newImpl). All existing colony proxies instantly use the new logic.
             New colonies deployed via the wizard will also use the new implementation.
           </div>
@@ -298,7 +298,7 @@ hr.div { border: none; border-top: 1px solid #1e2a42; margin: 14px 0; }
               <button class="btn btn-gold owner-action" onclick="setColonyBeacon()">Set →</button>
             </div>
           </div>
-          <div style="font-size:9px;color:#4a5878;line-height:1.5;margin-bottom:8px">
+          <div style="font-size:9px;color:#8a8170;line-height:1.5;margin-bottom:8px">
             Updates the beacon address stored in the registry. New colonies read this address from the registry.
             Use after deploying a fresh beacon (e.g. a new colony suite for a separate upgrade track).
           </div>
@@ -531,7 +531,7 @@ function renderColonies() {
           <div class="col-name">${esc(c.name)} ${c.deregistered ? '<span class="badge badge-dereg" style="font-size:8px;margin-left:6px">REMOVED</span>' : ""}</div>
           <div class="col-meta">${esc(c.slug)} · ${c.citizenCount} citizen${c.citizenCount!==1?"s":""} · registered ${date}</div>
         </div>
-        <div style="text-align:right;font-size:9px;color:#4a5878;font-family:monospace">${(c.founderWallet||c.founder).slice(0,8)}…${(c.founderWallet||c.founder).slice(-6)}</div>
+        <div style="text-align:right;font-size:9px;color:#8a8170;font-family:monospace">${(c.founderWallet||c.founder).slice(0,8)}…${(c.founderWallet||c.founder).slice(-6)}</div>
         <span class="fee-pill ${custom?"custom":""}">rate: ${effFee} ETH${custom?" (custom)":""}</span>
         <span class="fee-pill ${hasFee?"":"zero"}">${feeStr} pending</span>
       </div>
@@ -588,10 +588,10 @@ async function openDrawer(sortedIdx) {
         const isOverride = effectiveBps !== globalFounderShareBps;
         const pct = (Number(effectiveBps) / 100).toFixed(0);
         return `
-        <div style="font-size:9px;color:#4a5878;margin-bottom:8px">
+        <div style="font-size:9px;color:#8a8170;margin-bottom:8px">
           Effective rate: <span style="color:${isOverride ? "#3b82f6" : "#c8a96e"}">${pct}%${isOverride ? " (per-colony override)" : " (global default)"}</span>
         </div>
-        <div style="font-size:9px;color:#4a5878;margin-bottom:6px">Founder wallet: <span style="font-family:monospace;color:#8899bb">${c.founderWallet ? c.founderWallet.slice(0,10)+"…"+c.founderWallet.slice(-6) : "—"}</span></div>
+        <div style="font-size:9px;color:#8a8170;margin-bottom:6px">Founder wallet: <span style="font-family:monospace;color:#b8b0a0">${c.founderWallet ? c.founderWallet.slice(0,10)+"…"+c.founderWallet.slice(-6) : "—"}</span></div>
         <div class="inp-row" style="margin-bottom:6px">
           <input class="inp" id="d-inp-founder-share" placeholder="% override (0–50)"
             value="${isOverride ? pct : ""}" type="number" step="1" min="0" max="50" />
@@ -602,7 +602,7 @@ async function openDrawer(sortedIdx) {
           <input class="inp" id="d-inp-founder-wallet" placeholder="Override founder wallet 0x…" />
           <button class="btn btn-gold btn-sm" onclick="setFounderWallet()">Update wallet →</button>
         </div>
-        <div style="font-size:9px;color:#4a5878;margin-top:4px">Wallet changes are permanent until updated again. Founder requests this via support.</div>
+        <div style="font-size:9px;color:#8a8170;margin-top:4px">Wallet changes are permanent until updated again. Founder requests this via support.</div>
         `;
       })()}
       <div class="err" id="d-err-founder"></div>
@@ -636,11 +636,11 @@ async function openDrawer(sortedIdx) {
         View colony →
       </a>
       <a href="${APP}/colony/${esc(c.slug)}/admin" target="_blank"
-         style="display:block;text-align:center;padding:8px;border:1px solid #1e2a42;border-radius:5px;color:#8899bb;text-decoration:none;font-size:11px">
+         style="display:block;text-align:center;padding:8px;border:1px solid #232831;border-radius:5px;color:#b8b0a0;text-decoration:none;font-size:11px">
         Colony admin (settle fee) →
       </a>
       <a href="${EXPLORER}/address/${c.address}" target="_blank"
-         style="text-align:center;font-size:9px;color:#4a5878;text-decoration:none;display:block;margin-top:2px">
+         style="text-align:center;font-size:9px;color:#8a8170;text-decoration:none;display:block;margin-top:2px">
         View on Basescan ↗
       </a>
     </div>
@@ -661,7 +661,7 @@ async function loadTxHistory(colonyAddr) {
     const filter = colony.filters.ProtocolFeeSettled();
     const logs   = await colony.queryFilter(filter, -50000).catch(() => []);
     if (!logs.length) {
-      el.innerHTML = '<div style="font-size:11px;color:#4a5878;padding:8px 0">No settlements yet.</div>';
+      el.innerHTML = '<div style="font-size:11px;color:#8a8170;padding:8px 0">No settlements yet.</div>';
       return;
     }
     const blocks = await Promise.all(logs.map(l => prov.getBlock(l.blockNumber)));
@@ -675,7 +675,7 @@ async function loadTxHistory(colonyAddr) {
           <div class="tx-amount">${amt} ETH settled</div>
           <div class="tx-date">${date}</div>
           <div class="tx-hash">
-            <a href="${EXPLORER}/tx/${hash}" target="_blank" style="color:#4a5878;text-decoration:none">${hash.slice(0,18)}… ↗</a>
+            <a href="${EXPLORER}/tx/${hash}" target="_blank" style="color:#8a8170;text-decoration:none">${hash.slice(0,18)}… ↗</a>
           </div>
         </div>
       `;
@@ -946,7 +946,7 @@ function showErr(id, msg) {
   document.getElementById("ok-"+id).style.display = "none";
 }
 function showPending(id, msg) {
-  const e = document.getElementById("err-"+id); e.textContent = msg; e.style.display = "block"; e.style.color = "#8899bb";
+  const e = document.getElementById("err-"+id); e.textContent = msg; e.style.display = "block"; e.style.color = "#b8b0a0";
 }
 function showOk(id) {
   document.getElementById("err-"+id).style.display = "none";
@@ -962,7 +962,7 @@ function showDrawerErr(id, msg) {
   const ok = document.getElementById("d-ok-"+id); if (ok) ok.style.display = "none";
 }
 function showDrawerPending(id, msg) {
-  const e = document.getElementById("d-err-"+id); if (!e) return; e.textContent = msg; e.style.display = "block"; e.style.color = "#8899bb";
+  const e = document.getElementById("d-err-"+id); if (!e) return; e.textContent = msg; e.style.display = "block"; e.style.color = "#b8b0a0";
 }
 function showDrawerOk(id) {
   const e = document.getElementById("d-err-"+id); if (e) e.style.display = "none";
