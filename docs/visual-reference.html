@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SPICE — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #06070a;
+    --panel:     #0d0f12;
+    --panel-2:   #11141a;
+    --line:      #232831;
+    --line-hot:  #353c47;
+    --txt:       #ede5d4;       /* primary — 12:1 on bg */
+    --txt-2:     #d8cfba;       /* slightly soft primary — 10:1 */
+    --dim:       #b8b0a0;       /* secondary — 8.5:1 */
+    --faint:     #8a8170;       /* tertiary — 5.8:1, passes AA */
+    --crit:      #ef4444;
+    --crit-bg:   rgba(239,68,68,0.06);
+    --warn:      #d4a04a;       /* muted amber — caution / monitoring */
+    --warn-bg:   rgba(212,160,74,0.06);
+    --ok:        #5dd39e;       /* muted green — nominal / positive */
+    --ok-bg:     rgba(93,211,158,0.06);
+  }
+  *,*::before,*::after { box-sizing: border-box; }
+  html,body { margin:0; padding:0; }
+  body {
+    background: #06070a;
+    background-color: #06070a;
+    color: var(--txt);
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 1.55;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content:"";
+    position: fixed; inset:0;
+    background-image:
+      linear-gradient(to right, rgba(237,229,212,0.022) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(237,229,212,0.022) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; background: #06070a; }
+
+  .pulse {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 10px rgba(93,211,158,0.55);
+    animation: pulse 1.6s infinite;
+    flex-shrink: 0;
+  }
+  .pulse.crit { background: var(--crit); box-shadow: 0 0 10px rgba(239,68,68,0.55); }
+  .pulse.warn { background: var(--warn); box-shadow: 0 0 10px rgba(212,160,74,0.55); }
+  .pulse.txt  { background: var(--txt); box-shadow: 0 0 10px rgba(237,229,212,0.55); }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
+
+  .cursor {
+    display: inline-block; width: 7px; height: 14px;
+    background: var(--txt); margin-left: 4px; vertical-align: -2px;
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0 } }
+
+  /* TOP BAR */
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    padding: 13px 26px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    font-size: 11.5px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--txt); }
+  .brand-mark { width: 18px; height: 18px; }
+  .brand-name { font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; font-size: 12px; }
+  .brand-sep { color: var(--faint); }
+  .brand-tag { color: var(--dim); font-size: 11px; letter-spacing: 0.04em; }
+
+  .navbar { display: flex; gap: 22px; }
+  .navbar a {
+    color: var(--dim); text-decoration: none;
+    text-transform: uppercase; letter-spacing: 0.18em;
+    font-size: 11px;
+    transition: color .2s;
+  }
+  .navbar a.active { color: var(--txt); }
+  .navbar a.active::before { content: "› "; color: var(--txt); }
+  .navbar a:hover { color: var(--txt); }
+
+  .topbar-right { display: flex; align-items: center; gap: 16px; color: var(--dim); font-size: 11px; }
+  .topbar-right .sep { color: var(--faint); }
+  .connect-btn {
+    border: 1px solid var(--txt);
+    color: var(--txt);
+    padding: 7px 14px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .connect-btn:hover { background: var(--txt); color: var(--bg); }
+
+  /* TICKER TAPE */
+  .ticker-tape {
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    overflow: hidden;
+    position: relative;
+    height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  .ticker-tape::before, .ticker-tape::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 60px; z-index: 2;
+    pointer-events: none;
+  }
+  .ticker-tape::before { left: 0; background: linear-gradient(to right, var(--bg), transparent); }
+  .ticker-tape::after  { right: 0; background: linear-gradient(to left, var(--bg), transparent); }
+
+  .ticker-track {
+    display: flex; gap: 48px;
+    white-space: nowrap;
+    animation: scroll 60s linear infinite;
+    padding-left: 26px;
+  }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 11.5px; letter-spacing: 0.04em;
+  }
+  .ticker-item .k { color: var(--dim); text-transform: uppercase; letter-spacing: 0.12em; font-size: 10.5px; }
+  .ticker-item .v { color: var(--txt); font-weight: 500; }
+  .ticker-item .d { color: var(--ok); font-size: 10.5px; }
+  .ticker-item .d.dn { color: var(--crit); }
+  .ticker-item .d.flat { color: var(--dim); }
+  .ticker-item .arrow { color: var(--faint); }
+
+  /* MAIN GRID */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    min-height: calc(100vh - 84px);
+  }
+  .left {
+    padding: 32px 36px 56px;
+    border-right: 1px solid var(--line);
+    background: #06070a;
+  }
+  .right {
+    background: var(--panel);
+    padding: 28px 26px 36px;
+  }
+
+  /* SECTION HEAD — terminal prompt style */
+  .section-head {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 18px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-head .prompt { color: var(--txt); font-weight: 500; font-size: 11.5px; letter-spacing: 0.04em; }
+  .section-head .tag {
+    font-size: 10.5px;
+    color: var(--dim);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .section-head .ttl {
+    font-size: 11px;
+    color: var(--txt);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .section-head .spacer { flex: 1; height: 1px; background: var(--line); }
+  .section-head .timestamp {
+    font-size: 10.5px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* HERO BRIEF — explicit dark panel, hard-coded colour for safety */
+  .brief {
+    margin: 8px 0 52px;
+    background: #06070a;
+    border: 1px solid #232831;
+    padding: 36px 36px 40px;
+    position: relative;
+  }
+  .brief-status {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 28px;
+    padding: 5px 12px;
+    border: 1px solid var(--txt);
+    background: rgba(237,229,212,0.04);
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--txt);
+  }
+  .brief h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: clamp(30px, 4vw, 52px);
+    line-height: 1.1;
+    letter-spacing: -0.022em;
+    color: #ffffff;
+    margin: 0 0 26px;
+    max-width: 920px;
+  }
+  .brief h1 .softer { color: #ede5d4; font-weight: 600; }
+  .brief p {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--txt-2);
+    max-width: 700px;
+    margin: 0 0 28px;
+  }
+  .ctas { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 11px 20px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--line-hot);
+    background: var(--panel);
+    color: var(--txt);
+    transition: all .15s;
+  }
+  .btn:hover { border-color: var(--txt); }
+  .btn.primary {
+    background: var(--txt);
+    border-color: var(--txt);
+    color: var(--bg);
+    font-weight: 600;
+  }
+  .btn.primary:hover { background: #fff; border-color: #fff; }
+
+  /* TELEMETRY */
+  .telemetry {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border: 1px solid var(--line);
+    background: var(--panel);
+    margin-bottom: 38px;
+  }
+  .tel-cell {
+    padding: 16px 16px 18px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .tel-cell:nth-child(4n) { border-right: 0; }
+  .tel-cell:nth-last-child(-n+4) { border-bottom: 0; }
+  .tel-cell .lab {
+    font-size: 9.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+  .tel-cell .val {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--txt);
+    letter-spacing: -0.01em;
+    margin-bottom: 5px;
+  }
+  .tel-cell .val.crit { color: var(--crit); }
+  .tel-cell .delta {
+    font-size: 11px;
+    color: var(--ok);
+  }
+  .tel-cell .delta.dn { color: var(--crit); }
+  .tel-cell .delta.warn { color: var(--warn); }
+  .tel-cell .delta.flat { color: var(--dim); }
+  .bar { height: 2px; background: var(--line-hot); margin-top: 12px; position: relative; overflow: hidden; }
+  .bar > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--txt); }
+  .bar > i.crit { background: var(--crit); }
+
+  /* THREAT VECTORS */
+  .vectors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 38px;
+  }
+  .vector {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 22px 22px 24px;
+    position: relative;
+    transition: border-color .15s;
+  }
+  .vector:hover { border-color: var(--line-hot); }
+  .vec-id {
+    font-size: 10px;
+    color: var(--txt);
+    letter-spacing: 0.22em;
+    margin-bottom: 14px;
+  }
+  .vector h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 19px;
+    color: var(--txt);
+    margin: 0 0 10px;
+    letter-spacing: -0.01em;
+  }
+  .vector p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--txt-2);
+    margin: 0 0 18px;
+  }
+  .vec-stat {
+    display: flex; justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+  }
+  .vec-stat span:first-child {
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  .vec-stat span:last-child { color: var(--txt); font-weight: 500; }
+
+  .vector .corner {
+    position: absolute; width: 10px; height: 10px;
+    border-color: var(--txt-2);
+  }
+  .vector .corner.tl { top: 0; left: 0; border-top: 1px solid; border-left: 1px solid; }
+  .vector .corner.tr { top: 0; right: 0; border-top: 1px solid; border-right: 1px solid; }
+  .vector .corner.bl { bottom: 0; left: 0; border-bottom: 1px solid; border-left: 1px solid; }
+  .vector .corner.br { bottom: 0; right: 0; border-bottom: 1px solid; border-right: 1px solid; }
+
+  /* DISPATCHES — preview tiles linking to chapter pages */
+  .dispatches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 38px;
+  }
+  .dispatch {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .15s;
+    cursor: pointer;
+  }
+  .dispatch:hover { border-color: var(--line-hot); }
+  .dispatch:hover .dispatch-img i { transform: scale(1.04); }
+  .dispatch-img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 1px solid var(--line);
+    background: #11141a;
+  }
+  .dispatch-img i {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    /* monochrome warm treatment — desaturate then tint */
+    filter: grayscale(1) contrast(1.05) brightness(0.85) sepia(0.18);
+    mix-blend-mode: luminosity;
+    transition: transform .8s ease-out;
+  }
+  /* placeholder generative backgrounds — replaced when real imagery arrives */
+  .ph-mars i {
+    background-image:
+      radial-gradient(ellipse at 30% 60%, #3a2c1f 0%, #1a1410 60%, #0d0a08 100%),
+      linear-gradient(160deg, transparent 0%, rgba(237,229,212,0.04) 100%);
+  }
+  .ph-earth i {
+    background-image:
+      radial-gradient(ellipse at 70% 40%, #2a3540 0%, #131820 60%, #0a0d11 100%);
+  }
+  .ph-thesis i {
+    background-image:
+      linear-gradient(135deg, #1a1814 0%, #0d0c0a 50%, #1f1a14 100%);
+  }
+  .dispatch-img::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(6,7,10,0.65) 100%);
+    pointer-events: none;
+  }
+  .dispatch-tag {
+    position: absolute;
+    top: 12px; left: 12px;
+    padding: 3px 8px;
+    background: rgba(6,7,10,0.85);
+    border: 1px solid var(--line-hot);
+    color: var(--txt);
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    z-index: 2;
+  }
+  .dispatch-body {
+    padding: 18px 20px 22px;
+  }
+  .dispatch-body .lab {
+    font-size: 9.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 10px;
+  }
+  .dispatch-body h4 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 17px;
+    color: var(--txt);
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .dispatch-body p {
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--txt-2);
+    margin: 0 0 16px;
+  }
+  .dispatch-arrow {
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--txt);
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dispatch-arrow .glyph { color: var(--dim); }
+
+  /* THESIS PREVIEW */
+  .thesis-preview {
+    border: 1px solid var(--line);
+    padding: 28px 32px;
+    background: var(--panel);
+  }
+  .thesis-preview .head {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .thesis-preview .head .prompt { color: var(--txt); font-weight: 500; }
+  .thesis-preview .head .lab { color: var(--dim); letter-spacing: 0.2em; text-transform: uppercase; font-size: 10.5px; }
+  .thesis-preview p {
+    font-size: 15.5px;
+    line-height: 1.6;
+    color: var(--txt);
+    margin: 0 0 14px;
+    max-width: 740px;
+  }
+  .thesis-preview p.softer { color: var(--txt-2); font-size: 14px; }
+  .thesis-preview a {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--txt);
+    text-decoration: none;
+    border-bottom: 1px solid var(--txt);
+    padding-bottom: 2px;
+  }
+  .thesis-preview a:hover { color: #fff; border-bottom-color: #fff; }
+
+  /* RIGHT COLUMN */
+  .panel-block { margin-bottom: 30px; }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .panel-head .ttl {
+    font-size: 10.5px;
+    color: var(--txt);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .panel-head .meta {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.06em;
+  }
+
+  .vault-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px dotted var(--line-hot);
+    font-size: 12px;
+  }
+  .vault-row:last-child { border-bottom: 0; }
+  .vault-row .k { color: var(--dim); letter-spacing: 0.06em; }
+  .vault-row .v { color: var(--txt); font-weight: 500; }
+
+  .holdings-bar {
+    display: flex; height: 6px;
+    margin: 10px 0 14px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .h-1 { background: #ede5d4; }
+  .h-2 { background: #b8b0a0; }
+  .h-3 { background: #807868; }
+  .h-4 { background: #4f4a40; }
+  .h-5 { background: #2d2b27; }
+
+  .legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    font-size: 11px;
+  }
+  .legend > div { display: flex; align-items: center; gap: 8px; color: var(--dim); }
+  .legend .dot { width: 8px; height: 8px; flex-shrink: 0; }
+  .legend .pct { color: var(--txt); margin-left: auto; font-weight: 500; }
+
+  .log { font-size: 11.5px; line-height: 1.7; }
+  .log-row {
+    display: grid; grid-template-columns: 50px auto 1fr; gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--line-hot);
+    color: var(--dim);
+  }
+  .log-row:last-child { border-bottom: 0; }
+  .log-row .t { color: var(--dim); }
+  .log-row .lvl { letter-spacing: 0.1em; color: var(--ok); font-weight: 500; }
+  .log-row .lvl.warn { color: var(--warn); }
+  .log-row .lvl.crit { color: var(--crit); }
+  .log-row .msg { color: var(--txt-2); }
+
+  /* FOOTER */
+  .footer {
+    border-top: 1px solid var(--line);
+    padding: 14px 26px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10.5px;
+    color: var(--dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .footer .cluster { display: flex; gap: 22px; align-items: center; }
+  .footer .sep { color: var(--faint); }
+
+  /* responsive */
+  @media (max-width: 1000px) {
+    .main { grid-template-columns: 1fr; }
+    .right { border-right: 0; border-top: 1px solid var(--line); }
+    .telemetry { grid-template-columns: repeat(2, 1fr); }
+    .tel-cell:nth-child(2n) { border-right: 0; }
+    .tel-cell:nth-child(4n) { border-right: 1px solid var(--line); }
+    .tel-cell:nth-last-child(-n+2) { border-bottom: 0; }
+    .vectors { grid-template-columns: 1fr; }
+    .dispatches { grid-template-columns: 1fr; }
+    .navbar { display: none; }
+    .left { padding: 24px 18px 36px; }
+    .topbar { padding: 11px 16px; gap: 12px; }
+    .topbar-right span:not(.pulse-wrap):not(.pulse) { display: none; }
+    .footer { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .thesis-preview { padding: 22px 20px; }
+    .ticker-tape { height: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 18 18" fill="none">
+        <line x1="2"  y1="2"  x2="9" y2="9" stroke="#ede5d4" stroke-width="1"/>
+        <line x1="16" y1="2"  x2="9" y2="9" stroke="#ede5d4" stroke-width="1"/>
+        <line x1="9"  y1="9"  x2="9" y2="16" stroke="#ede5d4" stroke-width="1"/>
+        <circle cx="9" cy="9" r="1.8" fill="#ede5d4"/>
+      </svg>
+      <span class="brand-name">SPICE</span>
+      <span class="brand-sep">/</span>
+      <span class="brand-tag">mission control</span>
+    </div>
+
+    <nav class="navbar">
+      <a href="#" class="active">Mission</a>
+      <a href="#">Thesis</a>
+      <a href="#">Telemetry</a>
+      <a href="#">Vault</a>
+      <a href="#">Methodology</a>
+      <a href="#">Bulletins</a>
+    </nav>
+
+    <div class="topbar-right">
+      <span class="pulse"></span>
+      <span>Sys Online</span>
+      <span class="sep">|</span>
+      <span>14:32 UTC</span>
+    </div>
+    <button class="connect-btn">Connect Wallet</button>
+  </header>
+
+  <!-- TICKER TAPE -->
+  <div class="ticker-tape">
+    <div class="ticker-track">
+      <span class="ticker-item"><span class="k">BTC</span><span class="v">$112,400</span><span class="d">+1.40%</span></span>
+      <span class="ticker-item"><span class="k">PAXG</span><span class="v">$3,840</span><span class="d">+0.62%</span></span>
+      <span class="ticker-item"><span class="k">DXY</span><span class="v">99.21</span><span class="d dn">−0.30%</span></span>
+      <span class="ticker-item"><span class="k">10Y</span><span class="v">4.10%</span><span class="d">±0.00</span></span>
+      <span class="ticker-item"><span class="k">CPI</span><span class="v">3.40%</span><span class="d dn">+0.10pp</span></span>
+      <span class="ticker-item"><span class="k">Debt/GDP</span><span class="v">123%</span><span class="d dn">+1.4yr</span></span>
+      <span class="ticker-item"><span class="k">SPICE Lvl</span><span class="v">7.20</span><span class="d">+0.12</span></span>
+      <span class="ticker-item"><span class="k">NAV</span><span class="v">1.0871 ₿</span><span class="d">+0.92%</span></span>
+      <span class="ticker-item"><span class="k">TVL</span><span class="v">412.6 ₿</span><span class="d">+1.4%</span></span>
+      <span class="ticker-item"><span class="k">Crisis Window</span><span class="v">2029—33</span><span class="d">conf 0.74</span></span>
+
+      <!-- duplicate for seamless loop -->
+      <span class="ticker-item"><span class="k">BTC</span><span class="v">$112,400</span><span class="d">+1.40%</span></span>
+      <span class="ticker-item"><span class="k">PAXG</span><span class="v">$3,840</span><span class="d">+0.62%</span></span>
+      <span class="ticker-item"><span class="k">DXY</span><span class="v">99.21</span><span class="d dn">−0.30%</span></span>
+      <span class="ticker-item"><span class="k">10Y</span><span class="v">4.10%</span><span class="d">±0.00</span></span>
+      <span class="ticker-item"><span class="k">CPI</span><span class="v">3.40%</span><span class="d dn">+0.10pp</span></span>
+      <span class="ticker-item"><span class="k">Debt/GDP</span><span class="v">123%</span><span class="d dn">+1.4yr</span></span>
+      <span class="ticker-item"><span class="k">SPICE Lvl</span><span class="v">7.20</span><span class="d">+0.12</span></span>
+      <span class="ticker-item"><span class="k">NAV</span><span class="v">1.0871 ₿</span><span class="d">+0.92%</span></span>
+      <span class="ticker-item"><span class="k">TVL</span><span class="v">412.6 ₿</span><span class="d">+1.4%</span></span>
+      <span class="ticker-item"><span class="k">Crisis Window</span><span class="v">2029—33</span><span class="d">conf 0.74</span></span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <main class="left">
+
+      <!-- HERO BRIEF -->
+      <div class="brief">
+        <div class="brief-status">
+          <span class="pulse"></span>
+          Pre-collision · window open
+        </div>
+        <h1>A frontier hedge for the failure mode of <span class="softer">fiat itself.</span><span class="cursor"></span></h1>
+        <p>
+          SPICE is a crypto-native vault built for the collision between AI-driven
+          deflation and sovereign-debt inflation. No fiat rails, no licensed
+          custodians, no permission to revoke. Designed to function when the
+          system designed for the last crisis cannot.
+        </p>
+        <div class="ctas">
+          <button class="btn primary">Enter Vault →</button>
+          <button class="btn">Read Thesis</button>
+          <button class="btn">View Telemetry</button>
+        </div>
+      </div>
+
+      <!-- TELEMETRY -->
+      <div class="section-head">
+        <span class="prompt">&gt;</span>
+        <span class="tag">[T-01]</span>
+        <span class="ttl">Field Telemetry · Macro Indicators</span>
+        <span class="spacer"></span>
+        <span class="timestamp">SYNC 14:31:55Z</span>
+      </div>
+
+      <div class="telemetry">
+        <div class="tel-cell">
+          <div class="lab">SPICE Level</div>
+          <div class="val">7.20 / 10</div>
+          <div class="delta">+0.12 wk</div>
+          <div class="bar"><i style="width:72%"></i></div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">US Debt / GDP</div>
+          <div class="val crit">123 %</div>
+          <div class="delta dn">+1.4 yr</div>
+          <div class="bar"><i class="crit" style="width:70%"></i></div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">10Y Yield</div>
+          <div class="val">4.10 %</div>
+          <div class="delta flat">±0.00</div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">Real Rate</div>
+          <div class="val">1.80 %</div>
+          <div class="delta">+0.08</div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">CPI YoY</div>
+          <div class="val">3.40 %</div>
+          <div class="delta dn">+0.10 pp</div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">DXY</div>
+          <div class="val">99.21</div>
+          <div class="delta">−0.30 %</div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">BTC</div>
+          <div class="val">$112,400</div>
+          <div class="delta">+1.40 %</div>
+        </div>
+        <div class="tel-cell">
+          <div class="lab">Crisis Window</div>
+          <div class="val crit">2029—33</div>
+          <div class="delta flat">CONF 0.74</div>
+        </div>
+      </div>
+
+      <!-- VECTORS -->
+      <div class="section-head">
+        <span class="prompt">&gt;</span>
+        <span class="tag">[T-02]</span>
+        <span class="ttl">Threat Vectors · Three Forces</span>
+        <span class="spacer"></span>
+        <span class="timestamp">CONF 0.74</span>
+      </div>
+
+      <div class="vectors">
+        <article class="vector">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <div class="vec-id">VEC-01 · DEFLATION</div>
+          <h3>The algorithm</h3>
+          <p>Persistent downward pressure on the price of cognitive labour. Mass underemployment is the social translation of structural deflation.</p>
+          <div class="vec-stat"><span>Displacement 2035</span><span>40 %</span></div>
+        </article>
+        <article class="vector">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <div class="vec-id">VEC-02 · INFLATION</div>
+          <h3>The debt</h3>
+          <p>U.S. obligations on track to 175% of GDP. The arithmetic requires inflation, repression, or default — two of three remain available.</p>
+          <div class="vec-stat"><span>Debt / GDP 2054</span><span>199 %</span></div>
+        </article>
+        <article class="vector">
+          <span class="corner tl"></span><span class="corner tr"></span>
+          <span class="corner bl"></span><span class="corner br"></span>
+          <div class="vec-id">VEC-03 · FLIGHT</div>
+          <h3>The exit</h3>
+          <p>Capital can leave the system without leaving any country. The non-sovereign exit is liquid, settled, and continuously priced.</p>
+          <div class="vec-stat"><span>Crypto market cap</span><span>$3.8T</span></div>
+        </article>
+      </div>
+
+      <!-- DISPATCHES — preview tiles -->
+      <div class="section-head">
+        <span class="prompt">&gt;</span>
+        <span class="tag">[T-03]</span>
+        <span class="ttl">Dispatches · Field Reports</span>
+        <span class="spacer"></span>
+        <span class="timestamp">3 ENTRIES</span>
+      </div>
+
+      <div class="dispatches">
+        <a href="#" class="dispatch ph-mars">
+          <div class="dispatch-img">
+            <i></i>
+            <span class="dispatch-tag">Act II</span>
+          </div>
+          <div class="dispatch-body">
+            <div class="lab">Mars Colony Economy</div>
+            <h4>Capitalist UBI. No tax. No welfare. Every citizen a shareholder.</h4>
+            <p>A working post-scarcity simulation. Sixty-six citizens, one hundred and sixty robots, an automated Fisc — and the economic model that survives AI displacement.</p>
+            <div class="dispatch-arrow"><span>Enter simulation</span><span class="glyph">→</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="dispatch ph-earth">
+          <div class="dispatch-img">
+            <i></i>
+            <span class="dispatch-tag">Act III</span>
+          </div>
+          <div class="dispatch-body">
+            <div class="lab">Earth Implementation</div>
+            <h4>Bringing the model home.</h4>
+            <p>How the principles tested on Mars adapt to existing nation-states. A blueprint for the post-fiat transition, ground up.</p>
+            <div class="dispatch-arrow"><span>Read blueprint</span><span class="glyph">→</span></div>
+          </div>
+        </a>
+
+        <a href="#" class="dispatch ph-thesis">
+          <div class="dispatch-img">
+            <i></i>
+            <span class="dispatch-tag">Act I</span>
+          </div>
+          <div class="dispatch-body">
+            <div class="lab">The Great Collision</div>
+            <h4>The macro thesis in full.</h4>
+            <p>Thirty pages on why AI deflation and sovereign debt monetisation form an unprecedented crisis archetype. Drawing on Dalio and Reinhart &amp; Rogoff.</p>
+            <div class="dispatch-arrow"><span>Read thesis</span><span class="glyph">→</span></div>
+          </div>
+        </a>
+      </div>
+
+      <!-- THESIS PREVIEW -->
+      <div class="thesis-preview">
+        <div class="head">
+          <span class="prompt">&gt;</span>
+          <span class="lab">[T-03] From the thesis</span>
+        </div>
+        <p>For forty years the standard hedges against macro stress have relied on a single quiet assumption: that the financial infrastructure beneath them remains intact while the asset on top of it moves.</p>
+        <p class="softer">The thesis behind SPICE is that this assumption is the thing about to break. When sovereign debt sustainability is itself the question, instruments custodied, settled, and priced through that same sovereign system inherit the question. Counterparty risk becomes the system.</p>
+        <a href="#">Continue reading →</a>
+      </div>
+
+    </main>
+
+    <aside class="right">
+
+      <div class="panel-block">
+        <div class="panel-head">
+          <span class="ttl">Vault Status</span>
+          <span class="meta">v0.7 · TESTNET</span>
+        </div>
+        <div class="vault-row"><span class="k">NAV</span><span class="v">1.0871 ₿</span></div>
+        <div class="vault-row"><span class="k">TVL</span><span class="v">412.6 ₿</span></div>
+        <div class="vault-row"><span class="k">SPICE supply</span><span class="v">379,420</span></div>
+        <div class="vault-row"><span class="k">7d return</span><span class="v">+0.92 %</span></div>
+        <div class="vault-row"><span class="k">YTD vs BTC</span><span class="v">+3.7 %</span></div>
+        <div class="vault-row"><span class="k">Oracle</span><span class="v">Chainlink · OK</span></div>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-head">
+          <span class="ttl">Holdings</span>
+          <span class="meta">RAW · ON-CHAIN</span>
+        </div>
+        <div class="holdings-bar">
+          <div class="h-1" style="width:38%"></div>
+          <div class="h-2" style="width:22%"></div>
+          <div class="h-3" style="width:18%"></div>
+          <div class="h-4" style="width:14%"></div>
+          <div class="h-5" style="width:8%"></div>
+        </div>
+        <div class="legend">
+          <div><span class="dot h-1"></span>BTC<span class="pct">38%</span></div>
+          <div><span class="dot h-2"></span>PAXG<span class="pct">22%</span></div>
+          <div><span class="dot h-3"></span>Bond Shorts<span class="pct">18%</span></div>
+          <div><span class="dot h-4"></span>AI Infra<span class="pct">14%</span></div>
+          <div><span class="dot h-5"></span>Commodities<span class="pct">8%</span></div>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-head">
+          <span class="ttl">Event Log</span>
+          <span class="meta">LIVE</span>
+        </div>
+        <div class="log">
+          <div class="log-row"><span class="t">14:31</span><span class="lvl">INFO</span><span class="msg">Oracle sync · price feed nominal</span></div>
+          <div class="log-row"><span class="t">14:18</span><span class="lvl">INFO</span><span class="msg">Rebalance check · within band</span></div>
+          <div class="log-row"><span class="t">13:42</span><span class="lvl warn">WARN</span><span class="msg">CPI YoY rising · monitor</span></div>
+          <div class="log-row"><span class="t">12:05</span><span class="lvl">INFO</span><span class="msg">Deposit · 0.50 ₿ · 0xA1…2c</span></div>
+          <div class="log-row"><span class="t">09:51</span><span class="lvl warn">WARN</span><span class="msg">SPICE level → 7.20 (+0.12)</span></div>
+          <div class="log-row"><span class="t">08:30</span><span class="lvl">INFO</span><span class="msg">Treasury auction · 4.11% stop</span></div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+
+  <footer class="footer">
+    <div class="cluster">
+      <span>● All systems nominal</span>
+      <span class="sep">|</span>
+      <span>Build 0xa14c · master</span>
+    </div>
+    <div class="cluster">
+      <span>Base Sepolia · 84532</span>
+      <span class="sep">|</span>
+      <span>SPICE / SPICE</span>
+      <span class="sep">|</span>
+      <span>v0.7</span>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

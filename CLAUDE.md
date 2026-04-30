@@ -62,31 +62,29 @@ Research feel — no marketing language, no exclamation marks.
 
 ## Design System
 
-Always follow these conventions. Do not introduce new fonts, colours, or
-component patterns without discussion.
+**Canonical reference: `docs/redesign.md`.** Visual mock at `docs/visual-reference.html` (when the spec is silent, the HTML answers).
 
-| Token          | Value                              |
-|----------------|------------------------------------|
-| Font           | `'IBM Plex Mono', monospace`       |
-| Gold accent    | `#B8860B`                          |
-| Background     | `#ffffff`                          |
-| Text primary   | `#111`                             |
-| Text secondary | `#555` or `#666`                   |
-| Text faint     | `#aaa` or `#999`                   |
-| Border / rule  | `#e2e2e2` or `#E0E0E0`             |
-| Red (danger)   | `#ef4444`                          |
-| Purple (unemp) | `#8b5cf6`                          |
-| Blue (infl)    | `#3b82f6`                          |
-| Yellow (yield) | `#eab308`                          |
-| Green (labour) | `#16a34a`                          |
+The site is migrating from research-paper aesthetic (white bg, gold accent, mixed mono/sans) to **mission-control terminal** aesthetic (near-black bg `#06070a`, warm-white text `#ede5d4`, single mono font, square corners, status colours used only on data and live indicators). The token map lives in `src/tokens.js` — import `C` for colours and `F` for the font family. Do not hard-code hex values in components — use tokens.
 
 All styles are inline JS objects. Pattern:
 ```jsx
+import { C, F } from "../tokens";
 const S = {
-  container: { padding: "40px", background: "#fff", fontFamily: "'IBM Plex Mono', monospace" },
+  container: { padding: "32px", background: C.bg, color: C.txt, fontFamily: F.mono },
 };
 // usage: <div style={S.container}>
 ```
+
+**Migration status (29 Apr → ongoing):**
+- Phase 1 (tokens.js + body bg + this pointer) — done.
+- Phase 2 (chrome component library: TopBar, TickerTape, SectionHead, Button, StatusPill, Footer) — pending.
+- Phase 3 (Home rewrite, drop the 4-quadrant layout, embed intro video) — pending.
+- Phase 4 (migrate /collision, /simulation, /dashboard, /methodology, /balance-of-payments, /colony-economy to new tokens) — pending.
+- Phase 5 (data-bound components + Mars/Earth chapter pages with B&W-treated imagery) — pending.
+- Phase 6+7 (colony-app + spice-admin token alignment) — pending.
+- Phase 8 (iOS app v1) — pending.
+
+Existing pages will look broken in places between Phase 1 and Phase 4 — that's expected and named in the spec.
 
 ---
 

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom";
+import { C, F } from "./tokens";
 import Home from "./pages/Home";
 import Collision from "./pages/Collision";
 import Dashboard from "./pages/Dashboard";
@@ -134,9 +135,9 @@ export default function App() {
 const S = {
   root: {
     minHeight: "100vh",
-    background: "#0a0e1a",
-    color: "#e8eaf0",
-    fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
+    background: C.bg,
+    color: C.txt,
+    fontFamily: F.mono,
     position: "relative",
   },
   header: {
@@ -145,34 +146,34 @@ const S = {
     justifyContent: "space-between",
     padding: "0 40px",
     height: 57,
-    borderBottom: "1px solid #1e2a42",
+    borderBottom: `1px solid ${C.line}`,
     position: "sticky",
     top: 0,
     zIndex: 100,
-    background: "#080c16",
+    background: C.panel,
   },
   headerLeft: { display: "flex", alignItems: "center", gap: 24 },
   logo: { display: "flex", alignItems: "baseline", gap: 8 },
-  logoMark: { fontSize: 18, color: "#c8a96e" },
-  logoText: { fontSize: 16, fontWeight: 700, letterSpacing: "0.2em", color: "#e8eaf0" },
+  logoMark: { fontSize: 18, color: C.txt },
+  logoText: { fontSize: 16, fontWeight: 600, letterSpacing: "0.24em", color: C.txt },
   logoBracket: {
     fontSize: 10,
-    color: "#c8a96e",
-    border: "1px solid #c8a96e",
+    color: C.dim,
+    border: `1px solid ${C.line}`,
     padding: "2px 6px",
     letterSpacing: "0.1em",
   },
-  tagline: { fontSize: 9, color: "#4a5878", letterSpacing: "0.12em" },
+  tagline: { fontSize: 9, color: C.faint, letterSpacing: "0.12em" },
   nav: { display: "flex", gap: 32, alignItems: "center" },
   navLink: {
     fontSize: 11,
-    letterSpacing: "0.1em",
-    color: "#4a5878",
+    letterSpacing: "0.18em",
+    color: C.dim,
     textDecoration: "none",
     textTransform: "uppercase",
     paddingBottom: 2,
     borderBottom: "2px solid transparent",
     transition: "color 0.2s, border-color 0.2s",
   },
-  navActive: { color: "#c8a96e", borderBottom: "2px solid #c8a96e" },
+  navActive: { color: C.txt, borderBottom: `2px solid ${C.txt}` },
 };
