@@ -160,10 +160,9 @@ export default function Home() {
             abundance.
           </p>
           <p style={S.lead}>
-            SPICE is a cryptocurrency system designed to implement a phased
-            rollout of a UBI system across a market economy, featuring
-            near-zero inflation, near-zero taxation, in an automated,
-            low regulation micro-economy.
+            SPICE is a cryptocurrency product designed to implement a phased
+            rollout of a UBI system, featuring near-zero inflation, near-zero
+            taxation, in an automated, low regulation environment.
           </p>
           <div style={S.ctas}>
             <Button variant="primary" to="/collision">Read the thesis →</Button>
