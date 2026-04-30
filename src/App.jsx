@@ -26,6 +26,7 @@ import PathwayToUBI from './pages/PathwayToUBI.jsx'
 import Abundance from './pages/Abundance.jsx'
 import ColonyEconomy from './pages/ColonyEconomy.jsx'
 import BalanceOfPayments from './pages/BalanceOfPayments.jsx'
+import Components from './pages/Components.jsx'
 
 function Nav() {
   return (
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/abundance" element={<Abundance />} />
           <Route path="/colony-economy" element={<ColonyEconomy />} />
           <Route path="/balance-of-payments" element={<BalanceOfPayments />} />
+          <Route path="/_components" element={<Components />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}
