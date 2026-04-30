@@ -151,7 +151,7 @@ export default function Home() {
         {/* HERO */}
         <div style={S.hero}>
           <StatusPill status="ok" label="Pre-launch · research" />
-          <h1 style={S.h1}>UBI Product for a Capitalist Economy</h1>
+          <h1 style={S.h1}>UBI for a Capitalist Economy</h1>
           <p style={{ ...S.lead, marginBottom: 18 }}>
             Driven by recent advances in AI, robotics and automation, for the
             first time in human history, the world's political and economic
