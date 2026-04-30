@@ -56,22 +56,26 @@ export default function TopBar({ navItems = [], status = "Sys Online", clock, wa
         </NavLink>
         <nav style={S.nav}>
           {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              style={({ isActive }) => ({
-                ...S.link,
-                ...(isActive ? S.linkActive : {}),
-              })}
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && <span style={{ color: C.txt }}>{"› "}</span>}
-                  {item.label}
-                </>
-              )}
-            </NavLink>
+            item.external ? (
+              <a key={item.to} href={item.to} style={S.link}>{item.label}</a>
+            ) : (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                style={({ isActive }) => ({
+                  ...S.link,
+                  ...(isActive ? S.linkActive : {}),
+                })}
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && <span style={{ color: C.txt }}>{"› "}</span>}
+                    {item.label}
+                  </>
+                )}
+              </NavLink>
+            )
           ))}
         </nav>
         <div style={S.right}>

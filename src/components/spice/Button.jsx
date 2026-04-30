@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { C, F } from "../../tokens";
 
 const base = {
@@ -28,7 +29,9 @@ const secondary = {
   border: `1px solid ${C.lineHot}`,
 };
 
-export default function Button({ variant = "secondary", children, ...rest }) {
+export default function Button({ variant = "secondary", to, href, children, ...rest }) {
   const style = variant === "primary" ? primary : secondary;
+  if (to)   return <Link to={to} style={style} {...rest}>{children}</Link>;
+  if (href) return <a href={href} style={style} {...rest}>{children}</a>;
   return <button style={style} {...rest}>{children}</button>;
 }

@@ -1,159 +1,93 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ethers } from "ethers";
-import { SPICE_PARAMS, LEVEL_COLORS, LEVEL_LABELS } from "../data/spice-params";
+import { C, F } from "../tokens";
+import { SPICE_PARAMS, LEVEL_LABELS } from "../data/spice-params";
 import { COLONIES, BASE_SEPOLIA_RPC, COLONY_APP_HOST } from "../data/colonies";
-
-const F    = "'IBM Plex Mono', monospace";
-const BG0  = "#0a0e1a";
-const BG1  = "#080c16";
-const BG2  = "#0f1520";
-const BD   = "#1e2a42";
-const T1   = "#e8eaf0";
-const T2   = "#8899bb";
-const T3   = "#4a5878";
-const GOLD = "#c8a96e";
-
-const { current: C, meta: M } = SPICE_PARAMS;
-
-// ─── Crisis timeline ─────────────────────────────────────────────────────────
-
-const TL = [
-  { color:"#16a34a", year:"2026" },
-  { color:"#3b82f6", year:"2027" },
-  { color:"#ca8a04", year:"2028" },
-  { color:"#ea580c", year:"2029" },
-  { color:"#c2410c", year:"2030" },
-  { color:"#dc2626", year:"2031" },
-  { color:"#991b1b", year:"2032" },
-];
-
-// level 0-4 → index in TL (which segment "today" sits on)
-const LEVEL_TO_TL = [0, 1, 2, 3, 5];
-
-function CrisisTimeline({ level, levelColor }) {
-  const tlIdx = LEVEL_TO_TL[level] ?? 0;
-  const todayPct = ((tlIdx + 0.5) / TL.length) * 100;
-
-  return (
-    <div style={{ position:"relative", marginBottom:18, paddingBottom:18 }}>
-      {/* label */}
-      <div style={{ fontSize:7, color:T3, letterSpacing:"0.15em", textTransform:"uppercase", marginBottom:5 }}>
-        Collision Status Today
-      </div>
-      {/* colour bar */}
-      <div style={{ display:"flex", height:8, borderRadius:2, overflow:"hidden" }}>
-        {TL.map(s => <div key={s.year} style={{ flex:1, background:s.color }} />)}
-      </div>
-      {/* year labels */}
-      <div style={{ display:"flex" }}>
-        {TL.map(s => (
-          <div key={s.year} style={{ flex:1, fontSize:6, color:T3, fontFamily:F, textAlign:"center", marginTop:2 }}>
-            {s.year}
-          </div>
-        ))}
-      </div>
-      {/* today marker — positioned at current SPICE level */}
-      <div style={{
-        position:"absolute", bottom:4,
-        left:`${todayPct}%`, transform:"translateX(-50%)",
-        display:"flex", flexDirection:"column", alignItems:"center", gap:2,
-      }}>
-        <div style={{
-          width:10, height:10, borderRadius:"50%",
-          background:"#fff", border:`2px solid ${levelColor}`,
-        }} />
-        <div style={{ fontSize:6.5, color:levelColor, fontFamily:F, fontWeight:700, whiteSpace:"nowrap" }}>
-          today
-        </div>
-      </div>
-      {/* crisis window label */}
-      <div style={{
-        position:"absolute", bottom:4, right:0,
-        fontSize:6, color:"#dc2626", fontFamily:F, letterSpacing:"0.08em",
-      }}>⚠ 2029–2032</div>
-    </div>
-  );
-}
-
-// ─── Collision logo ───────────────────────────────────────────────────────────
-
-function CollisionLogo({ color, label }) {
-  return (
-    <svg viewBox="0 0 420 232" width="100%" style={{ display:"block", maxHeight:155 }}>
-      <path d="M 53 30 A 52 34 0 0 1 53 98" fill="none" stroke={color} strokeWidth="1.5" />
-      <text x="53" y="52" textAnchor="middle" fontSize="8" fill={T3} fontFamily={F} letterSpacing="1">DEBT/GDP</text>
-      <text x="53" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#dc2626" fontFamily={F}>{C.debt}%</text>
-      <line x1="105" y1="64" x2="178" y2="64" stroke={T3} strokeWidth="2" />
-      <circle cx="210" cy="64" r="32" stroke={color} strokeWidth="2.5" fill={color} fillOpacity="0.25" />
-      <text x="210" y="58" textAnchor="middle" fontSize="7" fill={color} fontFamily={F} letterSpacing="1" fontWeight="700">SPICE</text>
-      <text x="210" y="72" textAnchor="middle" fontSize="9" fill={color} fontFamily={F} fontWeight="700">{label}</text>
-      <line x1="242" y1="64" x2="315" y2="64" stroke={T3} strokeWidth="2" />
-      <path d="M 367 30 A 52 34 0 0 0 367 98" fill="none" stroke={color} strokeWidth="1.5" />
-      <text x="367" y="52" textAnchor="middle" fontSize="8" fill={T3} fontFamily={F} letterSpacing="1">AI PENETRATION</text>
-      <text x="367" y="80" textAnchor="middle" fontSize="20" fontWeight="700" fill="#8b5cf6" fontFamily={F}>{C.ai}%</text>
-      <line x1="210" y1="96" x2="210" y2="170" stroke={T3} strokeWidth="2" />
-      <path d="M 142 198 A 68 28 0 0 0 278 198" fill="none" stroke={color} strokeWidth="1.5" />
-      <text x="210" y="188" textAnchor="middle" fontSize="8" fill={T3} fontFamily={F} letterSpacing="1">CRYPTO FLIGHT</text>
-      <text x="210" y="214" textAnchor="middle" fontSize="20" fontWeight="700" fill={color} fontFamily={F}>{C.crypto}%</text>
-    </svg>
-  );
-}
-
-// ─── Image panel (Mars / Earth) ───────────────────────────────────────────────
-
-// textAlign: "top" puts label in outer corner for panels where bottom is near the circle (Mars)
-function ImagePanel({ to, src, eyebrow, title, color, textPos = "bottom" }) {
-  const atTop = textPos === "top";
-  return (
-    <Link to={to} style={{ display:"block", height:"100%", textDecoration:"none", position:"relative", overflow:"hidden", borderRadius:6 }}>
-      <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:color, zIndex:3 }} />
-      <img src={src} alt={title} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-      {/* vignette overlays from all edges — softens image into dark background */}
-      <div style={{
-        position:"absolute", inset:0, pointerEvents:"none",
-        background:[
-          "linear-gradient(to right,  rgba(8,12,22,0.55) 0%, transparent 30%)",
-          "linear-gradient(to left,   rgba(8,12,22,0.55) 0%, transparent 30%)",
-          "linear-gradient(to bottom, rgba(8,12,22,0.55) 0%, transparent 30%)",
-          "linear-gradient(to top,    rgba(8,12,22,0.55) 0%, transparent 30%)",
-        ].join(", "),
-      }} />
-      {/* text overlay — positioned at outer corner away from circle */}
-      <div style={{
-        position:"absolute", inset:0,
-        background: atTop
-          ? "linear-gradient(to bottom, rgba(8,12,22,0.85) 0%, transparent 50%)"
-          : "linear-gradient(to top,    rgba(8,12,22,0.85) 0%, transparent 50%)",
-        display:"flex", flexDirection:"column",
-        justifyContent: atTop ? "flex-start" : "flex-end",
-        padding:"16px 18px",
-      }}>
-        <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-          {eyebrow}
-        </div>
-        <div style={{ fontSize:14, fontWeight:700, color, letterSpacing:"0.06em" }}>{title}</div>
-        <div style={{ fontSize:8, color:T3, marginTop:6 }}>→ View colony</div>
-      </div>
-    </Link>
-  );
-}
-
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+import StatusPill  from "../components/spice/StatusPill";
+import SectionHead from "../components/spice/SectionHead";
+import Button      from "../components/spice/Button";
+import TickerTape  from "../components/spice/TickerTape";
 
 const REGISTRY_ADDRESS = "0x9B8Eee5C078166d1b89A38Dae774773C89e53B9a";
 const REGISTRY_ABI = [
   "function getActive() view returns (address[])",
   "function entries(address) view returns (address colony, string name, string slug, address founder, uint256 registeredAt)",
 ];
+const COLONY_ABI = [
+  "function colonyName() view returns (string)",
+  "function citizenCount() view returns (uint256)",
+  "function sToken() view returns (address)",
+];
+const STOKEN_ABI = ["function currentEpoch() view returns (uint256)"];
+
+const { meta: M } = SPICE_PARAMS;
+
+const SAMPLE_TICKER = [
+  { k: "BTC",       v: "$112,400", d: "+1.40%",  dir: "up" },
+  { k: "PAXG",      v: "$3,840",   d: "+0.62%",  dir: "up" },
+  { k: "DXY",       v: "99.21",    d: "−0.30%",  dir: "down" },
+  { k: "10Y",       v: "4.10%",    d: "±0.00",   dir: "flat" },
+  { k: "CPI",       v: "3.40%",    d: "+0.10pp", dir: "down" },
+  { k: "Debt/GDP",  v: "123%",     d: "+1.4yr",  dir: "down" },
+  { k: "SPICE Lvl", v: "7.20",     d: "+0.12",   dir: "up" },
+];
+
+const S = {
+  page:  { background: C.bg, color: C.txt, fontFamily: F.mono, minHeight: "calc(100vh - 57px)" },
+  inner: { maxWidth: 1280, margin: "0 auto", padding: "0 36px" },
+  hero:  { padding: "48px 0 56px", borderBottom: `1px solid ${C.line}`, marginBottom: 48 },
+  h1: {
+    fontSize: "clamp(30px, 4vw, 52px)",
+    fontWeight: 700, color: C.headline,
+    letterSpacing: "-0.01em", lineHeight: 1.1,
+    margin: "20px 0 22px",
+  },
+  h1soft: { color: C.txt, fontWeight: 600 },
+  lead: {
+    fontSize: 14.5, color: C.txt2,
+    lineHeight: 1.7, maxWidth: 760,
+    marginBottom: 32,
+  },
+  ctas: { display: "flex", gap: 12, flexWrap: "wrap" },
+
+  videoWrap: {
+    background: C.panel, border: `1px solid ${C.line}`,
+    aspectRatio: "16 / 9", maxWidth: 960,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: C.dim, marginBottom: 14,
+  },
+  videoMeta: { fontSize: 11.5, color: C.faint, letterSpacing: "0.06em", marginBottom: 56 },
+
+  telemetry: {
+    display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+    border: `1px solid ${C.line}`,
+    background: C.panel, marginBottom: 56,
+  },
+  telCell: { padding: "20px 22px", borderRight: `1px solid ${C.line}` },
+  telLab:  { fontSize: 9.5, color: C.dim, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 8 },
+  telVal:  { fontSize: 22, fontWeight: 500, color: C.txt, fontFamily: F.mono },
+  telDelta:{ fontSize: 11, color: C.dim, marginTop: 6 },
+
+  dispatches: {
+    display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 24, marginBottom: 56,
+  },
+  dispatch: {
+    background: C.panel, border: `1px solid ${C.line}`,
+    padding: 24, textDecoration: "none", color: C.txt,
+    display: "flex", flexDirection: "column", gap: 14,
+    transition: "border-color 0.2s",
+  },
+  dTag:  { fontSize: 10, color: C.dim, letterSpacing: "0.22em", textTransform: "uppercase" },
+  dTtl:  { fontSize: 17, fontWeight: 600, color: C.txt, letterSpacing: "0.02em", lineHeight: 1.3, margin: 0 },
+  dBody: { fontSize: 13, color: C.txt2, lineHeight: 1.6, margin: 0 },
+  dSep:  { borderTop: `1px solid ${C.line}`, paddingTop: 12, marginTop: "auto", fontSize: 11, color: C.dim, letterSpacing: "0.06em" },
+};
 
 export default function Home() {
   const [cachedLevel, setCachedLevel] = useState(null);
-  // colonies: live list from registry (falls back to COLONIES constant while loading)
   const [colonies, setColonies] = useState(COLONIES);
-  // colonyData: { [id]: { name, citizens, epoch } | null }
-  // undefined = still loading, null = failed
   const [colonyData, setColonyData] = useState({});
 
   useEffect(() => {
@@ -163,7 +97,7 @@ export default function Home() {
     } catch {}
   }, []);
 
-  // Fetch live colony list from ColonyRegistry — updates the directory panel dynamically
+  // Live colony list from registry — falls back to COLONIES while loading
   useEffect(() => {
     let cancelled = false;
     async function fetchRegistry() {
@@ -172,13 +106,13 @@ export default function Home() {
         const registry = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, provider);
         const addresses = await registry.getActive();
         if (!addresses.length) return;
-        const entries = await Promise.all(addresses.map(a => registry.entries(a)));
+        const entries = await Promise.all(addresses.map((a) => registry.entries(a)));
         const list = entries
-          .filter(e => e.slug && e.name && e.colony !== ethers.ZeroAddress)
-          .map(e => ({ id: e.slug, slug: e.slug, address: e.colony }));
+          .filter((e) => e.slug && e.name && e.colony !== ethers.ZeroAddress)
+          .map((e) => ({ id: e.slug, slug: e.slug, address: e.colony }));
         if (!cancelled && list.length > 0) setColonies(list);
       } catch {
-        // Registry unavailable — keep COLONIES fallback, silently ignore
+        // Registry unavailable — keep fallback, fail silent
       }
     }
     fetchRegistry();
@@ -187,13 +121,6 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    const COLONY_ABI = [
-      "function colonyName() view returns (string)",
-      "function citizenCount() view returns (uint256)",
-      "function sToken() view returns (address)",
-    ];
-    const STOKEN_ABI = ["function currentEpoch() view returns (uint256)"];
-
     async function load() {
       const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
       const results = await Promise.all(
@@ -219,123 +146,109 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [colonies]);
 
-  const level      = cachedLevel ?? M.currentLevel;
-  const levelColor = LEVEL_COLORS[level];
+  const level = cachedLevel ?? M.currentLevel;
   const levelLabel = LEVEL_LABELS[level];
+  const totalCitizens = Object.values(colonyData).reduce((sum, d) => sum + (d?.citizens || 0), 0);
 
   return (
-    <div style={{
-      position:"relative",
-      background: BG0, color: T1, fontFamily: F,
-      height: "calc(100vh - 57px)", overflow: "hidden",
-    }}>
+    <div style={S.page}>
+      <TickerTape items={SAMPLE_TICKER} speed={60} />
+      <div style={S.inner}>
 
-      {/* ── 2×2 grid — 8px gap for breathing space ── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gridTemplateRows: "1fr 1fr",
-        gap: 8,
-        padding: 8,
-        boxSizing: "border-box",
-        height: "100%",
-      }}>
-
-        {/* TOP LEFT: The Collision */}
-        <Link to="/collision" style={{ display:"block", height:"100%", textDecoration:"none", borderRadius:6, overflow:"hidden" }}>
-          <div style={{
-            height:"100%", background:BG2, borderRadius:6,
-            borderTop:`3px solid ${levelColor}`, padding:"20px 22px",
-            display:"flex", flexDirection:"column", boxSizing:"border-box",
-          }}>
-            <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-              The Collision — Precursor
-            </div>
-            <div style={{ fontSize:13, fontWeight:700, color:levelColor, letterSpacing:"0.06em", marginBottom:14 }}>
-              Alert: {levelLabel}
-            </div>
-            <CrisisTimeline level={level} levelColor={levelColor} />
-            <div style={{ flex:1, minHeight:0, overflow:"visible" }}>
-              <CollisionLogo color={levelColor} label={levelLabel} />
-            </div>
-          </div>
-        </Link>
-
-        {/* TOP RIGHT: Mars Colony */}
-        <ImagePanel
-          to="/mars"
-          src="/MarsColonyWithoutLabels.png"
-          eyebrow="Mars Colony Economy"
-          title="Mars Colony"
-          color="#3dffa0"
-          textPos="top"
-        />
-
-        {/* BOTTOM LEFT: Earth Colony */}
-        <ImagePanel
-          to="/earth"
-          src="/spice-town.png"
-          eyebrow="Earth Colony Economy"
-          title="Earth Colony"
-          color="#4488ff"
-        />
-
-        {/* BOTTOM RIGHT: Colony App portal */}
-        <div style={{
-          height:"100%", background:BG2, borderRadius:6,
-          borderTop:`3px solid ${GOLD}`, padding:"20px 22px",
-          display:"flex", flexDirection:"column", boxSizing:"border-box",
-        }}>
-          <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-            SPICE Protocol
-          </div>
-          <div style={{ fontSize:14, fontWeight:700, color:GOLD, letterSpacing:"0.06em", marginBottom:16 }}>
-            Colony Economy
-          </div>
-
-          {/* Stats */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
-            <div style={{ background:`${GOLD}0e`, border:`1px solid ${GOLD}30`, borderRadius:4, padding:"12px 14px" }}>
-              <div style={{ fontSize:22, fontWeight:700, color:GOLD, fontFamily:F }}>
-                {colonies.length}
-              </div>
-              <div style={{ fontSize:8, color:T2, marginTop:4, letterSpacing:"0.06em" }}>ACTIVE COLONIES</div>
-            </div>
-            <div style={{ background:`${GOLD}0e`, border:`1px solid ${GOLD}30`, borderRadius:4, padding:"12px 14px" }}>
-              <div style={{ fontSize:22, fontWeight:700, color:GOLD, fontFamily:F }}>
-                {Object.values(colonyData).reduce((sum, d) => sum + (d?.citizens || 0), 0)}
-              </div>
-              <div style={{ fontSize:8, color:T2, marginTop:4, letterSpacing:"0.06em" }}>CITIZENS ENROLLED</div>
-            </div>
-          </div>
-
-          <div style={{ fontSize:10, color:T2, lineHeight:1.7, marginBottom:"auto" }}>
-            Each colony is an independent closed-loop economy. Citizens receive a monthly S-token
-            basic income, save into V-tokens, and transact through colony-registered companies.
-          </div>
-
-          <a
-            href={COLONY_APP_HOST}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display:"block", marginTop:14, padding:"11px 14px",
-              background:GOLD, borderRadius:4,
-              fontSize:10, color:BG0, fontWeight:700,
-              textDecoration:"none", letterSpacing:"0.1em", textAlign:"center",
-              fontFamily:F,
-            }}
-          >
-            ENTER COLONY APP →
-          </a>
-          <div style={{ fontSize:8, color:T3, marginTop:8, textAlign:"right" }}>
-            app.zpc.finance · Base Sepolia testnet
+        {/* HERO */}
+        <div style={S.hero}>
+          <StatusPill status="ok" label="Pre-launch · research" />
+          <h1 style={S.h1}>
+            The economic model for{" "}
+            <span style={S.h1soft}>after the collision.</span>
+          </h1>
+          <p style={S.lead}>
+            SPICE is a community currency designed for the post-fiat transition.
+            Citizens receive a monthly basic income in S-tokens, hold long-term
+            wealth in V-tokens, and own dividend-bearing shares in colony
+            enterprises. <strong style={{ color: C.txt }}>Capitalist UBI. No tax. No welfare. Every citizen a shareholder.</strong>
+          </p>
+          <div style={S.ctas}>
+            <Button variant="primary" to="/collision">Read the thesis →</Button>
+            <Button to="/mars">View Mars colony</Button>
+            <Button href={COLONY_APP_HOST}>Enter colony app</Button>
           </div>
         </div>
 
+        {/* INTRO VIDEO */}
+        <SectionHead tag="V-01" title="Introduction · the SPICE colony economy" timestamp="2-MIN OVERVIEW" />
+        <div style={S.videoWrap}>
+          {/* TODO: drop in YouTube embed once script is recorded */}
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 40, color: C.faint, marginBottom: 8 }}>▶</div>
+            <div style={{ fontSize: 12, color: C.dim, letterSpacing: "0.06em" }}>Intro video — pending</div>
+          </div>
+        </div>
+        <div style={S.videoMeta}>
+          Two-minute overview of the colony economy — citizens, companies, the Fisc, S/V tokens.
+        </div>
+
+        {/* TELEMETRY */}
+        <SectionHead tag="T-01" title="Field Telemetry · Live" timestamp="BASE SEPOLIA · 84532" />
+        <div style={S.telemetry}>
+          <div style={S.telCell}>
+            <div style={S.telLab}>SPICE Level</div>
+            <div style={S.telVal}>{level} / 4</div>
+            <div style={S.telDelta}>{levelLabel}</div>
+          </div>
+          <div style={S.telCell}>
+            <div style={S.telLab}>Active Colonies</div>
+            <div style={S.telVal}>{colonies.length}</div>
+            <div style={S.telDelta}>on-chain registry</div>
+          </div>
+          <div style={S.telCell}>
+            <div style={S.telLab}>Citizens Enrolled</div>
+            <div style={S.telVal}>{totalCitizens}</div>
+            <div style={S.telDelta}>across all colonies</div>
+          </div>
+          <div style={{ ...S.telCell, borderRight: 0 }}>
+            <div style={S.telLab}>Crisis Window</div>
+            <div style={{ ...S.telVal, color: C.crit }}>2029—33</div>
+            <div style={S.telDelta}>conf 0.74</div>
+          </div>
+        </div>
+
+        {/* DISPATCHES */}
+        <SectionHead tag="T-02" title="Dispatches · Three Acts" timestamp="3 ENTRIES" />
+        <div style={S.dispatches}>
+          <Link to="/collision" style={S.dispatch}>
+            <span style={S.dTag}>Act I · The Collision</span>
+            <h3 style={S.dTtl}>Why fiat breaks first.</h3>
+            <p style={S.dBody}>
+              The macro thesis. AI deflation collides with sovereign debt
+              monetisation. Reinhart-Rogoff territory crossed. Capital flight to
+              crypto. The precursor.
+            </p>
+            <div style={S.dSep}>Read the thesis →</div>
+          </Link>
+          <Link to="/mars" style={S.dispatch}>
+            <span style={S.dTag}>Act II · Mars Colony</span>
+            <h3 style={S.dTtl}>Capitalist UBI. Every citizen a shareholder.</h3>
+            <p style={S.dBody}>
+              A working post-scarcity simulation. Sixty-six citizens, one hundred
+              and sixty robots, an automated Fisc — the economic model that
+              survives AI displacement.
+            </p>
+            <div style={S.dSep}>Enter simulation →</div>
+          </Link>
+          <Link to="/earth" style={S.dispatch}>
+            <span style={S.dTag}>Act III · Earth Implementation</span>
+            <h3 style={S.dTtl}>Bringing the model home.</h3>
+            <p style={S.dBody}>
+              How the principles tested on Mars adapt to existing nation-states.
+              A blueprint for the post-fiat transition, ground up.
+            </p>
+            <div style={S.dSep}>Read blueprint →</div>
+          </Link>
+        </div>
+
+        <div style={{ height: 56 }} />
       </div>
-
-
     </div>
   );
 }

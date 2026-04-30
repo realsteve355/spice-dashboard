@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { C, F } from "./tokens";
+import TopBar from "./components/spice/TopBar";
+import Footer from "./components/spice/Footer";
 import Home from "./pages/Home";
 import Collision from "./pages/Collision";
 import Dashboard from "./pages/Dashboard";
@@ -28,60 +30,23 @@ import ColonyEconomy from './pages/ColonyEconomy.jsx'
 import BalanceOfPayments from './pages/BalanceOfPayments.jsx'
 import Components from './pages/Components.jsx'
 
-function Nav() {
-  return (
-    <header style={S.header}>
-      <div style={S.headerLeft}>
-        <NavLink to="/" style={{ textDecoration: "none" }}>
-          <div style={S.logo}>
-            <span style={S.logoMark}>◈</span>
-            <span style={S.logoText}>SPICE</span>
-            <span style={S.logoBracket}>[ZPC]</span>
-          </div>
-        </NavLink>
-        <span style={S.tagline}>CAPITALIST UBI PROTOCOL</span>
-      </div>
-      <nav style={S.nav}>
-        <NavLink to="/" end style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Home
-        </NavLink>
-        <NavLink to="/collision" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Collision
-        </NavLink>
-        <NavLink to="/mars" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Mars
-        </NavLink>
-        <NavLink to="/earth" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Earth
-        </NavLink>
-        <NavLink to="/fairbrook" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Fairbrook
-        </NavLink>
-        <NavLink to="/abundance" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Abundance
-        </NavLink>
-        <NavLink to="/pathway" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Pathway
-        </NavLink>
-        <NavLink to="/spice-system" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          System
-        </NavLink>
-        <NavLink to="/coin" style={({ isActive }) => ({ ...S.navLink, ...(isActive ? S.navActive : {}) })}>
-          Coin
-        </NavLink>
-        <a href="/spice-methodology.html" style={S.navLink}>
-          Methodology
-        </a>
-      </nav>
-    </header>
-  );
-}
+const NAV_ITEMS = [
+  { label: "Home",        to: "/",                       end: true },
+  { label: "Collision",   to: "/collision" },
+  { label: "Mars",        to: "/mars" },
+  { label: "Earth",       to: "/earth" },
+  { label: "Pathway",     to: "/pathway" },
+  { label: "Abundance",   to: "/abundance" },
+  { label: "System",      to: "/spice-system" },
+  { label: "Coin",        to: "/coin" },
+  { label: "Methodology", to: "/spice-methodology.html", external: true },
+];
 
 export default function App() {
   return (
     <BrowserRouter>
       <div style={S.root}>
-        <Nav />
+        <TopBar navItems={NAV_ITEMS} status="Sys Online" />
         <Routes>
           {/* ── Top-level ── */}
           <Route path="/" element={<Home />} />
@@ -129,6 +94,7 @@ export default function App() {
             <Route path="health"     element={<MarsHealth />} />
           </Route>
         </Routes>
+        <Footer />
       </div>
     </BrowserRouter>
   );
@@ -141,41 +107,7 @@ const S = {
     color: C.txt,
     fontFamily: F.mono,
     position: "relative",
-  },
-  header: {
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 40px",
-    height: 57,
-    borderBottom: `1px solid ${C.line}`,
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-    background: C.panel,
+    flexDirection: "column",
   },
-  headerLeft: { display: "flex", alignItems: "center", gap: 24 },
-  logo: { display: "flex", alignItems: "baseline", gap: 8 },
-  logoMark: { fontSize: 18, color: C.txt },
-  logoText: { fontSize: 16, fontWeight: 600, letterSpacing: "0.24em", color: C.txt },
-  logoBracket: {
-    fontSize: 10,
-    color: C.dim,
-    border: `1px solid ${C.line}`,
-    padding: "2px 6px",
-    letterSpacing: "0.1em",
-  },
-  tagline: { fontSize: 9, color: C.faint, letterSpacing: "0.12em" },
-  nav: { display: "flex", gap: 32, alignItems: "center" },
-  navLink: {
-    fontSize: 11,
-    letterSpacing: "0.18em",
-    color: C.dim,
-    textDecoration: "none",
-    textTransform: "uppercase",
-    paddingBottom: 2,
-    borderBottom: "2px solid transparent",
-    transition: "color 0.2s, border-color 0.2s",
-  },
-  navActive: { color: C.txt, borderBottom: `2px solid ${C.txt}` },
 };
