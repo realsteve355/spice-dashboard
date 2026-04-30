@@ -5,9 +5,9 @@ const F    = "'IBM Plex Mono',monospace";
 const BG0  = "#06070a";
 const BG2  = "#11141a";
 const BD   = "#232831";
-const T1   = "#ede5d4";
-const T2   = "#b8b0a0";
-const T3   = "#8a8170";
+const T1   = "#e8e8e8";
+const T2   = "#a4a4a4";
+const T3   = "#767676";
 const GOLD = "#c8a96e";
 
 // ─── GOVERNMENT RESPONSE PATHS ───────────────────────────────────────────────
@@ -713,24 +713,24 @@ function CrisisCard({ ct, active }) {
     header: { background: ct.bg, borderBottom: `1px solid ${ct.borderColor}`, padding: "20px 20px 16px", textAlign: "center" },
     icon: { fontSize: 32, marginBottom: 8 },
     type: { fontSize: 8, fontWeight: 700, color: ct.color, textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 3 },
-    name: { fontSize: 14, fontWeight: 700, color: "#ede5d4", marginBottom: 4 },
-    dur:  { fontSize: 9, color: "#8a8170" },
+    name: { fontSize: 14, fontWeight: 700, color: "#e8e8e8", marginBottom: 4 },
+    dur:  { fontSize: 9, color: "#767676" },
     body: { padding: "16px 18px", flex: 1 },
-    sHead: { fontSize: 8, fontWeight: 700, color: "#b8b0a0", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7, marginTop: 14 },
-    ex:   { fontSize: 9, color: "#b8b0a0", lineHeight: 1.7, marginBottom: 4 },
-    exName: { fontWeight: 700, color: "#ede5d4" },
-    exDetail: { color: "#8a8170", fontSize: 8 },
+    sHead: { fontSize: 8, fontWeight: 700, color: "#a4a4a4", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 7, marginTop: 14 },
+    ex:   { fontSize: 9, color: "#a4a4a4", lineHeight: 1.7, marginBottom: 4 },
+    exName: { fontWeight: 700, color: "#e8e8e8" },
+    exDetail: { color: "#767676", fontSize: 8 },
     bullet: { fontSize: 10, color: "#c8d0e0", lineHeight: 1.7, marginBottom: 3, paddingLeft: 12, position: "relative" },
     dot: { position: "absolute", left: 0, color: ct.color },
     barWrap: { background: "#141c2e", padding: "10px 12px", marginTop: 12, marginBottom: 4 },
-    barLabel: { fontSize: 7, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 },
+    barLabel: { fontSize: 7, color: "#767676", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 },
     barTrack: { background: "#232831", height: 12, borderRadius: 2, marginBottom: 6, overflow: "hidden" },
     barFill: { height: "100%", borderRadius: 2, display: "flex", alignItems: "center", paddingLeft: 6, fontSize: 7, fontWeight: 700, color: "#fff" },
     mod: { background: ct.bg, padding: "10px 12px", marginTop: 8 },
     modHead: { fontSize: 8, fontWeight: 700, color: ct.color, marginBottom: 5 },
     toggle: { fontSize: 8, color: ct.color, cursor: "pointer", background: "none", border: "none", fontFamily: F, padding: "8px 0", textDecoration: "underline" },
     dive: { borderTop: `1px solid ${ct.borderColor}`, padding: "12px 18px", background: ct.bg },
-    diveT: { fontSize: 8, color: "#b8b0a0", lineHeight: 1.8 },
+    diveT: { fontSize: 8, color: "#a4a4a4", lineHeight: 1.8 },
   };
 
   return (
@@ -787,16 +787,16 @@ function CrisisCard({ ct, active }) {
       </div>
       {open && (
         <div style={S.dive}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#ede5d4", marginBottom: 8 }}>{ct.deepDive.title}</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#e8e8e8", marginBottom: 8 }}>{ct.deepDive.title}</div>
           {ct.deepDive.timeline.map((t, i) => (
             <div key={i} style={S.diveT}>
-              <span style={{ fontWeight: 700, color: "#b8b0a0" }}>{t.date}</span> — {t.event}
+              <span style={{ fontWeight: 700, color: "#a4a4a4" }}>{t.date}</span> — {t.event}
             </div>
           ))}
-          <div style={{ marginTop: 10, fontSize: 9, color: "#b8b0a0", lineHeight: 1.7, borderTop: "1px solid #e5e5e5", paddingTop: 8 }}>
+          <div style={{ marginTop: 10, fontSize: 9, color: "#a4a4a4", lineHeight: 1.7, borderTop: "1px solid #e5e5e5", paddingTop: 8 }}>
             {ct.deepDive.outcome}
           </div>
-          <div style={{ marginTop: 6, fontSize: 9, color: "#8a8170", lineHeight: 1.7, fontStyle: "italic" }}>
+          <div style={{ marginTop: 6, fontSize: 9, color: "#767676", lineHeight: 1.7, fontStyle: "italic" }}>
             {ct.deepDive.lesson}
           </div>
         </div>
@@ -842,22 +842,22 @@ export default function CrisisScenarios() {
 
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 800, marginBottom: hasParams ? 32 : 40 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 8 }}>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 8 }}>
           SPICE Research — Government Response Paths &amp; Personal Impact
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", fontFamily: F, lineHeight: 1.2 }}>
           Crisis <span style={{ color: "#c8a96e" }}>Scenarios</span>
         </h1>
         {hasParams ? (
-          <p style={{ fontSize: 12, color: "#b8b0a0", lineHeight: 1.8, margin: 0 }}>
+          <p style={{ fontSize: 12, color: "#a4a4a4", lineHeight: 1.8, margin: 0 }}>
             Your simulation triggered The Collision in <strong>{collisionYear}</strong>. Below: four government response paths, their crisis timelines, and what they mean for nine different household situations.
           </p>
         ) : (
           <>
-            <p style={{ fontSize: 12, color: "#b8b0a0", lineHeight: 1.8, margin: "0 0 16px" }}>
+            <p style={{ fontSize: 12, color: "#a4a4a4", lineHeight: 1.8, margin: "0 0 16px" }}>
               When a reserve currency fails, governments choose between four response paths. Each path produces different outcomes for different people. Select a path to see the crisis timeline; select a persona to see year-by-year personal impact.
             </p>
-            <div style={{ background: "#0d0f12", border: "1px solid #e2e2e2", padding: "10px 14px", fontSize: 10, color: "#8a8170" }}>
+            <div style={{ background: "#0d0f12", border: "1px solid #e2e2e2", padding: "10px 14px", fontSize: 10, color: "#767676" }}>
               Run the{" "}
               <Link to="/collision" style={{ color: "#c8a96e" }}>simulation</Link>
               {" "}first to see this page populated with your specific crisis data.
@@ -881,7 +881,7 @@ export default function CrisisScenarios() {
               <div style={{ fontSize: 16, fontWeight: 700, color: "#dc2626", letterSpacing: "0.04em", marginBottom: 4 }}>
                 THE COLLISION — {collisionYear}
               </div>
-              <div style={{ fontSize: 10, color: "#b8b0a0", lineHeight: 1.7 }}>
+              <div style={{ fontSize: 10, color: "#a4a4a4", lineHeight: 1.7 }}>
                 Crisis triggered when debt crossed 175%
                 {ai ? ` with ${ai}% AI displacement` : ""}
                 {crypto ? ` and ${crypto}% crypto flight` : ""}
@@ -898,7 +898,7 @@ export default function CrisisScenarios() {
               { label: "Gini Coeff",   value: gini ? gini.toFixed(2) : "—", color: "#dc2626" },
             ].map(k => (
               <div key={k.label} style={{ background: "#11141a", border: "1px solid rgba(220,38,38,0.3)", padding: "10px 12px" }}>
-                <div style={{ fontSize: 8, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+                <div style={{ fontSize: 8, color: "#767676", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
                   {k.label}
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: k.color }}>{k.value}</div>
@@ -915,9 +915,9 @@ export default function CrisisScenarios() {
             <div style={{ background: "#dc2626", color: "#fff", padding: "5px 10px", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
               TYPE {crisisType}
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#ede5d4" }}>{getTypeName(crisisType)}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#e8e8e8" }}>{getTypeName(crisisType)}</div>
           </div>
-          <div style={{ fontSize: 11, color: "#b8b0a0", lineHeight: 1.8 }}>
+          <div style={{ fontSize: 11, color: "#a4a4a4", lineHeight: 1.8 }}>
             Your scenario most closely resembles <strong>Type {crisisType}: {getTypeName(crisisType)}</strong>.{" "}
             {getTypeExplanation(crisisType, ai, crypto)}
           </div>
@@ -929,10 +929,10 @@ export default function CrisisScenarios() {
         <div style={{ fontSize: 9, color: "#d4a017", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 4 }}>
           Government Response Strategy
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#ede5d4", marginBottom: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#e8e8e8", marginBottom: 8 }}>
           Select a Response Path
         </div>
-        <div style={{ fontSize: 10, color: "#b8b0a0", lineHeight: 1.7, marginBottom: 18 }}>
+        <div style={{ fontSize: 10, color: "#a4a4a4", lineHeight: 1.7, marginBottom: 18 }}>
           Four plausible government responses to a debt/AI/crypto collision. In reality, governments may attempt multiple strategies or be forced into specific paths by political constraints. Select to see the crisis timeline and personal outcomes for each path.
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10 }}>
@@ -952,11 +952,11 @@ export default function CrisisScenarios() {
               }}
             >
               <div style={{ fontSize: 18, marginBottom: 6 }}>{p.icon}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#ede5d4", marginBottom: 5 }}>{p.title}</div>
-              <div style={{ fontSize: 9, color: "#b8b0a0", lineHeight: 1.6, marginBottom: 8 }}>{p.description}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#e8e8e8", marginBottom: 5 }}>{p.title}</div>
+              <div style={{ fontSize: 9, color: "#a4a4a4", lineHeight: 1.6, marginBottom: 8 }}>{p.description}</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {[p.countries, p.likelihood].map(tag => (
-                  <span key={tag} style={{ fontSize: 7, color: "#8a8170", background: "#f3f4f6", padding: "2px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  <span key={tag} style={{ fontSize: 7, color: "#767676", background: "#f3f4f6", padding: "2px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                     {tag}
                   </span>
                 ))}
@@ -968,13 +968,13 @@ export default function CrisisScenarios() {
 
       {/* ── CRISIS TIMELINE ────────────────────────────────────────────── */}
       <div style={{ marginBottom: 36 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 4 }}>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 4 }}>
           Crisis Progression
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#ede5d4", marginBottom: 4 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#e8e8e8", marginBottom: 4 }}>
           Timeline: {path.title}
         </div>
-        <div style={{ fontSize: 10, color: "#8a8170", marginBottom: 20 }}>
+        <div style={{ fontSize: 10, color: "#767676", marginBottom: 20 }}>
           {path.timeline.length}-phase progression for this government response strategy
         </div>
 
@@ -996,10 +996,10 @@ export default function CrisisScenarios() {
                 <div style={{ fontSize: 8, color: dotColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
                   {cy + phase.offset} — {phase.phase}
                 </div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#ede5d4", marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#e8e8e8", marginBottom: 8 }}>
                   {phase.title}
                 </div>
-                <div style={{ fontSize: 9, color: "#b8b0a0", lineHeight: 1.7 }}>
+                <div style={{ fontSize: 9, color: "#a4a4a4", lineHeight: 1.7 }}>
                   {phase.description}
                 </div>
               </div>
@@ -1010,13 +1010,13 @@ export default function CrisisScenarios() {
 
       {/* ── PERSONAL IMPACT SCENARIOS ──────────────────────────────────── */}
       <div style={{ marginBottom: 36 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 4 }}>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 4 }}>
           Personal Impact
         </div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#ede5d4", marginBottom: 8 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "#e8e8e8", marginBottom: 8 }}>
           What This Means For You
         </div>
-        <div style={{ fontSize: 10, color: "#b8b0a0", lineHeight: 1.7, marginBottom: 20 }}>
+        <div style={{ fontSize: 10, color: "#a4a4a4", lineHeight: 1.7, marginBottom: 20 }}>
           Select a persona to see year-by-year impact under the <strong>{path.title}</strong> government response path. Scenarios are illustrative based on typical situations for each profile.
         </div>
 
@@ -1040,10 +1040,10 @@ export default function CrisisScenarios() {
                 }}
               >
                 <div style={{ fontSize: 22, marginBottom: 6 }}>{p.flag}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#ede5d4", marginBottom: 2 }}>{p.title}</div>
-                <div style={{ fontSize: 8, color: "#8a8170" }}>{p.location}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#e8e8e8", marginBottom: 2 }}>{p.title}</div>
+                <div style={{ fontSize: 8, color: "#767676" }}>{p.location}</div>
                 {!hasContent && (
-                  <div style={{ fontSize: 7, color: "#8a8170", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  <div style={{ fontSize: 7, color: "#767676", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                     coming soon
                   </div>
                 )}
@@ -1060,10 +1060,10 @@ export default function CrisisScenarios() {
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid #f0f0f0" }}>
                 <span style={{ fontSize: 28 }}>{persona.flag}</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#ede5d4" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#e8e8e8" }}>
                     {persona.title} — {persona.location}
                   </div>
-                  <div style={{ fontSize: 9, color: "#8a8170", marginTop: 2 }}>
+                  <div style={{ fontSize: 9, color: "#767676", marginTop: 2 }}>
                     Under: {path.icon} {path.title}
                   </div>
                 </div>
@@ -1071,12 +1071,12 @@ export default function CrisisScenarios() {
 
               {/* Starting position */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 8, fontWeight: 700, color: "#b8b0a0", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
+                <div style={{ fontSize: 8, fontWeight: 700, color: "#a4a4a4", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>
                   Starting Position (pre-crisis)
                 </div>
                 <div style={{ fontSize: 10, color: "#c8d0e0", lineHeight: 1.8, background: "#0d0f12", padding: "10px 14px", border: "1px solid #ebebeb" }}>
                   {persona.starting.startsWith("// TODO") ? (
-                    <span style={{ color: "#8a8170" }}>Starting position not yet defined for this persona.</span>
+                    <span style={{ color: "#767676" }}>Starting position not yet defined for this persona.</span>
                   ) : persona.starting}
                 </div>
               </div>
@@ -1084,7 +1084,7 @@ export default function CrisisScenarios() {
               {/* Year-by-year */}
               {timeline.length > 0 ? (
                 timeline.map((entry, idx) => {
-                  const yearColors = ["#dc2626", "#ea580c", "#ea580c", "#eab308", "#8a8170"];
+                  const yearColors = ["#dc2626", "#ea580c", "#ea580c", "#eab308", "#767676"];
                   const yc = yearColors[Math.min(idx, yearColors.length - 1)];
                   return (
                     <div key={idx} style={{ marginBottom: 14, paddingBottom: 14, borderBottom: idx < timeline.length - 1 ? "1px solid #f5f5f5" : "none" }}>
@@ -1096,7 +1096,7 @@ export default function CrisisScenarios() {
                   );
                 })
               ) : (
-                <div style={{ fontSize: 10, color: "#8a8170", fontStyle: "italic", padding: "16px 0" }}>
+                <div style={{ fontSize: 10, color: "#767676", fontStyle: "italic", padding: "16px 0" }}>
                   Scenario content not yet available for this persona × path combination.
                 </div>
               )}
@@ -1116,14 +1116,14 @@ export default function CrisisScenarios() {
           }}
         >
           <div>
-            <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 2 }}>
+            <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 2 }}>
               Bond Market Mechanics
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#ede5d4" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#e8e8e8" }}>
               Understanding What "Bond Market Meltdown" Actually Means
             </div>
           </div>
-          <span style={{ fontSize: 12, color: "#8a8170", marginLeft: 12 }}>{showMechanics ? "▲" : "▼"}</span>
+          <span style={{ fontSize: 12, color: "#767676", marginLeft: 12 }}>{showMechanics ? "▲" : "▼"}</span>
         </button>
 
         {showMechanics && (
@@ -1170,7 +1170,7 @@ export default function CrisisScenarios() {
               },
             ].map(section => (
               <div key={section.title} style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#ede5d4", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#e8e8e8", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
                   {section.title}
                 </div>
                 {section.items.map((item, i) => (
@@ -1187,13 +1187,13 @@ export default function CrisisScenarios() {
 
       {/* ── CRISIS TYPES REFERENCE ─────────────────────────────────────── */}
       <div style={{ borderTop: "2px solid #f0f0f0", paddingTop: 36, marginBottom: 48 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>
           Historical Framework
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>
           Three Crisis Types
         </div>
-        <p style={{ fontSize: 11, color: "#b8b0a0", lineHeight: 1.8, maxWidth: 780, marginBottom: 24 }}>
+        <p style={{ fontSize: 11, color: "#a4a4a4", lineHeight: 1.8, maxWidth: 780, marginBottom: 24 }}>
           Ray Dalio's 500-year analysis identifies three distinct patterns for reserve currency transitions. AI displacement and crypto capital flight modify each pattern — compressing timelines and removing the policy buffers that made historical managed transitions possible.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
@@ -1205,17 +1205,17 @@ export default function CrisisScenarios() {
 
       {/* ── BEYOND THE CRISIS ──────────────────────────────────────────── */}
       <div style={{ borderTop: "2px solid #f0f0f0", paddingTop: 36, marginBottom: 48 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>
           Post-Crisis — Speculative
         </div>
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
           Beyond the Crisis: The Monetary Reset Question
         </div>
-        <p style={{ fontSize: 11, color: "#b8b0a0", lineHeight: 1.8, marginBottom: 10, maxWidth: 780 }}>
+        <p style={{ fontSize: 11, color: "#a4a4a4", lineHeight: 1.8, marginBottom: 10, maxWidth: 780 }}>
           This simulation models the crisis itself — the collision between unsustainable sovereign debt, AI-driven deflation, and crypto-enabled capital flight. What comes after is deliberately out of scope.
         </p>
-        <div style={{ background: "#0d0f12", border: "1px solid #e2e2e2", padding: "12px 16px", fontSize: 10, color: "#b8b0a0", lineHeight: 1.8, marginBottom: 28, maxWidth: 780 }}>
-          <strong style={{ color: "#ede5d4" }}>We make no prediction.</strong> History shows reserve currency transitions resolve in unexpected ways. Three scenarios — all possible, none certain.
+        <div style={{ background: "#0d0f12", border: "1px solid #e2e2e2", padding: "12px 16px", fontSize: 10, color: "#a4a4a4", lineHeight: 1.8, marginBottom: 28, maxWidth: 780 }}>
+          <strong style={{ color: "#e8e8e8" }}>We make no prediction.</strong> History shows reserve currency transitions resolve in unexpected ways. Three scenarios — all possible, none certain.
         </div>
 
         {[
@@ -1254,12 +1254,12 @@ export default function CrisisScenarios() {
                 <div style={{ fontSize: 8, color: sc.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 2 }}>
                   Scenario {sc.num} — {sc.sub}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#ede5d4" }}>{sc.title}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#e8e8e8" }}>{sc.title}</div>
               </div>
             </div>
             <div style={{ padding: "16px 18px" }}>
-              <div style={{ fontSize: 10, color: "#b8b0a0", lineHeight: 1.8, marginBottom: 12 }}>{sc.thesis}</div>
-              <div style={{ fontSize: 8, color: "#8a8170", fontStyle: "italic", marginBottom: 14, paddingLeft: 10, borderLeft: `2px solid ${sc.color}40` }}>
+              <div style={{ fontSize: 10, color: "#a4a4a4", lineHeight: 1.8, marginBottom: 12 }}>{sc.thesis}</div>
+              <div style={{ fontSize: 8, color: "#767676", fontStyle: "italic", marginBottom: 14, paddingLeft: 10, borderLeft: `2px solid ${sc.color}40` }}>
                 Historical analogue: {sc.analog}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -1280,7 +1280,7 @@ export default function CrisisScenarios() {
                   ))}
                 </div>
               </div>
-              <div style={{ fontSize: 8, color: "#8a8170", background: "#11141a", padding: "6px 10px", borderLeft: `3px solid ${sc.color}` }}>
+              <div style={{ fontSize: 8, color: "#767676", background: "#11141a", padding: "6px 10px", borderLeft: `3px solid ${sc.color}` }}>
                 {sc.timeline}
               </div>
             </div>
@@ -1303,7 +1303,7 @@ export default function CrisisScenarios() {
               <span style={{ position: "absolute", left: 0, color: "#c8a96e" }}>◈</span>{p}
             </div>
           ))}
-          <div style={{ borderTop: "1px solid rgba(200,169,110,0.3)", marginTop: 14, paddingTop: 12, fontSize: 12, fontWeight: 700, color: "#ede5d4", lineHeight: 1.6 }}>
+          <div style={{ borderTop: "1px solid rgba(200,169,110,0.3)", marginTop: 14, paddingTop: 12, fontSize: 12, fontWeight: 700, color: "#e8e8e8", lineHeight: 1.6 }}>
             SPICE hedges the transition, not the endpoint. We're not betting on the new world order — we're betting against the current one.
           </div>
         </div>
@@ -1314,7 +1314,7 @@ export default function CrisisScenarios() {
             <thead>
               <tr style={{ background: "#141c2e" }}>
                 {["Scenario", "Outcome", "SPICE Performance"].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 8, color: "#b8b0a0", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 8, color: "#a4a4a4", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1326,8 +1326,8 @@ export default function CrisisScenarios() {
                 ["No crisis — system stabilises",         "Debt/GDP stabilises, no structural break",      "Loses — opportunity cost vs equities"],
               ].map(([sc, out, perf], i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? "#11141a" : "#0d0f12" }}>
-                  <td style={{ padding: "8px 12px", border: "1px solid #e2e2e2", fontWeight: 700, color: "#ede5d4" }}>{sc}</td>
-                  <td style={{ padding: "8px 12px", border: "1px solid #e2e2e2", color: "#b8b0a0" }}>{out}</td>
+                  <td style={{ padding: "8px 12px", border: "1px solid #e2e2e2", fontWeight: 700, color: "#e8e8e8" }}>{sc}</td>
+                  <td style={{ padding: "8px 12px", border: "1px solid #e2e2e2", color: "#a4a4a4" }}>{out}</td>
                   <td style={{ padding: "8px 12px", border: "1px solid #e2e2e2", color: i === 3 ? "#ef4444" : "#16a34a", fontWeight: 700 }}>{perf}</td>
                 </tr>
               ))}
@@ -1337,21 +1337,21 @@ export default function CrisisScenarios() {
 
         {/* Further reading */}
         <div style={{ background: "#0d0f12", border: "1px solid #e2e2e2", padding: "14px 18px", marginBottom: 24 }}>
-          <div style={{ fontSize: 8, fontWeight: 700, color: "#b8b0a0", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Further Reading</div>
+          <div style={{ fontSize: 8, fontWeight: 700, color: "#a4a4a4", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>Further Reading</div>
           {[
             ["Scenario 1 (Bitcoin Standard)", "Ammous, The Bitcoin Standard (2018) · Gladstein, Check Your Financial Privilege (2022)"],
             ["Scenario 2 (Multipolar)",        "Eichengreen, Exorbitant Privilege (2011) · Prasad, The Dollar Trap (2014)"],
             ["Scenario 3 (CBDC)",              "Brunnermeier et al., The Digitalization of Money (2019) · BIS Working Papers on CBDCs"],
             ["Historical precedent",           "Kindleberger, A Financial History of Western Europe (1984) · Eichengreen, Globalizing Capital (2008)"],
           ].map(([label, refs]) => (
-            <div key={label} style={{ fontSize: 9, color: "#b8b0a0", lineHeight: 1.7, marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, color: "#ede5d4" }}>{label}:</span> {refs}
+            <div key={label} style={{ fontSize: 9, color: "#a4a4a4", lineHeight: 1.7, marginBottom: 4 }}>
+              <span style={{ fontWeight: 700, color: "#e8e8e8" }}>{label}:</span> {refs}
             </div>
           ))}
         </div>
 
         <div style={{ textAlign: "center", padding: "24px 0 8px" }}>
-          <div style={{ fontSize: 10, color: "#8a8170", marginBottom: 10 }}>Ready to hedge the transition?</div>
+          <div style={{ fontSize: 10, color: "#767676", marginBottom: 10 }}>Ready to hedge the transition?</div>
           <Link to="/coin" style={{ display: "inline-block", background: "#c8a96e", color: "#fff", padding: "10px 24px", fontFamily: F, fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: "0.08em" }}>
             Explore the SPICE Vault →
           </Link>
@@ -1360,7 +1360,7 @@ export default function CrisisScenarios() {
 
       {/* ── HISTORICAL DEEP DIVES ──────────────────────────────────────── */}
       <div style={{ borderTop: "2px solid #f0f0f0", paddingTop: 36 }}>
-        <div style={{ fontSize: 9, color: "#8a8170", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>Historical Record</div>
+        <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 6 }}>Historical Record</div>
         <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Deep Dives</div>
         {DEEP_DIVES.map((d, i) => (
           <div key={d.title} style={{ border: "1px solid #e2e2e2", marginBottom: 8 }}>
@@ -1369,26 +1369,26 @@ export default function CrisisScenarios() {
               style={{ display: "flex", alignItems: "center", gap: 12, width: "100%", textAlign: "left", padding: "14px 18px", background: "none", border: "none", cursor: "pointer", fontFamily: F }}
             >
               <span style={{ fontSize: 20 }}>{d.icon}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#ede5d4", flex: 1 }}>{d.title}</span>
-              <span style={{ fontSize: 10, color: "#8a8170" }}>{openDives[i] ? "▲" : "▼"}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#e8e8e8", flex: 1 }}>{d.title}</span>
+              <span style={{ fontSize: 10, color: "#767676" }}>{openDives[i] ? "▲" : "▼"}</span>
             </button>
             {openDives[i] && (
               <div style={{ padding: "0 18px 18px 50px", borderTop: "1px solid #f0f0f0" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#b8b0a0", textTransform: "uppercase", letterSpacing: "0.1em", margin: "14px 0 8px" }}>Timeline</div>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#a4a4a4", textTransform: "uppercase", letterSpacing: "0.1em", margin: "14px 0 8px" }}>Timeline</div>
                 {d.timeline.map((t, j) => (
                   <div key={j} style={{ fontSize: 10, color: "#c8d0e0", lineHeight: 1.8, marginBottom: 2 }}>
-                    <span style={{ fontWeight: 700, color: "#b8b0a0", minWidth: 80, display: "inline-block" }}>{t.date}</span>
+                    <span style={{ fontWeight: 700, color: "#a4a4a4", minWidth: 80, display: "inline-block" }}>{t.date}</span>
                     {" — "}{t.event}
                   </div>
                 ))}
-                <div style={{ marginTop: 12, padding: "10px 14px", background: "#11141a", border: "1px solid #ebebeb", fontSize: 10, color: "#b8b0a0", lineHeight: 1.7 }}>
+                <div style={{ marginTop: 12, padding: "10px 14px", background: "#11141a", border: "1px solid #ebebeb", fontSize: 10, color: "#a4a4a4", lineHeight: 1.7 }}>
                   {d.outcome}
                 </div>
               </div>
             )}
           </div>
         ))}
-        <div style={{ fontSize: 7, color: "#8a8170", marginTop: 20, lineHeight: 1.8 }}>
+        <div style={{ fontSize: 7, color: "#767676", marginTop: 20, lineHeight: 1.8 }}>
           Sources: Dalio (2021) Changing World Order · Reinhart &amp; Rogoff NBER w15639 ·
           Reinhart &amp; Sbrancia (2015) · CBO 2025 · IMF WP/2025/076
         </div>

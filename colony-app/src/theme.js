@@ -7,9 +7,9 @@ export const C = {
   white:  '#11141a',   // card / surface background (legacy name; keep for back-compat)
   panel:  '#0d0f12',   // raised surface — top bar, panel
   panel2: '#11141a',   // hover/elevated panel
-  text:   '#ede5d4',   // primary warm-white text
-  sub:    '#b8b0a0',   // secondary text — labels
-  faint:  '#8a8170',   // muted / timestamps
+  text:   '#e8e8e8',   // primary warm-white text
+  sub:    '#a4a4a4',   // secondary text — labels
+  faint:  '#767676',   // muted / timestamps
   border: '#232831',   // hairline divider
   borderHot: '#353c47', // emphasised divider, button border
 

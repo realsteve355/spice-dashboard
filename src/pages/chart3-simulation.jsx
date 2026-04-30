@@ -14,9 +14,9 @@ const BG1  = "#0d0f12";
 const BG2  = "#11141a";
 const BD   = "1px solid #232831";
 const BD2  = "1px solid #141c2e";
-const T1   = "#ede5d4";
-const T2   = "#b8b0a0";
-const T3   = "#8a8170";
+const T1   = "#e8e8e8";
+const T2   = "#a4a4a4";
+const T3   = "#767676";
 const axTick = { fontFamily:"'IBM Plex Mono',monospace", fontSize:8, fill:T3 };
 
 function PanelHead({ label, color, children }) {

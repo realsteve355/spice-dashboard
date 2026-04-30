@@ -11,11 +11,11 @@ export const C = {
   line:     "#232831",   // hairline divider
   lineHot:  "#353c47",   // emphasised divider, button border
 
-  // Text — all warm-tinted
-  txt:      "#ede5d4",   // primary text, brand colour
-  txt2:     "#d8cfba",   // soft primary — body copy
-  dim:      "#b8b0a0",   // secondary — labels, secondary metadata
-  faint:    "#8a8170",   // tertiary — timestamps (passes WCAG AA at 5.8:1)
+  // Text — neutral off-whites (warmth dialled out 30 Apr — read too yellow)
+  txt:      "#e8e8e8",   // primary text, brand colour
+  txt2:     "#d2d2d2",   // soft primary — body copy
+  dim:      "#a4a4a4",   // secondary — labels, secondary metadata
+  faint:    "#767676",   // tertiary — timestamps
 
   // Headline highlight (use only on h1 hero)
   headline: "#ffffff",

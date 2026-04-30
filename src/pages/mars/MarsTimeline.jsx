@@ -10,7 +10,7 @@ const CS = {
   borderRadius: 2,
   fontSize: 10,
   fontFamily: 'Share Tech Mono, monospace',
-  color: '#b8b0a0',
+  color: '#a4a4a4',
 }
 
 function fmt(n) {
@@ -84,9 +84,9 @@ export default function MarsTimeline() {
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={withAnnualGdp} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="#232831" strokeDasharray="2 4" />
-                <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#8a8170' }} interval={49} />
+                <XAxis dataKey="year" tick={{ fontSize: 9, fill: '#767676' }} interval={49} />
                 <YAxis
-                  tick={{ fontSize: 9, fill: '#8a8170' }}
+                  tick={{ fontSize: 9, fill: '#767676' }}
                   tickFormatter={fmt}
                   width={44}
                   domain={chart.domain}

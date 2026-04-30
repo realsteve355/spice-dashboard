@@ -35,7 +35,7 @@ export default function CollisionLayout() {
               fontSize: 10,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
-              color: isActive ? "#c8a96e" : "#8a8170",
+              color: isActive ? "#c8a96e" : "#767676",
               textDecoration: "none",
               padding: "12px 20px",
               borderBottom: isActive ? "2px solid #c8a96e" : "2px solid transparent",

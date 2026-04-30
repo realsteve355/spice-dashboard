@@ -3,7 +3,7 @@
 .mars-dash {
   min-height: 100vh;
   background: #06070a;
-  color: #ede5d4;
+  color: #e8e8e8;
   font-family: 'Share Tech Mono', monospace;
 }
 
@@ -25,7 +25,7 @@
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8a8170;
+  color: #767676;
   text-decoration: none;
   padding: 12px 18px;
   border-bottom: 2px solid transparent;
@@ -34,7 +34,7 @@
 }
 
 .mars-subnav-link:hover {
-  color: #b8b0a0;
+  color: #a4a4a4;
 }
 
 .mars-subnav-link.active {
@@ -56,7 +56,7 @@
   justify-content: center;
   min-height: 300px;
   font-size: 11px;
-  color: #8a8170;
+  color: #767676;
   letter-spacing: 0.15em;
 }
 
@@ -75,7 +75,7 @@
 
 .mars-error-hint {
   font-size: 10px;
-  color: #8a8170;
+  color: #767676;
 }
 
 /* ── Shared panel ── */
@@ -90,7 +90,7 @@
 .md-panel-title {
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   margin-bottom: 16px;
   padding-bottom: 10px;
@@ -115,21 +115,21 @@
 .md-stat-label {
   font-size: 9px;
   letter-spacing: 0.18em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   margin-bottom: 8px;
 }
 
 .md-stat-value {
   font-size: 22px;
-  color: #ede5d4;
+  color: #e8e8e8;
   line-height: 1;
   margin-bottom: 4px;
 }
 
 .md-stat-sub {
   font-size: 9px;
-  color: #8a8170;
+  color: #767676;
   letter-spacing: 0.08em;
 }
 
@@ -176,7 +176,7 @@
 }
 
 .md-svc-name {
-  color: #b8b0a0;
+  color: #a4a4a4;
   min-width: 160px;
   letter-spacing: 0.03em;
 }
@@ -197,7 +197,7 @@
 }
 
 .md-svc-val {
-  color: #8a8170;
+  color: #767676;
   min-width: 50px;
   text-align: right;
   letter-spacing: 0.05em;
@@ -219,7 +219,7 @@
 .md-table th {
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   text-align: left;
   padding: 6px 8px;
@@ -229,7 +229,7 @@
 .md-table td {
   padding: 8px 8px;
   border-bottom: 1px solid #141c2e;
-  color: #b8b0a0;
+  color: #a4a4a4;
 }
 
 .md-table tr:last-child td {
@@ -242,7 +242,7 @@
 }
 
 .md-table .val {
-  color: #ede5d4;
+  color: #e8e8e8;
   text-align: right;
 }
 
@@ -283,7 +283,7 @@
 .md-label {
   font-size: 9px;
   letter-spacing: 0.22em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   margin-bottom: 14px;
   border-bottom: 1px solid #232831;
@@ -309,7 +309,7 @@
 .mars-year-label {
   font-size: 9px;
   letter-spacing: 0.2em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -336,7 +336,7 @@
 .mars-year-txns {
   margin-left: auto;
   font-size: 9px;
-  color: #8a8170;
+  color: #767676;
   letter-spacing: 0.12em;
   white-space: nowrap;
 }
@@ -348,7 +348,7 @@
   gap: 14px;
   margin-bottom: 20px;
   font-size: 10px;
-  color: #8a8170;
+  color: #767676;
 }
 
 .md-year-control input[type=range] {
@@ -388,7 +388,7 @@
 .md-health-name {
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: #8a8170;
+  color: #767676;
   text-transform: uppercase;
   margin-bottom: 6px;
 }
@@ -404,7 +404,7 @@
 
 .md-health-interp {
   font-size: 10px;
-  color: #8a8170;
+  color: #767676;
   line-height: 1.6;
   margin-bottom: 10px;
 }
@@ -418,7 +418,7 @@
 
 .md-story-meta {
   font-size: 10px;
-  color: #8a8170;
+  color: #767676;
   margin-bottom: 16px;
 }
 
@@ -437,7 +437,7 @@
 }
 
 .md-event-text {
-  color: #b8b0a0;
+  color: #a4a4a4;
 }
 
 /* ── Citizen list ── */
@@ -462,13 +462,13 @@
 
 .md-citizen-name {
   font-size: 12px;
-  color: #ede5d4;
+  color: #e8e8e8;
   margin-bottom: 4px;
 }
 
 .md-citizen-prof {
   font-size: 10px;
-  color: #8a8170;
+  color: #767676;
   margin-bottom: 8px;
 }
 

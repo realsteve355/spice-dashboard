@@ -7,9 +7,9 @@ import { Platform } from 'react-native'
 export const C = {
   gold:    '#D9A53D',   // legacy data accent — survives in chart panels
   bg:      '#06070a',   // near-black, slightly warm — same as web
-  text:    '#ede5d4',   // primary warm-white
-  sub:     '#b8b0a0',   // secondary text — labels
-  faint:   '#8a8170',   // muted / timestamps
+  text:    '#e8e8e8',   // primary warm-white
+  sub:     '#a4a4a4',   // secondary text — labels
+  faint:   '#767676',   // muted / timestamps
   border:  '#232831',   // hairline divider
   red:     '#f87171',
   purple:  '#a78bfa',
