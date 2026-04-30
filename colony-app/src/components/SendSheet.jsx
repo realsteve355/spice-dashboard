@@ -223,7 +223,7 @@ const closeBtn = {
   fontSize: 12, cursor: 'pointer', color: C.sub,
 }
 
-function btn(bg, color = '#fff', border) {
+function btn(bg, color = bg === C.text ? C.bg : '#fff', border) {
   return {
     padding: '11px 14px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',

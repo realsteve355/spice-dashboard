@@ -571,7 +571,7 @@ function Chip({ label, color }) {
   )
 }
 
-function btn(bg, color = '#fff', border) {
+function btn(bg, color = bg === C.text ? C.bg : '#fff', border) {
   return {
     padding: '12px 16px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',

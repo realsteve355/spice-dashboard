@@ -950,7 +950,7 @@ const primaryBtn = {
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 
-function smallBtn(bg, color = C.text, border) {
+function smallBtn(bg, color = bg === C.text ? C.bg : C.text, border) {
   return {
     padding: '9px 14px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',

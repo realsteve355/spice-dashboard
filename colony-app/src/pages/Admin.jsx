@@ -999,6 +999,6 @@ const card       = { background: C.white, border: `1px solid ${C.border}`, borde
 const primaryBtn = { padding: '13px 16px', background: C.text, color: C.bg, border: 'none', borderRadius: 0, fontSize: 13, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
 const ghostBtn   = { padding: '12px 16px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', marginBottom: 10 }
 
-function smallBtn(bg, color = '#fff', border) {
+function smallBtn(bg, color = bg === C.text ? C.bg : '#fff', border) {
   return { padding: '9px 14px', background: bg, color, border: border ? `1px solid ${border}` : 'none', borderRadius: 0, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em' }
 }
