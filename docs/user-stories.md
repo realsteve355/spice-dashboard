@@ -6,6 +6,8 @@
 
 **Status:** ✓ Done (on-chain) · ~ Partial / UI-only mock · — Not built
 
+*v25 (30 April 2026): Added private-colony stories (C-02a, N-12, N-13, N-14, N-15, P-01b). Concept: visibility flag (public/private) on each colony; private colonies invisible to non-members; invitation flow to join. Forward-looking — no contract or UI mechanism shipped yet.*
+
 *v20 (27 April 2026): App-vs-spec audit. 5 stale ✓/~ status flips, 6 new stories (Mall, activity log, Fisc algorithm, asset depreciation), Layout token-type tooltip corrected. v2 contract blockers updated.*
 
 ---
@@ -22,6 +24,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 | C-01 | As a citizen, I want to connect my MetaMask wallet so I can interact with the colony | P1 | ✓ |
 | C-01a | As a returning user, I want the app to auto-connect my wallet on page load without prompting | P1 | ✓ |
 | C-02 | As a prospective citizen, I want to browse a colony's public page so I can decide whether to join | P1 | ✓ |
+| C-02a | As a prospective citizen, I want to see only public colonies and private colonies I have been invited to in the directory, so private colonies remain confidential to their members until invitation | P3 | — |
 | C-03 | As a prospective citizen, I want to read the founding constitution before committing | P1 | ✓ |
 | C-04 | As a prospective citizen, I want to sign the founding constitution on-chain and receive my G-token and first UBI | P1 | ✓ |
 | C-04a | As a prospective citizen, I want to register my name on-chain at signup so my identity is verifiable | P1 | ✓ |
@@ -414,6 +417,10 @@ A citizen deploying a new colony.
 
 | N-10 | As a colony founder, I want my colony to appear automatically in the global directory for all users without any manual step by the protocol team | P1 | ✓ |
 | N-11 | As a colony founder, I want the deploy flow to register my colony with the ColonyRegistry contract so it is publicly discoverable | P1 | ✓ |
+| N-12 | As a colony founder, I want to choose at deploy time whether my colony is public (visible to everyone) or private (visible only to invited members), so I can run pilots, family/village colonies, or stakeholder demos without exposing them to the world | P3 | — |
+| N-13 | As a colony founder, I want to change my colony's visibility (public ↔ private) after deploy via a setting on the MCC page, so visibility can be relaxed or tightened over time | P3 | — |
+| N-14 | As a colony founder or secretary, I want to invite specific wallet addresses to a private colony, so only invitees can see the colony in the directory and register as citizens | P3 | — |
+| N-15 | As an invited citizen, I want to receive an invitation (notification + claim link) and be able to see and join the private colony, so the invite flow doesn't require out-of-band coordination | P3 | — |
 
 *N-00: Colony type (earth/mars) chosen at step 2 of the deploy wizard. Stored in localStorage['spice_user_colonies'][slug].colonyType at step 17.5. Drives Fisc.jsx badge and feature gating. On-chain Fisc contract planned but not yet deployed — type lives in localStorage for now.*
 *N-04: Deploy wizard at app.zpc.finance/create runs an 18-step guided flow: 17 contract deploys/wires (GToken, SToken, VToken, Colony, ownership transfers, OToken, CompanyImpl, UpgradeableBeacon, CompanyFactory, MCCBilling, MCCServices) + step 18: registry.register() (non-fatal). Pre-flight: network check (84532), balance check (≥0.005 ETH), slug availability check via slugToColony().*
@@ -422,6 +429,7 @@ A citizen deploying a new colony.
 *N-09: app.zpc.finance/create — name input, MetaMask connect, 18-step deploy, success screen with colony URL.*
 *N-10: ColonyRegistry redeployed as ERC-721 at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 (19 April 2026). REGISTRY_ADDRESS updated in CreateColony.jsx, Directory.jsx, spice-admin/config.js, and all deploy scripts.*
 *N-11: CreateColony.jsx step 18 calls registry.register(colonyAddr, name, slug) — non-fatal. Mints a soulbound C-token to the Colony contract address. If registration fails, the colony is not yet in the directory and can be manually registered via spice.zpc.finance.*
+*N-12 to N-15 + C-02a + P-01b — private colonies: forward-looking, no mechanism shipped yet. Currently the colony app shows a cosmetic PUBLIC badge on every colony (Directory.jsx, 30 April 2026) — driven by hardcoded data not by a visibility field. Implementation requires (a) a `visibility` field on the Colony contract or registry; (b) an allowlist / invite-list mechanism (likely on Colony itself, gating CitizenJoined); (c) a `setVisibility()` and `invite(address)` function gated by founder/secretary; (d) directory UI filter (`visibility === 'public' || isMemberOf(colony)`); (e) invitation UX — notification + claim link — likely via Supabase notifications table. See memory/project_private_colonies.md for the full implementation note.*
 
 ---
 
@@ -438,6 +446,7 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 |---|-------|----------|--------|
 | P-01 | As the protocol, I want a single on-chain registry that records every deployed colony (address, name, slug, founder, timestamp) so the directory is always accurate | P1 | ✓ |
 | P-01a | As the protocol, I want each registered colony to receive a soulbound ERC-721 C-token minted to its Colony contract address, so the registry is the canonical on-chain source of truth with no off-chain sync required | P1 | ✓ |
+| P-01b | As the protocol, I want the ColonyRegistry to expose a visibility field (public/private) and a per-colony allowlist or invite list, so directory queries can filter correctly while preserving the registry's transparency for public colonies | P3 | — |
 | P-02 | As the protocol, I want to update the fee-per-transaction rate at any time without redeploying any colony contract | P1 | ✓ |
 | P-03 | As the protocol, I want to update the protocol treasury address without touching any colony contract | P1 | ✓ |
 | P-04 | As the protocol, I want only the registry owner to be able to change fee rates and treasury address | P1 | ✓ |
