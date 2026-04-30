@@ -75,16 +75,19 @@ const S = {
 // usage: <div style={S.container}>
 ```
 
-**Migration status (29 Apr → ongoing):**
-- Phase 1 (tokens.js + body bg + this pointer) — done.
-- Phase 2 (chrome component library: TopBar, TickerTape, SectionHead, Button, StatusPill, Footer) — pending.
-- Phase 3 (Home rewrite, drop the 4-quadrant layout, embed intro video) — pending.
-- Phase 4 (migrate /collision, /simulation, /dashboard, /methodology, /balance-of-payments, /colony-economy to new tokens) — pending.
-- Phase 5 (data-bound components + Mars/Earth chapter pages with B&W-treated imagery) — pending.
-- Phase 6+7 (colony-app + spice-admin token alignment) — pending.
-- Phase 8 (iOS app v1) — pending.
+**Migration status (rolled out 30 Apr 2026 across all 4 projects):**
+- ✓ Phase 1 — `src/tokens.js`, body bg, this pointer
+- ✓ Phase 2 — chrome components: TopBar, TickerTape, SectionHead, Button, StatusPill, Footer (+ `/_components` showroom)
+- ✓ Phase 3 — Home rewrite (drop 4-quadrant + Mars/Earth pictures, hero + telemetry + dispatches + chapter-tour buttons)
+- ✓ Phase 4 — bulk token migration on 24 research-site pages
+- ✓ Phase 5 — data-bound components: TelemetryGrid, ColonyStatusPanel, EventLog, plus CornerFrame; Mars/Earth B&W image treatment
+- ✓ Phase 6 — colony-app theme + Directory.jsx + Layout.jsx alignment, plus bulk square corners + gold retirement on 21 inner pages
+- ✓ Phase 7 — spice-admin token alignment (gold chrome accents kept — defer until component rewrite)
+- ✓ Phase 8 — colony-app-native theme alignment + bulk square corners + gold retirement on 8 screens
 
-Existing pages will look broken in places between Phase 1 and Phase 4 — that's expected and named in the spec.
+Tokens mirrored across project files: `src/tokens.js` (research), `colony-app/src/theme.js`, `colony-app-native/src/theme.js`, inline in `spice-admin/index.html`. **Always import from these — do not hard-code hex values in components.**
+
+Pending refinements: live data wiring for TelemetryGrid (FRED + on-chain), Mars/Earth chapter-page rewrites per redesign §4.6, native font bundling (IBM Plex Mono via expo-font), spice-admin component rewrite to fully retire gold chrome.
 
 ---
 
@@ -425,11 +428,15 @@ Colony.settleProtocol() splits ETH between protocol treasury and founder wallet 
 
 Pre-launch research project. Key next steps:
 
-- [x] **Native mobile app** — steps 1–4 done (wallet, dashboard, send, NFC tap-to-pay); till.html live at app.zpc.finance/till.html
+- [x] **Native mobile app** — wallet, dashboard, send, NFC tap-to-pay; till.html live at app.zpc.finance/till.html
+- [x] **Mission-control redesign** — rolled out 30 Apr 2026 across all 4 projects (zpc.finance, app.zpc.finance, spice.zpc.finance, native). Canonical: `docs/redesign.md`.
+- [ ] **Agent-based simulation** — Mars first (closed economy), Earth second (full external actors). The credibility centrepiece — answers "does this whole thing work?" for any economically-literate viewer. See `docs/economy-model/` for current deterministic sim and `docs/SPICE-Economy.md` Part 5 §5.7 for the gap analysis. Strategic memo in agent memory: `project_simulation_direction.md`.
+- [ ] **Home + /invest copy** — dispatch cards (Act I/II/III) + intro video YouTube embed + /invest sections (revenue, contributor paths, Wefunder)
+- [ ] **Mars/Earth chapter pages** — full redesign-aligned rebuild per §4.6 (token-migrated + B&W hero treatment landed; structural rebuild deferred)
 - [ ] Chart 5 — SPICE protocol mechanics page
 - [ ] Mobile layout for /simulation
 - [ ] Feedback / comment mechanism on methodology page
 - [ ] Technical co-founder (DeFi-experienced, token allocation)
 - [ ] IRONVAULT (ticker: IRON) — whitepaper
 
-*Last updated: 24 April 2026*
+*Last updated: 30 April 2026*
