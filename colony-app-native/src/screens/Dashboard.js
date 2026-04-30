@@ -306,7 +306,7 @@ export default function Dashboard() {
                   disabled={actionLoading === 'nfc'}
                 >
                   {actionLoading === 'nfc'
-                    ? <ActivityIndicator size="small" color={C.bg} />
+                    ? <ActivityIndicator size="small" color={C.text} />
                     : <Text style={S.actionBtnTextNfc}>⬡ Tap to Pay (NFC)</Text>
                   }
                 </TouchableOpacity>
@@ -398,7 +398,7 @@ const S = StyleSheet.create({
   actionBtnNfc:     { backgroundColor: '#1a1a1a' },
   actionBtnOutline: { borderWidth: 1, borderColor: C.border },
   actionBtnTextGold:    { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
-  actionBtnTextNfc:     { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
+  actionBtnTextNfc:     { color: C.text, fontSize: 12, fontWeight: '600', fontFamily: font },
   actionBtnTextOutline: { color: C.sub,  fontSize: 11, fontFamily: font },
 
   fiscCard:       { marginBottom: 12 },
