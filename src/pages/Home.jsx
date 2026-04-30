@@ -152,8 +152,8 @@ export default function Home() {
         <div style={S.hero}>
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>
-            The economic model for{" "}
-            <span style={S.h1soft}>after the collision.</span>
+            UBI Product for a Capitalist Economy{" "}
+            <span style={S.h1soft}>in a Post-AI Abundance World</span>
           </h1>
           <p style={S.lead}>
             SPICE is a community currency designed for the post-fiat transition.
