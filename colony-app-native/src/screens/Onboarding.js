@@ -106,7 +106,7 @@ export default function Onboarding() {
 
           <View style={S.confirmRow}>
             <TouchableOpacity onPress={() => setConfirmed(v => !v)} style={S.checkbox}>
-              <Text style={{ color: confirmed ? C.gold : C.faint, fontSize: 14 }}>
+              <Text style={{ color: confirmed ? C.text : C.faint, fontSize: 14 }}>
                 {confirmed ? '✓' : '○'}
               </Text>
             </TouchableOpacity>
@@ -192,7 +192,7 @@ const S = StyleSheet.create({
   safe:          { flex: 1, backgroundColor: C.bg },
   center:        { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   scroll:        { padding: 24, paddingBottom: 48 },
-  logo:          { fontSize: 32, fontWeight: '700', color: C.gold, fontFamily: font, letterSpacing: 4 },
+  logo:          { fontSize: 32, fontWeight: '700', color: C.text, fontFamily: font, letterSpacing: 4 },
   tagline:       { fontSize: 14, color: C.sub, fontFamily: font, marginTop: 4 },
   sub:           { fontSize: 11, color: C.faint, fontFamily: font, textAlign: 'center', marginTop: 8, lineHeight: 18 },
   gap:           { height: 40 },
@@ -200,27 +200,27 @@ const S = StyleSheet.create({
   body:          { fontSize: 12, color: C.sub, fontFamily: font, lineHeight: 18, marginBottom: 20 },
   warn:          { fontSize: 10, color: C.faint, fontFamily: font, lineHeight: 15, marginTop: 16, textAlign: 'center' },
 
-  btnGold:       { width: '100%', backgroundColor: C.gold, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
+  btnGold:       { width: '100%', backgroundColor: C.text, borderRadius: 0, padding: 14, alignItems: 'center', marginBottom: 12 },
   btnGoldText:   { color: C.bg, fontSize: 13, fontWeight: '600', fontFamily: font },
-  btnOutline:    { width: '100%', borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
+  btnOutline:    { width: '100%', borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 14, alignItems: 'center', marginBottom: 12 },
   btnOutlineText:{ color: C.sub, fontSize: 13, fontFamily: font },
   btnDisabled:   { opacity: 0.4 },
 
   phraseGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  wordCell:      { width: '28%', backgroundColor: C.card, borderRadius: 6, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  wordCell:      { width: '28%', backgroundColor: C.card, borderRadius: 0, padding: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
   wordNum:       { fontSize: 9, color: C.faint, fontFamily: font, width: 14 },
   word:          { fontSize: 12, color: C.text, fontFamily: font, fontWeight: '500' },
 
-  copyBtn:       { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, alignItems: 'center', marginBottom: 16 },
+  copyBtn:       { borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10, alignItems: 'center', marginBottom: 16 },
   copyBtnText:   { fontSize: 11, color: C.sub, fontFamily: font },
 
   confirmRow:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   checkbox:      { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   confirmText:   { fontSize: 12, color: C.sub, fontFamily: font, flex: 1 },
 
-  phraseInput:   { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 12, fontSize: 13, fontFamily: font, color: C.text, minHeight: 90, textAlignVertical: 'top', marginBottom: 16 },
+  phraseInput:   { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 12, fontSize: 13, fontFamily: font, color: C.text, minHeight: 90, textAlignVertical: 'top', marginBottom: 16 },
   label:         { fontSize: 11, color: C.faint, fontFamily: font, marginBottom: 6 },
-  indexInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 8, padding: 10, fontSize: 13, fontFamily: font, color: C.text, marginBottom: 16, width: 80 },
+  indexInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10, fontSize: 13, fontFamily: font, color: C.text, marginBottom: 16, width: 80 },
 
   back:          { marginBottom: 20 },
   backText:      { fontSize: 12, color: C.sub, fontFamily: font },

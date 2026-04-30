@@ -19,7 +19,7 @@ import { C, font, shortAddr, card, label, value } from '../theme'
 const EVENT_LABELS = {
   sent:     { color: C.red,    sign: '−', label: 'Sent' },
   received: { color: C.green,  sign: '+', label: 'Received' },
-  ubi:      { color: C.gold,   sign: '+', label: 'UBI' },
+  ubi:      { color: C.text,   sign: '+', label: 'UBI' },
   saved:    { color: C.purple, sign: '→', label: 'Saved to V' },
   redeemed: { color: C.blue,   sign: '←', label: 'Redeemed' },
 }
@@ -153,7 +153,7 @@ export default function Dashboard() {
       <ScrollView
         style={S.scroll}
         contentContainerStyle={S.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.gold} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.text} />}
       >
         {/* Header */}
         <View style={S.header}>
@@ -161,8 +161,8 @@ export default function Dashboard() {
             <Text style={S.colonyName}>{COLONY.name.toUpperCase()}</Text>
             <Text style={S.address}>{shortAddr(actingAs.addr)}</Text>
           </View>
-          <View style={[S.badge, { borderColor: C.gold }]}>
-            <Text style={[S.badgeText, { color: C.gold }]}>EARTH</Text>
+          <View style={[S.badge, { borderColor: C.text }]}>
+            <Text style={[S.badgeText, { color: C.text }]}>EARTH</Text>
           </View>
         </View>
 
@@ -192,7 +192,7 @@ export default function Dashboard() {
         )}
 
         {stateLoading && !s ? (
-          <ActivityIndicator color={C.gold} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={C.text} style={{ marginTop: 40 }} />
         ) : (
           <>
             {/* Identity badge — citizen status (citizen mode) or company name (company mode) */}
@@ -205,8 +205,8 @@ export default function Dashboard() {
             )}
             {actingAs.kind === 'company' && (
               <>
-                <View style={[S.citizenBadge, { borderColor: C.gold }]}>
-                  <Text style={[S.citizenText, { color: C.gold }]}>
+                <View style={[S.citizenBadge, { borderColor: C.text }]}>
+                  <Text style={[S.citizenText, { color: C.text }]}>
                     COMPANY · {actingAs.name.toUpperCase()}
                   </Text>
                 </View>
@@ -260,7 +260,7 @@ export default function Dashboard() {
                 <View style={S.reserveRow}>
                   <View style={[S.reserveDot, {
                     backgroundColor: fiscState.reserveStatus === 2 ? C.green
-                      : fiscState.reserveStatus === 1 ? C.gold : C.red
+                      : fiscState.reserveStatus === 1 ? C.text : C.red
                   }]} />
                   <Text style={S.reserveText}>
                     RESERVE {fiscState.reserveStatus === 2 ? 'HEALTHY' : fiscState.reserveStatus === 1 ? 'ADEQUATE' : 'ALERT'}
@@ -322,7 +322,7 @@ export default function Dashboard() {
                   disabled={actionLoading === 'ubi'}
                 >
                   {actionLoading === 'ubi'
-                    ? <ActivityIndicator size="small" color={C.gold} />
+                    ? <ActivityIndicator size="small" color={C.text} />
                     : <Text style={S.actionBtnTextOutline}>Claim UBI</Text>
                   }
                 </TouchableOpacity>
@@ -382,10 +382,10 @@ const S = StyleSheet.create({
   header:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   colonyName:     { fontSize: 11, color: C.faint, fontFamily: font, letterSpacing: 1.5 },
   address:        { fontSize: 13, color: C.text, fontFamily: font, marginTop: 2 },
-  badge:          { borderWidth: 1, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  badge:          { borderWidth: 1, borderRadius: 0, paddingHorizontal: 8, paddingVertical: 3 },
   badgeText:      { fontSize: 9, fontWeight: '600', fontFamily: font, letterSpacing: 1 },
 
-  citizenBadge:   { borderWidth: 1, borderRadius: 6, padding: 8, marginBottom: 12, alignItems: 'center' },
+  citizenBadge:   { borderWidth: 1, borderRadius: 0, padding: 8, marginBottom: 12, alignItems: 'center' },
   citizenText:    { fontSize: 10, fontFamily: font, letterSpacing: 0.8 },
 
   balanceRow:     { flexDirection: 'row', gap: 10, marginBottom: 0 },
@@ -393,8 +393,8 @@ const S = StyleSheet.create({
   tokenSub:       { fontSize: 9, color: C.faint, fontFamily: font, marginTop: 2 },
 
   actions:        { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  actionBtn:      { flex: 1, borderRadius: 8, padding: 12, alignItems: 'center' },
-  actionBtnGold:    { backgroundColor: C.gold },
+  actionBtn:      { flex: 1, borderRadius: 0, padding: 12, alignItems: 'center' },
+  actionBtnGold:    { backgroundColor: C.text },
   actionBtnNfc:     { backgroundColor: '#1a1a1a' },
   actionBtnOutline: { borderWidth: 1, borderColor: C.border },
   actionBtnTextGold:    { color: C.bg,   fontSize: 12, fontWeight: '600', fontFamily: font },
@@ -407,23 +407,23 @@ const S = StyleSheet.create({
   fiscValue:      { fontSize: 15 },
   fiscUnit:       { fontSize: 10, color: C.faint },
   reserveRow:     { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8 },
-  reserveDot:     { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
+  reserveDot:     { width: 7, height: 7, borderRadius: 0, marginRight: 6 },
   reserveText:    { fontSize: 9, color: C.faint, fontFamily: font, flex: 1 },
 
-  receiveBtn:     { backgroundColor: C.green, borderRadius: 8, padding: 14, alignItems: 'center', marginBottom: 12 },
+  receiveBtn:     { backgroundColor: C.green, borderRadius: 0, padding: 14, alignItems: 'center', marginBottom: 12 },
   receiveBtnText: { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
 
-  takingsCard:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.gold, borderRadius: 8, padding: 12, marginBottom: 12, alignItems: 'center' },
+  takingsCard:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.text, borderRadius: 0, padding: 12, marginBottom: 12, alignItems: 'center' },
   takingsLabel:   { fontSize: 9, color: C.faint, fontFamily: font, letterSpacing: 1.5, marginBottom: 4 },
   takingsRow:     { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  takingsValue:   { fontSize: 22, fontWeight: '700', color: C.gold, fontFamily: font },
+  takingsValue:   { fontSize: 22, fontWeight: '700', color: C.text, fontFamily: font },
   takingsCount:   { fontSize: 11, color: C.sub, fontFamily: font },
 
   identityRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  idChip:         { borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingVertical: 5, paddingHorizontal: 10 },
-  idChipOn:       { borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  idChip:         { borderWidth: 1, borderColor: C.border, borderRadius: 0, paddingVertical: 5, paddingHorizontal: 10 },
+  idChipOn:       { borderColor: C.text, backgroundColor: 'rgba(217,165,61,0.10)' },
   idChipText:     { fontSize: 9, color: C.sub, fontFamily: font, letterSpacing: 0.6 },
-  idChipTextOn:   { color: C.gold },
+  idChipTextOn:   { color: C.text },
 
   empty:          { fontSize: 11, color: C.faint, fontFamily: font },
   txRow:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },

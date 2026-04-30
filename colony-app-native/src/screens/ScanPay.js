@@ -34,7 +34,7 @@ export default function ScanPay() {
   if (!permission) {
     return (
       <SafeAreaView style={S.safe}>
-        <View style={S.center}><ActivityIndicator color={C.gold} /></View>
+        <View style={S.center}><ActivityIndicator color={C.text} /></View>
       </SafeAreaView>
     )
   }
@@ -99,13 +99,13 @@ const S = StyleSheet.create({
   center:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   heading:     { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 12, textAlign: 'center' },
   body:        { fontSize: 13, color: C.sub, fontFamily: font, lineHeight: 20, textAlign: 'center', marginBottom: 24 },
-  btnGold:     { backgroundColor: C.gold, borderRadius: 8, paddingHorizontal: 24, paddingVertical: 12 },
+  btnGold:     { backgroundColor: C.text, borderRadius: 0, paddingHorizontal: 24, paddingVertical: 12 },
   btnGoldText: { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
   back:        { fontSize: 13, color: '#fff', fontFamily: font },
-  retry:       { fontSize: 13, color: C.gold, fontFamily: font },
+  retry:       { fontSize: 13, color: C.text, fontFamily: font },
 
   overlay:     { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  reticle:     { width: 240, height: 240, borderWidth: 2, borderColor: C.gold, borderRadius: 12 },
+  reticle:     { width: 240, height: 240, borderWidth: 2, borderColor: C.text, borderRadius: 0 },
   reticleHint: { color: '#fff', fontFamily: font, fontSize: 12, marginTop: 16, opacity: 0.85 },
   error:       { color: C.red, fontFamily: font, fontSize: 12, marginTop: 12, textAlign: 'center', paddingHorizontal: 32 },
 

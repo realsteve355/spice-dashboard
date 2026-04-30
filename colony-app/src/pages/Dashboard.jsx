@@ -472,7 +472,7 @@ export default function Dashboard() {
           style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             background: C.white, border: `1px solid ${C.border}`,
-            borderRadius: 8, padding: '10px 14px', marginBottom: 12,
+            borderRadius: 0, padding: '10px 14px', marginBottom: 12,
             cursor: 'pointer',
           }}
         >
@@ -518,7 +518,7 @@ export default function Dashboard() {
               <button
                 onClick={() => refresh(0)}
                 title="Refresh balances"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: onChainLoading ? C.gold : C.faint, padding: 0, lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: onChainLoading ? C.text : C.faint, padding: 0, lineHeight: 1 }}
               >
                 {onChainLoading ? '↻' : '↻'}
               </button>
@@ -535,23 +535,23 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div style={{ fontSize: 40, fontWeight: 500, color: C.gold, marginBottom: 2, letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: 40, fontWeight: 500, color: C.text, marginBottom: 2, letterSpacing: '-0.02em' }}>
             {remaining.toLocaleString()} <span style={{ fontSize: 18, color: C.faint }}>S</span>
           </div>
           <div style={{ fontSize: 11, color: C.faint, marginBottom: 14 }}>{CURRENT_MONTH}</div>
 
           {/* Progress bar */}
-          <div style={{ background: '#f0f0f0', borderRadius: 4, height: 6, overflow: 'hidden', marginBottom: 8 }}>
+          <div style={{ background: '#f0f0f0', borderRadius: 0, height: 6, overflow: 'hidden', marginBottom: 8 }}>
             <div style={{ display: 'flex', height: '100%' }}>
               <div style={{ width: `${spentPct}%`,  background: C.red    }} />
               <div style={{ width: `${savedPct}%`,  background: C.green  }} />
-              <div style={{ width: `${remainPct}%`, background: C.gold   }} />
+              <div style={{ width: `${remainPct}%`, background: C.text   }} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: 10, color: C.faint, marginBottom: 14 }}>
             <LegendDot color={C.red}   label={`${spentOnMcc} S MCC`}    />
             <LegendDot color={C.green} label={`${savedToV} S saved`}    />
-            <LegendDot color={C.gold}  label={`${remaining} S remaining`} />
+            <LegendDot color={C.text}  label={`${remaining} S remaining`} />
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -566,7 +566,7 @@ export default function Dashboard() {
           {claimError && <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{claimError}</div>}
           <button
             onClick={() => setSending(v => !v)}
-            style={{ ...smallBtn(C.gold), width: '100%' }}
+            style={{ ...smallBtn(C.text), width: '100%' }}
           >
             Send S-tokens →
           </button>
@@ -716,7 +716,7 @@ export default function Dashboard() {
                     <div style={{
                       fontSize: 11, color: C.red, marginBottom: 8,
                       padding: '8px 10px', background: `${C.red}10`, border: `1px solid ${C.red}30`,
-                      borderRadius: 6, lineHeight: 1.5,
+                      borderRadius: 0, lineHeight: 1.5,
                     }}>
                       Balance is {balance} S — short by {shortBy} S to cover this bill.
                       Convert V→S or wait for next UBI to top up.
@@ -753,7 +753,7 @@ export default function Dashboard() {
               )}
               <button
                 onClick={() => navigate(`/colony/${slug}/profile`)}
-                style={{ fontSize: 11, color: C.faint, background: 'none', border: `1px solid ${C.border}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+                style={{ fontSize: 11, color: C.faint, background: 'none', border: `1px solid ${C.border}`, borderRadius: 0, padding: '3px 10px', cursor: 'pointer' }}
               >
                 My Profile
               </button>
@@ -772,7 +772,7 @@ export default function Dashboard() {
             <span style={{ fontSize: 12, color: C.sub }}>Open votes</span>
             <span
               onClick={() => navigate(`/colony/${slug}/votes`)}
-              style={{ fontSize: 12, color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ fontSize: 12, color: C.text, cursor: 'pointer', textDecoration: 'underline' }}
             >
               {openVoteCount === null ? '…' : openVoteCount} open →
             </span>
@@ -781,7 +781,7 @@ export default function Dashboard() {
             <span style={{ fontSize: 12, color: C.sub }}>MCC board</span>
             <span
               onClick={() => navigate(`/colony/${slug}/mcc`)}
-              style={{ fontSize: 12, color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+              style={{ fontSize: 12, color: C.text, cursor: 'pointer', textDecoration: 'underline' }}
             >
               View →
             </span>
@@ -810,7 +810,7 @@ export default function Dashboard() {
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>ACTIVE ROLES</div>
             {myOTokens.map((tok, i) => {
               const typeLabel = ['COMPANY', 'MCC', 'COOPERATIVE', 'CIVIC'][tok.orgType] || 'ORG'
-              const typeColor = [C.gold, '#8b5cf6', '#16a34a', '#3b82f6'][tok.orgType] || C.faint
+              const typeColor = [C.text, '#8b5cf6', '#16a34a', '#3b82f6'][tok.orgType] || C.faint
               return (
                 <div key={tok.tokenId} style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -826,7 +826,7 @@ export default function Dashboard() {
                   </div>
                   <span style={{
                     fontSize: 9, color: typeColor, border: `1px solid ${typeColor}`,
-                    borderRadius: 10, padding: '2px 7px', letterSpacing: '0.06em', flexShrink: 0,
+                    borderRadius: 0, padding: '2px 7px', letterSpacing: '0.06em', flexShrink: 0,
                   }}>{typeLabel}</span>
                 </div>
               )
@@ -840,7 +840,7 @@ export default function Dashboard() {
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MY COMPANIES</div>
             <button
               onClick={() => navigate(`/colony/${slug}/company/new`)}
-              style={{ fontSize: 11, color: C.gold, background: 'none', border: `1px solid ${C.gold}`, borderRadius: 10, padding: '3px 10px', cursor: 'pointer' }}
+              style={{ fontSize: 11, color: C.text, background: 'none', border: `1px solid ${C.text}`, borderRadius: 0, padding: '3px 10px', cursor: 'pointer' }}
             >
               + Register
             </button>
@@ -934,19 +934,19 @@ function LegendDot({ color, label }) {
 
 const card = {
   background: C.white, border: `1px solid ${C.border}`,
-  borderRadius: 8, padding: 16, marginBottom: 10,
+  borderRadius: 0, padding: 16, marginBottom: 10,
 }
 
 const quickPill = {
   fontSize: 9, color: C.faint, letterSpacing: '0.06em',
-  border: `1px solid ${C.border}`, borderRadius: 4,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   padding: '3px 6px', background: 'none', cursor: 'pointer',
   fontFamily: "'IBM Plex Mono', monospace", flexShrink: 0,
 }
 
 const primaryBtn = {
-  padding: '13px 16px', background: C.gold, color: C.bg,
-  border: 'none', borderRadius: 8, fontSize: 13,
+  padding: '13px 16px', background: C.text, color: C.bg,
+  border: 'none', borderRadius: 0, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 
@@ -954,18 +954,18 @@ function smallBtn(bg, color = C.text, border) {
   return {
     padding: '9px 14px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',
-    borderRadius: 6, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
+    borderRadius: 0, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
   }
 }
 
 const inlineInput = {
   padding: '9px 10px', border: `1px solid ${C.border}`,
-  borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
+  borderRadius: 0, fontSize: 12, color: C.text, background: C.white, outline: 'none',
 }
 
 const mmBtn = {
   fontSize: 10, color: '#e2761b', background: 'none',
-  border: '1px solid #e2761b', borderRadius: 10,
+  border: '1px solid #e2761b', borderRadius: 0,
   padding: '2px 7px', cursor: 'pointer', letterSpacing: '0.04em',
   fontFamily: "'IBM Plex Mono', monospace",
 }

@@ -190,9 +190,9 @@ export default function Budget() {
         {/* CEO edit mode banner */}
         {isCEO && editMode && (
           <div style={{
-            background: '#2a1f00', border: `1px solid ${C.gold}`,
-            borderRadius: 8, padding: '10px 14px', marginBottom: 12,
-            fontSize: 11, color: C.gold, letterSpacing: '0.04em',
+            background: '#2a1f00', border: `1px solid ${C.text}`,
+            borderRadius: 0, padding: '10px 14px', marginBottom: 12,
+            fontSize: 11, color: C.text, letterSpacing: '0.04em',
           }}>
             DRAFT MODE — changes are not visible to citizens until published
           </div>
@@ -214,9 +214,9 @@ export default function Budget() {
             <button
               onClick={() => setEditMode(v => !v)}
               style={{
-                fontSize: 10, color: editMode ? C.gold : C.sub,
-                border: `1px solid ${editMode ? C.gold : C.border}`,
-                borderRadius: 10, padding: '3px 10px',
+                fontSize: 10, color: editMode ? C.text : C.sub,
+                border: `1px solid ${editMode ? C.text : C.border}`,
+                borderRadius: 0, padding: '3px 10px',
                 background: 'none', cursor: 'pointer',
                 letterSpacing: '0.04em',
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -240,14 +240,14 @@ export default function Budget() {
                   { label: 'UBI VALUE', value: `$${Math.round(d.ubiUSD)}/mo`,             ok: d.ubiOK },
                 ].map(item => (
                   <div key={item.label} style={{
-                    background: C.bg, borderRadius: 6, padding: '10px 8px', textAlign: 'center',
+                    background: C.bg, borderRadius: 0, padding: '10px 8px', textAlign: 'center',
                   }}>
                     <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 5 }}>
                       {item.label}
                     </div>
                     <div style={{
                       fontSize: 13, fontWeight: 600, marginBottom: 2,
-                      color: item.ok ? C.gold : C.red,
+                      color: item.ok ? C.text : C.red,
                     }}>
                       {item.value}
                     </div>
@@ -292,7 +292,7 @@ export default function Budget() {
             {/* ── Split bar ─────────────────────────────────────────────── */}
             {d.totalUBI > 0 && (
               <div style={{ ...card, padding: '14px 16px' }}>
-                <div style={{ display: 'flex', height: 20, borderRadius: 4, overflow: 'hidden', marginBottom: 8 }}>
+                <div style={{ display: 'flex', height: 20, borderRadius: 0, overflow: 'hidden', marginBottom: 8 }}>
                   {CATEGORIES.map(cat => {
                     const val   = { MCC: d.totalMCC, Essential: d.totalEss, Discretionary: d.totalDisc, Savings: d.totalSave }[cat]
                     const pct   = (val / d.totalUBI) * 100
@@ -320,7 +320,7 @@ export default function Budget() {
                     const pct  = d.totalUBI > 0 ? Math.round((val / d.totalUBI) * 100) : 0
                     return (
                       <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ width: 8, height: 8, borderRadius: 2, background: CAT_COLORS[cat] }} />
+                        <div style={{ width: 8, height: 8, borderRadius: 0, background: CAT_COLORS[cat] }} />
                         <span style={{ fontSize: 9, color: C.faint }}>
                           {cat} {pct}% <span style={{ opacity: 0.5 }}>tgt {tgt}%</span>
                         </span>
@@ -342,7 +342,7 @@ export default function Budget() {
                     marginBottom: 12,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: CAT_COLORS[cat] }} />
+                      <div style={{ width: 8, height: 8, borderRadius: 0, background: CAT_COLORS[cat] }} />
                       <span style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em' }}>
                         {cat.toUpperCase()}
                       </span>
@@ -393,7 +393,7 @@ export default function Budget() {
                                     style={{
                                       fontSize: 9, padding: '2px 6px',
                                       background: 'none', cursor: 'pointer',
-                                      border: `1px solid ${C.border}`, borderRadius: 4,
+                                      border: `1px solid ${C.border}`, borderRadius: 0,
                                       color: C.faint, fontFamily: "'IBM Plex Mono', monospace",
                                     }}
                                   >
@@ -427,7 +427,7 @@ export default function Budget() {
             {editMode && (
               <div style={{
                 ...card,
-                border: `1px solid ${isSpiking ? C.red : d.rateOK && d.ubiOK && d.splitOK ? C.green : C.gold}`,
+                border: `1px solid ${isSpiking ? C.red : d.rateOK && d.ubiOK && d.splitOK ? C.green : C.text}`,
               }}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
                   CONSISTENCY CHECK
@@ -473,7 +473,7 @@ export default function Budget() {
             {editMode && isSpiking && (
               <div style={{
                 background: '#2a0000', border: `1px solid ${C.red}`,
-                borderRadius: 8, padding: '12px 14px', marginBottom: 12,
+                borderRadius: 0, padding: '12px 14px', marginBottom: 12,
                 fontSize: 11, color: C.red, lineHeight: 1.6,
               }}>
                 This change exceeds the 20% annual spike limit (+{spikePct.toFixed(1)}%). Publishing will automatically trigger a citizen vote. The new budget will not take effect until the vote passes.
@@ -489,7 +489,7 @@ export default function Budget() {
                   style={{
                     flex: 1, padding: '10px 0',
                     background: 'none', border: `1px solid ${C.border}`,
-                    borderRadius: 8, fontSize: 11, color: C.sub,
+                    borderRadius: 0, fontSize: 11, color: C.sub,
                     cursor: savingDraft ? 'default' : 'pointer',
                     opacity: savingDraft ? 0.5 : 1,
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -502,8 +502,8 @@ export default function Budget() {
                   disabled={!d.rateOK || !d.ubiOK}
                   style={{
                     flex: 2, padding: '10px 0',
-                    background: C.gold, border: 'none',
-                    borderRadius: 8, fontSize: 11, color: C.bg,
+                    background: C.text, border: 'none',
+                    borderRadius: 0, fontSize: 11, color: C.bg,
                     cursor: !d.rateOK || !d.ubiOK ? 'default' : 'pointer',
                     opacity: !d.rateOK || !d.ubiOK ? 0.4 : 1,
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -594,7 +594,7 @@ export default function Budget() {
                 Publish budget
               </div>
               <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6, marginBottom: 16 }}>
-                Total: <strong style={{ color: C.gold }}>{d.totalUBI} S/month</strong>
+                Total: <strong style={{ color: C.text }}>{d.totalUBI} S/month</strong>
                 {pubD && ` · was ${pubD.totalUBI} S`}
                 <br />
                 Effective: first day of next month
@@ -603,7 +603,7 @@ export default function Budget() {
               {isSpiking && (
                 <div style={{
                   background: '#2a0000', border: `1px solid ${C.red}`,
-                  borderRadius: 6, padding: '8px 12px', marginBottom: 12,
+                  borderRadius: 0, padding: '8px 12px', marginBottom: 12,
                   fontSize: 10, color: C.red,
                 }}>
                   Spike limit exceeded — citizen vote required before this takes effect.
@@ -622,7 +622,7 @@ export default function Budget() {
                   style={{
                     flex: 1, padding: '12px 0',
                     background: 'none', border: `1px solid ${C.border}`,
-                    borderRadius: 8, fontSize: 12, color: C.sub,
+                    borderRadius: 0, fontSize: 12, color: C.sub,
                     cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
                   }}
                 >
@@ -633,8 +633,8 @@ export default function Budget() {
                   disabled={publishing}
                   style={{
                     flex: 2, padding: '12px 0',
-                    background: C.gold, border: 'none',
-                    borderRadius: 8, fontSize: 12, color: C.bg,
+                    background: C.text, border: 'none',
+                    borderRadius: 0, fontSize: 12, color: C.bg,
                     cursor: publishing ? 'default' : 'pointer',
                     opacity: publishing ? 0.6 : 1,
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -656,7 +656,7 @@ export default function Budget() {
 const card = {
   background: C.white,
   border: `1px solid ${C.border}`,
-  borderRadius: 8,
+  borderRadius: 0,
   padding: '16px 16px',
   marginBottom: 12,
 }
@@ -667,7 +667,7 @@ const fieldLabel = {
 
 const numInput = {
   padding: '7px 8px', background: C.bg,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, color: C.text, outline: 'none',
   fontFamily: "'IBM Plex Mono', monospace",
   width: '100%', boxSizing: 'border-box',

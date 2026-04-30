@@ -103,9 +103,9 @@ export default function Guardian() {
                 key={c.id}
                 onClick={() => setSelected(c.id)}
                 style={{
-                  flexShrink: 0, padding: '6px 14px', borderRadius: 16,
-                  border: `1px solid ${c.id === selected ? C.gold : C.border}`,
-                  background: c.id === selected ? C.gold : C.white,
+                  flexShrink: 0, padding: '6px 14px', borderRadius: 0,
+                  border: `1px solid ${c.id === selected ? C.text : C.border}`,
+                  background: c.id === selected ? C.text : C.white,
                   color: c.id === selected ? '#fff' : C.sub,
                   fontSize: 12, cursor: 'pointer',
                 }}
@@ -125,8 +125,8 @@ export default function Guardian() {
 
         {/* Register form */}
         {registering && (
-          <div style={{ ...card, borderColor: C.gold, background: '#fffbf0', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>REGISTER CHILD</div>
+          <div style={{ ...card, borderColor: C.text, background: '#fffbf0', marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>REGISTER CHILD</div>
             <Field label="Child's name (for your reference)" value={newName} onChange={setNewName} placeholder="e.g. Alex" />
             <Field label="Date of birth" value={newDob} onChange={setNewDob} placeholder="YYYY-MM-DD" type="date" />
             <Field label="Child's wallet address (optional)" value={newWallet} onChange={setNewWallet} placeholder="0x... (can be added later)" />
@@ -156,7 +156,7 @@ export default function Guardian() {
         {child && (
           <div>
             {/* Age / adulthood countdown */}
-            <div style={{ ...card, background: '#fffbf0', borderColor: C.gold }}>
+            <div style={{ ...card, background: '#fffbf0', borderColor: C.text }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 2 }}>{child.name}</div>
@@ -165,7 +165,7 @@ export default function Guardian() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 11, color: C.gold }}>{yearsToAdulthood(child.dateOfBirth)} years</div>
+                  <div style={{ fontSize: 11, color: C.text }}>{yearsToAdulthood(child.dateOfBirth)} years</div>
                   <div style={{ fontSize: 10, color: C.faint }}>until adulthood</div>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export default function Guardian() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div style={{ ...card, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>S BALANCE</div>
-                <div style={{ fontSize: 26, fontWeight: 500, color: C.gold }}>{child.sBalance}</div>
+                <div style={{ fontSize: 26, fontWeight: 500, color: C.text }}>{child.sBalance}</div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>resets end of month</div>
               </div>
               <div style={{ ...card, textAlign: 'center' }}>
@@ -213,7 +213,7 @@ export default function Guardian() {
               </div>
 
               {/* Progress bar */}
-              <div style={{ background: '#f0f0f0', borderRadius: 3, height: 4, overflow: 'hidden', marginBottom: 10 }}>
+              <div style={{ background: '#f0f0f0', borderRadius: 0, height: 4, overflow: 'hidden', marginBottom: 10 }}>
                 <div style={{
                   width: `${(child.vSavedThisMonth / child.vMaxMonthly) * 100}%`,
                   height: '100%', background: C.green,
@@ -301,7 +301,7 @@ function Field({ label, value, onChange, placeholder, type }) {
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>{label.toUpperCase()}</div>
       <input
-        style={{ width: '100%', padding: '11px 12px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 13, color: C.text, background: C.white, outline: 'none' }}
+        style={{ width: '100%', padding: '11px 12px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 13, color: C.text, background: C.white, outline: 'none' }}
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -311,7 +311,7 @@ function Field({ label, value, onChange, placeholder, type }) {
   )
 }
 
-const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 10 }
-const primaryBtn = { padding: '11px 16px', background: C.gold, color: C.bg, border: 'none', borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
-const ghostBtn   = { padding: '11px 14px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em' }
-const inlineInput = { padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none' }
+const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 10 }
+const primaryBtn = { padding: '11px 16px', background: C.text, color: C.bg, border: 'none', borderRadius: 0, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
+const ghostBtn   = { padding: '11px 14px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em' }
+const inlineInput = { padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12, color: C.text, background: C.white, outline: 'none' }

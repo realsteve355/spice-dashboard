@@ -192,7 +192,7 @@ export default function Store() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14,
           background: C.white, border: `1px solid ${C.border}`,
-          borderRadius: 10, padding: '14px 16px', marginBottom: 16,
+          borderRadius: 0, padding: '14px 16px', marginBottom: 16,
         }}>
           <CompanyImage slug={slug} addr={addr} name={companyName} isSecretary={isSecretary} />
           <div style={{ flex: 1 }}>
@@ -219,10 +219,10 @@ export default function Store() {
         {/* Add product form */}
         {adding && (
           <div style={{
-            background: C.white, border: `1px solid ${C.gold}40`,
-            borderRadius: 10, padding: 16, marginBottom: 14,
+            background: C.white, border: `1px solid ${C.text}40`,
+            borderRadius: 0, padding: 16, marginBottom: 14,
           }}>
-            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>ADD PRODUCT</div>
+            <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>ADD PRODUCT</div>
             <Field label="Product name" value={pName} onChange={setPName} placeholder="e.g. Sourdough loaf" />
             <Field label="Description (optional)" value={pDesc} onChange={setPDesc} placeholder="Brief description" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -237,7 +237,7 @@ export default function Store() {
               <button
                 onClick={handleAdd}
                 disabled={pSaving || !pName.trim()}
-                style={{ ...solidBtn(C.gold), flex: 2, opacity: (!pName.trim() || pSaving) ? 0.4 : 1 }}
+                style={{ ...solidBtn(C.text), flex: 2, opacity: (!pName.trim() || pSaving) ? 0.4 : 1 }}
               >
                 {pSaving ? 'Adding…' : 'Add product →'}
               </button>
@@ -318,7 +318,7 @@ export default function Store() {
       {/* ── Edit product bottom sheet ──────────────────────────────────────── */}
       {editProduct && (
         <BottomSheet onClose={() => setEditProduct(null)}>
-          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 14 }}>
             EDIT PRODUCT
           </div>
           {/* Product image upload */}
@@ -344,7 +344,7 @@ export default function Store() {
             <button
               onClick={handleEdit}
               disabled={eSaving || !eName.trim()}
-              style={{ ...solidBtn(C.gold), flex: 2, opacity: (!eName.trim() || eSaving) ? 0.4 : 1 }}
+              style={{ ...solidBtn(C.text), flex: 2, opacity: (!eName.trim() || eSaving) ? 0.4 : 1 }}
             >
               {eSaving ? 'Saving…' : 'Save changes →'}
             </button>
@@ -355,7 +355,7 @@ export default function Store() {
       {/* ── Buy bottom sheet ──────────────────────────────────────────────── */}
       {buyProduct && (
         <BottomSheet onClose={() => setBuyProduct(null)}>
-          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 14 }}>
             PURCHASE
           </div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginBottom: 14 }}>
@@ -376,7 +376,7 @@ export default function Store() {
               )}
             </div>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 500, color: C.gold, marginBottom: 16, textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 500, color: C.text, marginBottom: 16, textAlign: 'center' }}>
             {buyProduct.price} S
           </div>
           <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
@@ -398,7 +398,7 @@ export default function Store() {
             <button
               onClick={handleBuy}
               disabled={!address || !isCitizen}
-              style={{ ...solidBtn(C.gold), flex: 2, opacity: (!address || !isCitizen) ? 0.4 : 1 }}
+              style={{ ...solidBtn(C.text), flex: 2, opacity: (!address || !isCitizen) ? 0.4 : 1 }}
             >
               {!address ? 'Connect wallet to buy' : `Pay ${buyProduct.price} S →`}
             </button>
@@ -421,7 +421,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
   return (
     <div style={{
       background: C.white, border: `1px solid ${C.border}`,
-      borderRadius: 10, overflow: 'hidden',
+      borderRadius: 0, overflow: 'hidden',
       opacity: dimmed ? 0.55 : 1,
       display: 'flex', flexDirection: 'column',
     }}>
@@ -464,7 +464,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
 
         {/* Price + buy */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 6 }}>
-          <span style={{ fontSize: 15, fontWeight: 500, color: C.gold }}>
+          <span style={{ fontSize: 15, fontWeight: 500, color: C.text }}>
             {product.price} <span style={{ fontSize: 11 }}>S</span>
           </span>
           {!isSecretary && onBuy && (
@@ -472,7 +472,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
               onClick={onBuy}
               disabled={!address || !isCitizen}
               style={{
-                ...tinyBtn(C.gold, C.bg),
+                ...tinyBtn(C.text, C.bg),
                 opacity: (!address || !isCitizen) ? 0.4 : 1,
               }}
             >
@@ -571,7 +571,7 @@ function ProductImage({ slug, productId, name, isSecretary, size, version = 0, o
       <div
         onClick={() => isSecretary && !uploading && inputRef.current?.click()}
         style={{
-          width: size, height: size, borderRadius: 8, flexShrink: 0,
+          width: size, height: size, borderRadius: 0, flexShrink: 0,
           background: showPlaceholder ? C.border : 'transparent',
           overflow: 'hidden', position: 'relative',
           cursor: isSecretary ? 'pointer' : 'default',
@@ -637,7 +637,7 @@ function CompanyImage({ slug, addr, name, isSecretary }) {
     : null
   const initials  = (name || '??').slice(0, 2).toUpperCase()
   return (
-    <div style={{ width: 56, height: 56, borderRadius: 28, flexShrink: 0,
+    <div style={{ width: 56, height: 56, borderRadius: 0, flexShrink: 0,
       background: C.border, overflow: 'hidden', border: `1px solid ${C.border}` }}>
       {src && !imgError ? (
         <img src={src} alt="" onError={() => setImgError(true)}
@@ -696,7 +696,7 @@ function Field({ label, value, onChange, placeholder, type }) {
 function tinyBtn(bg, color) {
   return {
     fontSize: 10, color, background: bg,
-    border: 'none', borderRadius: 4, padding: '4px 8px',
+    border: 'none', borderRadius: 0, padding: '4px 8px',
     cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap',
   }
 }
@@ -704,20 +704,20 @@ function tinyBtn(bg, color) {
 function solidBtn(bg, color = C.bg) {
   return {
     padding: '11px 14px', background: bg, color,
-    border: 'none', borderRadius: 6, fontSize: 11,
+    border: 'none', borderRadius: 0, fontSize: 11,
     cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.04em',
   }
 }
 
 const outlineBtn = {
   padding: '11px 14px', background: 'transparent', color: C.sub,
-  border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11,
+  border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 11,
   cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
 }
 
 const inputStyle = {
   width: '100%', padding: '9px 10px',
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, color: C.text, background: C.bg, outline: 'none',
   fontFamily: "'IBM Plex Mono', monospace",
   boxSizing: 'border-box',

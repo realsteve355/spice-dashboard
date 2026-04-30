@@ -333,8 +333,8 @@ export default function CreateColony() {
           <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
             {[1, 2, 3, 4].map(n => (
               <div key={n} style={{
-                flex: 1, height: 3, borderRadius: 2,
-                background: step >= n ? C.gold : C.border,
+                flex: 1, height: 3, borderRadius: 0,
+                background: step >= n ? C.text : C.border,
               }} />
             ))}
           </div>
@@ -357,7 +357,7 @@ export default function CreateColony() {
               />
               {slug && (
                 <div style={{ fontSize: 11, color: C.faint, marginTop: 6 }}>
-                  URL: app.zpc.finance/colony/<span style={{ color: C.gold }}>{slug}</span>
+                  URL: app.zpc.finance/colony/<span style={{ color: C.text }}>{slug}</span>
                 </div>
               )}
             </div>
@@ -374,11 +374,11 @@ export default function CreateColony() {
               {ticker && (
                 <div style={{ fontSize: 11, color: C.faint, marginTop: 6 }}>
                   tokens:&nbsp;
-                  <span style={{ color: C.gold }}>S-{ticker}</span>
+                  <span style={{ color: C.text }}>S-{ticker}</span>
                   &nbsp;·&nbsp;
-                  <span style={{ color: C.gold }}>V-{ticker}</span>
+                  <span style={{ color: C.text }}>V-{ticker}</span>
                   &nbsp;·&nbsp;
-                  <span style={{ color: C.gold }}>G-{ticker}</span>
+                  <span style={{ color: C.text }}>G-{ticker}</span>
                 </div>
               )}
             </div>
@@ -424,7 +424,7 @@ export default function CreateColony() {
                 type: 'earth',
                 label: 'Earth Colony',
                 badge: 'OPEN ECONOMY',
-                badgeColor: C.gold,
+                badgeColor: C.text,
                 description: 'S-tokens connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Citizens can buy externally using V-tokens.',
                 params: ['USDC reserve + Fisc rate', 'V → USDC boundary flows', 'Local Robot Tax (LRT)'],
               },
@@ -436,20 +436,20 @@ export default function CreateColony() {
                   onClick={() => setColonyType(opt.type)}
                   style={{
                     background: C.white,
-                    border: `2px solid ${selected ? C.gold : C.border}`,
-                    borderRadius: 8, padding: 16, marginBottom: 12,
+                    border: `2px solid ${selected ? C.text : C.border}`,
+                    borderRadius: 0, padding: 16, marginBottom: 12,
                     cursor: 'pointer',
                     transition: 'border-color 0.15s',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: selected ? C.gold : C.text }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: selected ? C.text : C.text }}>
                       {opt.label}
                     </div>
                     <span style={{
                       fontSize: 9, letterSpacing: '0.1em', fontWeight: 600,
                       color: opt.badgeColor, border: `1px solid ${opt.badgeColor}`,
-                      borderRadius: 10, padding: '2px 8px',
+                      borderRadius: 0, padding: '2px 8px',
                     }}>
                       {opt.badge}
                     </span>
@@ -461,7 +461,7 @@ export default function CreateColony() {
                     {opt.params.map(p => (
                       <span key={p} style={{
                         fontSize: 10, color: C.faint,
-                        border: `1px solid ${C.border}`, borderRadius: 4,
+                        border: `1px solid ${C.border}`, borderRadius: 0,
                         padding: '2px 7px',
                       }}>
                         {p}
@@ -469,7 +469,7 @@ export default function CreateColony() {
                     ))}
                   </div>
                   {selected && (
-                    <div style={{ marginTop: 10, fontSize: 10, color: C.gold, letterSpacing: '0.06em' }}>
+                    <div style={{ marginTop: 10, fontSize: 10, color: C.text, letterSpacing: '0.06em' }}>
                       ✓ selected
                     </div>
                   )}
@@ -509,7 +509,7 @@ export default function CreateColony() {
                   {i > 0 && (
                     <button
                       onClick={() => removeBoard(i)}
-                      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '0 12px', cursor: 'pointer', color: C.faint }}
+                      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 0, padding: '0 12px', cursor: 'pointer', color: C.faint }}
                     >
                       ×
                     </button>
@@ -545,7 +545,7 @@ export default function CreateColony() {
                 </div>
 
                 {/* Fixed parameters */}
-                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 16 }}>
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, marginBottom: 16 }}>
                   <div style={{ padding: '12px 16px', borderBottom: `1px solid ${C.border}`, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
                     FIXED PARAMETERS
                   </div>
@@ -556,22 +556,22 @@ export default function CreateColony() {
                       borderBottom: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
                     }}>
                       <span style={{ fontSize: 11, color: C.sub }}>{p.label}</span>
-                      <span style={{ fontSize: 11, color: C.gold, fontWeight: 500 }}>{p.value}</span>
+                      <span style={{ fontSize: 11, color: C.text, fontWeight: 500 }}>{p.value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Summary */}
-                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
-                  <span style={{ color: C.gold }}>Colony:</span> {name}<br />
-                  <span style={{ color: C.gold }}>Type:</span> {colonyType === 'mars' ? 'Mars (closed economy)' : 'Earth (open economy)'}<br />
-                  <span style={{ color: C.gold }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
-                  <span style={{ color: C.gold }}>URL:</span> app.zpc.finance/colony/{slug}<br />
-                  <span style={{ color: C.gold }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
-                  <span style={{ color: C.gold }}>Network:</span> Base Sepolia
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.7 }}>
+                  <span style={{ color: C.text }}>Colony:</span> {name}<br />
+                  <span style={{ color: C.text }}>Type:</span> {colonyType === 'mars' ? 'Mars (closed economy)' : 'Earth (open economy)'}<br />
+                  <span style={{ color: C.text }}>Tokens:</span> S-{ticker} · V-{ticker} · G-{ticker}<br />
+                  <span style={{ color: C.text }}>URL:</span> app.zpc.finance/colony/{slug}<br />
+                  <span style={{ color: C.text }}>MCC board:</span> {boards.length} member{boards.length !== 1 ? 's' : ''}<br />
+                  <span style={{ color: C.text }}>Network:</span> Base Sepolia
                 </div>
 
-                <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: '12px 14px', marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
+                <div style={{ background: '#fffbf0', border: `1px solid ${C.text}`, borderRadius: 0, padding: '12px 14px', marginBottom: 16, fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
                   Deploying requires <strong>20 MetaMask confirmations</strong> — 11 contract deploys + 9 setup transactions. Keep MetaMask open throughout. The final step registers your colony in the global directory so anyone can find it.
                 </div>
 
@@ -580,7 +580,7 @@ export default function CreateColony() {
                     type="checkbox"
                     checked={accepted}
                     onChange={e => setAccepted(e.target.checked)}
-                    style={{ marginTop: 2, width: 16, height: 16, accentColor: C.gold, flexShrink: 0 }}
+                    style={{ marginTop: 2, width: 16, height: 16, accentColor: C.text, flexShrink: 0 }}
                   />
                   <span style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
                     I have read and accept the founding constitution. I understand that these rules are fixed and may only be amended by 80% referendum.
@@ -605,7 +605,7 @@ export default function CreateColony() {
               <div>
                 <div style={stepTitle}>Deploying to Base Sepolia</div>
                 <div style={stepSub}>Confirm each transaction in MetaMask as it appears.</div>
-                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16 }}>
+                <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16 }}>
                   {deployLog.map((entry, i) => (
                     <div key={i} style={{
                       fontSize: 11, lineHeight: 1.8,
@@ -625,11 +625,11 @@ export default function CreateColony() {
             {deployError && !deploying && (
               <div>
                 <div style={stepTitle}>Deploy failed</div>
-                <div style={{ background: '#fee2e2', border: `1px solid #fca5a5`, borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                <div style={{ background: '#fee2e2', border: `1px solid #fca5a5`, borderRadius: 0, padding: 16, marginBottom: 16 }}>
                   <div style={{ fontSize: 11, color: C.red, lineHeight: 1.6 }}>{deployError}</div>
                 </div>
                 {deployLog.length > 0 && (
-                  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                  <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 16 }}>
                     {deployLog.map((entry, i) => (
                       <div key={i} style={{ fontSize: 11, lineHeight: 1.8, color: entry.done ? C.green : C.sub }}>
                         {entry.text}
@@ -652,7 +652,7 @@ export default function CreateColony() {
             <div style={{ fontSize: 18, fontWeight: 500, color: C.text, marginBottom: 8 }}>
               Colony deployed
             </div>
-            <div style={{ fontSize: 13, color: C.gold, marginBottom: 2 }}>{name}</div>
+            <div style={{ fontSize: 13, color: C.text, marginBottom: 2 }}>{name}</div>
             <div style={{ fontSize: 10, color: C.faint, marginBottom: 20, letterSpacing: '0.08em' }}>
               {colonyType === 'mars' ? 'MARS COLONY · CLOSED ECONOMY' : 'EARTH COLONY · OPEN ECONOMY'}
             </div>
@@ -668,12 +668,12 @@ export default function CreateColony() {
             {/* Share */}
             <div style={{
               background: C.white, border: `1px solid ${C.border}`,
-              borderRadius: 8, padding: 16, marginBottom: 20, textAlign: 'left',
+              borderRadius: 0, padding: 16, marginBottom: 20, textAlign: 'left',
             }}>
               <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 10 }}>SHARE YOUR COLONY</div>
               <div style={{
                 fontSize: 12, color: C.sub, background: C.bg,
-                padding: '10px 12px', borderRadius: 6, marginBottom: 10,
+                padding: '10px 12px', borderRadius: 0, marginBottom: 10,
                 wordBreak: 'break-all',
               }}>
                 app.zpc.finance/colony/{slug}
@@ -701,15 +701,15 @@ export default function CreateColony() {
 }
 
 const primaryBtn = {
-  padding: '13px 16px', background: C.gold, color: C.bg,
-  border: 'none', borderRadius: 8, fontSize: 13,
+  padding: '13px 16px', background: C.text, color: C.bg,
+  border: 'none', borderRadius: 0, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   width: '100%',
 }
 
 const ghostBtn = {
   padding: '12px 16px', background: C.white, color: C.sub,
-  border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12,
+  border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12,
   cursor: 'pointer', letterSpacing: '0.04em',
 }
 
@@ -719,7 +719,7 @@ const fieldGroup = { marginBottom: 16 }
 const fieldLabel = { display: 'block', fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }
 const input = {
   width: '100%', padding: '11px 12px',
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 13, color: C.text, background: C.white,
   outline: 'none',
 }

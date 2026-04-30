@@ -235,8 +235,8 @@ const S = StyleSheet.create({
   toAddr:          { fontSize: 10, color: C.faint, fontFamily: font, marginTop: 3 },
 
   amountCard:      { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', paddingVertical: 24 },
-  amountValue:     { fontSize: 48, fontWeight: '700', color: C.gold, fontFamily: font },
-  amountToken:     { fontSize: 20, color: C.gold, fontFamily: font },
+  amountValue:     { fontSize: 48, fontWeight: '700', color: C.text, fontFamily: font },
+  amountToken:     { fontSize: 20, color: C.text, fontFamily: font },
 
   noteText:        { fontSize: 13, color: C.sub, fontFamily: font },
 
@@ -244,14 +244,14 @@ const S = StyleSheet.create({
   lineRow:           { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: C.border },
   lineName:          { fontSize: 13, color: C.text, fontFamily: font },
   lineMeta:          { fontSize: 11, color: C.faint, fontFamily: font, marginTop: 2 },
-  lineTotal:         { fontSize: 13, color: C.gold, fontFamily: font, fontWeight: '600' },
-  payThumbImage:     { width: 44, height: 44, borderRadius: 4, backgroundColor: C.bg },
-  payThumbPlaceholder:{ width: 44, height: 44, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
+  lineTotal:         { fontSize: 13, color: C.text, fontFamily: font, fontWeight: '600' },
+  payThumbImage:     { width: 44, height: 44, borderRadius: 0, backgroundColor: C.bg },
+  payThumbPlaceholder:{ width: 44, height: 44, borderRadius: 0, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
   payThumbInitials:  { fontSize: 12, color: C.faint, fontFamily: font, fontWeight: '600' },
 
   balHint:         { fontSize: 11, color: C.faint, fontFamily: font, textAlign: 'center', marginBottom: 12 },
 
-  payBtn:          { backgroundColor: C.gold, borderRadius: 10, padding: 18, alignItems: 'center' },
+  payBtn:          { backgroundColor: C.text, borderRadius: 0, padding: 18, alignItems: 'center' },
   payBtnDisabled:  { opacity: 0.4 },
   payBtnText:      { color: C.bg, fontSize: 15, fontWeight: '600', fontFamily: font },
 
@@ -259,12 +259,12 @@ const S = StyleSheet.create({
 
   // Success
   successWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  successIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  successIconWrap: { width: 72, height: 72, borderRadius: 0, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
   successIcon:     { fontSize: 36, color: C.bg },
   successTitle:    { fontSize: 20, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
-  successAmount:   { fontSize: 36, fontWeight: '700', color: C.gold, fontFamily: font },
+  successAmount:   { fontSize: 36, fontWeight: '700', color: C.text, fontFamily: font },
   successTo:       { fontSize: 13, color: C.sub, fontFamily: font, marginTop: 6, marginBottom: 4 },
   txHash:          { fontSize: 10, color: C.faint, fontFamily: font, marginBottom: 24 },
-  doneBtn:         { backgroundColor: C.gold, borderRadius: 10, paddingHorizontal: 40, paddingVertical: 14, marginTop: 8 },
+  doneBtn:         { backgroundColor: C.text, borderRadius: 0, paddingHorizontal: 40, paddingVertical: 14, marginTop: 8 },
   doneBtnText:     { color: C.bg, fontSize: 14, fontWeight: '600', fontFamily: font },
 })

@@ -340,10 +340,10 @@ export default function Assets() {
       <div style={{ padding: '16px 16px 0' }}>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
+        <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 0, overflow: 'hidden', background: C.white }}>
           {[['assets','My Assets'],['obligations','Obligations'],['public','Registry'],['land','Land']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{
-              flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
+              flex: 1, padding: '10px 0', background: tab === t ? C.text : 'none',
               border: 'none', color: tab === t ? '#fff' : C.sub,
               fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
             }}>
@@ -412,7 +412,7 @@ export default function Assets() {
 function NotACitizenBanner() {
   return (
     <div style={{
-      border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px',
+      border: `1px solid ${C.border}`, borderRadius: 0, padding: '14px 16px',
       marginBottom: 10, fontSize: 12, color: C.sub, background: C.white,
     }}>
       You are not a citizen of this colony. Join the colony to register assets and create obligations.
@@ -551,7 +551,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.gold }}>{a.currentValue} S</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{a.currentValue} S</div>
                 {a.currentValue !== a.value && (
                   <div style={{ fontSize: 10, color: C.faint }}>reg. {a.value} S</div>
                 )}
@@ -561,7 +561,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
             {/* Transfer */}
             <div style={{ marginTop: 8 }}>
               {transferring === a.id ? (
-                <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 10 }}>
+                <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 10 }}>
                   <div style={{ fontSize: 10, color: C.faint, marginBottom: 8 }}>TRANSFER ASSET</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <select style={{ ...selectStyle, flex: 2 }}
@@ -583,7 +583,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                       style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
                     <button onClick={() => handleTransfer(a.id)}
                       disabled={actPending || !tTo || !tPrice || tTo === ''}
-                      style={{ ...actionBtn(C.gold), flex: 2, opacity: (actPending || !tTo || !tPrice) ? 0.4 : 1 }}>
+                      style={{ ...actionBtn(C.text), flex: 2, opacity: (actPending || !tTo || !tPrice) ? 0.4 : 1 }}>
                       {actPending ? 'Transferring…' : 'Transfer →'}
                     </button>
                   </div>
@@ -625,8 +625,8 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
               <button
                 onClick={() => setRAI(v => !v)}
                 style={{
-                  width: 36, height: 20, borderRadius: 10, padding: 0, cursor: 'pointer',
-                  background: rAI ? C.gold : C.border, border: 'none', position: 'relative',
+                  width: 36, height: 20, borderRadius: 0, padding: 0, cursor: 'pointer',
+                  background: rAI ? C.text : C.border, border: 'none', position: 'relative',
                 }}
               >
                 <span style={{
@@ -649,9 +649,9 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
               <div style={{ fontSize: 11, color: C.faint, marginBottom: 6 }}>Photo (optional)</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 {rPhoto ? (
-                  <img src={rPhoto} alt="" style={{ width: 48, height: 48, borderRadius: 6, objectFit: 'cover', border: `1px solid ${C.border}` }} />
+                  <img src={rPhoto} alt="" style={{ width: 48, height: 48, borderRadius: 0, objectFit: 'cover', border: `1px solid ${C.border}` }} />
                 ) : (
-                  <div style={{ width: 48, height: 48, borderRadius: 6, border: `1px dashed ${C.border}`, background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: C.faint }} />
+                  <div style={{ width: 48, height: 48, borderRadius: 0, border: `1px dashed ${C.border}`, background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, color: C.faint }} />
                 )}
                 <button onClick={() => photoInputRef.current?.click()} style={{ ...ghostBtn, fontSize: 10 }}>
                   {rPhoto ? 'Change photo' : 'Add photo'}
@@ -688,7 +688,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
             <button
               onClick={handleRegister}
               disabled={actPending || !canRegister}
-              style={{ ...actionBtn(C.gold), width: '100%', opacity: (actPending || !canRegister) ? 0.4 : 1 }}
+              style={{ ...actionBtn(C.text), width: '100%', opacity: (actPending || !canRegister) ? 0.4 : 1 }}
             >
               {actPending ? 'Registering…' : 'Register on Fisc →'}
             </button>
@@ -769,8 +769,8 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
 
       {/* Pending signatures */}
       {pendingProps.filter(p => !signedIds.has(p.id)).length > 0 && (
-        <div style={{ ...card, borderColor: C.gold }}>
-          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>
+        <div style={{ ...card, borderColor: C.text }}>
+          <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>
             AWAITING YOUR SIGNATURE
           </div>
           {pendingProps.filter(p => !signedIds.has(p.id)).map((p, i, arr) => {
@@ -805,7 +805,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
                 <button
                   onClick={() => handleSign(p.id)}
                   disabled={signing === p.id}
-                  style={{ ...actionBtn(C.gold), opacity: signing === p.id ? 0.4 : 1, whiteSpace: 'nowrap' }}
+                  style={{ ...actionBtn(C.text), opacity: signing === p.id ? 0.4 : 1, whiteSpace: 'nowrap' }}
                 >
                   {signing === p.id ? 'Signing…' : 'Sign →'}
                 </button>
@@ -866,10 +866,10 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
               {[['creditor','I am the creditor (receive payments)'],['obligor','I am the obligor (make payments)']].map(([r, label]) => (
                 <button key={r} onClick={() => setMyRole(r)} style={{
                   flex: 1, padding: '8px 6px', fontSize: 10,
-                  background: myRole === r ? C.gold : C.white,
+                  background: myRole === r ? C.text : C.white,
                   color: myRole === r ? '#fff' : C.sub,
-                  border: `1px solid ${myRole === r ? C.gold : C.border}`,
-                  borderRadius: 6, cursor: 'pointer', textAlign: 'center', lineHeight: 1.4,
+                  border: `1px solid ${myRole === r ? C.text : C.border}`,
+                  borderRadius: 0, cursor: 'pointer', textAlign: 'center', lineHeight: 1.4,
                 }}>
                   {label}
                 </button>
@@ -916,7 +916,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
             <button
               onClick={handlePropose}
               disabled={actPending || !canPropose}
-              style={{ ...actionBtn(C.gold), width: '100%', opacity: (actPending || !canPropose) ? 0.4 : 1 }}
+              style={{ ...actionBtn(C.text), width: '100%', opacity: (actPending || !canPropose) ? 0.4 : 1 }}
             >
               {actPending ? 'Proposing…' : 'Submit proposal →'}
             </button>
@@ -967,7 +967,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
         </div>
       </div>
       {/* Progress bar */}
-      <div style={{ height: 3, background: C.border, borderRadius: 2, overflow: 'hidden', marginTop: 6 }}>
+      <div style={{ height: 3, background: C.border, borderRadius: 0, overflow: 'hidden', marginTop: 6 }}>
         <div style={{ height: '100%', width: `${pct * 100}%`, background: statusColor }} />
       </div>
     </div>
@@ -1013,9 +1013,9 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                 <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
                   {displayName}
                   <span style={{ fontSize: 10, color: C.faint, marginLeft: 8 }}>#{a.id}</span>
-                  {isMine && <span style={{ fontSize: 10, color: C.gold, marginLeft: 6 }}>· yours</span>}
+                  {isMine && <span style={{ fontSize: 10, color: C.text, marginLeft: 6 }}>· yours</span>}
                 </div>
-                <div style={{ fontSize: 12, color: C.gold }}>
+                <div style={{ fontSize: 12, color: C.text }}>
                   {a.currentValue} S
                 </div>
               </div>
@@ -1028,7 +1028,7 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                 )}
               </div>
               {a.escrowedFor !== '0' && (
-                <div style={{ marginTop: 4, fontSize: 10, color: C.gold }}>
+                <div style={{ marginTop: 4, fontSize: 10, color: C.text }}>
                   🔒 pledged as collateral on obligation #{a.escrowedFor}
                 </div>
               )}
@@ -1212,14 +1212,14 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
               <Field label="Label (e.g. 'Sector-7 Plot A')" value={claimLabel} onChange={setClaimLabel} placeholder="describe the parcel" />
               <Field label="Declared value (V)" value={claimValueV} onChange={setClaimValueV} placeholder="e.g. 1000" type="number" />
               {Number(claimValueV) > 0 && (
-                <div style={{ fontSize: 11, color: C.gold, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: C.text, marginBottom: 10 }}>
                   First-epoch fee: {(Number(claimValueV) * 0.005).toFixed(2)} V
                 </div>
               )}
               <button
                 onClick={handleClaim}
                 disabled={pending || !claimLabel.trim() || !(Number(claimValueV) > 0)}
-                style={{ ...actionBtn(C.gold), width: '100%', opacity: pending ? 0.4 : 1 }}
+                style={{ ...actionBtn(C.text), width: '100%', opacity: pending ? 0.4 : 1 }}
               >
                 {pending ? 'Claiming…' : 'Claim parcel →'}
               </button>
@@ -1258,9 +1258,9 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                   <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
                     {p.label || `Parcel #${p.id}`}
                     <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{p.id}</span>
-                    {isMine && <span style={{ fontSize: 10, color: C.gold, marginLeft: 6 }}>· yours</span>}
+                    {isMine && <span style={{ fontSize: 10, color: C.text, marginLeft: 6 }}>· yours</span>}
                   </div>
-                  <div style={{ fontSize: 12, color: C.gold }}>{p.declaredValueV} V</div>
+                  <div style={{ fontSize: 12, color: C.text }}>{p.declaredValueV} V</div>
                 </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>
                   Holder: {holderNm} · monthly fee {monthlyFee.toFixed(2)} V
@@ -1278,7 +1278,7 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                       onClick={() => { setEditForId(editForId === p.id ? null : p.id); setNewValueV(String(p.declaredValueV)) }}
                       disabled={pending}
                       style={{ fontSize: 9, padding: '2px 7px', background: 'none',
-                        border: `1px solid ${C.gold}`, color: C.gold, borderRadius: 4, cursor: 'pointer' }}
+                        border: `1px solid ${C.text}`, color: C.text, borderRadius: 0, cursor: 'pointer' }}
                     >
                       {editForId === p.id ? 'Cancel' : 'Update value'}
                     </button>
@@ -1287,7 +1287,7 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                         onClick={() => handlePay(p.id)}
                         disabled={pending}
                         style={{ fontSize: 9, padding: '2px 7px', background: 'none',
-                          border: `1px solid ${C.red}`, color: C.red, borderRadius: 4, cursor: 'pointer' }}
+                          border: `1px solid ${C.red}`, color: C.red, borderRadius: 0, cursor: 'pointer' }}
                       >
                         Pay {owedV.toFixed(2)} V stewardship
                       </button>
@@ -1297,14 +1297,14 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
 
                 {/* Update value inline form */}
                 {isMine && editForId === p.id && (
-                  <div style={{ marginTop: 8, padding: 10, background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                  <div style={{ marginTop: 8, padding: 10, background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                     <input
                       style={{ ...inlineInput, width: '100%', marginBottom: 8 }}
                       type="number" placeholder="new declared value (V)"
                       value={newValueV} onChange={e => setNewValueV(e.target.value)}
                     />
                     <button onClick={() => handleUpdate(p.id)} disabled={pending}
-                      style={{ ...actionBtn(C.gold), width: '100%', fontSize: 11, opacity: pending ? 0.4 : 1 }}>
+                      style={{ ...actionBtn(C.text), width: '100%', fontSize: 11, opacity: pending ? 0.4 : 1 }}>
                       {pending ? 'Updating…' : 'Update declared value →'}
                     </button>
                   </div>
@@ -1326,7 +1326,7 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                     if (!h) return <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>Loading…</div>
                     if (h.length === 0) return <div style={{ marginTop: 6, fontSize: 10, color: C.faint }}>No history available.</div>
                     return (
-                      <div style={{ marginTop: 6, padding: 8, background: `${C.gold}06`, border: `1px solid ${C.border}`, borderRadius: 4 }}>
+                      <div style={{ marginTop: 6, padding: 8, background: `${C.text}06`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                         {h.map((ev, j) => (
                           <div key={j} style={{
                             fontSize: 10, color: C.sub, lineHeight: 1.5,
@@ -1349,12 +1349,12 @@ function LandTab({ parcels, loading, nameMap, myAddress, signer, cfg, isCitizen,
                       onClick={() => { setForcePurchaseId(forcePurchaseId === p.id ? null : p.id); setPurchaseValueV(String(p.declaredValueV)) }}
                       disabled={pending}
                       style={{ fontSize: 9, padding: '2px 7px', background: 'none',
-                        border: `1px solid ${C.purple}`, color: C.purple, borderRadius: 4, cursor: 'pointer' }}
+                        border: `1px solid ${C.purple}`, color: C.purple, borderRadius: 0, cursor: 'pointer' }}
                     >
                       {forcePurchaseId === p.id ? 'Cancel force purchase' : `Force-purchase at ${p.declaredValueV} V`}
                     </button>
                     {forcePurchaseId === p.id && (
-                      <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                      <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                         <div style={{ fontSize: 10, color: C.faint, marginBottom: 8, lineHeight: 1.6 }}>
                           You will pay {p.declaredValueV} V to {holderNm} and become the new holder. Set your own
                           declared value below — the first-epoch stewardship fee on it is also charged immediately.
@@ -1404,40 +1404,40 @@ function Field({ label, value, onChange, placeholder, type }) {
 
 const card = {
   background: C.white, border: `1px solid ${C.border}`,
-  borderRadius: 8, padding: 16, marginBottom: 10,
+  borderRadius: 0, padding: 16, marginBottom: 10,
 }
 
 function actionBtn(bg, color = C.bg) {
   return {
     padding: '10px 14px', background: bg, color,
-    border: 'none', borderRadius: 6, fontSize: 11,
+    border: 'none', borderRadius: 0, fontSize: 11,
     cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   }
 }
 
 const ghostBtn = {
   padding: '7px 12px', background: C.white, color: C.sub,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
 }
 
 const inlineInput = {
   padding: '9px 10px', border: `1px solid ${C.border}`,
-  borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
+  borderRadius: 0, fontSize: 12, color: C.text, background: C.white, outline: 'none',
   boxSizing: 'border-box',
 }
 
 const selectStyle = {
   width: '100%', padding: '9px 10px',
   background: C.bg, color: C.text,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, fontFamily: "'IBM Plex Mono', monospace",
 }
 
 const inputStyle = {
   width: '100%', padding: '9px 10px',
   background: C.bg, color: C.text,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, outline: 'none', boxSizing: 'border-box',
   fontFamily: "'IBM Plex Mono', monospace",
 }

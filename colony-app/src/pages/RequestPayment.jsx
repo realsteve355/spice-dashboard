@@ -49,7 +49,7 @@ export default function RequestPayment() {
 
         {/* Amount display */}
         <div style={{ marginBottom: 4, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>AMOUNT DUE</div>
-        <div style={{ fontSize: 48, fontWeight: 500, color: C.gold, letterSpacing: '-0.02em', marginBottom: 4 }}>
+        <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
           {amount} <span style={{ fontSize: 22, color: C.faint }}>S</span>
         </div>
         {note && (
@@ -59,8 +59,8 @@ export default function RequestPayment() {
 
         {/* QR code */}
         <div style={{
-          background: C.white, border: `2px solid ${C.gold}`,
-          borderRadius: 12, padding: 20, marginBottom: 20,
+          background: C.white, border: `2px solid ${C.text}`,
+          borderRadius: 0, padding: 20, marginBottom: 20,
         }}>
           <QRCodeSVG
             value={payUrl}
@@ -104,7 +104,7 @@ export default function RequestPayment() {
         </div>
 
         {fromLabel && (
-          <div style={{ fontSize: 11, color: C.gold, marginBottom: 16, letterSpacing: '0.06em' }}>
+          <div style={{ fontSize: 11, color: C.text, marginBottom: 16, letterSpacing: '0.06em' }}>
             RECEIVING AS: {fromLabel}
           </div>
         )}
@@ -154,12 +154,12 @@ const fieldGroup  = { marginBottom: 20 }
 const fieldLabel  = { display: 'block', fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }
 const inputStyle  = {
   width: '100%', padding: '12px 12px',
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 16, color: C.text, background: C.white, outline: 'none',
 }
 const primaryBtn  = {
   width: '100%', padding: '14px',
-  background: C.gold, color: C.bg,
-  border: 'none', borderRadius: 8, fontSize: 13,
+  background: C.text, color: C.bg,
+  border: 'none', borderRadius: 0, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }

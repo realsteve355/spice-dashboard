@@ -171,9 +171,9 @@ export default function Fisc() {
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>FISC ENGINE</div>
           <span style={{
             fontSize: 9, letterSpacing: '0.1em', fontWeight: 600,
-            color: isMars ? C.purple : C.gold,
-            border: `1px solid ${isMars ? C.purple : C.gold}`,
-            borderRadius: 10, padding: '2px 8px',
+            color: isMars ? C.purple : C.text,
+            border: `1px solid ${isMars ? C.purple : C.text}`,
+            borderRadius: 0, padding: '2px 8px',
           }}>
             {isMars ? 'MARS · CLOSED' : 'EARTH · OPEN'}
           </span>
@@ -194,9 +194,9 @@ export default function Fisc() {
                 { label: 'FISC RATE', value: displayRate ? `$${displayRate.toFixed(3)}/S` : '—', sub: fs ? 'on-chain · live' : 'budget implied' },
                 { label: 'UBI VALUE', value: ubiUSD ? `$${Math.round(ubiUSD)}/mo` : '—', sub: 'external ref'                           },
               ].map(item => (
-                <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '12px 10px', textAlign: 'center' }}>
+                <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '12px 10px', textAlign: 'center' }}>
                   <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 6 }}>{item.label}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: C.gold, marginBottom: 2 }}>{item.value}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 2 }}>{item.value}</div>
                   <div style={{ fontSize: 9, color: C.faint }}>{item.sub}</div>
                 </div>
               ))}
@@ -222,7 +222,7 @@ export default function Fisc() {
             <div style={{ marginTop: 10, fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
               No budget published.{' '}
               {address && (
-                <span style={{ color: C.gold, cursor: 'pointer', textDecoration: 'underline' }}
+                <span style={{ color: C.text, cursor: 'pointer', textDecoration: 'underline' }}
                   onClick={() => navigate(`/colony/${slug}/budget`)}>
                   Publish one →
                 </span>
@@ -239,7 +239,7 @@ export default function Fisc() {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => navigate(`/colony/${slug}/budget`)} style={navBtn}>View Budget →</button>
-            <button onClick={() => navigate(`/colony/${slug}/basket`)} style={{ ...navBtn, background: 'transparent', color: C.gold, border: `1px solid ${C.gold}` }}>Bread Basket →</button>
+            <button onClick={() => navigate(`/colony/${slug}/basket`)} style={{ ...navBtn, background: 'transparent', color: C.text, border: `1px solid ${C.text}` }}>Bread Basket →</button>
           </div>
         </div>
 
@@ -252,7 +252,7 @@ export default function Fisc() {
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>USDC RESERVE</div>
                 {fs && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: STATUS_COLOR[fs.reserveStatus] }} />
+                    <div style={{ width: 8, height: 8, borderRadius: 0, backgroundColor: STATUS_COLOR[fs.reserveStatus] }} />
                     <span style={{ fontSize: 9, color: STATUS_COLOR[fs.reserveStatus], fontWeight: 600, letterSpacing: '0.08em' }}>
                       {STATUS_LABEL[fs.reserveStatus]}
                     </span>
@@ -268,7 +268,7 @@ export default function Fisc() {
                     { label: 'LAT RATE',     value: `${fs.latRate.toFixed(1)}%`            },
                     { label: 'BREAD BASKET', value: `${fs.breadBasketPriceS}S`             },
                   ].map(item => (
-                    <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '10px 12px' }}>
+                    <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '10px 12px' }}>
                       <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>{item.label}</div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{item.value}</div>
                     </div>
@@ -300,7 +300,7 @@ export default function Fisc() {
                       { label: 'LAT BREAKEVEN',    value: latBreakevenProfit  ? `$${Math.round(latBreakevenProfit).toLocaleString()} profit` : '—' },
                       { label: 'RESERVE RUNWAY',   value: reserveRunwayMonths ? `${reserveRunwayMonths.toFixed(1)} months` : '—'               },
                     ].map(item => (
-                      <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '10px 12px' }}>
+                      <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '10px 12px' }}>
                         <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>{item.label}</div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.value}</div>
                       </div>
@@ -339,8 +339,8 @@ export default function Fisc() {
                           const h    = Math.max(4, Math.round(((r - min) / range) * 36))
                           return (
                             <div key={i} title={`$${r.toFixed(4)}`} style={{
-                              flex: 1, height: h, borderRadius: 2,
-                              background: i === chainData.rateHistory.length - 1 ? C.gold : C.border,
+                              flex: 1, height: h, borderRadius: 0,
+                              background: i === chainData.rateHistory.length - 1 ? C.text : C.border,
                             }} />
                           )
                         })}
@@ -356,7 +356,7 @@ export default function Fisc() {
                       { label: 'POLICY STANCE',  value: algo.lastUpdate ? `${(algo.lastStance / 100).toFixed(0)}%` : '—'     },
                       { label: 'SENSITIVITY',    value: `${algo.sensitivity / 100}%/unit`          },
                     ].map(item => (
-                      <div key={item.label} style={{ background: C.bg, borderRadius: 6, padding: '8px 10px' }}>
+                      <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '8px 10px' }}>
                         <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 3 }}>{item.label}</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{item.value}</div>
                       </div>
@@ -401,7 +401,7 @@ export default function Fisc() {
                       <button
                         onClick={handleUpdateRate}
                         disabled={rateUpdating || !walletProvider}
-                        style={{ ...navBtn, borderColor: C.gold, color: C.gold }}
+                        style={{ ...navBtn, borderColor: C.text, color: C.text }}
                       >
                         {rateUpdating ? 'Updating…' : 'Update Rate On-Chain →'}
                       </button>
@@ -449,7 +449,7 @@ export default function Fisc() {
 const card = {
   background: C.white,
   border: `1px solid ${C.border}`,
-  borderRadius: 8,
+  borderRadius: 0,
   padding: '16px',
   marginBottom: 12,
 }
@@ -457,7 +457,7 @@ const card = {
 const navBtn = {
   width: '100%', padding: '10px 0',
   background: 'none', border: `1px solid ${C.border}`,
-  borderRadius: 8, fontSize: 11, color: C.sub,
+  borderRadius: 0, fontSize: 11, color: C.sub,
   cursor: 'pointer', letterSpacing: '0.04em',
   fontFamily: "'IBM Plex Mono', monospace",
 }
@@ -465,6 +465,6 @@ const navBtn = {
 const inputStyle = {
   width: '100%', padding: '8px 10px', boxSizing: 'border-box',
   background: C.bg, border: `1px solid ${C.border}`,
-  borderRadius: 6, fontSize: 12, color: C.text,
+  borderRadius: 0, fontSize: 12, color: C.text,
   fontFamily: "'IBM Plex Mono', monospace",
 }

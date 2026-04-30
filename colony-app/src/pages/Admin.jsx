@@ -149,13 +149,13 @@ export default function Admin() {
           const S    = v => Math.floor(Number(ethers.formatEther(v)))
           switch (p.name) {
             case 'UbiClaimed': return {
-              date, type: 'UBI', typeColor: C.gold,
+              date, type: 'UBI', typeColor: C.text,
               description: `UBI — ${namedAddr(String(a[0]), nm)}`,
               debit: 'UBI Expense', credit: namedAddr(String(a[0]), nm),
               amount: S(a[1]), unit: 'S', blockNumber: log.blockNumber,
             }
             case 'CitizenJoined': return {
-              date, type: 'Join', typeColor: C.gold,
+              date, type: 'Join', typeColor: C.text,
               description: `${String(a[2]) || namedAddr(String(a[0]), nm)} joined`,
               debit: 'Citizens', credit: 'Colony',
               amount: null, unit: '', blockNumber: log.blockNumber,
@@ -179,7 +179,7 @@ export default function Admin() {
               amount: null, unit: '', blockNumber: log.blockNumber,
             }
             case 'AssetRegistered': return {
-              date, type: 'Asset', typeColor: C.gold,
+              date, type: 'Asset', typeColor: C.text,
               description: `Asset registered — ${namedAddr(String(a[1]), nm)}`,
               debit: 'Asset Registry', credit: namedAddr(String(a[1]), nm),
               amount: S(a[2]), unit: 'S', blockNumber: log.blockNumber,
@@ -530,10 +530,10 @@ export default function Admin() {
       <div style={{ padding: '16px 16px 0' }}>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
+        <div style={{ display: 'flex', gap: 0, marginBottom: 16, border: `1px solid ${C.border}`, borderRadius: 0, overflow: 'hidden', background: C.white }}>
           {['overview', 'services', 'citizens', 'billing', 'ledger'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
+              flex: 1, padding: '10px 0', background: tab === t ? C.text : 'none',
               border: 'none', color: tab === t ? C.bg : C.sub,
               fontSize: 10, cursor: 'pointer', letterSpacing: '0.06em', textTransform: 'uppercase',
             }}>
@@ -546,7 +546,7 @@ export default function Admin() {
         {tab === 'overview' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-              <StatCard label="Citizens"       value={displayCount}   unit="" color={C.gold} />
+              <StatCard label="Citizens"       value={displayCount}   unit="" color={C.text} />
               <StatCard label="Revenue MTD"    value={displayRevenue} unit=" S" color={C.green} />
               <StatCard label="Monthly supply" value={(displayCount * 1000).toLocaleString()} unit=" S" color={C.faint} />
               <StatCard label="MCC billing"    value={mccBillingAddr ? 'Live' : 'Not set up'} unit="" color={mccBillingAddr ? C.green : C.red} />
@@ -562,8 +562,8 @@ export default function Admin() {
 
             {/* Setup status */}
             {(!mccServicesAddr || !mccBillingAddr) && (
-              <div style={{ ...card, borderColor: C.gold }}>
-                <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 8 }}>SETUP REQUIRED</div>
+              <div style={{ ...card, borderColor: C.text }}>
+                <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 8 }}>SETUP REQUIRED</div>
                 {!mccServicesAddr && (
                   <div style={{ fontSize: 12, color: C.sub, marginBottom: 4 }}>
                     ⚠ MCCServices not deployed — go to Services tab to manage services
@@ -601,7 +601,7 @@ export default function Admin() {
                 <button
                   onClick={() => { setEpochDone(false); doAdvanceEpoch() }}
                   disabled={epochPending}
-                  style={{ ...smallBtn(epochDone ? C.green : C.gold), opacity: epochPending ? 0.6 : 1 }}
+                  style={{ ...smallBtn(epochDone ? C.green : C.text), opacity: epochPending ? 0.6 : 1 }}
                 >
                   {epochPending ? '…' : epochDone ? 'Epoch advanced ✓' : 'Advance Epoch →'}
                 </button>
@@ -615,8 +615,8 @@ export default function Admin() {
         {tab === 'services' && (
           <div>
             {!mccServicesAddr && (
-              <div style={{ ...card, borderColor: C.gold, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, color: C.gold, marginBottom: 6 }}>MCCServices not deployed for this colony</div>
+              <div style={{ ...card, borderColor: C.text, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: C.text, marginBottom: 6 }}>MCCServices not deployed for this colony</div>
                 <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
                   Services below are local only. To put services on-chain, deploy MCCServices pointing to this colony contract.
                 </div>
@@ -625,16 +625,16 @@ export default function Admin() {
             {svcError && <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>{svcError}</div>}
             {svcLoading && <div style={{ fontSize: 12, color: C.faint, textAlign: 'center', padding: 20 }}>Loading...</div>}
             {!svcLoading && services.map((s, i) => (
-              <div key={i} style={{ ...card, borderColor: editingIdx === i ? C.gold : removingIdx === i ? C.red : C.border }}>
+              <div key={i} style={{ ...card, borderColor: editingIdx === i ? C.text : removingIdx === i ? C.red : C.border }}>
                 {editingIdx === i ? (
                   <div>
-                    <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 10 }}>EDITING</div>
+                    <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 10 }}>EDITING</div>
                     <SvcInput placeholder="Service name"  value={editSvc.name}    onChange={v => setEditSvc(e => ({ ...e, name: v }))} />
                     <SvcInput placeholder="Billing basis" value={editSvc.billing} onChange={v => setEditSvc(e => ({ ...e, billing: v }))} />
                     <SvcInput placeholder="Price"         value={editSvc.price}   onChange={v => setEditSvc(e => ({ ...e, price: v }))} />
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <button onClick={() => setEditIdx(null)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
-                      <button onClick={saveEdit} disabled={svcPending} style={{ ...smallBtn(C.gold), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Save'}</button>
+                      <button onClick={saveEdit} disabled={svcPending} style={{ ...smallBtn(C.text), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Save'}</button>
                     </div>
                   </div>
                 ) : removingIdx === i ? (
@@ -649,7 +649,7 @@ export default function Admin() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                       <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{s.name}</div>
-                      <div style={{ fontSize: 12, color: C.gold, fontWeight: 500 }}>{s.price}</div>
+                      <div style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{s.price}</div>
                     </div>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>{s.billing}</div>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -661,14 +661,14 @@ export default function Admin() {
               </div>
             ))}
             {addingService ? (
-              <div style={{ ...card, borderColor: C.gold }}>
-                <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SERVICE</div>
+              <div style={{ ...card, borderColor: C.text }}>
+                <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SERVICE</div>
                 <SvcInput placeholder="Service name" value={newSvc.name} onChange={v => setNewSvc(s => ({ ...s, name: v }))} />
                 <SvcInput placeholder="Billing basis (e.g. Per item, Flat monthly)" value={newSvc.billing} onChange={v => setNewSvc(s => ({ ...s, billing: v }))} />
                 <SvcInput placeholder="Price (e.g. 5 S, 10 S / hr)" value={newSvc.price} onChange={v => setNewSvc(s => ({ ...s, price: v }))} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setAdding(false)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
-                  <button onClick={addService} disabled={svcPending} style={{ ...smallBtn(C.gold), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Add Service'}</button>
+                  <button onClick={addService} disabled={svcPending} style={{ ...smallBtn(C.text), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Add Service'}</button>
                 </div>
               </div>
             ) : (
@@ -690,7 +690,7 @@ export default function Admin() {
                     {ci.name && <div style={{ fontSize: 13, color: C.text, marginBottom: 2 }}>{ci.name}</div>}
                     <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{ci.addr}</div>
                   </div>
-                  <div style={{ fontSize: 10, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 10, padding: '1px 6px', flexShrink: 0 }}>
+                  <div style={{ fontSize: 10, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 0, padding: '1px 6px', flexShrink: 0 }}>
                     G-#{String(i + 1).padStart(4, '0')}
                   </div>
                 </div>
@@ -706,8 +706,8 @@ export default function Admin() {
         {tab === 'billing' && (
           <div>
             {!mccBillingAddr ? (
-              <div style={{ ...card, borderColor: C.gold }}>
-                <div style={{ fontSize: 12, color: C.gold, marginBottom: 8 }}>MCCBilling not deployed</div>
+              <div style={{ ...card, borderColor: C.text }}>
+                <div style={{ fontSize: 12, color: C.text, marginBottom: 8 }}>MCCBilling not deployed</div>
                 <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6 }}>
                   On-chain billing requires the MCCBilling contract. This will be deployed automatically for new colonies in a future release.
                 </div>
@@ -725,7 +725,7 @@ export default function Admin() {
                   </div>
                   <div style={{ ...card, flex: 1, marginBottom: 0, borderColor: mccTreasuryAddr ? C.border : C.faint }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC TREASURY</div>
-                    <div style={{ fontSize: 22, fontWeight: 500, color: C.gold, marginTop: 4 }}>
+                    <div style={{ fontSize: 22, fontWeight: 500, color: C.text, marginTop: 4 }}>
                       {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
                     </div>
                     <div style={{ fontSize: 9, color: mccTreasuryAddr ? C.green : C.faint, marginTop: 4 }}>
@@ -748,7 +748,7 @@ export default function Admin() {
                               <span style={{ fontSize: 10, color: C.text, fontFamily: 'monospace' }}>
                                 {m.addr.slice(0, 10)}…{m.addr.slice(-6)}
                               </span>
-                              <span style={{ fontSize: 10, color: C.gold, marginLeft: 8, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 10, color: C.text, marginLeft: 8, border: `1px solid ${C.text}`, borderRadius: 0, padding: '1px 6px' }}>
                                 {m.roleName}
                               </span>
                             </div>
@@ -770,17 +770,17 @@ export default function Admin() {
                             placeholder="0x address"
                             value={newRoleAddr}
                             onChange={e => setNewRoleAddr(e.target.value)}
-                            style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
+                            style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
                           />
                           <select
                             value={newRoleVal}
                             onChange={e => setNewRoleVal(e.target.value)}
-                            style={{ padding: '7px 8px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
+                            style={{ padding: '7px 8px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
                           >
                             <option value="1">FD</option>
                             <option value="2">Chair</option>
                           </select>
-                          <button onClick={grantRole} disabled={rolesPending || !newRoleAddr.trim()} style={{ ...smallBtn(C.gold), opacity: rolesPending || !newRoleAddr.trim() ? 0.5 : 1 }}>
+                          <button onClick={grantRole} disabled={rolesPending || !newRoleAddr.trim()} style={{ ...smallBtn(C.text), opacity: rolesPending || !newRoleAddr.trim() ? 0.5 : 1 }}>
                             {rolesPending ? '…' : 'Grant'}
                           </button>
                         </div>
@@ -798,16 +798,16 @@ export default function Admin() {
                         placeholder="To address (0x…)"
                         value={withdrawTo}
                         onChange={e => setWithdrawTo(e.target.value)}
-                        style={{ flex: 2, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
+                        style={{ flex: 2, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 11, color: C.text, background: C.white, outline: 'none', fontFamily: 'monospace' }}
                       />
                       <input
                         placeholder="S amount"
                         type="number"
                         value={withdrawAmt}
                         onChange={e => setWithdrawAmt(e.target.value)}
-                        style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
+                        style={{ flex: 1, padding: '7px 10px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 11, color: C.text, background: C.white, outline: 'none' }}
                       />
-                      <button onClick={doWithdraw} disabled={withdrawPending || !withdrawAmt || !withdrawTo.trim()} style={{ ...smallBtn(C.gold), opacity: withdrawPending || !withdrawAmt || !withdrawTo.trim() ? 0.5 : 1 }}>
+                      <button onClick={doWithdraw} disabled={withdrawPending || !withdrawAmt || !withdrawTo.trim()} style={{ ...smallBtn(C.text), opacity: withdrawPending || !withdrawAmt || !withdrawTo.trim() ? 0.5 : 1 }}>
                         {withdrawPending ? '…' : 'Withdraw'}
                       </button>
                     </div>
@@ -817,11 +817,11 @@ export default function Admin() {
 
                 {/* Infrastructure fee */}
                 {protocolFeeWei !== null && (
-                  <div style={{ ...card, marginBottom: 10, borderColor: protocolFeeWei > 0n ? C.gold : C.border }}>
+                  <div style={{ ...card, marginBottom: 10, borderColor: protocolFeeWei > 0n ? C.text : C.border }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>INFRASTRUCTURE FEE</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: 18, fontWeight: 500, color: protocolFeeWei > 0n ? C.gold : C.faint }}>
+                        <div style={{ fontSize: 18, fontWeight: 500, color: protocolFeeWei > 0n ? C.text : C.faint }}>
                           {ethers.formatEther(protocolFeeWei)} <span style={{ fontSize: 11 }}>ETH</span>
                         </div>
                         <div style={{ fontSize: 9, color: C.faint, marginTop: 3 }}>
@@ -832,7 +832,7 @@ export default function Admin() {
                         <button
                           onClick={settleProtocol}
                           disabled={settlePending || settleDone}
-                          style={{ ...smallBtn(C.gold), opacity: settlePending || settleDone ? 0.6 : 1, flexShrink: 0, marginLeft: 12 }}
+                          style={{ ...smallBtn(C.text), opacity: settlePending || settleDone ? 0.6 : 1, flexShrink: 0, marginLeft: 12 }}
                         >
                           {settlePending ? '…' : settleDone ? 'Settled ✓' : 'Settle →'}
                         </button>
@@ -849,7 +849,7 @@ export default function Admin() {
                 </div>
 
                 {/* Billing instructions */}
-                <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12, padding: '10px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12, padding: '10px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                   1. Set each citizen's bill (whole S-tokens)<br />
                   2. Citizen pays via Dashboard → "Pay MCC bill" (S-tokens go to MCC Treasury above)<br />
                   3. When Treasury balance increases, click "Paid ✓" to confirm and record revenue
@@ -861,13 +861,13 @@ export default function Admin() {
                   const isPending   = billPending === ci.addr
                   const isEditing   = draftVal !== undefined
                   return (
-                    <div key={ci.addr} style={{ ...card, borderColor: bill > 0 ? C.gold : C.border }}>
+                    <div key={ci.addr} style={{ ...card, borderColor: bill > 0 ? C.text : C.border }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <div>
                           {ci.name && <div style={{ fontSize: 12, color: C.text, marginBottom: 2 }}>{ci.name}</div>}
                           <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{ci.addr.slice(0, 10)}…{ci.addr.slice(-6)}</div>
                         </div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: bill > 0 ? C.gold : C.faint }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: bill > 0 ? C.text : C.faint }}>
                           {bill > 0 ? `${bill} S` : '—'}
                         </div>
                       </div>
@@ -878,11 +878,11 @@ export default function Admin() {
                             type="number" min="0"
                             value={draftVal}
                             onChange={e => setEditBill(b => ({ ...b, [ci.addr]: e.target.value }))}
-                            style={{ flex: 1, padding: '8px 10px', border: `1px solid ${C.gold}`, borderRadius: 6, fontSize: 13, color: C.text, background: C.white, outline: 'none' }}
+                            style={{ flex: 1, padding: '8px 10px', border: `1px solid ${C.text}`, borderRadius: 0, fontSize: 13, color: C.text, background: C.white, outline: 'none' }}
                             placeholder="S amount"
                           />
                           <button onClick={() => setEditBill(e => { const n = { ...e }; delete n[ci.addr]; return n })} style={{ ...smallBtn(C.faint, '#fff', C.border) }}>✕</button>
-                          <button onClick={() => saveBill(ci.addr)} disabled={isPending} style={{ ...smallBtn(C.gold), opacity: isPending ? 0.5 : 1 }}>
+                          <button onClick={() => saveBill(ci.addr)} disabled={isPending} style={{ ...smallBtn(C.text), opacity: isPending ? 0.5 : 1 }}>
                             {isPending ? '...' : 'Set'}
                           </button>
                         </div>
@@ -963,7 +963,7 @@ export default function Admin() {
             )}
             <button
               onClick={() => setLedgerRows(null)}
-              style={{ marginTop: 10, padding: '6px 14px', background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 10, color: C.sub, cursor: 'pointer' }}
+              style={{ marginTop: 10, padding: '6px 14px', background: 'none', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 10, color: C.sub, cursor: 'pointer' }}
             >
               Refresh
             </button>
@@ -978,7 +978,7 @@ export default function Admin() {
 function SvcInput({ placeholder, value, onChange }) {
   return (
     <input
-      style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }}
+      style={{ width: '100%', padding: '9px 10px', border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12, color: C.text, background: C.white, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }}
       placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
     />
   )
@@ -995,10 +995,10 @@ function StatCard({ label, value, unit, color }) {
   )
 }
 
-const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 10 }
-const primaryBtn = { padding: '13px 16px', background: C.gold, color: C.bg, border: 'none', borderRadius: 8, fontSize: 13, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
-const ghostBtn   = { padding: '12px 16px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', marginBottom: 10 }
+const card       = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 10 }
+const primaryBtn = { padding: '13px 16px', background: C.text, color: C.bg, border: 'none', borderRadius: 0, fontSize: 13, cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500 }
+const ghostBtn   = { padding: '12px 16px', background: C.white, color: C.sub, border: `1px solid ${C.border}`, borderRadius: 0, fontSize: 12, cursor: 'pointer', letterSpacing: '0.04em', marginBottom: 10 }
 
 function smallBtn(bg, color = '#fff', border) {
-  return { padding: '9px 14px', background: bg, color, border: border ? `1px solid ${border}` : 'none', borderRadius: 6, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em' }
+  return { padding: '9px 14px', background: bg, color, border: border ? `1px solid ${border}` : 'none', borderRadius: 0, fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em' }
 }

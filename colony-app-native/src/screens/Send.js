@@ -155,10 +155,10 @@ export default function Send() {
 
         {/* Preview */}
         {to && amount && parseFloat(amount) > 0 && (
-          <View style={[card, { borderColor: C.gold }]}>
+          <View style={[card, { borderColor: C.text }]}>
             <Text style={[label, { marginBottom: 8 }]}>PREVIEW</Text>
             <Text style={S.preview}>
-              Send <Text style={{ color: C.gold, fontWeight: '600' }}>{amount} S</Text>
+              Send <Text style={{ color: C.text, fontWeight: '600' }}>{amount} S</Text>
               {' '}to <Text style={{ color: C.text }}>{shortAddr(to)}</Text>
               {note ? `\n"${note}"` : ''}
             </Text>
@@ -192,18 +192,18 @@ const S = StyleSheet.create({
   heading:      { fontSize: 18, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 16 },
 
   addrRow:      { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  input:        { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
-  pickerBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10 },
+  input:        { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
+  pickerBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10 },
   pickerBtnText:{ fontSize: 11, color: C.sub, fontFamily: font },
 
-  citizenList:  { marginTop: 8, borderWidth: 1, borderColor: C.border, borderRadius: 6, overflow: 'hidden' },
+  citizenList:  { marginTop: 8, borderWidth: 1, borderColor: C.border, borderRadius: 0, overflow: 'hidden' },
   citizenRow:   { flexDirection: 'row', justifyContent: 'space-between', padding: 10, borderBottomWidth: 1, borderBottomColor: C.border },
   citizenName:  { fontSize: 12, color: C.text, fontFamily: font },
   citizenAddr:  { fontSize: 11, color: C.faint, fontFamily: font },
 
   preview:      { fontSize: 12, color: C.sub, fontFamily: font, lineHeight: 20 },
 
-  btnGold:      { backgroundColor: C.gold, borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 4 },
+  btnGold:      { backgroundColor: C.text, borderRadius: 0, padding: 16, alignItems: 'center', marginTop: 4 },
   btnGoldText:  { color: C.bg, fontSize: 13, fontWeight: '600', fontFamily: font },
   btnDisabled:  { opacity: 0.5 },
 

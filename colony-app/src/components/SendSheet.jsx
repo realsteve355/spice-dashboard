@@ -69,7 +69,7 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
 
   return (
     <div style={sheet}>
-      <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>
         {label.toUpperCase()}
       </div>
 
@@ -83,8 +83,8 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
           // Selected state — show chip + change link
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            background: `${C.gold}12`, border: `1px solid ${C.gold}`,
-            borderRadius: 6, padding: '8px 12px',
+            background: `${C.text}12`, border: `1px solid ${C.text}`,
+            borderRadius: 0, padding: '8px 12px',
           }}>
             <div>
               <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{selected.name}</div>
@@ -94,7 +94,7 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
             </div>
             <button
               onClick={() => { setSelected(null); setSearch('') }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: C.gold, padding: 0 }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: C.text, padding: 0 }}
             >
               change
             </button>
@@ -181,7 +181,7 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
         <button
           onClick={handleSend}
           disabled={!valid}
-          style={{ ...btn(C.gold), flex: 2, opacity: valid ? 1 : 0.4 }}
+          style={{ ...btn(C.text), flex: 2, opacity: valid ? 1 : 0.4 }}
         >
           Send →
         </button>
@@ -199,7 +199,7 @@ function Field({ label, value, onChange, placeholder, type }) {
       <input
         style={{
           width: '100%', padding: '10px 12px', border: `1px solid ${C.border}`,
-          borderRadius: 6, fontSize: 13, color: C.text, background: C.white,
+          borderRadius: 0, fontSize: 13, color: C.text, background: C.white,
           outline: 'none', boxSizing: 'border-box',
           fontFamily: "'IBM Plex Mono', monospace",
         }}
@@ -213,13 +213,13 @@ function Field({ label, value, onChange, placeholder, type }) {
 }
 
 const sheet = {
-  background: C.white, border: `1px solid ${C.gold}`,
-  borderRadius: 8, padding: 16, marginBottom: 10,
+  background: C.white, border: `1px solid ${C.text}`,
+  borderRadius: 0, padding: 16, marginBottom: 10,
 }
 
 const closeBtn = {
   width: '100%', padding: '10px', background: C.white,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, cursor: 'pointer', color: C.sub,
 }
 
@@ -227,7 +227,7 @@ function btn(bg, color = '#fff', border) {
   return {
     padding: '11px 14px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',
-    borderRadius: 6, fontSize: 12, cursor: 'pointer',
+    borderRadius: 0, fontSize: 12, cursor: 'pointer',
     letterSpacing: '0.04em', fontWeight: 500,
   }
 }

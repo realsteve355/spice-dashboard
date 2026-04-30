@@ -268,7 +268,7 @@ export default function ColonyPage() {
       <div style={{ padding: '20px 16px 0' }}>
 
         {/* Colony header */}
-        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 18, fontWeight: 500, color: C.text, marginBottom: 4 }}>{colony.name}</div>
           <div style={{ fontSize: 11, color: C.faint, marginBottom: 12 }}>
             Est. {fmtDate(colony.founded)} · MCC: {colony.mcc.name} · Base Sepolia
@@ -281,7 +281,7 @@ export default function ColonyPage() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Chip label={`${citizens !== null ? citizens.length : colony.citizenCount} citizens`} />
             <Chip label="Active" color={C.green} />
-            {isCitizen && <Chip label="You are a citizen" color={C.gold} />}
+            {isCitizen && <Chip label="You are a citizen" color={C.text} />}
           </div>
         </div>
 
@@ -289,7 +289,7 @@ export default function ColonyPage() {
         {joined ? (
           <div style={{
             background: '#f0fdf4', border: `1px solid ${C.green}`,
-            borderRadius: 8, padding: 16, marginBottom: 12, textAlign: 'center',
+            borderRadius: 0, padding: 16, marginBottom: 12, textAlign: 'center',
           }}>
             <div style={{ fontSize: 14, color: C.green, fontWeight: 500, marginBottom: 4 }}>Welcome to {colony.name}</div>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
@@ -301,7 +301,7 @@ export default function ColonyPage() {
           </div>
         ) : isCitizen ? (
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={{ ...btn(C.gold), flex: 1 }}>
+            <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={{ ...btn(C.text), flex: 1 }}>
               Dashboard →
             </button>
             {isMcc && (
@@ -315,7 +315,7 @@ export default function ColonyPage() {
             Checking citizenship...
           </div>
         ) : (
-          <button onClick={handleJoin} style={{ ...btn(C.gold), width: '100%', marginBottom: 12 }}>
+          <button onClick={handleJoin} style={{ ...btn(C.text), width: '100%', marginBottom: 12 }}>
             {isConnected ? 'Join this Colony' : 'Connect Wallet to Join'}
           </button>
         )}
@@ -324,7 +324,7 @@ export default function ColonyPage() {
         {joining && (
           <div style={{
             background: C.white, border: `1px solid ${C.border}`,
-            borderRadius: 8, padding: 16, marginBottom: 12,
+            borderRadius: 0, padding: 16, marginBottom: 12,
           }}>
             <div style={{ fontSize: 13, fontWeight: 500, color: C.text, marginBottom: 8 }}>
               Read and accept the founding constitution
@@ -332,7 +332,7 @@ export default function ColonyPage() {
             <div style={{
               fontSize: 11, color: C.sub, lineHeight: 1.7,
               maxHeight: 180, overflowY: 'auto',
-              background: C.bg, borderRadius: 6, padding: 12, marginBottom: 12,
+              background: C.bg, borderRadius: 0, padding: 12, marginBottom: 12,
               whiteSpace: 'pre-wrap',
             }}>
               {CONSTITUTION_TEXT}
@@ -350,7 +350,7 @@ export default function ColonyPage() {
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   padding: '10px 12px', fontSize: 12,
-                  border: `1px solid ${C.border}`, borderRadius: 6,
+                  border: `1px solid ${C.border}`, borderRadius: 0,
                   fontFamily: 'inherit', color: C.text, background: C.bg,
                   outline: 'none',
                 }}
@@ -368,7 +368,7 @@ export default function ColonyPage() {
                 style={{
                   width: '100%', boxSizing: 'border-box',
                   padding: '10px 12px', fontSize: 12,
-                  border: `1px solid ${C.border}`, borderRadius: 6,
+                  border: `1px solid ${C.border}`, borderRadius: 0,
                   fontFamily: 'inherit', color: C.text, background: C.bg,
                   outline: 'none',
                 }}
@@ -379,7 +379,7 @@ export default function ColonyPage() {
                 type="checkbox"
                 checked={accepted}
                 onChange={e => setAccepted(e.target.checked)}
-                style={{ marginTop: 2, width: 16, height: 16, accentColor: C.gold }}
+                style={{ marginTop: 2, width: 16, height: 16, accentColor: C.text }}
               />
               <span style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>
                 I have read and accept the founding constitution of {colony.name}
@@ -395,7 +395,7 @@ export default function ColonyPage() {
               <button
                 onClick={handleSign}
                 disabled={!accepted || txPending || !citizenName.trim() || !dob}
-                style={{ ...btn(accepted && citizenName.trim() && dob ? C.gold : C.faint), flex: 2, opacity: accepted && citizenName.trim() && dob && !txPending ? 1 : 0.5 }}
+                style={{ ...btn(accepted && citizenName.trim() && dob ? C.text : C.faint), flex: 2, opacity: accepted && citizenName.trim() && dob && !txPending ? 1 : 0.5 }}
               >
                 {txPending ? 'Waiting for confirmation...' : 'Sign & Join →'}
               </button>
@@ -404,7 +404,7 @@ export default function ColonyPage() {
         )}
 
         {/* MCC Services */}
-        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>
             MCC SERVICES
           </div>
@@ -419,7 +419,7 @@ export default function ColonyPage() {
                 <div style={{ fontSize: 12, color: C.text, marginBottom: 2 }}>{s.name}</div>
                 <div style={{ fontSize: 11, color: C.faint }}>{s.billing}</div>
               </div>
-              <div style={{ fontSize: 12, color: C.gold, fontWeight: 500, textAlign: 'right' }}>
+              <div style={{ fontSize: 12, color: C.text, fontWeight: 500, textAlign: 'right' }}>
                 {s.price}
               </div>
             </div>
@@ -427,7 +427,7 @@ export default function ColonyPage() {
         </div>
 
         {/* Citizens directory */}
-        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>
               CITIZENS {citizens ? `· ${citizens.length}` : ''}
@@ -443,7 +443,7 @@ export default function ColonyPage() {
               style={{
                 width: '100%', boxSizing: 'border-box',
                 padding: '8px 10px', fontSize: 12,
-                border: `1px solid ${C.border}`, borderRadius: 6,
+                border: `1px solid ${C.border}`, borderRadius: 0,
                 fontFamily: "'IBM Plex Mono', monospace",
                 color: C.text, background: C.bg, outline: 'none',
                 marginBottom: 12,
@@ -499,7 +499,7 @@ export default function ColonyPage() {
 
         {/* Companies */}
         {(companiesLoading || (companies && companies.length > 0)) && (
-          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 12 }}>
+          <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>COMPANIES</div>
             {companiesLoading ? (
               <div style={{ fontSize: 11, color: C.faint }}>Loading…</div>
@@ -529,7 +529,7 @@ export default function ColonyPage() {
 
         {/* Constitution accordion */}
         <div
-          style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, marginBottom: 20 }}
+          style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, marginBottom: 20 }}
         >
           <button
             onClick={() => setShowConstitution(v => !v)}
@@ -564,7 +564,7 @@ function Chip({ label, color }) {
   return (
     <span style={{
       fontSize: 10, color: col, border: `1px solid ${col}`,
-      borderRadius: 10, padding: '2px 8px', letterSpacing: '0.06em',
+      borderRadius: 0, padding: '2px 8px', letterSpacing: '0.06em',
     }}>
       {label}
     </span>
@@ -575,7 +575,7 @@ function btn(bg, color = '#fff', border) {
   return {
     padding: '12px 16px', background: bg, color,
     border: border ? `1px solid ${border}` : 'none',
-    borderRadius: 8, fontSize: 12, cursor: 'pointer',
+    borderRadius: 0, fontSize: 12, cursor: 'pointer',
     letterSpacing: '0.04em', fontWeight: 500,
   }
 }

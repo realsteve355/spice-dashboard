@@ -105,10 +105,10 @@ export default function PaymentConfirm() {
         {/* Payment summary card */}
         <div style={{
           background: C.white, border: `1px solid ${C.border}`,
-          borderRadius: 8, padding: 20, marginBottom: 16, textAlign: 'center',
+          borderRadius: 0, padding: 20, marginBottom: 16, textAlign: 'center',
         }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>YOU ARE PAYING</div>
-          <div style={{ fontSize: 48, fontWeight: 500, color: C.gold, letterSpacing: '-0.02em', marginBottom: 4 }}>
+          <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
             {amount} <span style={{ fontSize: 22, color: C.faint }}>S</span>
           </div>
           {note && (
@@ -124,7 +124,7 @@ export default function PaymentConfirm() {
           <div style={{
             background: sufficient ? '#f0fdf4' : '#fef2f2',
             border: `1px solid ${sufficient ? C.green : C.red}`,
-            borderRadius: 6, padding: '10px 14px', marginBottom: 16,
+            borderRadius: 0, padding: '10px 14px', marginBottom: 16,
             display: 'flex', justifyContent: 'space-between', fontSize: 12,
           }}>
             <span style={{ color: C.sub }}>Your S balance</span>
@@ -163,8 +163,8 @@ export default function PaymentConfirm() {
 
 const primaryBtn = {
   width: '100%', padding: '14px',
-  background: C.gold, color: C.bg,
-  border: 'none', borderRadius: 8, fontSize: 13,
+  background: C.text, color: C.bg,
+  border: 'none', borderRadius: 0, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   marginBottom: 0,
 }

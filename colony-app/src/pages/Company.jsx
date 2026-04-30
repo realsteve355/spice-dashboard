@@ -271,7 +271,7 @@ export default function Company() {
             return {
               kind: 'buyback', date, blockNumber: log.blockNumber,
               text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for ${Number(ethers.formatEther(p.args[2]))} S`,
-              color: C.gold,
+              color: C.text,
             }
           }
           if (p.name === 'DividendDeclared') {
@@ -949,12 +949,12 @@ export default function Company() {
                 <div style={{ fontSize: 17, fontWeight: 500, color: C.text }}>{company.name}</div>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8 }}>
                   {myStake && (
-                    <span style={{ fontSize: 10, color: C.gold, border: `1px solid ${C.gold}`, borderRadius: 10, padding: '2px 8px' }}>
+                    <span style={{ fontSize: 10, color: C.text, border: `1px solid ${C.text}`, borderRadius: 0, padding: '2px 8px' }}>
                       {myStake.pct.toFixed(1)}% EQUITY
                     </span>
                   )}
                   {isSecretary && (
-                    <span style={{ fontSize: 10, color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 10, padding: '2px 8px' }}>
+                    <span style={{ fontSize: 10, color: '#8b5cf6', border: '1px solid #8b5cf6', borderRadius: 0, padding: '2px 8px' }}>
                       SECRETARY
                     </span>
                   )}
@@ -981,7 +981,7 @@ export default function Company() {
                       autoFocus
                     />
                     <button onClick={handleRename} disabled={renamePending || !newName.trim()}
-                      style={{ ...actionBtn(C.gold), opacity: (!newName.trim() || renamePending) ? 0.4 : 1 }}>
+                      style={{ ...actionBtn(C.text), opacity: (!newName.trim() || renamePending) ? 0.4 : 1 }}>
                       {renamePending ? '…' : 'Save'}
                     </button>
                     <button onClick={() => { setRenaming(false); setRenameError(null) }}
@@ -997,10 +997,10 @@ export default function Company() {
         </div>
 
         {/* Tab bar */}
-        <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden', background: C.white }}>
+        <div style={{ display: 'flex', marginBottom: 12, border: `1px solid ${C.border}`, borderRadius: 0, overflow: 'hidden', background: C.white }}>
           {[['overview','Overview'],['equity','Equity'],['transactions','Accounts'],['contracts','Contracts']].map(([t, label]) => (
             <button key={t} onClick={() => setTab(t)} style={{
-              flex: 1, padding: '10px 0', background: tab === t ? C.gold : 'none',
+              flex: 1, padding: '10px 0', background: tab === t ? C.text : 'none',
               border: 'none', color: tab === t ? '#fff' : C.sub,
               fontSize: 10, cursor: 'pointer', letterSpacing: '0.04em',
             }}>
@@ -1016,7 +1016,7 @@ export default function Company() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div style={{ ...card, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>S BALANCE</div>
-                <div style={{ fontSize: 26, fontWeight: 500, color: C.gold }}>{company.sBalance}</div>
+                <div style={{ fontSize: 26, fontWeight: 500, color: C.text }}>{company.sBalance}</div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>current</div>
               </div>
               <div style={{ ...card, textAlign: 'center' }}>
@@ -1065,7 +1065,7 @@ export default function Company() {
                     <button
                       onClick={handleConvertToV}
                       disabled={actionPending}
-                      style={{ ...actionBtn(C.gold), opacity: actionPending ? 0.5 : 1 }}
+                      style={{ ...actionBtn(C.text), opacity: actionPending ? 0.5 : 1 }}
                     >
                       {actionPending ? '…' : 'Convert'}
                     </button>
@@ -1105,7 +1105,7 @@ export default function Company() {
                       <button
                         onClick={handleDeclareDividend}
                         disabled={actionPending || !dividendAmt || Number(dividendAmt) <= 0}
-                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !dividendAmt || Number(dividendAmt) <= 0) ? 0.4 : 1 }}
+                        style={{ ...actionBtn(C.text), flex: 2, opacity: (actionPending || !dividendAmt || Number(dividendAmt) <= 0) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Sending…' : 'Declare →'}
                       </button>
@@ -1118,15 +1118,15 @@ export default function Company() {
                   Issue shares to participant / investor
                 </button>
                 {issuingShares && (
-                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                  <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 12, marginBottom: 8 }}>
                     <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                       {[['open','Open (investor)'],['vesting','Vesting (participant)']].map(([t, label]) => (
                         <button key={t} onClick={() => setIssueType(t)} style={{
                           flex: 1, padding: '7px 4px', fontSize: 10,
-                          background: issueType === t ? C.gold : C.white,
+                          background: issueType === t ? C.text : C.white,
                           color: issueType === t ? '#fff' : C.sub,
-                          border: `1px solid ${issueType === t ? C.gold : C.border}`,
-                          borderRadius: 6, cursor: 'pointer',
+                          border: `1px solid ${issueType === t ? C.text : C.border}`,
+                          borderRadius: 0, cursor: 'pointer',
                         }}>
                           {label}
                         </button>
@@ -1161,7 +1161,7 @@ export default function Company() {
                       <button
                         onClick={handleIssueShares}
                         disabled={actionPending || !issueHolder || !issueStakeBps}
-                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
+                        style={{ ...actionBtn(C.text), flex: 2, opacity: (actionPending || !issueHolder || !issueStakeBps) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Issuing…' : 'Issue shares →'}
                       </button>
@@ -1174,7 +1174,7 @@ export default function Company() {
                   Register company asset
                 </button>
                 {registeringAsset && (
-                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                  <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 12, marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
                       Register a physical asset on-chain to the company wallet. Threshold: value &gt; 500 S, weight &gt; 50 kg, or autonomous AI.
                     </div>
@@ -1191,7 +1191,7 @@ export default function Company() {
                       <button onClick={() => setRegisteringAsset(false)} disabled={actionPending} style={{ ...actionBtn(C.faint, '#fff'), border: `1px solid ${C.border}`, flex: 1, opacity: actionPending ? 0.4 : 1 }}>
                         Cancel
                       </button>
-                      <button onClick={handleRegisterAsset} disabled={actionPending || !assetLabel.trim()} style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !assetLabel.trim()) ? 0.4 : 1 }}>
+                      <button onClick={handleRegisterAsset} disabled={actionPending || !assetLabel.trim()} style={{ ...actionBtn(C.text), flex: 2, opacity: (actionPending || !assetLabel.trim()) ? 0.4 : 1 }}>
                         {actionPending ? 'Registering…' : 'Register asset →'}
                       </button>
                     </div>
@@ -1203,7 +1203,7 @@ export default function Company() {
                   Hand over secretary role
                 </button>
                 {handingOver && (
-                  <div style={{ background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+                  <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 12, marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
                       Transfer this company's secretary authority and the O-token identity badge to another citizen.
                       Two on-chain transactions will be requested in sequence.
@@ -1241,7 +1241,7 @@ export default function Company() {
                       <button
                         onClick={handleHandover}
                         disabled={actionPending || !handoverTarget}
-                        style={{ ...actionBtn(C.gold), flex: 2, opacity: (actionPending || !handoverTarget) ? 0.4 : 1 }}
+                        style={{ ...actionBtn(C.text), flex: 2, opacity: (actionPending || !handoverTarget) ? 0.4 : 1 }}
                       >
                         {actionPending ? 'Handing over…' : 'Hand over →'}
                       </button>
@@ -1252,7 +1252,7 @@ export default function Company() {
                 {/* Request payment */}
                 <button
                   onClick={() => navigate(`/colony/${slug}/request?from=${onChain ? companyId : address}&label=${encodeURIComponent(company.name)}`)}
-                  style={{ ...actionBtn(C.gold), width: '100%' }}
+                  style={{ ...actionBtn(C.text), width: '100%' }}
                 >
                   Request Payment (show QR) →
                 </button>
@@ -1265,7 +1265,7 @@ export default function Company() {
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>ACTIONS</div>
                 <button
                   onClick={() => navigate(`/colony/${slug}/request?from=${onChain ? companyId : address}&label=${encodeURIComponent(company.name)}`)}
-                  style={{ ...actionBtn(C.gold), width: '100%' }}
+                  style={{ ...actionBtn(C.text), width: '100%' }}
                 >
                   Request Payment (show QR) →
                 </button>
@@ -1291,7 +1291,7 @@ export default function Company() {
                     {a.label || `Asset #${a.id}`}
                     <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{a.id}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: C.gold }}>{a.value} S</div>
+                  <div style={{ fontSize: 12, color: C.text }}>{a.value} S</div>
                 </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
                   {a.weightKg > 0 && <>{a.weightKg} kg · </>}
@@ -1311,7 +1311,7 @@ export default function Company() {
                     style={{
                       marginTop: 6, fontSize: 9, padding: '2px 7px',
                       background: 'none', border: `1px solid ${C.faint}`,
-                      color: C.faint, borderRadius: 4, cursor: 'pointer',
+                      color: C.faint, borderRadius: 0, cursor: 'pointer',
                       opacity: actionPending ? 0.4 : 1,
                     }}
                   >
@@ -1379,7 +1379,7 @@ export default function Company() {
             <button
               onClick={() => navigate(`/colony/${slug}/pay?to=${companyId}&amount=${encodeURIComponent(payAmt)}&note=${encodeURIComponent(payNote)}`)}
               disabled={!payAmt || Number(payAmt) <= 0}
-              style={{ ...actionBtn(C.gold), width: '100%', opacity: payAmt && Number(payAmt) > 0 ? 1 : 0.4 }}
+              style={{ ...actionBtn(C.text), width: '100%', opacity: payAmt && Number(payAmt) > 0 ? 1 : 0.4 }}
             >
               Pay →
             </button>
@@ -1393,7 +1393,7 @@ export default function Company() {
               <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>EQUITY REGISTER</div>
 
               {/* Visual equity bar */}
-              <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
+              <div style={{ display: 'flex', height: 8, borderRadius: 0, overflow: 'hidden', marginBottom: 12 }}>
                 {company.equity.map((e, i) => (
                   <div key={i} style={{ width: `${e.pct}%`, background: equityColor(i) }} />
                 ))}
@@ -1426,7 +1426,7 @@ export default function Company() {
                   {/* Vesting progress */}
                   {e.totalBps > 0 && (
                     <div style={{ marginTop: 6, marginLeft: 18 }}>
-                      <div style={{ height: 3, borderRadius: 2, background: C.border, overflow: 'hidden', marginBottom: 3 }}>
+                      <div style={{ height: 3, borderRadius: 0, background: C.border, overflow: 'hidden', marginBottom: 3 }}>
                         <div style={{
                           height: '100%',
                           width: `${e.vestedBps / e.totalBps * 100}%`,
@@ -1448,7 +1448,7 @@ export default function Company() {
                               style={{
                                 fontSize: 9, padding: '2px 7px',
                                 background: 'none', border: `1px solid ${C.green}`,
-                                color: C.green, borderRadius: 4, cursor: 'pointer',
+                                color: C.green, borderRadius: 0, cursor: 'pointer',
                                 opacity: actionPending ? 0.4 : 1,
                               }}
                             >
@@ -1466,7 +1466,7 @@ export default function Company() {
                               style={{
                                 fontSize: 9, padding: '2px 7px',
                                 background: 'none', border: `1px solid ${C.purple}`,
-                                color: C.purple, borderRadius: 4, cursor: 'pointer',
+                                color: C.purple, borderRadius: 0, cursor: 'pointer',
                                 opacity: actionPending ? 0.4 : 1,
                               }}
                             >
@@ -1482,8 +1482,8 @@ export default function Company() {
                               disabled={actionPending}
                               style={{
                                 fontSize: 9, padding: '2px 7px',
-                                background: 'none', border: `1px solid ${C.gold}`,
-                                color: C.gold, borderRadius: 4, cursor: 'pointer',
+                                background: 'none', border: `1px solid ${C.text}`,
+                                color: C.text, borderRadius: 0, cursor: 'pointer',
                                 opacity: actionPending ? 0.4 : 1,
                               }}
                             >
@@ -1497,7 +1497,7 @@ export default function Company() {
                               style={{
                                 fontSize: 9, padding: '2px 7px',
                                 background: 'none', border: `1px solid ${C.red}`,
-                                color: C.red, borderRadius: 4, cursor: 'pointer',
+                                color: C.red, borderRadius: 0, cursor: 'pointer',
                                 opacity: actionPending ? 0.4 : 1,
                               }}
                             >
@@ -1509,7 +1509,7 @@ export default function Company() {
 
                       {/* S-06: inline gift form when this row's button is active */}
                       {giftForId === e.assetId && (
-                        <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                        <div style={{ marginTop: 8, padding: 10, background: `${C.purple}08`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                           <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 8 }}>
                             Gift vested bps from your stake to another wallet — recipient gets a fully-vested token. No payment exchanged.
                           </div>
@@ -1567,7 +1567,7 @@ export default function Company() {
                               return (
                                 <div style={{
                                   marginTop: 6, padding: 8, fontSize: 10,
-                                  background: `${C.border}40`, borderRadius: 4, color: C.faint,
+                                  background: `${C.border}40`, borderRadius: 0, color: C.faint,
                                 }}>
                                   Per-tranche schedule unavailable for this colony's AToken (deployed before F-26 added). Total/vested still correct.
                                 </div>
@@ -1583,7 +1583,7 @@ export default function Company() {
                             return (
                               <div style={{
                                 marginTop: 6, padding: 8,
-                                background: `${C.gold}06`, border: `1px solid ${C.border}`, borderRadius: 4,
+                                background: `${C.text}06`, border: `1px solid ${C.border}`, borderRadius: 0,
                               }}>
                                 {sd.epochs.map((ep, idx) => {
                                   const claimed = idx < sd.nextTranche
@@ -1608,7 +1608,7 @@ export default function Company() {
 
                       {/* F-15a: inline buyback form when this row's button is active */}
                       {buybackForId === e.assetId && (
-                        <div style={{ marginTop: 8, padding: 10, background: `${C.gold}08`, border: `1px solid ${C.border}`, borderRadius: 6 }}>
+                        <div style={{ marginTop: 8, padding: 10, background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                           <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 8 }}>
                             Buy back vested bps from {e.label} at an S-token price you set. Bought-back shares are cancelled, increasing NAV for remaining holders.
                           </div>
@@ -1631,7 +1631,7 @@ export default function Company() {
                           <button
                             onClick={() => handleBuyback(e.assetId)}
                             disabled={actionPending || !buybackBps || !buybackPriceS}
-                            style={{ ...actionBtn(C.gold), width: '100%', fontSize: 11, opacity: (actionPending || !buybackBps || !buybackPriceS) ? 0.4 : 1 }}
+                            style={{ ...actionBtn(C.text), width: '100%', fontSize: 11, opacity: (actionPending || !buybackBps || !buybackPriceS) ? 0.4 : 1 }}
                           >
                             {actionPending ? 'Buying back…' : `Pay ${buybackPriceS || '0'} S → cancel ${buybackBps || '0'} bps`}
                           </button>
@@ -1688,7 +1688,7 @@ export default function Company() {
                         <span style={{ fontSize: 12, color: C.green, fontWeight: 500 }}>{d.totalV} V total</span>
                       </div>
                       {myShare > 0 && (
-                        <div style={{ fontSize: 11, color: C.gold }}>Your share: {myShare} V</div>
+                        <div style={{ fontSize: 11, color: C.text }}>Your share: {myShare} V</div>
                       )}
                     </div>
                   )
@@ -1732,7 +1732,7 @@ export default function Company() {
                   <Divider />
                   <Row label="Expenses (S out)"   value={`−${expenses} S`}  color={C.red} />
                   <Divider />
-                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.gold : C.red} bold />
+                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.text : C.red} bold />
                   {locked > 0 && <><Divider /><Row label="Locked to V"      value={`${locked} S → V`} color={C.green} /></>}
                   {divs > 0 && <><Divider /><Row label="V dividends declared" value={`${divs} V`} color='#8b5cf6' /></>}
                 </div>
@@ -1749,7 +1749,7 @@ export default function Company() {
                   <div style={{ fontSize: 9, color: C.red,   letterSpacing: '0.1em', textAlign: 'right', minWidth: 56 }}>CR</div>
                 </div>
                 {onChainTxs.map((tx, i) => {
-                  const typeColor = { revenue: C.green, expense: C.red, convert: C.gold, dividend: '#8b5cf6' }[tx.type] || C.faint
+                  const typeColor = { revenue: C.green, expense: C.red, convert: C.text, dividend: '#8b5cf6' }[tx.type] || C.faint
                   const unit = tx.type === 'dividend' ? 'V' : 'S'
                   return (
                     <div key={tx.hash + i} style={{
@@ -1958,8 +1958,8 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
 
       {/* Create form */}
       {creating && (
-        <div style={{ ...card, borderColor: C.gold, background: `${C.gold}08`, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SUPPLY CONTRACT</div>
+        <div style={{ ...card, borderColor: C.text, background: `${C.text}08`, marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SUPPLY CONTRACT</div>
           <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
             {companyName} is the supplier. Select the buyer company, describe what is being supplied, and set the standard invoice price.
           </div>
@@ -1995,7 +1995,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
               Cancel
             </button>
             <button onClick={handleCreate} disabled={cSaving || !cBuyer || !cDesc}
-              style={{ ...actionBtn(C.gold), flex: 2, opacity: (!cBuyer || !cDesc || cSaving) ? 0.4 : 1 }}>
+              style={{ ...actionBtn(C.text), flex: 2, opacity: (!cBuyer || !cDesc || cSaving) ? 0.4 : 1 }}>
               {cSaving ? 'Saving…' : 'Create contract →'}
             </button>
           </div>
@@ -2017,7 +2017,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                  <Badge label="SUPPLY" color={C.gold} />
+                  <Badge label="SUPPLY" color={C.text} />
                   <Badge label="ACTIVE" color={C.green} />
                   <Badge label={isSeller ? 'SELLER' : 'BUYER'} color={isSeller ? C.green : '#3b82f6'} />
                 </div>
@@ -2046,20 +2046,20 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                   return (
                     <div key={inv.id} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '8px 10px', background: '#fffbf0', border: `1px solid ${C.gold}40`,
-                      borderRadius: 6, marginBottom: 4,
+                      padding: '8px 10px', background: '#fffbf0', border: `1px solid ${C.text}40`,
+                      borderRadius: 0, marginBottom: 4,
                     }}>
                       <div>
                         <div style={{ fontSize: 11, color: C.text }}>Invoice #{inv.invoice_number} — {inv.description}</div>
                         <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.created_at)}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: C.gold }}>{inv.amount} S</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{inv.amount} S</div>
                         {isBuyer && isSecretary && (
                           <button
                             onClick={() => handlePay(inv)}
                             disabled={paying === inv.id}
-                            style={{ ...actionBtn(C.gold), fontSize: 10, padding: '6px 12px', opacity: paying === inv.id ? 0.4 : 1 }}
+                            style={{ ...actionBtn(C.text), fontSize: 10, padding: '6px 12px', opacity: paying === inv.id ? 0.4 : 1 }}
                           >
                             {paying === inv.id ? 'Paying…' : 'Pay →'}
                           </button>
@@ -2108,7 +2108,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
               </button>
             )}
             {isRaisingInvoice && (
-              <div style={{ background: '#f9f9f9', border: `1px solid ${C.border}`, borderRadius: 6, padding: 10 }}>
+              <div style={{ background: '#f9f9f9', border: `1px solid ${C.border}`, borderRadius: 0, padding: 10 }}>
                 <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 8 }}>RAISE INVOICE</div>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <div style={{ flex: 2 }}>
@@ -2125,7 +2125,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => { setInvoicing(null); setInvError(null) }} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
                   <button onClick={() => handleInvoice(contract)} disabled={invSaving || !invAmt}
-                    style={{ ...actionBtn(C.gold), flex: 2, opacity: (!invAmt || invSaving) ? 0.4 : 1 }}>
+                    style={{ ...actionBtn(C.text), flex: 2, opacity: (!invAmt || invSaving) ? 0.4 : 1 }}>
                     {invSaving ? 'Sending…' : 'Send invoice →'}
                   </button>
                 </div>
@@ -2193,7 +2193,7 @@ function Badge({ label, color }) {
   return (
     <span style={{
       fontSize: 9, color, border: `1px solid ${color}`,
-      borderRadius: 4, padding: '2px 5px', letterSpacing: '0.06em', flexShrink: 0,
+      borderRadius: 0, padding: '2px 5px', letterSpacing: '0.06em', flexShrink: 0,
     }}>
       {label}
     </span>
@@ -2221,24 +2221,24 @@ function Divider() {
 
 const card = {
   background: C.white, border: `1px solid ${C.border}`,
-  borderRadius: 8, padding: 16, marginBottom: 10,
+  borderRadius: 0, padding: 16, marginBottom: 10,
 }
 
 function actionBtn(bg, color = C.bg) {
   return {
     padding: '10px 14px', background: bg, color,
-    border: 'none', borderRadius: 6, fontSize: 11,
+    border: 'none', borderRadius: 0, fontSize: 11,
     cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
   }
 }
 
 const ghostBtn = {
   padding: '10px 14px', background: C.white, color: C.sub,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
 }
 
 const inlineInput = {
   padding: '9px 10px', border: `1px solid ${C.border}`,
-  borderRadius: 6, fontSize: 12, color: C.text, background: C.white, outline: 'none',
+  borderRadius: 0, fontSize: 12, color: C.text, background: C.white, outline: 'none',
 }

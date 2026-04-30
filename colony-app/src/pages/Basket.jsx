@@ -14,7 +14,7 @@ const FISC_ABI = [
 const card = {
   background: C.white,
   border: `1px solid ${C.border}`,
-  borderRadius: 10,
+  borderRadius: 0,
   padding: '16px',
   marginBottom: 12,
 }
@@ -98,7 +98,7 @@ export default function Basket() {
             <div style={{ ...card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
               <div>
                 <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>FISC RATE</div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: C.gold }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>
                   {fiscRate ? `$${fiscRate.toFixed(3)} / S` : '—'}
                 </div>
               </div>
@@ -166,7 +166,7 @@ export default function Basket() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 13, color: C.gold, fontWeight: 500 }}>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
                       {toS(item.usdPrice) !== null ? `${toS(item.usdPrice)} S` : '—'}
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export default function Basket() {
                 <div style={{ textAlign: 'right', fontSize: 13, color: C.text, fontWeight: 700 }}>
                   ${totalUSD?.toFixed(2)}
                 </div>
-                <div style={{ textAlign: 'right', fontSize: 13, color: C.gold, fontWeight: 700 }}>
+                <div style={{ textAlign: 'right', fontSize: 13, color: C.text, fontWeight: 700 }}>
                   {toS(totalUSD) !== null ? `${toS(totalUSD)} S` : '—'}
                 </div>
               </div>
@@ -210,9 +210,9 @@ export default function Basket() {
                   { label: 'Live on-chain rate', value: fiscRate ? `$${fiscRate.toFixed(3)}/S` : '—' },
                   { label: 'Rate deviation', value: fiscRate ? `${(((fiscRate - totalUSD / 5) / (totalUSD / 5)) * 100).toFixed(1)}%` : '—' },
                 ].map(r => (
-                  <div key={r.label} style={{ background: C.white, borderRadius: 6, padding: '10px 12px' }}>
+                  <div key={r.label} style={{ background: C.white, borderRadius: 0, padding: '10px 12px' }}>
                     <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>{r.label.toUpperCase()}</div>
-                    <div style={{ fontSize: 13, color: C.gold, fontWeight: 600 }}>{r.value}</div>
+                    <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>{r.value}</div>
                   </div>
                 ))}
               </div>

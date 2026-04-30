@@ -106,7 +106,7 @@ export default function Mall() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 14,
                     background: C.white, border: `1px solid ${C.border}`,
-                    borderRadius: 10, padding: '14px 16px',
+                    borderRadius: 0, padding: '14px 16px',
                     cursor: 'pointer', textAlign: 'left', width: '100%',
                     fontFamily: "'IBM Plex Mono', monospace",
                   }}
@@ -128,7 +128,7 @@ export default function Mall() {
                         : `${count} product${count !== 1 ? 's' : ''} available`}
                     </div>
                   </div>
-                  <span style={{ fontSize: 11, color: C.gold, flexShrink: 0, letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: 11, color: C.text, flexShrink: 0, letterSpacing: '0.04em' }}>
                     Browse →
                   </span>
                 </button>

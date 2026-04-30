@@ -382,7 +382,7 @@ export default function Mcc() {
             style={{
               marginTop: 14, width: '100%', padding: '10px 0',
               background: 'none', border: `1px solid ${C.border}`,
-              borderRadius: 8, fontSize: 11, color: C.sub,
+              borderRadius: 0, fontSize: 11, color: C.sub,
               cursor: 'pointer', letterSpacing: '0.04em',
               fontFamily: "'IBM Plex Mono', monospace",
             }}
@@ -419,7 +419,7 @@ export default function Mcc() {
                   </div>
                   <span style={{
                     fontSize: 10, color, border: `1px solid ${color}`,
-                    borderRadius: 10, padding: '3px 9px', letterSpacing: '0.04em',
+                    borderRadius: 0, padding: '3px 9px', letterSpacing: '0.04em',
                   }}>
                     {STATUS_LABEL[e.status]}
                   </span>
@@ -433,7 +433,7 @@ export default function Mcc() {
             style={{
               marginTop: 12, width: '100%', padding: '9px 0',
               background: 'none', border: `1px solid ${C.border}`,
-              borderRadius: 8, fontSize: 11, color: C.sub,
+              borderRadius: 0, fontSize: 11, color: C.sub,
               cursor: 'pointer', letterSpacing: '0.04em',
               fontFamily: "'IBM Plex Mono', monospace",
             }}
@@ -466,7 +466,7 @@ export default function Mcc() {
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>RECALL RISK</div>
                 <span style={{
                   fontSize: 10, color, border: `1px solid ${color}`,
-                  borderRadius: 10, padding: '3px 9px', letterSpacing: '0.04em',
+                  borderRadius: 0, padding: '3px 9px', letterSpacing: '0.04em',
                 }}>
                   {label}
                 </span>
@@ -528,8 +528,8 @@ export default function Mcc() {
               <button
                 onClick={() => setPosting(true)}
                 style={{
-                  fontSize: 11, color: C.gold, background: 'none',
-                  border: `1px solid ${C.gold}`, borderRadius: 10,
+                  fontSize: 11, color: C.text, background: 'none',
+                  border: `1px solid ${C.text}`, borderRadius: 0,
                   padding: '3px 10px', cursor: 'pointer',
                 }}
               >
@@ -540,7 +540,7 @@ export default function Mcc() {
 
           {/* New announcement form */}
           {posting && (
-            <div style={{ marginBottom: 16, padding: 14, background: C.bg, borderRadius: 8, border: `1px solid ${C.border}` }}>
+            <div style={{ marginBottom: 16, padding: 14, background: C.bg, borderRadius: 0, border: `1px solid ${C.border}` }}>
               <input
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
@@ -565,8 +565,8 @@ export default function Mcc() {
                   disabled={postPending || !newTitle.trim()}
                   style={{
                     flex: 1, padding: '9px 0',
-                    background: C.gold, color: C.bg,
-                    border: 'none', borderRadius: 6,
+                    background: C.text, color: C.bg,
+                    border: 'none', borderRadius: 0,
                     fontSize: 11, cursor: 'pointer',
                     opacity: postPending || !newTitle.trim() ? 0.4 : 1,
                     fontFamily: "'IBM Plex Mono', monospace",
@@ -579,7 +579,7 @@ export default function Mcc() {
                   style={{
                     flex: 1, padding: '9px 0',
                     background: 'none', color: C.sub,
-                    border: `1px solid ${C.border}`, borderRadius: 6,
+                    border: `1px solid ${C.border}`, borderRadius: 0,
                     fontSize: 11, cursor: 'pointer',
                     fontFamily: "'IBM Plex Mono', monospace",
                   }}
@@ -641,7 +641,7 @@ export default function Mcc() {
 const card = {
   background: C.white,
   border: `1px solid ${C.border}`,
-  borderRadius: 8,
+  borderRadius: 0,
   padding: '16px 16px',
   marginBottom: 12,
 }
@@ -649,7 +649,7 @@ const card = {
 const inputStyle = {
   width: '100%', boxSizing: 'border-box',
   padding: '9px 10px', marginBottom: 8,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 12, color: C.text,
   background: C.white,
   fontFamily: "'IBM Plex Mono', monospace",

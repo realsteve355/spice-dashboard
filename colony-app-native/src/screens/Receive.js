@@ -214,7 +214,7 @@ export default function Receive() {
             <View style={card}>
               <Text style={[label, { marginBottom: 8 }]}>PRODUCTS</Text>
               {loadingProducts ? (
-                <ActivityIndicator size="small" color={C.gold} style={{ marginVertical: 16 }} />
+                <ActivityIndicator size="small" color={C.text} style={{ marginVertical: 16 }} />
               ) : products.length === 0 ? (
                 <Text style={S.emptyHint}>
                   No products listed yet. Add them via the company page on app.zpc.finance, or use manual entry below.
@@ -252,7 +252,7 @@ export default function Receive() {
 
           {/* Cart summary */}
           {useCart && (
-            <View style={[card, { borderColor: C.gold }]}>
+            <View style={[card, { borderColor: C.text }]}>
               <Text style={[label, { marginBottom: 8 }]}>CART</Text>
               {cartItems.map(i => (
                 <View key={i.id} style={S.cartRow}>
@@ -352,14 +352,14 @@ export default function Receive() {
               disabled={writingTag}
             >
               {writingTag
-                ? <ActivityIndicator color={C.gold} />
+                ? <ActivityIndicator color={C.text} />
                 : <Text style={S.btnOutlineText}>⬡ Write to till sticker</Text>
               }
             </TouchableOpacity>
           )}
 
           <View style={S.waitingRow}>
-            <ActivityIndicator size="small" color={C.gold} />
+            <ActivityIndicator size="small" color={C.text} />
             <Text style={S.waitingText}>Waiting for chain confirmation…</Text>
           </View>
         </ScrollView>
@@ -443,17 +443,17 @@ const S = StyleSheet.create({
     backgroundColor: C.card,
     borderWidth:     1,
     borderColor:     C.border,
-    borderRadius:    8,
+    borderRadius: 0,
     padding:         8,
     justifyContent:  'flex-start',
     position:        'relative',
   },
-  productCellOn:{ borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  productCellOn:{ borderColor: C.text, backgroundColor: 'rgba(217,165,61,0.10)' },
   productName:  { fontSize: 11, color: C.text, fontFamily: font, marginTop: 6, marginBottom: 4, minHeight: 28 },
-  productPrice: { fontSize: 12, color: C.gold, fontFamily: font, fontWeight: '600' },
+  productPrice: { fontSize: 12, color: C.text, fontFamily: font, fontWeight: '600' },
 
-  thumbImage:       { width: '60%', aspectRatio: 1, borderRadius: 4, backgroundColor: C.bg, alignSelf: 'center' },
-  thumbPlaceholder: { width: '60%', aspectRatio: 1, borderRadius: 4, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  thumbImage:       { width: '60%', aspectRatio: 1, borderRadius: 0, backgroundColor: C.bg, alignSelf: 'center' },
+  thumbPlaceholder: { width: '60%', aspectRatio: 1, borderRadius: 0, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   thumbInitials:    { fontSize: 14, color: C.faint, fontFamily: font, fontWeight: '600' },
   qtyBadge:     {
     position:        'absolute',
@@ -461,8 +461,8 @@ const S = StyleSheet.create({
     right:           -6,
     width:           22,
     height:          22,
-    borderRadius:    11,
-    backgroundColor: C.gold,
+    borderRadius: 0,
+    backgroundColor: C.text,
     alignItems:      'center',
     justifyContent:  'center',
   },
@@ -476,37 +476,37 @@ const S = StyleSheet.create({
   cartLineTotal:  { fontSize: 12, color: C.text, fontFamily: font, fontWeight: '600' },
   cartTotalRow:   { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: C.border, paddingTop: 8, marginTop: 8 },
   cartTotalLabel: { fontSize: 11, color: C.faint, fontFamily: font, letterSpacing: 1 },
-  cartTotalValue: { fontSize: 18, color: C.gold, fontFamily: font, fontWeight: '700' },
+  cartTotalValue: { fontSize: 18, color: C.text, fontFamily: font, fontWeight: '700' },
   clearCartBtn:   { alignSelf: 'flex-start', marginTop: 8 },
   clearCartText:  { fontSize: 11, color: C.sub, fontFamily: font, textDecorationLine: 'underline' },
 
   // Manual amount/note
-  amountInput:  { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 16, fontSize: 28, fontWeight: '600', fontFamily: font, color: C.gold, textAlign: 'center' },
-  noteInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
+  amountInput:  { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 16, fontSize: 28, fontWeight: '600', fontFamily: font, color: C.text, textAlign: 'center' },
+  noteInput:    { backgroundColor: C.card, borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10, fontSize: 13, fontFamily: font, color: C.text },
 
-  btnGold:      { backgroundColor: C.gold, borderRadius: 8, padding: 16, alignItems: 'center', marginTop: 4 },
+  btnGold:      { backgroundColor: C.text, borderRadius: 0, padding: 16, alignItems: 'center', marginTop: 4 },
   btnGoldText:  { color: '#0a0a0a', fontSize: 13, fontWeight: '600', fontFamily: font },
-  btnOutline:   { borderWidth: 1, borderColor: C.gold, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 16 },
-  btnOutlineText: { color: C.gold, fontSize: 12, fontFamily: font },
+  btnOutline:   { borderWidth: 1, borderColor: C.text, borderRadius: 0, padding: 14, alignItems: 'center', marginTop: 16 },
+  btnOutlineText: { color: C.text, fontSize: 12, fontFamily: font },
   btnDisabled:  { opacity: 0.4 },
 
   hint:         { fontSize: 11, color: C.faint, fontFamily: font, textAlign: 'center', marginTop: 16, lineHeight: 18 },
 
   // Wait screen
-  bigAmount:    { fontSize: 56, fontWeight: '700', color: C.gold, fontFamily: font, textAlign: 'center', marginVertical: 12 },
+  bigAmount:    { fontSize: 56, fontWeight: '700', color: C.text, fontFamily: font, textAlign: 'center', marginVertical: 12 },
   bigNote:      { fontSize: 14, color: C.sub, fontFamily: font, textAlign: 'center', marginBottom: 16 },
   qrWrap:       { alignItems: 'center', marginVertical: 20 },
-  qrFrame:      { backgroundColor: '#ffffff', padding: 16, borderRadius: 8 },
+  qrFrame:      { backgroundColor: '#ffffff', padding: 16, borderRadius: 0 },
   qrCaption:    { fontSize: 11, color: C.faint, fontFamily: font, marginTop: 10, letterSpacing: 1 },
   waitingRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24 },
   waitingText:  { fontSize: 12, color: C.sub, fontFamily: font },
 
   // Paid screen
   paidWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
-  paidIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
+  paidIconWrap: { width: 96, height: 96, borderRadius: 0, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center', marginBottom: 24 },
   paidIcon:     { fontSize: 48, color: '#0a0a0a', fontWeight: '700' },
   paidTitle:    { fontSize: 22, fontWeight: '600', color: C.text, fontFamily: font, marginBottom: 8 },
-  paidAmount:   { fontSize: 52, fontWeight: '700', color: C.gold, fontFamily: font },
+  paidAmount:   { fontSize: 52, fontWeight: '700', color: C.text, fontFamily: font },
   paidFrom:     { fontSize: 13, color: C.sub, fontFamily: font, marginTop: 6, marginBottom: 4 },
   paidNote:     { fontSize: 12, color: C.faint, fontFamily: font, fontStyle: 'italic', marginTop: 4, marginBottom: 8 },
   txHash:       { fontSize: 10, color: C.faint, fontFamily: font, marginBottom: 28 },

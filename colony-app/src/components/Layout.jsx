@@ -320,8 +320,8 @@ export default function Layout({ children, title, back, colonySlug }) {
             padding: '20px 20px 48px', width: '100%', maxWidth: 480,
             maxHeight: '75vh', overflowY: 'auto',
           }}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 18px' }} />
-            <div style={{ fontSize: 12, color: C.gold, letterSpacing: '0.1em', marginBottom: 16 }}>
+            <div style={{ width: 36, height: 4, borderRadius: 0, background: C.border, margin: '0 auto 18px' }} />
+            <div style={{ fontSize: 12, color: C.text, letterSpacing: '0.1em', marginBottom: 16 }}>
               NOTIFICATIONS
             </div>
 
@@ -349,7 +349,7 @@ export default function Layout({ children, title, back, colonySlug }) {
                     {new Date(n.created_at).toLocaleString('en-GB', {
                       day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
                     })}
-                    {n.link && <span style={{ color: C.gold, marginLeft: 6 }}>view →</span>}
+                    {n.link && <span style={{ color: C.text, marginLeft: 6 }}>view →</span>}
                   </div>
                 </div>
               ))
@@ -360,7 +360,7 @@ export default function Layout({ children, title, back, colonySlug }) {
               style={{
                 width: '100%', marginTop: 16,
                 padding: '11px 0', background: 'none',
-                border: `1px solid ${C.border}`, borderRadius: 8,
+                border: `1px solid ${C.border}`, borderRadius: 0,
                 fontSize: 11, color: C.sub, cursor: 'pointer',
                 fontFamily: "'IBM Plex Mono', monospace",
               }}
@@ -386,9 +386,9 @@ export default function Layout({ children, title, back, colonySlug }) {
             maxHeight: '75vh', overflowY: 'auto',
           }}>
             {/* Handle bar */}
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 18px' }} />
+            <div style={{ width: 36, height: 4, borderRadius: 0, background: C.border, margin: '0 auto 18px' }} />
 
-            <div style={{ fontSize: 12, color: C.gold, letterSpacing: '0.1em', marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: C.text, letterSpacing: '0.1em', marginBottom: 16 }}>
               {helpContent.title.toUpperCase()}
             </div>
 
@@ -408,7 +408,7 @@ export default function Layout({ children, title, back, colonySlug }) {
               style={{
                 width: '100%', marginTop: 8,
                 padding: '11px 0', background: 'none',
-                border: `1px solid ${C.border}`, borderRadius: 8,
+                border: `1px solid ${C.border}`, borderRadius: 0,
                 fontSize: 11, color: C.sub, cursor: 'pointer',
                 fontFamily: "'IBM Plex Mono', monospace",
               }}
@@ -436,10 +436,10 @@ function NavTab({ label, icon, active, onClick, muted }) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
       }}
     >
-      <span style={{ fontSize: 18, color: muted ? C.faint : active ? C.gold : C.text, lineHeight: 1 }}>
+      <span style={{ fontSize: 18, color: muted ? C.faint : active ? C.text : C.text, lineHeight: 1 }}>
         {icon}
       </span>
-      <span style={{ fontSize: 10, color: muted ? C.faint : active ? C.gold : C.text, letterSpacing: '0.06em' }}>
+      <span style={{ fontSize: 10, color: muted ? C.faint : active ? C.text : C.text, letterSpacing: '0.06em' }}>
         {label}
       </span>
     </button>

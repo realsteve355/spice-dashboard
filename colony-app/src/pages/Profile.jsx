@@ -141,7 +141,7 @@ export default function Profile() {
         {isSelf && (
           <div style={card}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>BALANCES</div>
-            <Row label="S balance" value={chain ? `${chain.sBalance.toLocaleString()} S` : '—'} color={C.gold} />
+            <Row label="S balance" value={chain ? `${chain.sBalance.toLocaleString()} S` : '—'} color={C.text} />
             <Div />
             <Row label="V balance" value={chain ? `${chain.vBalance.toLocaleString()} V` : '—'} color={C.green} />
           </div>
@@ -155,7 +155,7 @@ export default function Profile() {
               fontSize: 11,
               color:  ageOk ? C.green : C.red,
               border: `1px solid ${ageOk ? C.green : C.red}`,
-              borderRadius: 4, padding: '3px 8px', letterSpacing: '0.08em',
+              borderRadius: 0, padding: '3px 8px', letterSpacing: '0.08em',
             }}>
               {ageOk ? 'ELIGIBLE' : 'NOT ELIGIBLE'}
             </span>
@@ -205,7 +205,7 @@ export default function Profile() {
               onClick={() => { disconnect(); navigate('/') }}
               style={{
                 width: '100%', padding: '11px', background: 'none',
-                border: `1px solid ${C.red}`, borderRadius: 8,
+                border: `1px solid ${C.red}`, borderRadius: 0,
                 color: C.red, fontSize: 12, cursor: 'pointer',
               }}
             >
@@ -240,4 +240,4 @@ function Div() {
   return <div style={{ borderBottom: `1px solid ${C.border}`, margin: '8px 0' }} />
 }
 
-const card = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: 16, marginBottom: 10 }
+const card = { background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: 16, marginBottom: 10 }

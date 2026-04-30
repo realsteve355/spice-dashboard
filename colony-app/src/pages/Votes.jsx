@@ -406,7 +406,7 @@ export default function Votes() {
         </div>
 
         {/* Current board */}
-        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 16px', marginBottom: 14 }}>
+        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, padding: '14px 16px', marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>CURRENT MCC BOARD</div>
           {roleHolders.map((rh, i) => {
             const vacant     = !rh || rh.holder === ethers.ZeroAddress
@@ -431,7 +431,7 @@ export default function Votes() {
                     <button
                       onClick={() => doOpenElection(i)}
                       disabled={!!actionPending}
-                      style={tinyBtn(C.gold, '#06070a')}
+                      style={tinyBtn(C.text, '#06070a')}
                     >
                       {actionPending === `open-${i}` ? '…' : 'Open election'}
                     </button>
@@ -453,7 +453,7 @@ export default function Votes() {
 
         {/* Error */}
         {actionError && (
-          <div style={{ background: '#fff5f5', border: `1px solid ${C.red}`, borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: C.red }}>
+          <div style={{ background: '#fff5f5', border: `1px solid ${C.red}`, borderRadius: 0, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: C.red }}>
             {actionError}
           </div>
         )}
@@ -464,8 +464,8 @@ export default function Votes() {
 
         {/* Nominate form */}
         {nomElecId && (
-          <div style={{ background: '#fffbf0', border: `1px solid ${C.gold}`, borderRadius: 8, padding: 16, marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: C.gold, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE A CANDIDATE</div>
+          <div style={{ background: '#fffbf0', border: `1px solid ${C.text}`, borderRadius: 0, padding: 16, marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>NOMINATE A CANDIDATE</div>
             <div style={{ fontSize: 11, color: C.faint, marginBottom: 6 }}>Select citizen</div>
             {citizens.length > 0 && (
               <select
@@ -500,7 +500,7 @@ export default function Votes() {
               <button
                 onClick={doNominate}
                 disabled={!!actionPending || !nomCandidate}
-                style={{ ...smallBtn(C.gold, '#06070a'), flex: 1, opacity: !nomCandidate ? 0.5 : 1 }}
+                style={{ ...smallBtn(C.text, '#06070a'), flex: 1, opacity: !nomCandidate ? 0.5 : 1 }}
               >
                 {actionPending === `nom-${nomElecId}` ? 'Submitting…' : 'Nominate →'}
               </button>
@@ -522,7 +522,7 @@ export default function Votes() {
             <div key={roleIdx} style={{ marginBottom: 20 }}>
               {/* Role header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                <span style={{ fontSize: 10, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 4, padding: '2px 8px', letterSpacing: '0.1em' }}>
+                <span style={{ fontSize: 10, color: C.purple, border: `1px solid ${C.purple}`, borderRadius: 0, padding: '2px 8px', letterSpacing: '0.1em' }}>
                   {roleName}
                 </span>
                 <div style={{ flex: 1, height: 1, background: C.border }} />
@@ -551,7 +551,7 @@ export default function Votes() {
               {history.length > 0 && (
                 <div style={{ marginTop: active ? 6 : 0 }}>
                   {history.map(e => (
-                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 6, marginBottom: 4, opacity: 0.6 }}>
+                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 0, marginBottom: 4, opacity: 0.6 }}>
                       <span style={{ fontSize: 10, color: e.status === 'EXECUTED' ? C.green : C.red, letterSpacing: '0.06em' }}>
                         {e.status === 'EXECUTED' ? '✓ ELECTED' : '✗ FAILED'}
                       </span>
@@ -595,7 +595,7 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
   }, [status])
 
   const statusMeta = {
-    NOMINATING:     { label: 'NOMINATIONS OPEN',  color: C.gold,   bg: '#fffbf0' },
+    NOMINATING:     { label: 'NOMINATIONS OPEN',  color: C.text,   bg: '#fffbf0' },
     VOTING:         { label: 'VOTING OPEN',        color: C.green,  bg: '#f0fff4' },
     FINALISE_READY: { label: 'VOTING CLOSED',      color: C.sub,    bg: C.white   },
     TIMELOCK:       { label: 'TIMELOCK',           color: C.blue,   bg: '#f0f8ff' },
@@ -630,16 +630,16 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
     : null
 
   return (
-    <div style={{ background: statusMeta.bg, border: `1px solid ${statusMeta.color}22`, borderRadius: 8, padding: '14px 16px', marginBottom: 6 }}>
+    <div style={{ background: statusMeta.bg, border: `1px solid ${statusMeta.color}22`, borderRadius: 0, padding: '14px 16px', marginBottom: 6 }}>
 
       {/* Status + timer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 10, color: statusMeta.color, border: `1px solid ${statusMeta.color}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: 10, color: statusMeta.color, border: `1px solid ${statusMeta.color}`, borderRadius: 0, padding: '2px 7px', letterSpacing: '0.08em' }}>
             {statusMeta.label}
           </span>
           {myVoted && (
-            <span style={{ fontSize: 10, color: C.green, border: `1px solid ${C.green}`, borderRadius: 4, padding: '2px 7px', letterSpacing: '0.06em' }}>VOTED</span>
+            <span style={{ fontSize: 10, color: C.green, border: `1px solid ${C.green}`, borderRadius: 0, padding: '2px 7px', letterSpacing: '0.06em' }}>VOTED</span>
           )}
         </div>
         {timer && (
@@ -714,7 +714,7 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
                   </div>
                 </div>
                 {showVoteBars && totalVotes > 0 && (
-                  <div style={{ height: 3, borderRadius: 2, background: C.border, overflow: 'hidden' }}>
+                  <div style={{ height: 3, borderRadius: 0, background: C.border, overflow: 'hidden' }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: isWinner ? C.green : C.faint }} />
                   </div>
                 )}
@@ -731,12 +731,12 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
 
       {/* Actions */}
       {status === 'NOMINATING' && onNominate && (
-        <button onClick={onNominate} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#06070a'), marginTop: 2 }}>
+        <button onClick={onNominate} disabled={!!actionPending} style={{ ...smallBtn(C.text, '#06070a'), marginTop: 2 }}>
           + Nominate candidate
         </button>
       )}
       {status === 'FINALISE_READY' && onFinalise && (
-        <button onClick={() => onFinalise(id)} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#06070a'), marginTop: 2 }}>
+        <button onClick={() => onFinalise(id)} disabled={!!actionPending} style={{ ...smallBtn(C.text, '#06070a'), marginTop: 2 }}>
           {actionPending === `fin-${id}` ? '…' : 'Finalise →'}
         </button>
       )}
@@ -754,7 +754,7 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
 const selectStyle = {
   width: '100%', padding: '9px 10px',
   background: '#f9f9f9', color: '#111',
-  border: '1px solid #e2e2e2', borderRadius: 6,
+  border: '1px solid #e2e2e2', borderRadius: 0,
   fontSize: 12, fontFamily: "'IBM Plex Mono', monospace",
   boxSizing: 'border-box',
 }
@@ -762,7 +762,7 @@ const selectStyle = {
 function tinyBtn(bg, color) {
   return {
     fontSize: 10, color, background: bg,
-    border: 'none', borderRadius: 4, padding: '3px 8px',
+    border: 'none', borderRadius: 0, padding: '3px 8px',
     cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace", whiteSpace: 'nowrap',
   }
 }
@@ -770,7 +770,7 @@ function tinyBtn(bg, color) {
 function smallBtn(bg, color) {
   return {
     padding: '9px 14px', background: bg, color,
-    border: 'none', borderRadius: 6, fontSize: 11,
+    border: 'none', borderRadius: 0, fontSize: 11,
     cursor: 'pointer', fontFamily: "'IBM Plex Mono', monospace",
   }
 }

@@ -135,9 +135,9 @@ export default function RegisterCompany() {
           <div style={{ fontSize: 11, color: C.faint, marginBottom: 10 }}>Add a company logo (optional)</div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 12, alignItems: 'center' }}>
             {companyPhoto ? (
-              <img src={companyPhoto} alt="" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: `1px solid ${C.border}` }} />
+              <img src={companyPhoto} alt="" style={{ width: 64, height: 64, borderRadius: 0, objectFit: 'cover', border: `1px solid ${C.border}` }} />
             ) : (
-              <div style={{ width: 64, height: 64, borderRadius: 8, border: `1px dashed ${C.border}`, background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: C.faint }}>◈</div>
+              <div style={{ width: 64, height: 64, borderRadius: 0, border: `1px dashed ${C.border}`, background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, color: C.faint }}>◈</div>
             )}
             <div>
               <button
@@ -242,7 +242,7 @@ export default function RegisterCompany() {
                   {i > 0 && (
                     <button
                       onClick={() => removeHolder(i)}
-                      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, padding: '0 10px', cursor: 'pointer', color: C.faint, height: 40, flexShrink: 0 }}
+                      style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 0, padding: '0 10px', cursor: 'pointer', color: C.faint, height: 40, flexShrink: 0 }}
                     >
                       ×
                     </button>
@@ -270,11 +270,11 @@ export default function RegisterCompany() {
 
         {/* Info box */}
         <div style={{
-          background: '#fffbf0', border: `1px solid ${C.gold}`,
-          borderRadius: 8, padding: 14, marginBottom: 20,
+          background: '#fffbf0', border: `1px solid ${C.text}`,
+          borderRadius: 0, padding: 14, marginBottom: 20,
           fontSize: 11, color: C.sub, lineHeight: 1.7,
         }}>
-          <div style={{ color: C.gold, marginBottom: 4, letterSpacing: '0.06em' }}>HOW COMPANY TOKENS WORK</div>
+          <div style={{ color: C.text, marginBottom: 4, letterSpacing: '0.06em' }}>HOW COMPANY TOKENS WORK</div>
           During the month your company earns S-tokens from customers and pays suppliers in S-tokens.
           At month end the Fisc converts all net S-tokens to V-tokens automatically.
           You then distribute V-tokens as dividends to equity holders at any time.
@@ -307,23 +307,23 @@ const fieldGroup  = { marginBottom: 20 }
 const fieldLabel  = { display: 'block', fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }
 const inputStyle  = {
   width: '100%', padding: '11px 12px',
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 13, color: C.text, background: C.white, outline: 'none',
   boxSizing: 'border-box',
 }
 const selectStyle = {
   padding: '11px 12px',
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 13, color: C.text, background: C.white,
   fontFamily: "'IBM Plex Mono', monospace", boxSizing: 'border-box',
 }
 const primaryBtn  = {
-  width: '100%', padding: '13px', background: C.gold, color: C.bg,
-  border: 'none', borderRadius: 8, fontSize: 13,
+  width: '100%', padding: '13px', background: C.text, color: C.bg,
+  border: 'none', borderRadius: 0, fontSize: 13,
   cursor: 'pointer', letterSpacing: '0.04em', fontWeight: 500,
 }
 const ghostBtn    = {
   padding: '10px 14px', background: C.white, color: C.sub,
-  border: `1px solid ${C.border}`, borderRadius: 6,
+  border: `1px solid ${C.border}`, borderRadius: 0,
   fontSize: 11, cursor: 'pointer', letterSpacing: '0.04em',
 }

@@ -106,7 +106,7 @@ export default function Settings() {
           {!revealed ? (
             <TouchableOpacity style={S.revealBtn} onPress={handleRevealPhrase} disabled={loading}>
               {loading
-                ? <ActivityIndicator size="small" color={C.gold} />
+                ? <ActivityIndicator size="small" color={C.text} />
                 : <Text style={S.revealBtnText}>Reveal with {bio}</Text>
               }
             </TouchableOpacity>
@@ -171,20 +171,20 @@ const S = StyleSheet.create({
 
   addressFull:  { fontSize: 11, color: C.text, fontFamily: font, lineHeight: 18, marginBottom: 10 },
 
-  copyBtn:      { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 8, alignItems: 'center', marginTop: 4 },
+  copyBtn:      { borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 8, alignItems: 'center', marginTop: 4 },
   copyBtnText:  { fontSize: 11, color: C.sub, fontFamily: font },
 
   colonyName:   { fontSize: 13, color: C.text, fontFamily: font, fontWeight: '500' },
   colonyAddr:   { fontSize: 10, color: C.faint, fontFamily: font, marginTop: 2, marginBottom: 8 },
-  citizenBadge: { borderWidth: 1, borderRadius: 4, padding: 6, alignItems: 'center', marginTop: 6 },
+  citizenBadge: { borderWidth: 1, borderRadius: 0, padding: 6, alignItems: 'center', marginTop: 6 },
   citizenText:  { fontSize: 9, fontFamily: font, letterSpacing: 0.8 },
 
   seedWarning:  { fontSize: 10, color: C.faint, fontFamily: font, lineHeight: 15, marginBottom: 12 },
-  revealBtn:    { borderWidth: 1, borderColor: C.gold, borderRadius: 6, padding: 10, alignItems: 'center' },
-  revealBtnText:{ fontSize: 12, color: C.gold, fontFamily: font },
+  revealBtn:    { borderWidth: 1, borderColor: C.text, borderRadius: 0, padding: 10, alignItems: 'center' },
+  revealBtnText:{ fontSize: 12, color: C.text, fontFamily: font },
 
   phraseGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  wordCell:     { width: '28%', backgroundColor: C.card, borderRadius: 4, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  wordCell:     { width: '28%', backgroundColor: C.card, borderRadius: 0, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 4 },
   wordNum:      { fontSize: 8, color: C.faint, fontFamily: font, width: 12 },
   word:         { fontSize: 11, color: C.text, fontFamily: font, fontWeight: '500' },
 
@@ -192,12 +192,12 @@ const S = StyleSheet.create({
 
   netInfo:      { fontSize: 11, color: C.faint, fontFamily: font, lineHeight: 18 },
 
-  resetBtn:     { borderWidth: 1, borderColor: C.red, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 8 },
+  resetBtn:     { borderWidth: 1, borderColor: C.red, borderRadius: 0, padding: 14, alignItems: 'center', marginTop: 8 },
   resetText:    { fontSize: 13, color: C.red, fontFamily: font },
 
   merchantBlurb:{ fontSize: 11, color: C.sub, fontFamily: font, lineHeight: 17, marginBottom: 10 },
-  toggleBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 6, padding: 10, alignItems: 'center' },
-  toggleBtnOn:  { borderColor: C.gold, backgroundColor: 'rgba(217,165,61,0.10)' },
+  toggleBtn:    { borderWidth: 1, borderColor: C.border, borderRadius: 0, padding: 10, alignItems: 'center' },
+  toggleBtnOn:  { borderColor: C.text, backgroundColor: 'rgba(217,165,61,0.10)' },
   toggleBtnText:{ fontSize: 12, color: C.sub, fontFamily: font },
-  toggleBtnTextOn: { color: C.gold },
+  toggleBtnTextOn: { color: C.text },
 })
