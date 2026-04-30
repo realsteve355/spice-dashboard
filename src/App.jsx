@@ -29,6 +29,7 @@ import Abundance from './pages/Abundance.jsx'
 import ColonyEconomy from './pages/ColonyEconomy.jsx'
 import BalanceOfPayments from './pages/BalanceOfPayments.jsx'
 import Components from './pages/Components.jsx'
+import Invest     from './pages/Invest.jsx'
 
 const NAV_ITEMS = [
   { label: "Home",        to: "/",                       end: true },
@@ -46,7 +47,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={S.root}>
-        <TopBar navItems={NAV_ITEMS} status="Sys Online" />
+        <TopBar navItems={NAV_ITEMS} cta={{ label: "Invest", to: "/invest" }} />
         <Routes>
           {/* ── Top-level ── */}
           <Route path="/" element={<Home />} />
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/colony-economy" element={<ColonyEconomy />} />
           <Route path="/balance-of-payments" element={<BalanceOfPayments />} />
           <Route path="/_components" element={<Components />} />
+          <Route path="/invest" element={<Invest />} />
           <Route path="/config" element={<Config />} />
 
           {/* ── Collision family (sub-nav) ── */}

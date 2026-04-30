@@ -52,9 +52,7 @@ export default function Components() {
           <div style={{ border: `1px solid ${C.line}` }}>
             <TopBar
               navItems={SAMPLE_NAV}
-              status="Sys Online"
-              clock="14:32 UTC"
-              wallet={{ label: "Connect Wallet", onClick: () => {} }}
+              cta={{ label: "Invest", to: "/invest" }}
             />
           </div>
           <div style={S.meta}>Already mounted as the page nav above. Inline copy renders the same component with sample props.</div>

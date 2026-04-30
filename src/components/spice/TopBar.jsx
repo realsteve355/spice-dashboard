@@ -1,14 +1,14 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { C, F } from "../../tokens";
 
 const S = {
   bar: {
     display: "grid",
-    gridTemplateColumns: "auto 1fr auto auto",
+    gridTemplateColumns: "auto 1fr auto",
     alignItems: "center",
     gap: 24,
     padding: "13px 26px",
-    borderBottom: `1px solid ${C.line}`,
+    borderBottom: `1px solid ${C.lineHot}`,
     background: C.panel,
     fontFamily: F.mono,
     fontSize: 11.5,
@@ -28,33 +28,25 @@ const S = {
     transition: "color 0.2s",
   },
   linkActive: { color: C.txt },
-  right: { display: "flex", alignItems: "center", gap: 16, color: C.dim, fontSize: 11 },
-  sep: { color: C.faint },
-  pulse: {
-    display: "inline-block", width: 7, height: 7, borderRadius: "50%",
-    background: C.ok, boxShadow: "0 0 10px rgba(93,211,158,0.55)",
-    animation: "spice-pulse 1.6s infinite", flexShrink: 0,
-  },
-  walletBtn: {
+  ctaBtn: {
     border: `1px solid ${C.txt}`, color: C.txt, background: "transparent",
     padding: "7px 14px", fontFamily: F.mono, fontSize: 11,
     letterSpacing: "0.18em", textTransform: "uppercase",
     cursor: "pointer", transition: "all 0.15s",
+    textDecoration: "none", display: "inline-block",
   },
 };
 
-export default function TopBar({ navItems = [], status = "Sys Online", clock, wallet }) {
+export default function TopBar({ navItems = [], cta }) {
   return (
-    <>
-      <style>{`@keyframes spice-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }`}</style>
-      <header style={S.bar}>
-        <NavLink to="/" style={S.brand}>
-          <BrandGlyph />
-          <span style={S.brandName}>SPICE</span>
-          <span style={S.brandSep}>/</span>
-          <span style={S.brandTag}>mission control</span>
-        </NavLink>
-        <nav style={S.nav}>
+    <header style={S.bar}>
+      <NavLink to="/" style={S.brand}>
+        <BrandGlyph />
+        <span style={S.brandName}>SPICE</span>
+        <span style={S.brandSep}>/</span>
+        <span style={S.brandTag}>mission control</span>
+      </NavLink>
+      <nav style={S.nav}>
           {navItems.map((item) => (
             item.external ? (
               <a key={item.to} href={item.to} style={S.link}>{item.label}</a>
@@ -77,19 +69,13 @@ export default function TopBar({ navItems = [], status = "Sys Online", clock, wa
               </NavLink>
             )
           ))}
-        </nav>
-        <div style={S.right}>
-          <span style={S.pulse} />
-          <span>{status}</span>
-          {clock && <><span style={S.sep}>|</span><span>{clock}</span></>}
-        </div>
-        {wallet ? (
-          <button style={S.walletBtn} onClick={wallet.onClick}>{wallet.label}</button>
-        ) : (
-          <span /> /* keep grid column */
-        )}
-      </header>
-    </>
+      </nav>
+      {cta ? (
+        cta.to   ? <Link to={cta.to} style={S.ctaBtn}>{cta.label}</Link>
+      : cta.href ? <a href={cta.href} style={S.ctaBtn}>{cta.label}</a>
+      :            <button style={S.ctaBtn} onClick={cta.onClick}>{cta.label}</button>
+      ) : <span />}
+    </header>
   );
 }
 
