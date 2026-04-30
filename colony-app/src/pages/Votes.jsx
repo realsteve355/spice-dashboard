@@ -431,7 +431,7 @@ export default function Votes() {
                     <button
                       onClick={() => doOpenElection(i)}
                       disabled={!!actionPending}
-                      style={tinyBtn(C.gold, '#0a0e1a')}
+                      style={tinyBtn(C.gold, '#06070a')}
                     >
                       {actionPending === `open-${i}` ? '…' : 'Open election'}
                     </button>
@@ -500,7 +500,7 @@ export default function Votes() {
               <button
                 onClick={doNominate}
                 disabled={!!actionPending || !nomCandidate}
-                style={{ ...smallBtn(C.gold, '#0a0e1a'), flex: 1, opacity: !nomCandidate ? 0.5 : 1 }}
+                style={{ ...smallBtn(C.gold, '#06070a'), flex: 1, opacity: !nomCandidate ? 0.5 : 1 }}
               >
                 {actionPending === `nom-${nomElecId}` ? 'Submitting…' : 'Nominate →'}
               </button>
@@ -731,12 +731,12 @@ function ElectionCard({ election, nameMap, isCitizen, address, actionPending, fm
 
       {/* Actions */}
       {status === 'NOMINATING' && onNominate && (
-        <button onClick={onNominate} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 2 }}>
+        <button onClick={onNominate} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#06070a'), marginTop: 2 }}>
           + Nominate candidate
         </button>
       )}
       {status === 'FINALISE_READY' && onFinalise && (
-        <button onClick={() => onFinalise(id)} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#0a0e1a'), marginTop: 2 }}>
+        <button onClick={() => onFinalise(id)} disabled={!!actionPending} style={{ ...smallBtn(C.gold, '#06070a'), marginTop: 2 }}>
           {actionPending === `fin-${id}` ? '…' : 'Finalise →'}
         </button>
       )}

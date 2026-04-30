@@ -97,7 +97,7 @@ const HELP = {
     sections: [
       {
         heading: 'Token types',
-        body: 'S-tokens — spendable everyday currency\nV-tokens — long-term savings, earns yield\nG-token — your citizenship credential (soulbound, non-transferable)\nA-tokens — company equity stakes\nO-tokens — obligation tokens (work commitments)',
+        body: 'S-tokens — spendable everyday currency (expires monthly)\nV-tokens — long-term savings (does not expire)\nG-token — citizenship and one vote (soulbound, non-transferable)\nA-tokens — assets, equity stakes, and bilateral obligations\nO-tokens — organisation identity, held by company secretary or MCC chair',
       },
     ],
   },
