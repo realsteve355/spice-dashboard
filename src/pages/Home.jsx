@@ -153,10 +153,10 @@ export default function Home() {
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>UBI Product for a Capitalist Economy</h1>
           <p style={S.lead}>
-            SPICE is a community currency designed for the post-fiat transition.
-            Citizens receive a monthly basic income in S-tokens, hold long-term
-            wealth in V-tokens, and own dividend-bearing shares in colony
-            enterprises. <strong style={{ color: C.txt }}>Capitalist UBI. No tax. No welfare. Every citizen a shareholder.</strong>
+            Spice is a cryptocurrency system designed to implement a phased
+            rollout of a UBI system across a market economy, featuring
+            near-zero inflation, near-zero taxation, in an automated,
+            low regulation micro-economy.
           </p>
           <div style={S.ctas}>
             <Button variant="primary" to="/collision">Read the thesis →</Button>
