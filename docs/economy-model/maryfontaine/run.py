@@ -26,6 +26,7 @@ from tick import (
     SimState, load_state, tick_one_month, flush_to_db,
     TxRecorder
 )
+from config import SimConfig
 
 
 def main() -> None:
@@ -36,7 +37,41 @@ def main() -> None:
     ap.add_argument("--noise", type=float, default=0.0)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--progress", action="store_true", help="print per-year progress")
+    # Mitigation levers (Phase 4 dashboard exposes these as sliders)
+    ap.add_argument("--ubi", type=float, default=100.0, help="UBI per citizen per month in S")
+    ap.add_argument("--cover-target", type=float, default=0.30)
+    ap.add_argument("--lat", type=float, default=0.0,
+                    help="LAT rate as fraction of company revenue capacity (0 = disabled)")
+    ap.add_argument("--honda-vest", action="store_true",
+                    help="vest Honda Inc dividends in S (no USDC cashout)")
+    ap.add_argument("--mortgage-refi", action="store_true",
+                    help="refinance mortgages into S (colony bank buyout)")
+    ap.add_argument("--ext-rent-refi", action="store_true",
+                    help="refinance external rent into S (colony landlord buyout)")
+    ap.add_argument("--s-tax", type=float, default=0.0,
+                    help="S-tax on internal purchases (fraction)")
+    ap.add_argument("--ubi-children", type=float, default=1.0,
+                    help="UBI multiplier for children (1.0 = full)")
+    ap.add_argument("--ubi-retirees-only", action="store_true",
+                    help="restrict UBI to retirees + ubi_only_choice")
+    ap.add_argument("--cashout-mult", type=float, default=1.0)
     args = ap.parse_args()
+
+    cfg = SimConfig(
+        scenario=args.scenario, months=args.months, seed=args.seed,
+        noise_sigma=args.noise,
+        ubi_s_per_citizen=args.ubi,
+        ubi_children_pct=args.ubi_children,
+        ubi_retirees_only=args.ubi_retirees_only,
+        cover_target=args.cover_target,
+        lat_enabled=args.lat > 0,
+        lat_rate_pct=args.lat,
+        honda_dividend_vest=args.honda_vest,
+        mortgage_refinance_to_s=args.mortgage_refi,
+        external_rent_refinance=args.ext_rent_refi,
+        s_tax_on_purchases_pct=args.s_tax,
+        cashout_multiplier=args.cashout_mult,
+    )
 
     db_path = Path(args.db)
     if not db_path.exists():
@@ -54,9 +89,9 @@ def main() -> None:
     print(f"  founding S supply: {state.s_supply_total:,.2f}", file=sys.stderr)
     print(f"  founding USDC reserve: ${state.fisc_usdc:,.2f}", file=sys.stderr)
 
-    print(f"Building scenario trajectory: {args.scenario} ({args.months} months) ...", file=sys.stderr)
-    trajectory = build_trajectory(args.scenario, months=args.months,
-                                  noise_sigma=args.noise, seed=args.seed)
+    print(f"Building scenario trajectory: {cfg.scenario} ({cfg.months} months) ...", file=sys.stderr)
+    trajectory = build_trajectory(cfg.scenario, months=cfg.months,
+                                  noise_sigma=cfg.noise_sigma, seed=cfg.seed)
 
     print(f"Running ticks ...", file=sys.stderr)
     txs = TxRecorder()
@@ -66,8 +101,8 @@ def main() -> None:
     unmet_demand = []
 
     t0 = time.time()
-    for m in range(1, args.months + 1):
-        tick_one_month(state, args.scenario, trajectory, m,
+    for m in range(1, cfg.months + 1):
+        tick_one_month(state, cfg, trajectory, m,
                        txs, citizen_snaps, company_snaps, fisc_states, unmet_demand)
         if args.progress and m % 12 == 0:
             year = m // 12

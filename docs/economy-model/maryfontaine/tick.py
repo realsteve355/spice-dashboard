@@ -37,37 +37,8 @@ from scenarios import (
     BASKET_WEIGHTS_USD, BASKET_TARGET_S,
     EnvironmentTrajectory, build_trajectory, honda_shock_multiplier
 )
+from config import SimConfig
 
-
-# ── Tunable constants ─────────────────────────────────────────────────────────
-
-UBI_S_PER_CITIZEN_PER_MONTH = 100.0
-COVER_TARGET = 0.30                       # USDC reserve must cover 30% of S supply at current rate
-SUBSISTENCE_S = 50.0                      # citizen-monthly subsistence proxy
-SURPLUS_THRESHOLD = 1.5 * SUBSISTENCE_S
-SURPLUS_DURATION_MONTHS = 6
-
-# Discretionary propensity by behavioural type (per spec §5)
-DISCR_PROPENSITY = {"saver": 0.20, "balanced": 0.50, "striver": 0.40, "spender": 0.80}
-
-# Cashout fraction by behavioural type — what share of surplus gets cashed out to USDC
-CASHOUT_FRACTION = {"saver": 0.10, "balanced": 0.05, "striver": 0.02, "spender": 0.0}
-
-# MCC utility cost per household per month, in S, scales with adult count
-MCC_HOUSEHOLD_BASE_S = 30.0               # single adult household
-MCC_PER_ADULT_S = 15.0                    # additional per adult
-MCC_COMPANY_BASE_S = 80.0                 # all companies pay something
-MCC_PER_REVENUE_FRAC = 0.005              # plus 0.5% of revenue capacity
-
-# Company operating cost as fraction of revenue (covers internal labour, supplies, overhead)
-COMPANY_OP_COST_FRAC = 0.55
-
-# Working capital target (months of revenue capacity) by CFO policy
-WC_TARGET_MONTHS = {
-    "conservative": 1.5,
-    "aggressive_dividend": 0.7,
-    "growth_focused": 1.0,
-}
 
 WORKER_ARCHETYPES = {
     "honda_assembly", "honda_admin", "other_manufacturing", "healthcare_worker",
@@ -344,16 +315,16 @@ class TxRecorder:
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
-def fisc_rate_and_reserve_check(state: SimState, basket_usd: float) -> Tuple[float, bool]:
+def fisc_rate_and_reserve_check(state: SimState, basket_usd: float, cover_target: float) -> Tuple[float, bool]:
     """Compute Fisc rate from basket cost. Returns (rate, compressed).
-    If the reserve cannot cover s_supply * rate * COVER_TARGET, compress the rate
+    If the reserve cannot cover s_supply * rate * cover_target, compress the rate
     (basket_cost_s will exceed 28 → flagged as stress)."""
     target_rate = basket_usd / BASKET_TARGET_S    # USD per S
     if state.s_supply_total <= 0:
         return target_rate, False
-    required_reserve = state.s_supply_total * target_rate * COVER_TARGET
+    required_reserve = state.s_supply_total * target_rate * cover_target
     if state.fisc_usdc < required_reserve:
-        rate = state.fisc_usdc / (state.s_supply_total * COVER_TARGET) if state.s_supply_total > 0 else target_rate
+        rate = state.fisc_usdc / (state.s_supply_total * cover_target) if state.s_supply_total > 0 else target_rate
         return rate, True
     return target_rate, False
 
@@ -391,19 +362,20 @@ def update_min_balance(co: CompanyState) -> None:
 
 # ── The monthly tick ────────────────────────────────────────────────────────
 
-def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajectory,
+def tick_one_month(state: SimState, cfg: SimConfig, trajectory: EnvironmentTrajectory,
                    month_index: int, txs: TxRecorder,
                    citizen_snaps: List[Tuple], company_snaps: List[Tuple],
                    fisc_states: List[Tuple], unmet_demand: List[Tuple]) -> None:
     """Run one month. month_index is 1-based."""
     year = (month_index - 1) // 12       # 0..9
     month = (month_index - 1) % 12 + 1   # 1..12
+    surplus_threshold = cfg.surplus_multiplier * cfg.subsistence_s
 
     # 1. External environment — read this month's basket prices
     basket_usd = trajectory.basket_cost_usd(month_index)
 
     # 2. Fisc rate adjustment (basket-anchored, with compression check)
-    fisc_rate, rate_compressed = fisc_rate_and_reserve_check(state, basket_usd)
+    fisc_rate, rate_compressed = fisc_rate_and_reserve_check(state, basket_usd, cfg.cover_target)
     basket_cost_s = basket_usd / fisc_rate if fisc_rate > 0 else 999.0
 
     # Reset per-month accumulators on companies
@@ -425,14 +397,24 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
 
     living = [c for c in state.citizens if c.death_year is None and c.departure_year is None]
 
-    # 3. UBI mint — 100 S to every living citizen; minted from Fisc (USDC reserve unchanged)
+    # 3. UBI mint — config-driven amount + eligibility
     for c in living:
-        c.s_balance += UBI_S_PER_CITIZEN_PER_MONTH
-        c.monthly_income_s += UBI_S_PER_CITIZEN_PER_MONTH
-        state.s_supply_total += UBI_S_PER_CITIZEN_PER_MONTH
+        # Eligibility per config
+        if cfg.ubi_retirees_only:
+            if c.archetype not in ("retiree", "ubi_only_choice"):
+                continue
+        if c.archetype == "children_under_18":
+            ubi = cfg.ubi_s_per_citizen * cfg.ubi_children_pct
+        else:
+            ubi = cfg.ubi_s_per_citizen
+        if ubi <= 0:
+            continue
+        c.s_balance += ubi
+        c.monthly_income_s += ubi
+        state.s_supply_total += ubi
         txs.add(year, month, "ubi_mint",
                 from_wallet=("fisc", 0), to_wallet=("citizen", c.id),
-                s_amount=UBI_S_PER_CITIZEN_PER_MONTH, usdc_amount=0.0,
+                s_amount=ubi, usdc_amount=0.0,
                 fisc_rate=fisc_rate)
 
     # 4. External income arrivals (USDC → S via Fisc)
@@ -456,7 +438,7 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
         usd_revenue = co.monthly_export_usd_baseline
         # Honda shock: scale Honda exports per scenario+month
         if state.honda_id and co.id == state.honda_id:
-            usd_revenue *= honda_shock_multiplier(month_index, scenario)
+            usd_revenue *= honda_shock_multiplier(month_index, cfg.scenario)
         if usd_revenue <= 0:
             continue
         s_received = usd_revenue / fisc_rate
@@ -480,8 +462,7 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
             if primary is None or primary.death_year is not None:
                 continue
             n_adults = max(1, hh.n_adults)
-            bill = MCC_HOUSEHOLD_BASE_S + (n_adults - 1) * MCC_PER_ADULT_S
-            # If insufficient balance, take what they have (stress signal)
+            bill = cfg.mcc_household_base_s + (n_adults - 1) * cfg.mcc_per_adult_s
             charge = min(bill, max(0.0, primary.s_balance))
             primary.s_balance -= charge
             mcc.s_balance += charge
@@ -498,7 +479,7 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
         for co in state.companies:
             if co.id == mcc.id or co.closed_year is not None:
                 continue
-            bill = MCC_COMPANY_BASE_S + co.max_revenue_per_month_s * MCC_PER_REVENUE_FRAC
+            bill = cfg.mcc_company_base_s + co.max_revenue_per_month_s * cfg.mcc_per_revenue_frac
             charge = min(bill, max(0.0, co.s_balance))
             co.s_balance -= charge
             co.monthly_costs_s += charge
@@ -511,6 +492,26 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
                     related_company_id=mcc.id)
             update_min_balance(co)
         update_min_balance(mcc)
+
+    # 7.5. LAT (Local Automation Tax) — if enabled, charge each company a % of their
+    # max_revenue_per_month_s as a proxy for automation level. S is destroyed at Fisc
+    # (reduces denominator in cover ratio → strengthens reserve coverage).
+    if cfg.lat_enabled and cfg.lat_rate_pct > 0:
+        for co in state.companies:
+            if co.is_mcc or co.closed_year is not None:
+                continue
+            bill = co.max_revenue_per_month_s * cfg.lat_rate_pct
+            charge = min(bill, max(0.0, co.s_balance))
+            if charge <= 0:
+                continue
+            co.s_balance -= charge
+            co.monthly_costs_s += charge
+            state.s_supply_total -= charge   # S burned at Fisc
+            txs.add(year, month, "lat_payment",
+                    from_wallet=("company", co.id), to_wallet=("fisc", 0),
+                    s_amount=charge, usdc_amount=0.0, fisc_rate=fisc_rate,
+                    related_company_id=co.id, description="LAT")
+            update_min_balance(co)
 
     # 8. Citizen consumption (basket via supplier picker)
     unmet_by_cat: Dict[str, float] = {c: 0.0 for c in BASKET_WEIGHTS_USD}
@@ -533,14 +534,24 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
             if supplier is None:
                 unmet_by_cat[category] += cat_spend
                 continue
+            # S-tax on internal purchases — if enabled, a fraction of every purchase
+            # is taxed at the Fisc (S destroyed; reduces supply)
+            tax = cat_spend * cfg.s_tax_on_purchases_pct if cfg.s_tax_on_purchases_pct > 0 else 0.0
+            net_to_supplier = cat_spend - tax
             primary.s_balance -= cat_spend
             primary.monthly_basket_spend_s += cat_spend
-            supplier.s_balance += cat_spend
-            supplier.revenue_so_far_this_month_s += cat_spend
-            supplier.monthly_revenue_s += cat_spend
+            supplier.s_balance += net_to_supplier
+            supplier.revenue_so_far_this_month_s += net_to_supplier
+            supplier.monthly_revenue_s += net_to_supplier
+            if tax > 0:
+                state.s_supply_total -= tax   # destroyed at Fisc
+                txs.add(year, month, "s_tax_payment",
+                        from_wallet=("citizen", primary.id), to_wallet=("fisc", 0),
+                        s_amount=tax, usdc_amount=0.0, fisc_rate=fisc_rate,
+                        related_company_id=supplier.id, description="purchase tax")
             txs.add(year, month, "internal_purchase",
                     from_wallet=("citizen", primary.id), to_wallet=("company", supplier.id),
-                    s_amount=cat_spend, usdc_amount=0.0, fisc_rate=fisc_rate,
+                    s_amount=net_to_supplier, usdc_amount=0.0, fisc_rate=fisc_rate,
                     related_company_id=supplier.id)
             update_min_balance(supplier)
 
@@ -549,6 +560,10 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
         unmet_demand.append((year, month, cat, unmet, total_demand_by_cat[cat]))
 
     # 9. Citizen housing (mortgage / external rent / internal rent)
+    # If mortgage_refinance_to_s or external_rent_refinance is on, the S stays in the
+    # colony economy (held at Fisc as a virtual "colony bank" balance — for v1, we
+    # just don't burn it and don't send USDC out). This represents a colony-financed
+    # buyout of the external mortgage/rent obligation.
     for hh in state.households.values():
         primary = state.citizen_by_id.get(hh.primary_citizen_id)
         if primary is None or primary.death_year is not None:
@@ -557,24 +572,41 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
             usd_out = hh.monthly_housing_cost_usd
             s_required = usd_out / fisc_rate
             charge = min(s_required, max(0.0, primary.s_balance))
-            usd_actual = charge * fisc_rate
             primary.s_balance -= charge
-            state.s_supply_total -= charge   # S is burned at Fisc when sent out as USDC
-            state.fisc_usdc -= usd_actual
-            txs.add(year, month, "mortgage_payment",
-                    from_wallet=("citizen", primary.id), to_wallet=("external", 0),
-                    s_amount=charge, usdc_amount=usd_actual, fisc_rate=fisc_rate)
+            if cfg.mortgage_refinance_to_s:
+                # S stays in colony — kept as virtual reserve at Fisc (no USDC outflow)
+                # Modelled simply: S "destroyed" at Fisc but USDC reserve unchanged
+                # (so cover ratio improves, mimicking the buyout mechanic)
+                state.s_supply_total -= charge
+                txs.add(year, month, "mortgage_refinanced_s",
+                        from_wallet=("citizen", primary.id), to_wallet=("fisc", 0),
+                        s_amount=charge, usdc_amount=0.0, fisc_rate=fisc_rate,
+                        description="colony bank buyout")
+            else:
+                usd_actual = charge * fisc_rate
+                state.s_supply_total -= charge
+                state.fisc_usdc -= usd_actual
+                txs.add(year, month, "mortgage_payment",
+                        from_wallet=("citizen", primary.id), to_wallet=("external", 0),
+                        s_amount=charge, usdc_amount=usd_actual, fisc_rate=fisc_rate)
         elif hh.housing_type == "renter_external" and hh.monthly_housing_cost_usd > 0:
             usd_out = hh.monthly_housing_cost_usd
             s_required = usd_out / fisc_rate
             charge = min(s_required, max(0.0, primary.s_balance))
-            usd_actual = charge * fisc_rate
             primary.s_balance -= charge
-            state.s_supply_total -= charge
-            state.fisc_usdc -= usd_actual
-            txs.add(year, month, "external_rent",
-                    from_wallet=("citizen", primary.id), to_wallet=("external", 0),
-                    s_amount=charge, usdc_amount=usd_actual, fisc_rate=fisc_rate)
+            if cfg.external_rent_refinance:
+                state.s_supply_total -= charge
+                txs.add(year, month, "external_rent_refinanced_s",
+                        from_wallet=("citizen", primary.id), to_wallet=("fisc", 0),
+                        s_amount=charge, usdc_amount=0.0, fisc_rate=fisc_rate,
+                        description="colony landlord buyout")
+            else:
+                usd_actual = charge * fisc_rate
+                state.s_supply_total -= charge
+                state.fisc_usdc -= usd_actual
+                txs.add(year, month, "external_rent",
+                        from_wallet=("citizen", primary.id), to_wallet=("external", 0),
+                        s_amount=charge, usdc_amount=usd_actual, fisc_rate=fisc_rate)
         elif hh.housing_type == "renter_internal" and hh.monthly_housing_cost_s > 0:
             # Pick a "landlord" — for v1, just route to a property-services proxy:
             # use whichever services-category company picks up the spend
@@ -632,9 +664,8 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
     for co in state.companies:
         if co.closed_year is not None:
             continue
-        # Working capital target
-        wc_months = WC_TARGET_MONTHS.get(co.cfo_policy, 1.0)
-        wc_target = co.max_revenue_per_month_s * wc_months * COMPANY_OP_COST_FRAC
+        wc_months = cfg.wc_target_months.get(co.cfo_policy, 1.0)
+        wc_target = co.max_revenue_per_month_s * wc_months * cfg.company_op_cost_frac
         distributable = max(0.0, co.s_balance - wc_target)
         if distributable <= 0:
             continue
@@ -661,27 +692,38 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
                         s_amount=share_div, usdc_amount=0.0, fisc_rate=fisc_rate,
                         related_company_id=co.id)
             elif h.holder_type == "external":
-                # Convert immediately to USDC (Honda Inc cashout)
-                co.s_balance -= share_div
-                usdc_out = share_div * fisc_rate
-                state.s_supply_total -= share_div
-                state.fisc_usdc -= usdc_out
-                co.monthly_dividend_s += share_div
-                txs.add(year, month, "external_dividend",
-                        from_wallet=("company", co.id), to_wallet=("external", 0),
-                        s_amount=share_div, usdc_amount=usdc_out, fisc_rate=fisc_rate,
-                        related_company_id=co.id,
-                        description=f"cashout {h.external_holder_name or ''}")
+                if cfg.honda_dividend_vest:
+                    # Vest in S — dividend accrues but doesn't cash out to USDC.
+                    # S stays in supply; reserve unaffected.
+                    co.s_balance -= share_div
+                    co.monthly_dividend_s += share_div
+                    txs.add(year, month, "external_dividend_vested",
+                            from_wallet=("company", co.id), to_wallet=("external", 0),
+                            s_amount=share_div, usdc_amount=0.0, fisc_rate=fisc_rate,
+                            related_company_id=co.id,
+                            description=f"vested {h.external_holder_name or ''}")
+                else:
+                    # Convert immediately to USDC (Honda Inc cashout)
+                    co.s_balance -= share_div
+                    usdc_out = share_div * fisc_rate
+                    state.s_supply_total -= share_div
+                    state.fisc_usdc -= usdc_out
+                    co.monthly_dividend_s += share_div
+                    txs.add(year, month, "external_dividend",
+                            from_wallet=("company", co.id), to_wallet=("external", 0),
+                            s_amount=share_div, usdc_amount=usdc_out, fisc_rate=fisc_rate,
+                            related_company_id=co.id,
+                            description=f"cashout {h.external_holder_name or ''}")
         update_min_balance(co)
 
     # 13. Citizen behavioural decisions (cashout some surplus to USDC)
     for c in living:
-        surplus = c.s_balance - SURPLUS_THRESHOLD
+        surplus = c.s_balance - surplus_threshold
         if surplus <= 0:
             c.surplus_streak = max(0, c.surplus_streak - 1)
             continue
         c.surplus_streak += 1
-        cashout_frac = CASHOUT_FRACTION.get(c.behavioural_type, 0.05)
+        cashout_frac = cfg.cashout_fraction.get(c.behavioural_type, 0.05) * cfg.cashout_multiplier
         cashout_s = surplus * cashout_frac
         if cashout_s > 0:
             usdc_out = cashout_s * fisc_rate
@@ -692,11 +734,9 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
                 txs.add(year, month, "cashout",
                         from_wallet=("citizen", c.id), to_wallet=("external", 0),
                         s_amount=cashout_s, usdc_amount=usdc_out, fisc_rate=fisc_rate)
-        # Track first equity purchase opportunity (deferred — v1 doesn't model this yet)
-        # For now, mark first equity purchase if striver with surplus > 5×threshold
         if (not c.has_made_first_equity_purchase
                 and c.behavioural_type == "striver"
-                and c.s_balance > SURPLUS_THRESHOLD * 5):
+                and c.s_balance > surplus_threshold * 5):
             c.has_made_first_equity_purchase = True
 
     # 14. Archetype transitions (per spec §4.8.1)
@@ -705,14 +745,14 @@ def tick_one_month(state: SimState, scenario: str, trajectory: EnvironmentTrajec
         new = None
         trigger = None
         if old == "ubi_only_choice":
-            if (c.surplus_streak >= SURPLUS_DURATION_MONTHS
-                    and c.s_balance >= SURPLUS_THRESHOLD * 3
+            if (c.surplus_streak >= cfg.surplus_duration_months
+                    and c.s_balance >= surplus_threshold * 3
                     and c.has_made_first_equity_purchase):
                 new = "striver"
                 trigger = "sustained_surplus"
         elif old in WORKER_ARCHETYPES:
-            if (c.surplus_streak >= SURPLUS_DURATION_MONTHS * 2
-                    and c.s_balance >= SURPLUS_THRESHOLD * 5
+            if (c.surplus_streak >= cfg.surplus_duration_months * 2
+                    and c.s_balance >= surplus_threshold * 5
                     and c.has_made_first_equity_purchase):
                 new = "striver"
                 trigger = "sustained_surplus"
