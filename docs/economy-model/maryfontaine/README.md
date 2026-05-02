@@ -36,19 +36,24 @@ python docs/economy-model/maryfontaine/scenarios.py --scenario ai_realist --out 
 
 ## Spec contradictions resolved during Phase 1
 
-1. **Founding S supply.** Spec §3 states both "Total S supply: 0 (gets minted via UBI starting
-   month 1)" *and* "Each company at founding has Initial S balance (working capital, ~1 month
-   of operating costs)." These contradict. Resolution: companies start with working capital
-   (~40% of `max_revenue_per_month_s`); founding S supply at 10% scale is ~$2.5M of S held by
-   companies. This represents the initial capitalisation of the colony from external sources
-   prior to month 1. The Fisc's $5M USDC reserve at 10% scale covers this 2:1 at parity.
-   Documented in `validate.py` output. v2 may make this an explicit `founding_capitalisation`
-   transaction type for auditability.
+1. **Founding S supply** *(resolved by Steve, 2 May 2026)*. Spec §3 states both "Total S supply:
+   0 (gets minted via UBI starting month 1)" *and* "Each company at founding has Initial S balance
+   (working capital, ~1 month of operating costs)." These contradict. **Resolution: companies
+   inherit working capital from the pre-colony environment.** The S held by companies at founding
+   represents the dollar value of pre-colony assets (cash, inventory, capital) brought into the
+   colony economy at founding and converted to S at the parity rate. The Fisc's USDC reserve does
+   not back this S directly — it backs the post-founding S supply growth. At 10% scale the founding
+   company-held S is ~$2.5M, against a $5M Fisc reserve (2:1 at parity), comfortably solvent.
+   The "Total S supply: 0" line in the original spec referred to citizen-held S only.
 
-2. **Household count.** Spec §3 specifies 1,500 households at 10% scale, but the archetype
-   distribution implies ~3,000 adults — yielding ~2,000 households even with maximum couple
-   pairing. Resolution: generator allows households to drift above 1,500; primary effect is
-   slightly more `single_adult` households than spec suggests. Validation tolerates this.
+2. **Household count** *(resolved by Steve, 2 May 2026 — "1,500 or whatever makes sense")*.
+   Spec §3 specifies 1,500 households at 10% scale, but the archetype distribution implies
+   ~3,000 adults, which cannot all fit in 1,500 households of the spec'd composition mix
+   (avg 1.53 adults/household × 1,500 = 2,300 adults, not 3,000). **Resolution: generator allows
+   households to drift to ~2,200 to absorb the actual adult count.** Primary effect is more
+   `single_adult` households than spec suggests; rent and basket flows scale with household count
+   so the macro behaviour is unchanged. Steve's framing: scale true MaryFontaine numbers back to
+   something manageable now; tune up once the model is useful.
 
 ## Stdlib only
 
