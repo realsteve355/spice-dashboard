@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MaryFontaine — Colony Economy Simulator</title>
+<style>
+  /* Mission-control palette ported from src/tokens.js */
+  :root {
+    --bg: #06070a;
+    --panel: #0d0f12;
+    --panel2: #11141a;
+    --line: #232831;
+    --line-hot: #353c47;
+    --txt: #e8e8e8;
+    --txt2: #d2d2d2;
+    --dim: #a4a4a4;
+    --faint: #767676;
+    --headline: #ffffff;
+    --ok: #5dd39e;
+    --warn: #d4a04a;
+    --crit: #ef4444;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--txt);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  header {
+    border-bottom: 1px solid var(--line-hot);
+    padding: 16px 24px;
+    background: var(--panel);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  header h1 {
+    font-size: 14px;
+    margin: 0;
+    color: var(--headline);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  header .subtitle {
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    padding: 16px 24px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px;
+  }
+  .panel h2 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel h3 {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 16px 0 8px;
+  }
+
+  /* Sidebar — controls */
+  .controls label {
+    display: block;
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .controls select, .controls input[type="text"], .controls input[type="number"] {
+    width: 100%;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    color: var(--txt);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row input[type="range"] { flex: 1; }
+  .slider-row .v { color: var(--txt); width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    cursor: pointer;
+  }
+  .toggle-row.on { border-color: var(--ok); }
+  .toggle-row span { font-size: 11px; color: var(--txt); }
+  .toggle-row input { margin: 0; }
+  .run-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--txt);
+    color: var(--txt);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .run-btn:hover:not(:disabled) { background: var(--txt); color: var(--bg); }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .progress {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--warn);
+    text-align: center;
+    min-height: 16px;
+  }
+
+  /* Right column — charts */
+  .charts {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .summary-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 10px 12px;
+  }
+  .stat .label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .stat .value {
+    font-size: 18px;
+    color: var(--headline);
+    font-variant-numeric: tabular-nums;
+    margin-top: 4px;
+  }
+  .stat .value.warn { color: var(--warn); }
+  .stat .value.crit { color: var(--crit); }
+  .stat .value.ok { color: var(--ok); }
+  .stat .sub {
+    font-size: 10px;
+    color: var(--faint);
+    margin-top: 2px;
+  }
+
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .chart-box { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; }
+  .chart-box canvas { max-height: 280px; }
+
+  .help { font-size: 10px; color: var(--faint); line-height: 1.4; margin-top: 6px; }
+
+  .empty {
+    color: var(--faint);
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Compact tables */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table th, table td { text-align: left; padding: 4px 6px; }
+  table th { color: var(--dim); border-bottom: 1px solid var(--line); }
+  table td { color: var(--txt2); }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>MaryFontaine — Colony Economy Simulator</h1>
+    <div class="subtitle">Search for the configuration that delivers the oasis-of-calm</div>
+  </div>
+  <div class="subtitle" id="run-status">No run yet</div>
+</header>
+
+<main>
+  <!-- LEFT: controls -->
+  <aside class="panel controls">
+    <h2>Configuration</h2>
+
+    <label for="scenario">Scenario</label>
+    <select id="scenario">
+      <option value="ai_realist">AI Realist (mild deflation)</option>
+      <option value="ai_optimist">AI Optimist (aggressive deflation)</option>
+      <option value="stagflation">Stagflation</option>
+      <option value="ai_healthcare_crisis">AI + Healthcare crisis</option>
+      <option value="convulsion" selected>Convulsion (credibility test)</option>
+      <option value="convulsion_honda_shock">Convulsion + Honda shock</option>
+    </select>
+
+    <label for="months">Run length (months)</label>
+    <select id="months">
+      <option value="12">12 (quick smoke test)</option>
+      <option value="24">24</option>
+      <option value="60">60</option>
+      <option value="120" selected>120 (full 10-year)</option>
+    </select>
+
+    <h3>UBI</h3>
+    <label>UBI per citizen / month (S)</label>
+    <div class="slider-row">
+      <input type="range" id="ubi" min="0" max="200" step="5" value="100">
+      <div class="v" id="ubi_v">100</div>
+    </div>
+    <label>UBI for children (multiplier)</label>
+    <div class="slider-row">
+      <input type="range" id="ubi_children_pct" min="0" max="1" step="0.1" value="1.0">
+      <div class="v" id="ubi_children_pct_v">1.0</div>
+    </div>
+    <div class="toggle-row" id="ubi_retirees_only_row">
+      <span>Retirees-only UBI</span>
+      <input type="checkbox" id="ubi_retirees_only">
+    </div>
+
+    <h3>Fisc</h3>
+    <label>Cover ratio target</label>
+    <div class="slider-row">
+      <input type="range" id="cover" min="0.1" max="0.5" step="0.05" value="0.30">
+      <div class="v" id="cover_v">0.30</div>
+    </div>
+
+    <h3>Mitigations</h3>
+    <label>LAT rate (% of company revenue)</label>
+    <div class="slider-row">
+      <input type="range" id="lat" min="0" max="0.20" step="0.005" value="0">
+      <div class="v" id="lat_v">0%</div>
+    </div>
+    <div class="toggle-row" id="honda_vest_row">
+      <span>Honda Inc dividend vesting</span>
+      <input type="checkbox" id="honda_vest">
+    </div>
+    <div class="toggle-row" id="mortgage_refi_row">
+      <span>Refinance mortgages → S</span>
+      <input type="checkbox" id="mortgage_refi">
+    </div>
+    <div class="toggle-row" id="ext_rent_refi_row">
+      <span>Refinance external rent → S</span>
+      <input type="checkbox" id="ext_rent_refi">
+    </div>
+    <label>S-tax on internal purchases</label>
+    <div class="slider-row">
+      <input type="range" id="s_tax" min="0" max="0.10" step="0.005" value="0">
+      <div class="v" id="s_tax_v">0%</div>
+    </div>
+    <label>Cashout multiplier</label>
+    <div class="slider-row">
+      <input type="range" id="cashout_mult" min="0" max="2" step="0.1" value="1.0">
+      <div class="v" id="cashout_mult_v">1.0</div>
+    </div>
+
+    <h3>Run</h3>
+    <button class="run-btn" id="run-btn">Run simulation</button>
+    <div class="progress" id="progress"></div>
+    <div class="help">120-month run takes ~30-60s. Charts refresh on completion.</div>
+  </aside>
+
+  <!-- RIGHT: charts -->
+  <section class="charts" id="charts-area">
+    <!-- Summary strip -->
+    <div class="summary-strip" id="summary"></div>
+
+    <!-- Macro timeline -->
+    <div class="chart-row">
+      <div class="chart-box">
+        <h2>Basket cost in S (target = 28)</h2>
+        <canvas id="chart-basket"></canvas>
+        <div class="help">Above 28 = peg compressed = citizens losing purchasing power. The credibility metric.</div>
+      </div>
+      <div class="chart-box">
+        <h2>Fisc rate (USD per S)</h2>
+        <canvas id="chart-rate"></canvas>
+        <div class="help">Falling rate = S devaluing in USD. Rising = S strengthening (deflation regime).</div>
+      </div>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <h2>USDC reserve</h2>
+        <canvas id="chart-reserve"></canvas>
+        <div class="help">If this drains the colony loses defence; if it grows, reserve coverage strengthens.</div>
+      </div>
+      <div class="chart-box">
+        <h2>S supply</h2>
+        <canvas id="chart-supply"></canvas>
+        <div class="help">Driven mostly by UBI minting. Net of mortgage USD outflows + cashouts.</div>
+      </div>
+    </div>
+
+    <!-- Boundary flows -->
+    <div class="chart-row full">
+      <div class="chart-box">
+        <h2>Boundary USDC flows by month</h2>
+        <canvas id="chart-boundary"></canvas>
+        <div class="help">Inflows above zero (exports + remote-worker income); outflows below (imports + mortgages + Honda Inc cashout + cashouts).</div>
+      </div>
+    </div>
+
+    <!-- Welfare distribution -->
+    <div class="chart-row full">
+      <div class="chart-box">
+        <h2>Citizen real purchasing power per year (deciles)</h2>
+        <canvas id="chart-welfare"></canvas>
+        <div class="help">Median monthly income (S) divided by basket cost in S. Higher = more baskets/month per citizen. The oasis-of-calm metric.</div>
+      </div>
+    </div>
+
+    <!-- Transitions -->
+    <div class="chart-row">
+      <div class="chart-box">
+        <h2>Archetype transitions per year</h2>
+        <canvas id="chart-transitions"></canvas>
+        <div class="help">Shows social mobility: ubi_only → striver. If high, the colony is producing dynamism. If zero, citizens stuck.</div>
+      </div>
+      <div class="chart-box">
+        <h2>Top companies by Y10 balance</h2>
+        <div id="company-table"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="/static/dashboard.js"></script>
+</body>
+</html>
