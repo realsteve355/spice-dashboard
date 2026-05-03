@@ -31,9 +31,6 @@ class SimConfig:
     lat_rate_pct: float = 0.05                      # 5% of monthly revenue, charged to all companies
                                                     # paid in S, S is destroyed at Fisc (reduces supply)
 
-    # ── Honda Inc dividend vesting ───────────────────────────────────────
-    honda_dividend_vest: bool = False               # if True, Honda Inc dividends accrue in S, no immediate cashout
-
     # ── Mortgage refinance into S ────────────────────────────────────────
     mortgage_refinance_to_s: bool = False           # if True, mortgage payments stay in S (to Fisc, not burned)
                                                     # represents colony bank buyout of external mortgages

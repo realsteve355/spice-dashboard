@@ -34,7 +34,6 @@
       <li><a href="#retirees-only">Retirees-only UBI</a></li>
       <li><a href="#cover">Cover ratio target</a></li>
       <li><a href="#lat">LAT rate</a></li>
-      <li><a href="#honda-vest">Honda vesting</a></li>
       <li><a href="#mortgage-refi">Mortgage refinance</a></li>
       <li><a href="#rent-refi">External rent refinance</a></li>
       <li><a href="#s-tax">S-tax on purchases</a></li>
@@ -107,16 +106,6 @@
     </div>
     <p><strong>Real-world interpretation.</strong> LAT taxes automated firms (high-automation = high revenue per worker = the source of the AI deflation in the first place). The colony recaptures some of the wealth being concentrated in capital, redistributes it through the Fisc, and uses it to back citizens' currency. Politically defensible if framed as "machines pay tax."</p>
 
-    <h2 id="honda-vest">Honda Inc dividend vesting</h2>
-    <p><strong>Default: off.</strong></p>
-    <p><strong>What it controls.</strong> Whether external shareholders' dividends cash out immediately to USDC, or accrue in S without conversion.</p>
-    <p><strong>Mechanism.</strong> At step 12, when distributing dividend to a holding with <code>holder_type = 'external'</code> (Honda Inc on Honda's books), the simulator normally converts the S to USDC at the current rate and ships it out — draining the reserve. With vesting on, the S stays in the colony economy (held conceptually at "external" wallet but not converted).</p>
-    <p><strong>Effect on flows.</strong> Honda Inc's 60% stake in Honda generates $200-400K/month of dividend at 10% scale. Cashing this out drains the reserve persistently. Vesting it stops that drain dead. One of the largest single levers.</p>
-    <div class="callout ok">
-      <strong>The second-strongest reserve-defence lever.</strong> Combined with LAT 5%, Honda vesting takes the Transition peg break from Y3 to Y7.
-    </div>
-    <p><strong>Real-world interpretation.</strong> When a colony is founded, the founding documents could require external strategic shareholders to vest their dividends in S for N years before allowed cashout. Standard practice in many emerging-market currency unions; protects the colony's capital base during build-up.</p>
-
     <h2 id="mortgage-refi">Refinance mortgages → S</h2>
     <p><strong>Default: off.</strong></p>
     <p><strong>What it controls.</strong> Whether mortgage payments stay in the colony economy as S, or convert to USDC and leave.</p>
@@ -149,22 +138,22 @@
     <p>Some configurations to try, and what they tell you:</p>
 
     <h3>Baseline / control: Transition, all defaults</h3>
-    <p>The unmitigated case. Peg breaks Y3, citizens lose 68% PP. Use this as the comparison floor for everything else.</p>
+    <p>The unmitigated case. Honda Inc owns the factory but doesn't extract dividends (that's structural, not a slider any more). Peg breaks Y3; basket S reaches ~85 by Y10; citizens lose ~67% real purchasing power. Use this as the comparison floor for everything else.</p>
 
-    <h3>Reasonable mitigations: Transition + LAT 5% + Honda vest + mortgage refi</h3>
-    <p>Three plausible policy choices. Peg holds Y0-Y6, PP loss 32%. The headline finding from the build commit. <em>Try this first if you want to see the lever effects in one pass.</em></p>
+    <h3>Reasonable mitigations: Transition + LAT 5% + mortgage refi</h3>
+    <p>Two plausible policy choices. <em>Try this first if you want to see the lever effects in one pass.</em></p>
 
-    <h3>Maximum reserve defence: Transition + LAT 10% + Honda vest + mortgage refi + ext rent refi + S-tax 3%</h3>
+    <h3>Maximum reserve defence: Transition + LAT 10% + mortgage refi + ext rent refi + S-tax 3%</h3>
     <p>Stack everything plausible. Tests how close to a fully-defended peg you can get without going to extreme measures (like cutting UBI).</p>
 
-    <h3>Welfare-first: Transition + UBI 150 + LAT 8% + Honda vest + mortgage refi</h3>
+    <h3>Welfare-first: Transition + UBI 150 + LAT 8% + mortgage refi</h3>
     <p>What if you want to <em>raise</em> citizen welfare during the transition (boost UBI) while still using mitigations to protect the peg? Tests whether the levers are powerful enough to fund higher UBI.</p>
 
     <h3>Means-tested experiment: Transition + retirees-only UBI</h3>
-    <p>Cuts ~70% of UBI mint. Peg holds. But citizens not eligible for UBI experience zero direct income from the colony — they rely entirely on dividends + external income + savings. Tests whether the SPICE design can work as a safety-net rather than universal benefit. Politically loaded.</p>
+    <p>Cuts ~70% of UBI mint. Peg holds easily. But citizens not eligible for UBI experience zero direct income from the colony — they rely entirely on dividends + external income + savings. Tests whether the SPICE design can work as a safety-net rather than universal benefit. Politically loaded.</p>
 
     <h3>Capital flight: Transition + cashout multiplier 2.0</h3>
-    <p>Citizens lose confidence and convert S faster. How much extra reserve drain does this cause, and can the standard mitigations cope? Useful as a black-swan stress test.</p>
+    <p>Citizens lose confidence and convert S faster. How much extra reserve drain does this cause, and can the standard mitigations cope? Useful as a black-swan stress test. Worth running because removing the Honda Inc dividend extraction has shifted some of the cashout pressure onto worker citizens — they're now wealthier and convert more.</p>
 
     <h3>The optimist case: AI Realist + all defaults</h3>
     <p>Sanity check that the engine works correctly under benign conditions. Basket peg should hold throughout, reserve should grow, no compression.</p>

@@ -42,8 +42,6 @@ def main() -> None:
     ap.add_argument("--cover-target", type=float, default=0.30)
     ap.add_argument("--lat", type=float, default=0.0,
                     help="LAT rate as fraction of company revenue capacity (0 = disabled)")
-    ap.add_argument("--honda-vest", action="store_true",
-                    help="vest Honda Inc dividends in S (no USDC cashout)")
     ap.add_argument("--mortgage-refi", action="store_true",
                     help="refinance mortgages into S (colony bank buyout)")
     ap.add_argument("--ext-rent-refi", action="store_true",
@@ -66,7 +64,6 @@ def main() -> None:
         cover_target=args.cover_target,
         lat_enabled=args.lat > 0,
         lat_rate_pct=args.lat,
-        honda_dividend_vest=args.honda_vest,
         mortgage_refinance_to_s=args.mortgage_refi,
         external_rent_refinance=args.ext_rent_refi,
         s_tax_on_purchases_pct=args.s_tax,

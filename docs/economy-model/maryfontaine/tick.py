@@ -660,7 +660,11 @@ def tick_one_month(state: SimState, cfg: SimConfig, trajectory: EnvironmentTraje
     # Skip for now — we represent operating costs implicitly via lower distributable surplus
     # below. Wages aren't paid in SPICE design (replaced by dividends + UBI).
 
-    # 12. Dividend distribution (with Honda Inc external cashout)
+    # 12. Dividend distribution
+    # External equity holders (Honda Inc) hold the factory for governance / sale-purposes
+    # but DO NOT extract monthly dividends. Honda Inc's value flow is the cars they buy
+    # (export revenue, step 5), not a dividend cashout. So distributable surplus goes
+    # only to citizen + colony-stakeholder shares.
     for co in state.companies:
         if co.closed_year is not None:
             continue
@@ -669,51 +673,30 @@ def tick_one_month(state: SimState, cfg: SimConfig, trajectory: EnvironmentTraje
         distributable = max(0.0, co.s_balance - wc_target)
         if distributable <= 0:
             continue
-        holdings = [h for h in state.equity_by_company.get(co.id, []) if not h.cancelled]
-        total_shares = sum(h.share_count for h in holdings)
-        if total_shares <= 0:
+        # Only citizen holdings receive dividends. External (Honda Inc) holdings
+        # are recorded for ownership but skipped for distribution.
+        holdings = [h for h in state.equity_by_company.get(co.id, [])
+                    if not h.cancelled and h.holder_type == "citizen"]
+        distributable_shares = sum(h.share_count for h in holdings)
+        if distributable_shares <= 0:
             continue
         for h in holdings:
-            share_div = distributable * (h.share_count / total_shares)
+            share_div = distributable * (h.share_count / distributable_shares)
             if share_div <= 0:
                 continue
-            if h.holder_type == "citizen":
-                citizen = state.citizen_by_id.get(h.holder_id)
-                if citizen is None or citizen.death_year is not None:
-                    continue
-                co.s_balance -= share_div
-                citizen.s_balance += share_div
-                citizen.monthly_dividend_s += share_div
-                citizen.monthly_income_s += share_div
-                co.monthly_dividend_s += share_div
-                tx_type = "dividend_perm" if h.share_type == "permanent" else "dividend_timed"
-                txs.add(year, month, tx_type,
-                        from_wallet=("company", co.id), to_wallet=("citizen", citizen.id),
-                        s_amount=share_div, usdc_amount=0.0, fisc_rate=fisc_rate,
-                        related_company_id=co.id)
-            elif h.holder_type == "external":
-                if cfg.honda_dividend_vest:
-                    # Vest in S — dividend accrues but doesn't cash out to USDC.
-                    # S stays in supply; reserve unaffected.
-                    co.s_balance -= share_div
-                    co.monthly_dividend_s += share_div
-                    txs.add(year, month, "external_dividend_vested",
-                            from_wallet=("company", co.id), to_wallet=("external", 0),
-                            s_amount=share_div, usdc_amount=0.0, fisc_rate=fisc_rate,
-                            related_company_id=co.id,
-                            description=f"vested {h.external_holder_name or ''}")
-                else:
-                    # Convert immediately to USDC (Honda Inc cashout)
-                    co.s_balance -= share_div
-                    usdc_out = share_div * fisc_rate
-                    state.s_supply_total -= share_div
-                    state.fisc_usdc -= usdc_out
-                    co.monthly_dividend_s += share_div
-                    txs.add(year, month, "external_dividend",
-                            from_wallet=("company", co.id), to_wallet=("external", 0),
-                            s_amount=share_div, usdc_amount=usdc_out, fisc_rate=fisc_rate,
-                            related_company_id=co.id,
-                            description=f"cashout {h.external_holder_name or ''}")
+            citizen = state.citizen_by_id.get(h.holder_id)
+            if citizen is None or citizen.death_year is not None:
+                continue
+            co.s_balance -= share_div
+            citizen.s_balance += share_div
+            citizen.monthly_dividend_s += share_div
+            citizen.monthly_income_s += share_div
+            co.monthly_dividend_s += share_div
+            tx_type = "dividend_perm" if h.share_type == "permanent" else "dividend_timed"
+            txs.add(year, month, tx_type,
+                    from_wallet=("company", co.id), to_wallet=("citizen", citizen.id),
+                    s_amount=share_div, usdc_amount=0.0, fisc_rate=fisc_rate,
+                    related_company_id=co.id)
         update_min_balance(co)
 
     # 13. Citizen behavioural decisions (cashout some surplus to USDC)

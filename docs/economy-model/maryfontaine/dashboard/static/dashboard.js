@@ -33,7 +33,7 @@ sliders.forEach(s => {
 });
 
 // Toggle rows — clicking the row toggles the checkbox + visual class
-['ubi_retirees_only', 'honda_vest', 'mortgage_refi', 'ext_rent_refi'].forEach(id => {
+['ubi_retirees_only', 'mortgage_refi', 'ext_rent_refi'].forEach(id => {
   const row = document.getElementById(id + '_row');
   const cb = document.getElementById(id);
   const sync = () => row.classList.toggle('on', cb.checked);
@@ -60,7 +60,6 @@ function readConfig() {
     cover_target: parseFloat(document.getElementById('cover').value),
     lat_enabled: parseFloat(document.getElementById('lat').value) > 0,
     lat_rate_pct: parseFloat(document.getElementById('lat').value),
-    honda_dividend_vest: document.getElementById('honda_vest').checked,
     mortgage_refinance_to_s: document.getElementById('mortgage_refi').checked,
     external_rent_refinance: document.getElementById('ext_rent_refi').checked,
     s_tax_on_purchases_pct: parseFloat(document.getElementById('s_tax').value),
