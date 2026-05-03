@@ -95,6 +95,47 @@
   .narrative p { color: var(--txt2); margin: 0 0 12px; line-height: 1.6; font-size: 13px; }
   .narrative em { color: var(--warn); font-style: normal; }
   .narrative strong { color: var(--headline); font-weight: normal; }
+
+  /* Basket composition section */
+  .basket-comp {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 24px;
+  }
+  .basket-comp h2 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .basket-comp .intro { color: var(--txt2); font-size: 13px; line-height: 1.6; margin: 0 0 14px; }
+  .basket-comp table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .basket-comp table th, .basket-comp table td { text-align: left; padding: 8px 12px; }
+  .basket-comp table th {
+    color: var(--dim);
+    border-bottom: 1px solid var(--line-hot);
+    font-weight: normal;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  .basket-comp table td { color: var(--txt2); border-bottom: 1px dotted var(--line); vertical-align: top; }
+  .basket-comp table tr:last-child td { border-bottom: none; }
+  .basket-comp table td.cat { color: var(--headline); font-weight: normal; width: 110px; }
+  .basket-comp table td.num { font-variant-numeric: tabular-nums; width: 110px; }
+  .basket-comp .caveat {
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: var(--panel2);
+    border-left: 3px solid var(--warn);
+    color: var(--txt2);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .basket-comp .caveat strong { color: var(--headline); }
 </style>
 </head>
 <body>
@@ -123,6 +164,52 @@
   <div class="scenario-picker" id="picker">
     <label>SCENARIOS</label>
     <!-- toggles populated by JS -->
+  </div>
+
+  <div class="basket-comp">
+    <h2>What's in the basket?</h2>
+    <p class="intro">
+      The basket is 4 abstract categories totalling <strong>$28 USD at colony founding</strong> (= 28 S at parity, $1/S). Weights are loosely modelled on US Bureau of Labor Statistics CPI proportions. The simulator treats each category as an aggregate USD price — no specific goods, no quantities, no quality tiers — and tracks how that price evolves under each scenario.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Weight</th>
+          <th>USD at founding</th>
+          <th>What it represents</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cat">Energy</td>
+          <td class="num">28.6%</td>
+          <td class="num">$8.00</td>
+          <td>Gasoline, electricity, natural gas, heating fuel oil, household power</td>
+        </tr>
+        <tr>
+          <td class="cat">Food</td>
+          <td class="num">32.1%</td>
+          <td class="num">$9.00</td>
+          <td>Groceries — food consumed at home. (Restaurants live under Services, since the value is mostly preparation + premises, not raw ingredients.)</td>
+        </tr>
+        <tr>
+          <td class="cat">Goods</td>
+          <td class="num">17.9%</td>
+          <td class="num">$5.00</td>
+          <td>Manufactured durables + non-durables — clothing, electronics, furniture, household goods, vehicles, tools, appliances. The category most exposed to AI deflation in the scenario design.</td>
+        </tr>
+        <tr>
+          <td class="cat">Services</td>
+          <td class="num">21.4%</td>
+          <td class="num">$6.00</td>
+          <td>Healthcare, education, transportation services, restaurants, professional services (legal, accounting), repair, recreation, internal rent. The category most exposed to wage-driven inflation in the scenario design.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="caveat">
+      <strong>What's deliberately abstracted away.</strong> The basket has no premium-vs-budget tiers, no quantity adjustments (citizens always consume the same basket-multiple regardless of price), no sub-category granularity (a healthcare cost spike has to be modelled by inflating Services as a whole), and no substitution (if energy doubles, citizens don't switch to cheaper alternatives — they just pay more or pay less). These simplifications are deliberate: they keep the model tractable and the 4-category weighting maps cleanly onto scenario design. A v2 could expand to 9 categories matching the CPI more closely, but consistency between this page and the macro page wins for now.
+    </p>
   </div>
 
   <div class="chart-row">
