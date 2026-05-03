@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Best configurations — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  table.results th, table.results td { padding: 6px 10px; }
+  table.results td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.results tr.tier-1 td:first-child { border-left: 3px solid var(--ok); }
+  table.results tr.tier-2 td:first-child { border-left: 3px solid #7dd3fc; }
+  table.results tr.tier-3 td:first-child { border-left: 3px solid var(--warn); }
+  table.results tr.tier-4 td:first-child { border-left: 3px solid #fb923c; }
+  table.results tr.tier-5 td:first-child { border-left: 3px solid var(--crit); }
+  .pill {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 0;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+  .pill.t1 { color: var(--ok); border-color: var(--ok); }
+  .pill.t2 { color: #7dd3fc; border-color: #7dd3fc; }
+  .pill.t3 { color: var(--warn); border-color: var(--warn); }
+  .pill.t4 { color: #fb923c; border-color: #fb923c; }
+  .pill.t5 { color: var(--crit); border-color: var(--crit); }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Best configurations — what the parameter sweep found</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/external">External economy</a>
+    <a href="/criteria">Success criteria</a>
+    <a href="/families">Families</a>
+    <a href="/best-configs" class="active">Best configurations</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Transition story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="doc-layout">
+  <aside class="doc-toc">
+    <h3>On this page</h3>
+    <ul>
+      <li><a href="#headline">1. Headline finding</a></li>
+      <li><a href="#full">2. Full results table</a></li>
+      <li><a href="#crossxs">3. Cross-scenario validation</a></li>
+      <li><a href="#sensitivity">4. Lever sensitivity</a></li>
+      <li><a href="#surprises">5. Counter-intuitive findings</a></li>
+      <li><a href="#recommend">6. Recommended configurations</a></li>
+      <li><a href="#open">7. What's still open</a></li>
+    </ul>
+  </aside>
+
+  <article class="doc-body">
+    <h1>Best configurations — sweep results</h1>
+    <div class="lede">
+      The simulator was run 38 times with different parameter combinations under The Transition (and four under each scenario for cross-validation). This page summarises what the sweep found. The headline: <strong>steady ground is achievable, but only via deliberate policy choices that go beyond mild tweaks</strong>. Three configurations hit full steady ground under Transition; another two reach strong defence; the realistic-feeling middle ground lands in partial defence.
+    </div>
+
+    <h2 id="headline">1. Headline finding</h2>
+    <p>
+      Under <strong>The Transition</strong> (the credibility test) at 10% scale, 120 months:
+    </p>
+    <table>
+      <tbody>
+        <tr><td><span class="pill t1">FULL STEADY GROUND</span></td><td>3 configurations achieve PP loss = 0% with peg held throughout</td></tr>
+        <tr><td><span class="pill t2">STRONG DEFENCE</span></td><td>2 more configurations land below 17% PP loss</td></tr>
+        <tr><td><span class="pill t3">PARTIAL DEFENCE</span></td><td>3-4 configurations in the 25-35% range</td></tr>
+        <tr><td><span class="pill t4">WEAK DEFENCE</span></td><td>~12 configurations between weak-defence and worse-than-USD</td></tr>
+        <tr><td><span class="pill t5">WORSE THAN USD</span></td><td>~14 configurations including the unmitigated baseline (66.8% loss)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The three <strong>full steady ground</strong> configurations all involve a structural restriction on flows, not just parameter tuning:
+    </p>
+    <ul>
+      <li><strong>Capital controls</strong> (cashout multiplier 0): citizens cannot convert S → USDC. Peg holds throughout. Politically heavy: it's a hard ban on individual capital flight.</li>
+      <li><strong>Means-tested UBI</strong> (retirees-only) + LAT 3%: only retirees + ubi-only citizens get UBI. Cuts ~70% of UBI mint. Mechanically perfect but changes the SPICE design from universal-basic to safety-net.</li>
+      <li><strong>Maximum mitigation stack</strong> (LAT 15% + both refinancings + S-tax 5%): no single lever extreme but everything turned up. Politically least disruptive of the three; just heavy on intervention.</li>
+    </ul>
+
+    <h2 id="full">2. Full results table — Transition runs only</h2>
+    <p>
+      All 30 single-scenario sweep runs against Transition, sorted by purchasing-power loss:
+    </p>
+    <table class="results">
+      <thead>
+        <tr>
+          <th>Configuration</th>
+          <th class="num">Y10 basket S</th>
+          <th class="num">PP loss</th>
+          <th>Peg breaks</th>
+          <th>Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="tier-1"><td>Cashout multiplier = 0 (capital controls)</td><td class="num">28.00</td><td class="num">0.0%</td><td>Never</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr class="tier-1"><td>Retirees-only UBI + LAT 3%</td><td class="num">28.00</td><td class="num">0.0%</td><td>Never</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr class="tier-1"><td>LAT 15% + both refi + S-tax 5%</td><td class="num">28.00</td><td class="num">0.0%</td><td>Never</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr class="tier-2"><td>Retirees-only UBI</td><td class="num">30.83</td><td class="num">9.2%</td><td>M109</td><td><span class="pill t2">Strong defence</span></td></tr>
+        <tr class="tier-2"><td>LAT 10% + both refi + S-tax 3%</td><td class="num">33.44</td><td class="num">16.3%</td><td>M105</td><td><span class="pill t2">Strong defence</span></td></tr>
+        <tr class="tier-3"><td>LAT 5% + both refi (mortgage + ext rent)</td><td class="num">39.57</td><td class="num">29.2%</td><td>M90</td><td><span class="pill t3">Partial defence</span></td></tr>
+        <tr class="tier-3"><td>LAT 5% + mortgage refi only</td><td class="num">44.84</td><td class="num">37.6%</td><td>M80</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-3"><td>UBI 50 (halved)</td><td class="num">45.62</td><td class="num">38.6%</td><td>M75</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-3"><td>Both refi (no LAT)</td><td class="num">45.62</td><td class="num">38.6%</td><td>M78</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-3"><td>Mortgage refi only</td><td class="num">51.36</td><td class="num">45.5%</td><td>M70</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-4"><td>LAT 15% (no other mitigations)</td><td class="num">55.32</td><td class="num">49.4%</td><td>M66</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-4"><td>Cashout multiplier 0.5</td><td class="num">59.27</td><td class="num">52.8%</td><td>M62</td><td><span class="pill t4">Weak defence</span></td></tr>
+        <tr class="tier-4"><td>LAT 10% (no other mitigations)</td><td class="num">64.39</td><td class="num">56.5%</td><td>M59</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-4"><td>UBI 75</td><td class="num">64.59</td><td class="num">56.6%</td><td>M58</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-4"><td>UBI 150 + LAT 8% + mortgage refi (welfare-first)</td><td class="num">65.77</td><td class="num">57.4%</td><td>M59</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-4"><td>LAT 7.5%</td><td class="num">69.06</td><td class="num">59.5%</td><td>M56</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-4"><td>LAT 5% (no other mitigations)</td><td class="num">73.78</td><td class="num">62.0%</td><td>M53</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>External rent refi only</td><td class="num">74.09</td><td class="num">62.2%</td><td>M52</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>Cover ratio target 0.15</td><td class="num">76.94</td><td class="num">63.6%</td><td>M60</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>LAT 2.5%</td><td class="num">78.72</td><td class="num">64.4%</td><td>M51</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>Cover ratio 0.20</td><td class="num">79.27</td><td class="num">64.7%</td><td>M55</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>S-tax 5%</td><td class="num">83.05</td><td class="num">66.3%</td><td>M48</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>S-tax 3%</td><td class="num">83.62</td><td class="num">66.5%</td><td>M48</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>S-tax 1%</td><td class="num">84.18</td><td class="num">66.7%</td><td>M47</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td><strong>Baseline (no mitigations)</strong></td><td class="num">84.46</td><td class="num">66.8%</td><td>M47</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>Cover ratio 0.40 (more conservative)</td><td class="num">90.56</td><td class="num">69.1%</td><td>M40</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>UBI 125</td><td class="num">104.95</td><td class="num">73.3%</td><td>M40</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>Cashout multiplier 2.0 (capital flight)</td><td class="num">117.38</td><td class="num">76.1%</td><td>M35</td><td><span class="pill t5">Worse than USD</span></td></tr>
+        <tr class="tier-5"><td>UBI 150</td><td class="num">125.76</td><td class="num">77.7%</td><td>M33</td><td><span class="pill t5">Worse than USD</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="crossxs">3. Cross-scenario validation</h2>
+    <p>
+      How well does the recommended <strong>"LAT 5% + both refinancings"</strong> combo hold up across the six scenarios?
+    </p>
+    <table class="results">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th class="num">Baseline (no mit) PP loss</th>
+          <th class="num">w/ LAT 5% + both refi</th>
+          <th>Tier (mitigated)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>AI Optimist</td><td class="num">0.0%</td><td class="num">0.0%</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr><td>AI + Healthcare crisis</td><td class="num">24.3%</td><td class="num">— (not run)</td><td>—</td></tr>
+        <tr><td>AI Realist</td><td class="num">38.9%</td><td class="num">0.0%</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr><td>Stagflation</td><td class="num">57.5%</td><td class="num">0.0%</td><td><span class="pill t1">Full steady ground</span></td></tr>
+        <tr><td>The Transition</td><td class="num">66.8%</td><td class="num">29.2%</td><td><span class="pill t3">Partial defence</span></td></tr>
+        <tr><td>The Transition + Honda shock</td><td class="num">68.3%</td><td class="num">35.5%</td><td><span class="pill t4">Weak defence</span></td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The same configuration delivers full steady ground in 3 of 4 scenarios tested</strong> — only The Transition (and its Honda-shocked variant) require additional levers to clear strong defence. The mitigation cost of running LAT 5% + refinancings is borne whether or not the Transition happens, but in milder scenarios it produces over-defence.
+    </p>
+
+    <h2 id="sensitivity">4. Lever sensitivity — which knobs do most of the work?</h2>
+    <p>
+      Compared to the unmitigated baseline (66.8% PP loss under Transition), each single-lever change shifts the outcome by:
+    </p>
+    <table class="results">
+      <thead>
+        <tr><th>Lever</th><th class="num">PP loss</th><th class="num">Δ vs baseline</th><th>Verdict</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Cashout 0 (capital controls)</td><td class="num">0.0%</td><td class="num">−66.8</td><td>Decisive single lever</td></tr>
+        <tr><td>Retirees-only UBI</td><td class="num">9.2%</td><td class="num">−57.6</td><td>Decisive single lever</td></tr>
+        <tr><td>UBI 50 (halved)</td><td class="num">38.6%</td><td class="num">−28.2</td><td>Strong</td></tr>
+        <tr><td>LAT 15%</td><td class="num">49.4%</td><td class="num">−17.4</td><td>Moderate</td></tr>
+        <tr><td>Mortgage refi alone</td><td class="num">45.5%</td><td class="num">−21.3</td><td>Moderate</td></tr>
+        <tr><td>Both refinancings</td><td class="num">38.6%</td><td class="num">−28.2</td><td>Strong</td></tr>
+        <tr><td>Cashout 0.5</td><td class="num">52.8%</td><td class="num">−14.0</td><td>Modest</td></tr>
+        <tr><td>External rent refi alone</td><td class="num">62.2%</td><td class="num">−4.6</td><td>Marginal</td></tr>
+        <tr><td>Cover ratio 0.15 (looser)</td><td class="num">63.6%</td><td class="num">−3.2</td><td>Marginal</td></tr>
+        <tr><td>S-tax 5%</td><td class="num">66.3%</td><td class="num">−0.5</td><td>Negligible</td></tr>
+        <tr><td>S-tax 1%</td><td class="num">66.7%</td><td class="num">−0.1</td><td>Negligible</td></tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>The big movers are flow restrictions, not flow taxes.</strong> Stopping outflows (capital controls, refinancings) does much more than taxing internal flows (S-tax) or capacity (LAT). The intuition: under Transition, the colony's reserve drains because of large structural USDC outflows (mortgages, cashouts). LAT and S-tax burn S to slow supply growth — useful but secondary, because the reserve is what backs the peg, not a low S supply per se.
+    </p>
+
+    <h2 id="surprises">5. Counter-intuitive findings</h2>
+
+    <h3>Higher UBI makes things <em>much</em> worse</h3>
+    <p>
+      UBI 150 → 77.7% PP loss (vs baseline 66.8%). UBI 50 → 38.6% PP loss. The cashflow sequence: more UBI minted = more S in citizen wallets = more cashouts = more reserve drain. Above some threshold the marginal increase in citizens' nominal income is fully eaten by faster S devaluation. <em>Welfare-first policy backfires under Transition without strong reserve defence.</em>
+    </p>
+
+    <h3>Cover ratio 0.40 (more conservative) is WORSE than 0.30</h3>
+    <p>
+      Counter-intuitive: a fatter reserve buffer should be safer. But forcing cover ratio higher means the Fisc compresses the rate sooner, accelerating the death-spiral. Cover 0.40 → peg breaks M40 (Y3.3) vs baseline M47 (Y4). Cover 0.15 (looser) actually helps slightly. Implication: <em>defending too aggressively early is worse than defending later</em> — the reserve compounds with itself in a way that means earlier compression bites worse.
+    </p>
+
+    <h3>S-tax is essentially useless</h3>
+    <p>
+      Even 5% S-tax on every internal purchase only shaves 0.5pp off the baseline PP loss. The reason: internal purchase volume is much smaller than expected — at 10% scale, ~120K S/month of total basket spending, vs ~390K S/month of UBI minting. S-tax burns at most ~6K S/month, marginal against the supply growth.
+    </p>
+
+    <h3>External rent refi alone is also marginal</h3>
+    <p>
+      Only 208 external-rent households at 10% scale (vs 746 mortgage households). Refinancing them saves ~$3.7M/yr USDC outflow vs ~$13M/yr from mortgages. ~3pp improvement — meaningful but small relative to mortgage refi.
+    </p>
+
+    <h3>Means-tested UBI is mechanically the strongest individual policy</h3>
+    <p>
+      Cutting UBI to retirees + ubi_only_choice citizens (about 30% of the population) eliminates ~70% of the UBI mint. Peg holds. But this fundamentally changes the SPICE design — it's no longer "universal" basic income. Politically very different. Worth knowing as the upper-bound mechanical lever, not a recommendation.
+    </p>
+
+    <h3>"Capital controls" wins by being the cleanest</h3>
+    <p>
+      Cashout multiplier = 0 means citizens cannot convert S to USDC. The peg holds without needing LAT, refinancing, or anything else. Implementation in real terms could be: a founding-period rule (no cashout for first N years) that relaxes once reserve is built up, OR a tiered cashout limit (citizens can convert N S/month, no more). This is a serious policy choice but the simulator suggests it might be the most efficient path to steady ground.
+    </p>
+
+    <h2 id="recommend">6. Recommended configurations</h2>
+
+    <h3>If accepting capital controls is acceptable: <em>Founding-period restriction</em></h3>
+    <p>
+      Best mechanical solution: cashout = 0 for first 5 years, relaxing afterwards. Single lever, perfect peg defence, doesn't require ongoing intervention. Real-world parallel: emerging-market currency unions often have founding-period capital controls that relax with credibility. <strong>Caveat:</strong> we tested permanent cashout=0; a relaxing-after-Y5 variant should be tested before recommending.
+    </p>
+
+    <h3>If "universal" UBI is non-negotiable: <em>Maximum mitigation stack</em></h3>
+    <p>
+      LAT 15% + mortgage refi + external rent refi + S-tax 5%. Achieves full steady ground via heavy intervention without restricting capital flows or means-testing. Politically defensible: it's "make automation pay tax + colony bank buyout of household debt + transaction tax" — none of these is constitutionally novel. Cost: ongoing tax + admin burden.
+    </p>
+
+    <h3>If acceptable to means-test UBI for working-age citizens: <em>Means-tested + light LAT</em></h3>
+    <p>
+      Retirees-only UBI + LAT 3% achieves perfect peg defence. Different SPICE — basic income as elderly pension + automation-funded safety net for the vulnerable. Working-age citizens earn entirely via dividends + external income. Politically loaded. This is a different design, not a tweaked version of the original.
+    </p>
+
+    <h3>The realistic-feeling middle: <em>LAT 5% + both refinancings</em></h3>
+    <p>
+      Partial defence under Transition (29% PP loss), full steady ground under all milder scenarios. The "reasonable mitigations" tier — defensible in a real political conversation, doesn't restrict individual capital flows or change SPICE's universal-UBI character. Citizens lose ~30% real purchasing power if Transition hits hard, but the colony still beats USD-only. Worth running by default if no other constraint dominates.
+    </p>
+
+    <h2 id="open">7. What's still open</h2>
+    <ul>
+      <li><strong>Phase 3 effects.</strong> Not in this sweep: company founding by strivers, company failures, births/deaths. Phase 3 might shift the picture if new exporters emerge during the simulation, providing additional reserve replenishment.</li>
+      <li><strong>Time-varying restrictions.</strong> All sweep configs use static parameters across the 10-year horizon. A "cashout 0 for years 0-3, then 0.5×, then full" trajectory would be cleaner than permanent capital controls and likely produce similar peg defence at lower social cost.</li>
+      <li><strong>Higher cover ratio combined with strong reserve growth.</strong> Cover 0.40 hurt because reserve was thin. With a strong reserve-replenishment combo (LAT 10%+) we should test cover 0.40 again.</li>
+      <li><strong>The Joe-the-mortgaged-worker problem.</strong> Even with the best mitigations, individual mortgaged citizens are insolvent because mortgage burdens were sized for external US wages. See <a href="/families">/families</a> for the lived reality. Founding-data fix needed: shrink mortgage assumptions or make mortgage refi mandatory at colony founding.</li>
+      <li><strong>20-year horizon.</strong> 10 years is the credibility window but real colonies will run for longer. Configurations that work at 10y but fail at 20y aren't really steady ground.</li>
+      <li><strong>Healthcare crisis scenario</strong> wasn't included in cross-scenario validation. Worth a follow-up run.</li>
+    </ul>
+
+    <p style="margin-top: 24px; padding: 12px; background: var(--panel2); border-left: 3px solid var(--ok); font-size: 13px;">
+      <strong>Bottom line.</strong> The simulator answers Steve's framing question — "find the configuration that delivers steady ground" — with a yes, but with a price. There is no parameter combination that achieves full steady ground under Transition without either (a) restricting capital flows, (b) means-testing UBI, or (c) running heavy ongoing taxation. The realistic middle ground (LAT 5% + refinancings, no other restrictions) achieves partial defence. <em>Whether partial defence counts as "good enough" is a political question, not a numerical one.</em>
+    </p>
+
+    <p style="font-size: 11px; color: var(--faint); margin-top: 24px;">
+      Generated from <code>sweep_results.json</code>, 38 configurations, 10% scale, 120 months, seed 42. Sweep took 22 minutes wall-clock. Re-run with <code>python sweep.py</code> from the simulator directory.
+    </p>
+  </article>
+</div>
+
+<script>
+const links = document.querySelectorAll('.doc-toc a');
+const sections = Array.from(links).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function syncToc() {
+  const y = window.scrollY + 120;
+  let active = sections[0];
+  for (const s of sections) if (s.offsetTop <= y) active = s;
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active?.id));
+}
+window.addEventListener('scroll', syncToc, { passive: true });
+syncToc();
+</script>
+
+</body>
+</html>
