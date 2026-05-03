@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The external economy — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  /* External-page-specific */
+  .external-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .scenario-picker {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+  .scenario-picker label {
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .scenario-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--txt);
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .scenario-toggle.on {
+    border-color: var(--ok);
+    background: rgba(93,211,158,0.06);
+  }
+  .scenario-toggle .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 0;
+    background: var(--dim);
+  }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .chart-box {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 12px 16px;
+  }
+  .chart-box h2 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .chart-box canvas { max-height: 280px; }
+  .help { font-size: 10px; color: var(--faint); line-height: 1.4; margin-top: 6px; }
+  .narrative {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 24px;
+  }
+  .narrative h2 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .narrative h3 {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--txt);
+    margin: 18px 0 6px;
+  }
+  .narrative p { color: var(--txt2); margin: 0 0 12px; line-height: 1.6; font-size: 13px; }
+  .narrative em { color: var(--warn); font-style: normal; }
+  .narrative strong { color: var(--headline); font-weight: normal; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">The external economy — what's happening outside the colony</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/external" class="active">External economy</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Transition story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="external-layout">
+
+  <div class="scenario-picker" id="picker">
+    <label>SCENARIOS</label>
+    <!-- toggles populated by JS -->
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-box">
+      <h2>Energy USD price</h2>
+      <canvas id="chart-energy"></canvas>
+      <div class="help">Founding price: $8 / month for one citizen's share. Inflates under most scenarios as USD policy response keeps energy hot.</div>
+    </div>
+    <div class="chart-box">
+      <h2>Food USD price</h2>
+      <canvas id="chart-food"></canvas>
+      <div class="help">Founding price: $9. Mildly inflationary under most scenarios — food costs are sticky and weather-sensitive.</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-box">
+      <h2>Hard goods USD price</h2>
+      <canvas id="chart-goods"></canvas>
+      <div class="help">Founding price: $5. The AI deflation engine bites here — automation collapses unit costs of manufactured goods.</div>
+    </div>
+    <div class="chart-box">
+      <h2>Services USD price</h2>
+      <canvas id="chart-services"></canvas>
+      <div class="help">Founding price: $6. Sticky-up under USD inflation regimes; only the AI Optimist scenario has services deflating.</div>
+    </div>
+  </div>
+
+  <div class="chart-row full">
+    <div class="chart-box">
+      <h2>Total basket cost in USD (the 4 categories combined)</h2>
+      <canvas id="chart-basket"></canvas>
+      <div class="help">Same set of goods that cost $28 at parity. This is what someone <em>outside</em> a SPICE colony pays. Compare with the basket-cost-in-S chart on the dashboard — that's what citizens <em>inside</em> the colony pay.</div>
+    </div>
+  </div>
+
+  <div class="chart-row full">
+    <div class="chart-box">
+      <h2>External purchasing power — what $100 USD buys (in baskets)</h2>
+      <canvas id="chart-pp"></canvas>
+      <div class="help">Outside the colony, $100 USD buys 100/$28 = 3.57 baskets at parity. Under The Transition, by Y10 it buys 100/$58 = 1.72 baskets — a 52% real loss for someone holding USD. The colony's job is to give citizens a steady-ground purchasing-power line that doesn't fall like this.</div>
+    </div>
+  </div>
+
+  <div class="narrative">
+    <h2>What the scenarios represent in the real world</h2>
+
+    <h3>AI Realist (default baseline)</h3>
+    <p>
+      The Dallas Fed (Aug 2025) productivity-effects view + Reinhart-Sbrancia (2015) financial-repression view, blended. AI deflation in goods at -3 to -5% / yr, services / food / energy nudging up at +2 to +3%. Mild stagflation tilt. Not a stress case — included as the sanity check that the engine produces sensible numbers under benign conditions.
+    </p>
+
+    <h3>AI Optimist</h3>
+    <p>
+      The McKinsey MGI (2023) + IMF WP/2025/076 view, taken at face value: productivity wins in <em>every</em> sector, AI deflation propagates from goods into services and even food. Reserve grows easily because imports are cheap and exports stay competitive. Risk in this scenario is over-deflation — basket cost in S could fall too fast for citizen comfort.
+    </p>
+
+    <h3>Stagflation</h3>
+    <p>
+      The classic policy-failure regime. USD instability dominates AI deflation. Energy +8 to +12% / yr, services and food sticky-up, only goods see modest deflation. Tests how the colony copes when the wider world's inflation regime resembles late-1970s OECD rather than the AI-deflation thesis. Reserve drains faster (imports more expensive in USD) but boundary outflows cost less in S terms.
+    </p>
+
+    <h3>AI + Healthcare crisis</h3>
+    <p>
+      AI Optimist trajectory for goods + energy + food, but services takes a +12 to +15% / yr shock for years 2-5 driven by healthcare costs (US healthcare grew at ~7% nominal pre-AI; assume the AI deflation in goods doesn't translate into healthcare savings as fast as elsewhere). Tests sector-specific stress. v1 lumps healthcare into services; a v2 5-category basket would let it be its own line.
+    </p>
+
+    <h3>The Transition (the credibility test)</h3>
+    <p>
+      Steve's view: AI deflation in tradable goods will be much steeper and more non-linear than typical economist baselines, because the fundamental cost structure of automated production isn't a Cobb-Douglas tweak — it's a different curve. Annual goods deflation accelerates from -8% in Y1 to -38% in Y5 before tapering. Simultaneously, monetary policy responds to deflation + debt with QE / yield-curve-control / financial repression, which keeps services and energy hot: services +8 → +18 → +2% over the decade, energy +10 → +22 → +2%. <strong>This is the scenario the simulation was built to stress-test.</strong>
+    </p>
+    <p>
+      In real-world terms: by Y5 a basket of hard goods that cost $5 in 2026 USD costs $1.24. Energy that cost $8 costs $17. Services that cost $6 cost $11. Anyone holding USD has watched their wealth get reshaped — not destroyed, but redistributed across categories in violent ways. <em>Anyone with a 30-year mortgage at 5% pays the same nominal $1,400/month into a USD that's worth half what it was at origination.</em> Anyone holding cash equivalents loses real value; anyone holding hard goods loses nominal value; anyone holding energy assets, services businesses, or scarcity stores wins big.
+    </p>
+
+    <h3>The Transition + Honda shock</h3>
+    <p>
+      The Transition baseline plus a discrete employer shock: Honda MaryFontaine's exports drop 50% in Q3 of Year 4 (automotive demand collapses as AI-driven design changes obsolete the existing assembly line), recovering linearly to 70% of original by Y6. Tests whether the colony survives a single-employer cashflow shock <em>on top of</em> structural deflation. The sort of thing that could plausibly hit Marysville given Honda's current concentration.
+    </p>
+
+    <h3>Why this matters</h3>
+    <p>
+      The colony isn't an island — it sits inside whichever of these external regimes happens to play out. The Fisc rate moves to anchor the basket at 28 S regardless of what the wider world does. That defence is what the dashboard charts measure. <strong>The contrast between the external purchasing-power chart on this page and the citizen purchasing-power chart on the dashboard is the load-bearing comparison.</strong> If the colony is doing its job, the inside line stays close to flat while the outside line falls. Where it doesn't, the design needs more reserve-replenishment leverage.
+    </p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const C = {
+  txt: '#e8e8e8', dim: '#a4a4a4', faint: '#767676',
+  ok: '#5dd39e', warn: '#d4a04a', crit: '#ef4444',
+  blue: '#3b82f6', purple: '#8b5cf6', amber: '#eab308',
+  pink: '#f472b6', orange: '#fb923c', cyan: '#7dd3fc',
+};
+const SCENARIO_COLORS = {
+  ai_realist: C.ok,
+  ai_optimist: C.cyan,
+  stagflation: C.orange,
+  ai_healthcare_crisis: C.pink,
+  transition: C.crit,
+  transition_honda_shock: C.warn,
+};
+const SCENARIO_LABELS = {
+  ai_realist: 'AI Realist',
+  ai_optimist: 'AI Optimist',
+  stagflation: 'Stagflation',
+  ai_healthcare_crisis: 'AI + Healthcare crisis',
+  transition: 'The Transition',
+  transition_honda_shock: 'The Transition + Honda shock',
+};
+
+Chart.defaults.color = C.dim;
+Chart.defaults.borderColor = '#232831';
+Chart.defaults.font.family = "'IBM Plex Mono', ui-monospace, monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.animation = false;
+
+const charts = {};
+const selected = new Set(['transition', 'ai_realist', 'stagflation']);
+
+function buildPicker() {
+  const picker = document.getElementById('picker');
+  for (const [k, label] of Object.entries(SCENARIO_LABELS)) {
+    const el = document.createElement('div');
+    el.className = 'scenario-toggle' + (selected.has(k) ? ' on' : '');
+    el.dataset.scenario = k;
+    el.innerHTML = `<span class="swatch" style="background: ${SCENARIO_COLORS[k]}"></span><span>${label}</span>`;
+    el.addEventListener('click', () => {
+      if (selected.has(k)) selected.delete(k); else selected.add(k);
+      el.classList.toggle('on', selected.has(k));
+      refresh();
+    });
+    picker.appendChild(el);
+  }
+}
+
+function lineChart(canvasId, labels, datasets, opts = {}) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Month', color: C.faint, font: { size: 10 } },
+          ticks: { maxTicksLimit: 12 },
+          grid: { color: '#232831' }
+        },
+        y: {
+          beginAtZero: opts.beginAtZero !== false,
+          grid: { color: '#232831' },
+          ticks: {
+            color: C.dim,
+            callback: opts.formatY || ((v) => v)
+          }
+        }
+      },
+      interaction: { mode: 'nearest', axis: 'x', intersect: false }
+    }
+  });
+}
+
+function makeDataset(label, color, values) {
+  return {
+    label, data: values,
+    borderColor: color,
+    backgroundColor: color + '22',
+    borderWidth: 1.5,
+    pointRadius: 0,
+    tension: 0.1,
+    fill: false,
+  };
+}
+
+async function refresh() {
+  if (selected.size === 0) {
+    // Wipe charts
+    ['chart-energy', 'chart-food', 'chart-goods', 'chart-services', 'chart-basket', 'chart-pp']
+      .forEach(id => { if (charts[id]) charts[id].destroy(); });
+    return;
+  }
+  const url = `/api/external?scenarios=${Array.from(selected).join(',')}&months=120`;
+  const r = await fetch(url);
+  const d = await r.json();
+  const months = d.months;
+
+  const cats = ['energy', 'food', 'goods', 'services'];
+  for (const cat of cats) {
+    const datasets = Array.from(selected).map(s => {
+      const vals = d.scenarios[s]?.categories[cat] || [];
+      return makeDataset(SCENARIO_LABELS[s], SCENARIO_COLORS[s], vals);
+    });
+    lineChart(`chart-${cat}`, months, datasets, {
+      beginAtZero: false,
+      formatY: v => '$' + v.toFixed(2)
+    });
+  }
+
+  // Total basket USD
+  const basketDatasets = Array.from(selected).map(s => {
+    const vals = d.scenarios[s]?.basket_usd || [];
+    return makeDataset(SCENARIO_LABELS[s], SCENARIO_COLORS[s], vals);
+  });
+  lineChart('chart-basket', months, basketDatasets, {
+    beginAtZero: false,
+    formatY: v => '$' + v.toFixed(0)
+  });
+
+  // External purchasing power: what $100 buys, in baskets, normalised against $28
+  const ppDatasets = Array.from(selected).map(s => {
+    const basket = d.scenarios[s]?.basket_usd || [];
+    const vals = basket.map(b => 100 / b);
+    return makeDataset(SCENARIO_LABELS[s], SCENARIO_COLORS[s], vals);
+  });
+  lineChart('chart-pp', months, ppDatasets, {
+    beginAtZero: false,
+    formatY: v => v.toFixed(2) + ' bsk'
+  });
+}
+
+// Build a custom legend below the picker so users see the colour-to-scenario mapping
+function buildLegendHelp() {
+  const picker = document.getElementById('picker');
+  const note = document.createElement('div');
+  note.style.fontSize = '10px';
+  note.style.color = C.faint;
+  note.style.marginLeft = 'auto';
+  note.textContent = 'Click to toggle. Charts update on selection.';
+  picker.appendChild(note);
+}
+
+buildPicker();
+buildLegendHelp();
+refresh();
+</script>
+
+</body>
+</html>

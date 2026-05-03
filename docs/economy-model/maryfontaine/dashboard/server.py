@@ -325,6 +325,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_file(self.templates_dir / "story.html", "text/html; charset=utf-8")
             elif p == "/levers":
                 self._send_file(self.templates_dir / "levers.html", "text/html; charset=utf-8")
+            elif p == "/external":
+                self._send_file(self.templates_dir / "external.html", "text/html; charset=utf-8")
             elif p.startswith("/static/"):
                 rel = p[len("/static/"):]
                 content_type = "application/javascript" if rel.endswith(".js") else \
@@ -353,6 +355,27 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(200, companies_data(self.db_path))
             elif p == "/api/scenarios":
                 self._send_json(200, {"scenarios": list(ANNUAL_RATES.keys())})
+            elif p == "/api/external":
+                # Per-month per-category USD prices for one or more scenarios.
+                # Query: ?scenarios=transition,ai_realist&months=120&noise=0
+                qs = parse_qs(url.query)
+                scenarios_param = qs.get("scenarios", ["transition"])[0]
+                wanted = [s.strip() for s in scenarios_param.split(",") if s.strip() in ANNUAL_RATES]
+                if not wanted:
+                    wanted = ["transition"]
+                months = min(120, max(12, int(qs.get("months", ["120"])[0])))
+                noise = float(qs.get("noise", ["0"])[0])
+                seed_q = int(qs.get("seed", ["42"])[0])
+                out = {"months": list(range(1, months + 1)), "scenarios": {}}
+                for s in wanted:
+                    traj = build_trajectory(s, months=months, noise_sigma=noise, seed=seed_q)
+                    out["scenarios"][s] = {
+                        "categories": {
+                            c: traj.prices[c] for c in BASKET_WEIGHTS_USD
+                        },
+                        "basket_usd": [traj.basket_cost_usd(m) for m in range(1, months + 1)],
+                    }
+                self._send_json(200, out)
             elif p == "/api/defaults":
                 self._send_json(200, to_json(SimConfig()))
             else:
