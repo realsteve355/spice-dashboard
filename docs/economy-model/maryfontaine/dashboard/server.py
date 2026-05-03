@@ -214,6 +214,167 @@ def transitions_data(db_path: Path) -> dict:
     return {"by_year": [{"year": r[0], "from": r[1], "to": r[2], "n": r[3]} for r in rows]}
 
 
+def families_data(db_path: Path) -> dict:
+    """Pick 6 representative households + return their full trajectory.
+    Uses criteria-based selection: medians of various archetypes."""
+    if not db_path.exists():
+        return {"families": []}
+    conn = sqlite3.connect(str(db_path))
+    cur = conn.cursor()
+
+    def pick_citizen(criteria_sql: str, params=()) -> int | None:
+        row = cur.execute(criteria_sql, params).fetchone()
+        return row[0] if row else None
+
+    # 1. Joe — Honda assembly, married with kids, mortgage
+    joe = pick_citizen("""
+        SELECT c.id FROM citizens c
+        JOIN households h ON h.id = c.household_id
+        WHERE c.archetype = 'honda_assembly'
+          AND h.composition = 'family_with_kids'
+          AND h.housing_type = 'owner_with_mortgage'
+        ORDER BY c.id LIMIT 1
+    """)
+    # 2. Mary — single retiree, owner-free, with pension
+    mary = pick_citizen("""
+        SELECT c.id FROM citizens c
+        JOIN households h ON h.id = c.household_id
+        WHERE c.archetype = 'retiree'
+          AND h.composition = 'single_adult'
+          AND h.housing_type = 'owner_free_and_clear'
+        ORDER BY c.id LIMIT 1
+    """)
+    # 3. Carla — small business owner / striver
+    carla = pick_citizen("""
+        SELECT c.id FROM citizens c
+        WHERE c.archetype = 'small_business_owner'
+        ORDER BY c.id LIMIT 1
+    """)
+    # 4. Erik — ubi_only_choice, single, renting internally
+    erik = pick_citizen("""
+        SELECT c.id FROM citizens c
+        JOIN households h ON h.id = c.household_id
+        WHERE c.archetype = 'ubi_only_choice'
+          AND h.composition = 'single_adult'
+          AND h.housing_type = 'renter_internal'
+        ORDER BY c.id LIMIT 1
+    """)
+    # 5. Diana — remote worker, couple, owner-free
+    diana = pick_citizen("""
+        SELECT c.id FROM citizens c
+        JOIN households h ON h.id = c.household_id
+        WHERE c.archetype = 'remote_worker'
+        ORDER BY c.id LIMIT 1
+    """)
+    # 6. The Patel family — Honda admin worker (higher dividend), family with mortgage
+    patel = pick_citizen("""
+        SELECT c.id FROM citizens c
+        JOIN households h ON h.id = c.household_id
+        WHERE c.archetype = 'honda_admin'
+          AND h.composition = 'family_with_kids'
+          AND h.housing_type = 'owner_with_mortgage'
+        ORDER BY c.id LIMIT 1
+    """)
+
+    profiles = [
+        ("Joe", "Honda assembly worker · family of 4 · mortgage", joe),
+        ("Mary", "Retiree · single · owner-outright · with pension", mary),
+        ("Carla", "Small business owner · entrepreneur", carla),
+        ("Erik", "UBI-only by choice · single renter", erik),
+        ("Diana", "Remote worker · couple · owner-outright", diana),
+        ("Patel family", "Honda admin · family of 4 · mortgage", patel),
+    ]
+
+    families = []
+    for first_name, descriptor, cid in profiles:
+        if cid is None:
+            continue
+        row = cur.execute("""
+            SELECT c.id, c.archetype, c.behavioural_type, c.age_at_founding,
+                   h.composition, h.housing_type, h.monthly_housing_cost_usd,
+                   h.monthly_housing_cost_s, h.mortgage_balance_usd,
+                   h.mortgage_remaining_months, h.basket_baseline_multiplier,
+                   h.id, h.primary_citizen_id
+            FROM citizens c JOIN households h ON h.id = c.household_id
+            WHERE c.id = ?
+        """, (cid,)).fetchone()
+        if not row:
+            continue
+        (citizen_id, archetype, beh, age, comp, housing, hcost_usd, hcost_s,
+         mortgage_balance, mortgage_rem, basket_mult, hh_id, primary) = row
+
+        members = cur.execute("""
+            SELECT id, archetype, age_at_founding FROM citizens WHERE household_id = ?
+        """, (hh_id,)).fetchall()
+        n_adults = sum(1 for m in members if m[1] != "children_under_18")
+        n_children = len(members) - n_adults
+
+        # Year-end snapshots for this citizen
+        snaps = cur.execute("""
+            SELECT year, s_balance, monthly_income_s, monthly_dividend_s,
+                   monthly_external_usd, monthly_basket_spend_s, real_purchasing_power
+            FROM citizen_snapshots WHERE citizen_id = ?
+            ORDER BY year, month
+        """, (citizen_id,)).fetchall()
+
+        # External income
+        if archetype == "remote_worker":
+            ext_note = "Has external USD wages"
+        elif archetype == "retiree":
+            ext_note = "May have external pension"
+        else:
+            ext_note = "No external income"
+
+        # Equity holdings
+        equity = cur.execute("""
+            SELECT e.share_count, e.share_type, c.name, c.sector
+            FROM equity_holdings e JOIN companies c ON c.id = e.company_id
+            WHERE e.holder_type = 'citizen' AND e.holder_id = ? AND e.cancelled = 0
+        """, (citizen_id,)).fetchall()
+
+        family = {
+            "first_name": first_name,
+            "descriptor": descriptor,
+            "citizen_id": citizen_id,
+            "archetype": archetype,
+            "behavioural_type": beh,
+            "age_at_founding": round(age, 0),
+            "household": {
+                "composition": comp,
+                "housing_type": housing,
+                "monthly_housing_cost_usd": round(hcost_usd, 0),
+                "monthly_housing_cost_s": round(hcost_s, 0),
+                "mortgage_balance_usd": round(mortgage_balance, 0),
+                "mortgage_remaining_months": mortgage_rem,
+                "basket_baseline_multiplier": basket_mult,
+                "n_adults": n_adults,
+                "n_children": n_children,
+                "is_primary": citizen_id == primary,
+            },
+            "external_income_note": ext_note,
+            "equity_holdings": [
+                {"shares": s, "type": t, "company": n, "sector": sec}
+                for s, t, n, sec in equity
+            ],
+            "snapshots": [
+                {
+                    "year": y,
+                    "balance": round(b, 0),
+                    "monthly_income_s": round(inc, 0),
+                    "monthly_dividend_s": round(div, 0),
+                    "monthly_external_usd": round(ext, 0),
+                    "monthly_basket_spend_s": round(spend, 0),
+                    "real_pp": round(pp, 2),
+                }
+                for y, b, inc, div, ext, spend, pp in snaps
+            ],
+        }
+        families.append(family)
+
+    conn.close()
+    return {"families": families}
+
+
 def companies_data(db_path: Path) -> dict:
     if not db_path.exists():
         return {"top_balance": [], "top_revenue": [], "honda": None, "mcc": None}
@@ -327,6 +488,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_file(self.templates_dir / "levers.html", "text/html; charset=utf-8")
             elif p == "/external":
                 self._send_file(self.templates_dir / "external.html", "text/html; charset=utf-8")
+            elif p == "/criteria":
+                self._send_file(self.templates_dir / "criteria.html", "text/html; charset=utf-8")
+            elif p == "/families":
+                self._send_file(self.templates_dir / "families.html", "text/html; charset=utf-8")
+            elif p == "/best-configs":
+                self._send_file(self.templates_dir / "best_configs.html", "text/html; charset=utf-8")
             elif p.startswith("/static/"):
                 rel = p[len("/static/"):]
                 content_type = "application/javascript" if rel.endswith(".js") else \
@@ -353,6 +520,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(200, transitions_data(self.db_path))
             elif p == "/api/companies":
                 self._send_json(200, companies_data(self.db_path))
+            elif p == "/api/families":
+                self._send_json(200, families_data(self.db_path))
             elif p == "/api/scenarios":
                 self._send_json(200, {"scenarios": list(ANNUAL_RATES.keys())})
             elif p == "/api/external":

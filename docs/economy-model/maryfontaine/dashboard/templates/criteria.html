@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Success criteria — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .tier {
+    margin: 12px 0;
+    padding: 14px 20px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--line-hot);
+    background: var(--panel);
+  }
+  .tier.t1 { border-left-color: var(--ok); }
+  .tier.t2 { border-left-color: #7dd3fc; }
+  .tier.t3 { border-left-color: var(--warn); }
+  .tier.t4 { border-left-color: var(--orange, #fb923c); border-left-color: #fb923c; }
+  .tier.t5 { border-left-color: var(--crit); }
+  .tier .tier-name {
+    font-size: 13px;
+    color: var(--headline);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 4px;
+  }
+  .tier .tier-test {
+    font-size: 11px;
+    color: var(--dim);
+    font-family: var(--mono);
+    margin-bottom: 8px;
+  }
+  .tier .tier-meaning { color: var(--txt2); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Success criteria — what "good" looks like</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/criteria" class="active">Success criteria</a>
+    <a href="/external">External economy</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Transition story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="doc-layout">
+  <aside class="doc-toc">
+    <h3>On this page</h3>
+    <ul>
+      <li><a href="#headline">1. Headline metric</a></li>
+      <li><a href="#tiers">2. Success tiers</a></li>
+      <li><a href="#secondary">3. Secondary signals</a></li>
+      <li><a href="#anti">4. Anti-criteria</a></li>
+      <li><a href="#openq">5. Open questions</a></li>
+    </ul>
+  </aside>
+
+  <article class="doc-body">
+    <h1>Success criteria</h1>
+    <div class="lede">
+      What does "the colony delivers steady ground" mean numerically? This page pins it down. Success is not a single threshold — it's a tiered comparison against (a) doing nothing in the colony, and (b) just holding USD outside it. The real-world question is: under The Transition scenario, does the colony deliver more stable purchasing power than a citizen would experience in the wider USD economy?
+    </div>
+
+    <h2 id="headline">1. The headline metric</h2>
+    <p>
+      <strong>Real purchasing power: how many baskets of goods one citizen's monthly UBI buys.</strong>
+    </p>
+    <p>
+      At founding (parity, $1/S, basket = 28 S), 100 S of UBI buys <strong>3.57 baskets</strong>. That's the reference point for "what citizens can afford with no work, no dividends, no external income — just the colony's UBI."
+    </p>
+    <p>
+      Outside the colony — someone holding US dollars — the reference is the basket cost in USD. At founding, $100 USD also buys 3.57 baskets ($28 each). Under The Transition, by Y10 the basket costs $58 in USD; $100 USD buys <strong>1.72 baskets</strong> — a 52% loss in real terms. <strong>That 1.72 figure is the "do nothing, stay outside" floor.</strong> Anything above it = colony beats USD; anything below it = colony underperforms USD.
+    </p>
+
+    <h2 id="tiers">2. Success tiers</h2>
+    <p>
+      Tested by Y10 real purchasing power (baskets per 100 S UBI) under <strong>The Transition</strong> scenario at default 10% scale:
+    </p>
+
+    <div class="tier t1">
+      <div class="tier-name">Full steady ground</div>
+      <div class="tier-test">Y10 PP ≥ 3.40 baskets · basket-cost-in-S ≤ 29.4 · &lt; 5% PP loss</div>
+      <div class="tier-meaning">The peg holds throughout. Citizens experience effectively flat real purchasing power — the colony has fully insulated them from external chaos. This is the goal but a high bar. Likely requires a stack of mitigations: LAT, refinanced mortgages, possibly capped cashout.</div>
+    </div>
+
+    <div class="tier t2">
+      <div class="tier-name">Strong defence</div>
+      <div class="tier-test">Y10 PP ≥ 3.00 · basket-cost-in-S ≤ 33.3 · &lt; 16% PP loss · ≥ 1.7× external</div>
+      <div class="tier-meaning">Peg holds for most of the decade with mild compression in late years. Citizens lose noticeable but bearable purchasing power — but still 75% better off than holding USD outside. This is a credible "colony delivered" outcome.</div>
+    </div>
+
+    <div class="tier t3">
+      <div class="tier-name">Partial defence</div>
+      <div class="tier-test">Y10 PP ≥ 2.40 · basket-cost-in-S ≤ 41.7 · &lt; 33% PP loss · ≥ 1.4× external</div>
+      <div class="tier-meaning">Peg breaks mid-decade; basket cost in S inflates moderately. Citizens lose ~30% real purchasing power but still meaningfully better than USD-only (1.72 baskets). Defensible as "colony helped" but not the design target.</div>
+    </div>
+
+    <div class="tier t4">
+      <div class="tier-name">Weak defence</div>
+      <div class="tier-test">Y10 PP ≥ 1.72 · basket-cost-in-S ≤ 58 · &lt; 52% PP loss · ≥ external</div>
+      <div class="tier-meaning">Citizens fare roughly the same inside the colony as outside it — colony provides no meaningful relief. Worth knowing as a pass/fail line: anything below this is worse than doing nothing.</div>
+    </div>
+
+    <div class="tier t5">
+      <div class="tier-name">Worse than doing nothing</div>
+      <div class="tier-test">Y10 PP &lt; 1.72 · basket-cost-in-S &gt; 58 · &gt; 52% PP loss</div>
+      <div class="tier-meaning">Colony citizens are worse off than people outside the colony holding USD. The design has failed: the SPICE economy compounds the problem rather than relieving it. Configurations that produce this need fundamental rethinking, not parameter tuning.</div>
+    </div>
+
+    <p style="margin-top: 18px;">
+      <strong>Where current configurations land</strong> (Transition, 10% scale, seed 42):
+    </p>
+    <table>
+      <thead><tr><th>Configuration</th><th class="num">Y10 basket S</th><th class="num">Y10 PP</th><th>Tier</th></tr></thead>
+      <tbody>
+        <tr><td>Unmitigated</td><td class="num">84.46</td><td class="num">1.18</td><td><span style="color: var(--crit)">Worse than nothing</span></td></tr>
+        <tr><td>LAT 5% + mortgage refi</td><td class="num">44.84</td><td class="num">2.23</td><td><span style="color: #fb923c">Weak defence</span></td></tr>
+        <tr><td><em>Best configuration</em> (TBD from sweep)</td><td class="num">—</td><td class="num">—</td><td><em>see /best-configs</em></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="secondary">3. Secondary signals</h2>
+    <p>
+      Beyond the headline PP metric, three additional dimensions matter:
+    </p>
+
+    <h3>Distribution of welfare</h3>
+    <p>
+      Median PP ≥ 2.40 means little if the bottom decile is at 0.5 (subsistence-level destitution). The dashboard's deciles chart shows whether the gain is broadly shared. <strong>Threshold: p10 should not fall below 0.7 baskets/UBI</strong> — the floor below which a citizen on UBI alone genuinely can't make ends meet.
+    </p>
+
+    <h3>Reserve adequacy + stability</h3>
+    <p>
+      The Fisc reserve should not deplete catastrophically. <strong>Threshold: reserve ≥ $5M (founding level) at Y10</strong>. Below that the colony has no shock-absorption left for unexpected events. Better: reserve grows over the decade, indicating sustainable boundary balance.
+    </p>
+
+    <h3>Strivers economy / dynamism</h3>
+    <p>
+      Citizens transitioning ubi_only → striver indicates the colony is producing economic mobility. <strong>Threshold: at least 5% of ubi_only_choice citizens transition to striver over 10 years</strong>. Below that, the colony is a stagnant safety-net rather than a vibrant economy. (Note: company founding by strivers is deferred to Phase 3, so the striver count alone undercounts the dynamism.)
+    </p>
+
+    <h3>Boundary balance</h3>
+    <p>
+      Long-run boundary flows (USDC inflows from exports + remote workers, vs outflows for imports + mortgages + cashouts) should be sustainable. <strong>Threshold: cumulative net boundary flow ≥ 0 over Y4-Y10</strong> — the colony shouldn't be slowly draining its reserve to keep the lights on.
+    </p>
+
+    <h2 id="anti">4. Anti-criteria — what we DON'T optimise for</h2>
+    <p>
+      Some metrics are tempting but shouldn't drive design choices:
+    </p>
+    <ul>
+      <li><strong>Maximum reserve growth.</strong> Hoarding USDC isn't the goal. A colony with $30M reserve but PP loss 40% has failed; a colony with $5M reserve and PP loss 5% has succeeded. The reserve is a means.</li>
+      <li><strong>Minimum S supply.</strong> Aggressive S burning (high LAT, high S-tax) suppresses S supply growth, which helps the cover ratio — but at the cost of taking S away from companies + citizens. Need balance.</li>
+      <li><strong>Maximum dividend distribution.</strong> Workers being wealthy is good, but if it triggers excessive cashout (capital flight), it undermines reserve defence. The design should be politically attractive without being self-undermining.</li>
+      <li><strong>Peg held forever at 28.</strong> A small late-decade compression to 30 or 31 is acceptable if the alternative is severe rationing or ultra-high LAT. Perfect peg defence isn't worth ruinous side-effects.</li>
+    </ul>
+
+    <h2 id="openq">5. Open questions</h2>
+    <p>
+      The criteria above are working assumptions, not received wisdom. Open for debate:
+    </p>
+    <ul>
+      <li><strong>Cover-ratio target of 0.30.</strong> Asserted, not derived. Try 0.20 vs 0.40 in the sweep and see which is more compatible with steady ground.</li>
+      <li><strong>52% external PP loss baseline.</strong> Comes from The Transition basket trajectory. If our assumption of how steep the AI deflation gets is wrong, the floor moves. Sensitivity-test by trying milder Transitions.</li>
+      <li><strong>10-year horizon.</strong> The credibility test is a 10-year decade, but real colonies will run for longer. A configuration that works at 10y but fails at 20y isn't really steady ground. Future task: extend horizon to 240 months.</li>
+      <li><strong>Founding mortgage burden.</strong> Joe-the-Honda-worker can't afford his $1,400/month mortgage on UBI + dividend alone, even with the corrected (Honda-Inc-doesn't-extract) model. Mortgage refi is a workaround; the real question is whether founding mortgage sizes are realistic for SPICE-income households. See <a href="/families">/families</a> for Joe's trajectory.</li>
+      <li><strong>The strivers economy.</strong> Phase 3 deferred — striver citizens currently can't found new companies in the sim. So the "dynamism" measure is partially synthetic. A real colony's PP outcome would be lifted by new exporters founded over time.</li>
+    </ul>
+
+    <p style="margin-top: 24px;">
+      Use these criteria as the rubric while playing with the dashboard. A configuration isn't "the answer" until it clears strong defence at minimum, and ideally hits full steady ground. We're not there yet.
+    </p>
+  </article>
+</div>
+
+<script>
+const links = document.querySelectorAll('.doc-toc a');
+const sections = Array.from(links).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function syncToc() {
+  const y = window.scrollY + 120;
+  let active = sections[0];
+  for (const s of sections) if (s.offsetTop <= y) active = s;
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active?.id));
+}
+window.addEventListener('scroll', syncToc, { passive: true });
+syncToc();
+</script>
+
+</body>
+</html>

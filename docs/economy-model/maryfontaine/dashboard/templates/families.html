@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Families — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .families-layout {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .families-intro {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    color: var(--txt2);
+    line-height: 1.6;
+  }
+  .families-intro p { margin: 0 0 10px; }
+  .family-card {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    margin-bottom: 16px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  .family-card h2 {
+    color: var(--headline);
+    margin: 0 0 4px;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+  }
+  .family-card .desc {
+    color: var(--dim);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .stats {
+    font-size: 12px;
+    color: var(--txt2);
+  }
+  .stats .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px dotted var(--line);
+  }
+  .stats .row:last-child { border-bottom: none; }
+  .stats .row .k { color: var(--dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .stats .row .v { color: var(--txt); font-variant-numeric: tabular-nums; }
+  .equity-list {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--txt2);
+  }
+  .equity-list li { list-style: none; padding: 2px 0; }
+  .narrative {
+    color: var(--txt2);
+    line-height: 1.6;
+    font-size: 13px;
+  }
+  .narrative em { color: var(--warn); font-style: normal; }
+  .narrative strong { color: var(--headline); font-weight: normal; }
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+  }
+  .chart-mini { background: var(--panel2); border: 1px solid var(--line); padding: 8px 12px; }
+  .chart-mini h3 { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); margin: 0 0 4px; }
+  .chart-mini canvas { max-height: 160px; }
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--faint);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .verdict {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: var(--panel2);
+    border-left: 3px solid var(--warn);
+    font-size: 12px;
+    color: var(--txt);
+  }
+  .verdict.ok { border-left-color: var(--ok); }
+  .verdict.crit { border-left-color: var(--crit); }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Six families — how real people fare</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/external">External economy</a>
+    <a href="/criteria">Success criteria</a>
+    <a href="/families" class="active">Families</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Transition story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="families-layout">
+
+  <div class="families-intro">
+    <p>
+      Six citizens, drawn from the most recent simulation run. Each has a household, an archetype, an income mix, and a 10-year trajectory. The macro charts on the dashboard tell the system story; this page tells the human one.
+    </p>
+    <p style="color: var(--dim); font-size: 11px;">
+      Run a simulation first if this page is empty. The data here reflects whatever configuration you last ran.
+    </p>
+  </div>
+
+  <div id="families-container">
+    <div class="empty-state">Loading families...</div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const C = {
+  txt: '#e8e8e8', dim: '#a4a4a4', faint: '#767676',
+  ok: '#5dd39e', warn: '#d4a04a', crit: '#ef4444',
+  blue: '#3b82f6', purple: '#8b5cf6', amber: '#eab308',
+  cyan: '#7dd3fc', orange: '#fb923c',
+};
+Chart.defaults.color = C.dim;
+Chart.defaults.borderColor = '#232831';
+Chart.defaults.font.family = "'IBM Plex Mono', ui-monospace, monospace";
+Chart.defaults.font.size = 10;
+Chart.defaults.animation = false;
+
+function fmtUSD(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtS(n) { return Math.round(n).toLocaleString() + ' S'; }
+
+const ARCHETYPE_NAMES = {
+  honda_assembly: "Honda Assembly",
+  honda_admin: "Honda Admin",
+  other_manufacturing: "Manufacturing",
+  healthcare_worker: "Healthcare",
+  education_worker: "Education",
+  retail_services: "Retail / Services",
+  small_business_owner: "Small Business Owner",
+  sole_trader: "Sole Trader",
+  remote_worker: "Remote Worker",
+  retiree: "Retiree",
+  ubi_only_choice: "UBI-only by choice",
+  children_under_18: "Child",
+  striver: "Striver (transitioned)",
+};
+const HOUSING_NAMES = {
+  owner_free_and_clear: "Owns outright",
+  owner_with_mortgage: "Owns w/ mortgage",
+  renter_internal: "Rents (colony)",
+  renter_external: "Rents (external)",
+};
+
+function verdictForFamily(f) {
+  if (!f.snapshots || f.snapshots.length === 0) return { text: "no data", cls: "" };
+  const last = f.snapshots[f.snapshots.length - 1];
+  const first = f.snapshots[0];
+  const ppLast = last.real_pp;
+  const ppFirst = first.real_pp;
+  const ppChange = ppLast > 0 && ppFirst > 0 ? ((ppLast / ppFirst) - 1) * 100 : 0;
+  const balLast = last.balance;
+
+  let text = "";
+  let cls = "";
+  if (ppLast >= 3.0 && balLast > 1000) {
+    text = `Y10: real income buys ${ppLast.toFixed(2)} baskets/UBI, balance ${fmtS(balLast)}. Doing well.`;
+    cls = "ok";
+  } else if (ppLast >= 1.5) {
+    text = `Y10: real income buys ${ppLast.toFixed(2)} baskets/UBI, balance ${fmtS(balLast)}. Getting by.`;
+    cls = "";
+  } else {
+    text = `Y10: real income buys ${ppLast.toFixed(2)} baskets/UBI, balance ${fmtS(balLast)}. Struggling.`;
+    cls = "crit";
+  }
+  return { text, cls };
+}
+
+function familyNarrative(f) {
+  const arch = ARCHETYPE_NAMES[f.archetype] || f.archetype;
+  const housing = HOUSING_NAMES[f.household.housing_type] || f.household.housing_type;
+  const last = f.snapshots[f.snapshots.length - 1] || {};
+  const first = f.snapshots[0] || {};
+
+  let lines = [];
+  // Opening
+  if (f.household.n_children > 0) {
+    lines.push(`<strong>${f.first_name}</strong> is a <strong>${arch.toLowerCase()}</strong>, age ${f.age_at_founding}, living with ${f.household.n_adults > 1 ? "a partner and " : ""}${f.household.n_children} ${f.household.n_children === 1 ? "child" : "children"}. Household ${housing.toLowerCase()}.`);
+  } else if (f.household.n_adults > 1) {
+    lines.push(`<strong>${f.first_name}</strong> is a <strong>${arch.toLowerCase()}</strong>, age ${f.age_at_founding}, living with a partner. ${housing}.`);
+  } else {
+    lines.push(`<strong>${f.first_name}</strong> is a <strong>${arch.toLowerCase()}</strong>, age ${f.age_at_founding}, living alone. ${housing}.`);
+  }
+
+  // Mortgage / housing burden
+  if (f.household.housing_type === "owner_with_mortgage") {
+    lines.push(`Their mortgage costs <strong>$${f.household.monthly_housing_cost_usd}/month</strong> in USD (${f.household.mortgage_remaining_months} months remaining), which the Fisc has to convert from S each month — a persistent USDC outflow.`);
+  } else if (f.household.housing_type === "renter_external") {
+    lines.push(`They rent from an external landlord at <strong>$${f.household.monthly_housing_cost_usd}/month</strong> USD — another monthly drain on the colony's reserve.`);
+  } else if (f.household.housing_type === "renter_internal") {
+    lines.push(`They rent from a colony landlord at <strong>${f.household.monthly_housing_cost_s} S/month</strong> — fully internal, no boundary impact.`);
+  } else {
+    lines.push(`They own outright — no monthly housing payment.`);
+  }
+
+  // Equity
+  if (f.equity_holdings.length > 0) {
+    const total = f.equity_holdings.reduce((a, e) => a + e.shares, 0);
+    if (f.equity_holdings.length === 1 && total >= 50) {
+      const e = f.equity_holdings[0];
+      lines.push(`They own <strong>${e.shares} ${e.type} shares</strong> in ${e.company} — most of their wealth is tied up in their own business.`);
+    } else {
+      const cos = f.equity_holdings.map(e => `${e.shares.toFixed(1)} ${e.type === 'time_limited' ? 'tl' : 'perm'} of ${e.company}`).join('; ');
+      lines.push(`Equity: ${cos}.`);
+    }
+  } else {
+    lines.push(`They hold no equity in colony companies — their income is UBI-only.`);
+  }
+
+  // Income trajectory
+  if (last.monthly_income_s) {
+    const lastIncome = last.monthly_income_s;
+    const firstIncome = first.monthly_income_s;
+    const incomeChangeS = lastIncome - firstIncome;
+    if (Math.abs(incomeChangeS) < 50) {
+      lines.push(`Monthly income in S has stayed roughly flat over the decade (Y1: ${fmtS(firstIncome)} → Y10: ${fmtS(lastIncome)}).`);
+    } else if (incomeChangeS > 0) {
+      lines.push(`Their nominal monthly income in S has <em>grown</em> from ${fmtS(firstIncome)} (Y1) to ${fmtS(lastIncome)} (Y10) — but each S buys less.`);
+    } else {
+      lines.push(`Their nominal monthly income in S has fallen from ${fmtS(firstIncome)} (Y1) to ${fmtS(lastIncome)} (Y10).`);
+    }
+  }
+
+  // Real welfare verdict
+  if (last.real_pp && first.real_pp) {
+    const ppChange = ((last.real_pp / first.real_pp) - 1) * 100;
+    if (last.real_pp >= 3.0) {
+      lines.push(`In <em>real terms</em>, they're buying <strong>${last.real_pp.toFixed(2)} baskets per month per UBI-equivalent</strong> by Y10 — close to the founding parity of 3.57. The colony has held steady ground for them.`);
+    } else if (last.real_pp >= 1.72) {
+      lines.push(`In <em>real terms</em>, they're buying <strong>${last.real_pp.toFixed(2)} baskets per month per UBI-equivalent</strong> by Y10 — better than the 1.72 they'd get from holding USD outside, but a meaningful step down from the founding 3.57.`);
+    } else {
+      lines.push(`In <em>real terms</em>, they're buying only <strong>${last.real_pp.toFixed(2)} baskets per month per UBI-equivalent</strong> by Y10 — worse than holding USD outside the colony (1.72 baskets). The design has failed them.`);
+    }
+  }
+  return lines.join(' ');
+}
+
+function renderFamily(f) {
+  const card = document.createElement('div');
+  card.className = 'family-card';
+
+  // Stats sidebar
+  const stats = document.createElement('div');
+  stats.innerHTML = `
+    <h2>${f.first_name}</h2>
+    <div class="desc">${f.descriptor}</div>
+    <div class="stats">
+      <div class="row"><span class="k">Archetype</span><span class="v">${ARCHETYPE_NAMES[f.archetype] || f.archetype}</span></div>
+      <div class="row"><span class="k">Behaviour</span><span class="v">${f.behavioural_type}</span></div>
+      <div class="row"><span class="k">Age (Y0)</span><span class="v">${f.age_at_founding}</span></div>
+      <div class="row"><span class="k">Household</span><span class="v">${f.household.n_adults}A · ${f.household.n_children}C</span></div>
+      <div class="row"><span class="k">Housing</span><span class="v">${HOUSING_NAMES[f.household.housing_type] || f.household.housing_type}</span></div>
+      ${f.household.monthly_housing_cost_usd > 0 ? `
+      <div class="row"><span class="k">Housing $/mo</span><span class="v">${fmtUSD(f.household.monthly_housing_cost_usd)}</span></div>
+      ` : ''}
+      ${f.household.monthly_housing_cost_s > 0 ? `
+      <div class="row"><span class="k">Housing S/mo</span><span class="v">${fmtS(f.household.monthly_housing_cost_s)}</span></div>
+      ` : ''}
+      ${f.household.mortgage_balance_usd > 0 ? `
+      <div class="row"><span class="k">Mortgage bal</span><span class="v">${fmtUSD(f.household.mortgage_balance_usd)}</span></div>
+      ` : ''}
+      <div class="row"><span class="k">External</span><span class="v">${f.external_income_note}</span></div>
+      ${f.equity_holdings.length > 0 ? `
+      <div style="margin-top: 8px; font-size: 10px; color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase;">Equity</div>
+      <ul class="equity-list">
+        ${f.equity_holdings.slice(0, 3).map(e =>
+          `<li>${e.shares.toFixed(1)} ${e.type === 'time_limited' ? 'tl' : 'perm'} · ${e.company}</li>`
+        ).join('')}
+        ${f.equity_holdings.length > 3 ? `<li>… +${f.equity_holdings.length - 3} more</li>` : ''}
+      </ul>
+      ` : ''}
+    </div>
+  `;
+  card.appendChild(stats);
+
+  // Right side: narrative + charts
+  const right = document.createElement('div');
+  const verdict = verdictForFamily(f);
+  right.innerHTML = `
+    <p class="narrative">${familyNarrative(f)}</p>
+    <div class="verdict ${verdict.cls}">${verdict.text}</div>
+    <div class="charts-row">
+      <div class="chart-mini">
+        <h3>Monthly income (S)</h3>
+        <canvas id="ch-income-${f.citizen_id}"></canvas>
+      </div>
+      <div class="chart-mini">
+        <h3>Real purchasing power (baskets / UBI)</h3>
+        <canvas id="ch-pp-${f.citizen_id}"></canvas>
+      </div>
+    </div>
+  `;
+  card.appendChild(right);
+
+  return card;
+}
+
+function chartFamily(f) {
+  if (!f.snapshots || f.snapshots.length === 0) return;
+  const labels = f.snapshots.map(s => `Y${s.year + 1}`);
+  const incomes = f.snapshots.map(s => s.monthly_income_s);
+  const pps = f.snapshots.map(s => s.real_pp);
+
+  new Chart(document.getElementById(`ch-income-${f.citizen_id}`), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'income S/mo',
+        data: incomes,
+        borderColor: C.cyan,
+        backgroundColor: C.cyan + '22',
+        borderWidth: 1.5, pointRadius: 2, tension: 0.1, fill: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#232831' } },
+        y: { grid: { color: '#232831' }, ticks: { callback: v => Math.round(v).toLocaleString() } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById(`ch-pp-${f.citizen_id}`), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'real PP',
+          data: pps,
+          borderColor: C.warn,
+          backgroundColor: C.warn + '22',
+          borderWidth: 1.5, pointRadius: 2, tension: 0.1, fill: false,
+        },
+        {
+          label: 'external USD floor (1.72)',
+          data: pps.map(_ => 1.72),
+          borderColor: C.crit,
+          borderDash: [4, 4],
+          borderWidth: 1, pointRadius: 0, fill: false,
+        },
+        {
+          label: 'parity (3.57)',
+          data: pps.map(_ => 3.57),
+          borderColor: C.ok,
+          borderDash: [4, 4],
+          borderWidth: 1, pointRadius: 0, fill: false,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#232831' } },
+        y: {
+          grid: { color: '#232831' },
+          beginAtZero: true,
+          suggestedMax: 4
+        }
+      }
+    }
+  });
+}
+
+async function loadFamilies() {
+  const r = await fetch('/api/families');
+  const d = await r.json();
+  const container = document.getElementById('families-container');
+  container.innerHTML = '';
+  if (!d.families || d.families.length === 0) {
+    container.innerHTML = '<div class="empty-state">No families found. Run a simulation from the dashboard first.</div>';
+    return;
+  }
+  for (const f of d.families) {
+    container.appendChild(renderFamily(f));
+  }
+  // Charts after DOM is in place
+  for (const f of d.families) {
+    chartFamily(f);
+  }
+}
+
+loadFamilies();
+</script>
+
+</body>
+</html>
