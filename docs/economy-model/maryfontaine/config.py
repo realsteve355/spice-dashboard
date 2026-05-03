@@ -64,16 +64,24 @@ class SimConfig:
     })
 
     # ── Behavioural defaults (rarely tuned via slider) ───────────────────
+    # Cashout fractions scaled to match realistic basket/parity rescale (May 2026):
+    # at parity rate $35/S, a saver cashing out 0.286% of S-surplus monthly converts
+    # ~$100 of real USDC out per $35K of S-surplus wealth — matches a realistic
+    # "save 10% of disposable income to external assets" rate. Old stylised values
+    # (0.10 / 0.05 / 0.02) were correct only at $1/S parity.
     cashout_fraction: Dict[str, float] = field(default_factory=lambda: {
-        "saver": 0.10, "balanced": 0.05, "striver": 0.02, "spender": 0.0
+        "saver": 0.10 / 35, "balanced": 0.05 / 35, "striver": 0.02 / 35, "spender": 0.0
     })
     discr_propensity: Dict[str, float] = field(default_factory=lambda: {
         "saver": 0.20, "balanced": 0.50, "striver": 0.40, "spender": 0.80
     })
 
     # ── Founding state ───────────────────────────────────────────────────
-    fisc_reserve_at_founding_usd: float = 5_000_000.0   # at 10% scale
-    fisc_rate_at_founding: float = 1.0                  # USD per S
+    # USD values scaled to match realistic basket scale ($980/month per adult basket).
+    # Reserve and parity rate both ×35 vs the old stylised scale, preserving cover-ratio
+    # dynamics exactly while making absolute dollar labels realistic.
+    fisc_reserve_at_founding_usd: float = 175_000_000.0  # at 10% scale; $1.75B at full scale
+    fisc_rate_at_founding: float = 35.0                  # USD per S — at parity, basket = $980
 
 
 def to_json(cfg: SimConfig) -> Dict[str, Any]:

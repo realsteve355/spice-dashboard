@@ -603,8 +603,9 @@ def gen_wallets(citizens: List[Dict], companies: List[Dict]) -> List[Dict]:
     wid = 1
 
     # Fisc wallet (USDC reserve held here; S supply minted from here for UBI)
+    # $175M at 10% scale matches realistic basket scaling (parity rate $35/S, basket $980)
     wallets.append({"id": wid, "owner_type": "fisc", "owner_id": 0,
-                    "s_balance": 0.0, "usdc_balance": 5_000_000.0})  # scale by --scale outside if desired
+                    "s_balance": 0.0, "usdc_balance": 175_000_000.0})
     wid += 1
 
     # External (sink for cashouts, source for external income). Untracked balance.

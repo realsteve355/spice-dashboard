@@ -15,15 +15,18 @@ import math
 import random
 
 
-# Basket weights at founding (per spec §3 + macro page consistency).
-# Total = $28 USD = 28 S at parity.
+# Basket weights at founding — scaled to realistic per-adult monthly USD consumption.
+# Total = $980 USD = 28 S at parity rate of $35/S.
+# Weights match US BLS CPI proportions: energy 28.6%, food 32.1%, goods 17.9%, services 21.4%.
+# The simulation dynamics are scale-invariant in USD; this rescaling affects only the
+# absolute dollar labels, not the peg-break timing or PP-loss percentages.
 BASKET_WEIGHTS_USD: Dict[str, float] = {
-    "energy":   8.0,    # 28.6%
-    "food":     9.0,    # 32.1%
-    "goods":    5.0,    # 17.9%
-    "services": 6.0,    # 21.4%
+    "energy":   280.0,  # 28.6%  — gasoline, electricity, heating
+    "food":     315.0,  # 32.1%  — groceries
+    "goods":    175.0,  # 17.9%  — manufactured goods (most exposed to AI deflation)
+    "services": 210.0,  # 21.4%  — healthcare, education, restaurants, professional
 }
-BASKET_TARGET_S = 28.0  # the basket-cost-in-S the Fisc tries to maintain
+BASKET_TARGET_S = 28.0  # the basket-cost-in-S the Fisc tries to maintain (S unit, not USD)
 
 
 # ── Annual rate tables (per spec §3.6) ─────────────────────────────────────────

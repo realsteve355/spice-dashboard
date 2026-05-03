@@ -169,7 +169,7 @@
   <div class="basket-comp">
     <h2>What's in the basket?</h2>
     <p class="intro">
-      The basket is 4 abstract categories totalling <strong>$28 USD at colony founding</strong> (= 28 S at parity, $1/S). Weights are loosely modelled on US Bureau of Labor Statistics CPI proportions. The simulator treats each category as an aggregate USD price — no specific goods, no quantities, no quality tiers — and tracks how that price evolves under each scenario.
+      The basket is 4 categories totalling <strong>$980 USD per adult per month at colony founding</strong> (= 28 S at parity rate of $35/S). Weights match US Bureau of Labor Statistics CPI proportions. UBI of 100 S/month is therefore worth $3,500 in real terms at founding — a realistic basic-income equivalent. The simulator tracks how each category's USD price evolves under each scenario.
     </p>
     <table>
       <thead>
@@ -184,31 +184,34 @@
         <tr>
           <td class="cat">Energy</td>
           <td class="num">28.6%</td>
-          <td class="num">$8.00</td>
+          <td class="num">$280</td>
           <td>Gasoline, electricity, natural gas, heating fuel oil, household power</td>
         </tr>
         <tr>
           <td class="cat">Food</td>
           <td class="num">32.1%</td>
-          <td class="num">$9.00</td>
+          <td class="num">$315</td>
           <td>Groceries — food consumed at home. (Restaurants live under Services, since the value is mostly preparation + premises, not raw ingredients.)</td>
         </tr>
         <tr>
           <td class="cat">Goods</td>
           <td class="num">17.9%</td>
-          <td class="num">$5.00</td>
+          <td class="num">$175</td>
           <td>Manufactured durables + non-durables — clothing, electronics, furniture, household goods, vehicles, tools, appliances. The category most exposed to AI deflation in the scenario design.</td>
         </tr>
         <tr>
           <td class="cat">Services</td>
           <td class="num">21.4%</td>
-          <td class="num">$6.00</td>
+          <td class="num">$210</td>
           <td>Healthcare, education, transportation services, restaurants, professional services (legal, accounting), repair, recreation, internal rent. The category most exposed to wage-driven inflation in the scenario design.</td>
         </tr>
       </tbody>
     </table>
     <p class="caveat">
-      <strong>What's deliberately abstracted away.</strong> The basket has no premium-vs-budget tiers, no quantity adjustments (citizens always consume the same basket-multiple regardless of price), no sub-category granularity (a healthcare cost spike has to be modelled by inflating Services as a whole), and no substitution (if energy doubles, citizens don't switch to cheaper alternatives — they just pay more or pay less). These simplifications are deliberate: they keep the model tractable and the 4-category weighting maps cleanly onto scenario design. A v2 could expand to 9 categories matching the CPI more closely, but consistency between this page and the macro page wins for now.
+      <strong>What's deliberately abstracted away.</strong> The basket has no premium-vs-budget tiers, no quantity adjustments (citizens always consume the same basket-multiple regardless of price), no sub-category granularity (a healthcare cost spike has to be modelled by inflating Services as a whole), and no substitution (if energy doubles, citizens don't switch to cheaper alternatives — they just pay more or pay less). These simplifications are deliberate: they keep the model tractable and the 4-category weighting maps cleanly onto scenario design. A v2 could expand to 9 categories matching the CPI more closely.
+    </p>
+    <p class="caveat" style="border-left-color: var(--ok); margin-top: 8px;">
+      <strong>Note on scale.</strong> Earlier model versions used a stylised $28 basket / $1/S parity rate. This was rescaled (May 2026) to realistic absolute dollar values: $980 basket / $35/S parity. <em>The simulation dynamics are unchanged</em> — peg-break timing, PP-loss percentages, and cover-ratio behaviour are scale-invariant under proportional rescaling. What changes is the labels you see (a $280 energy category, not $8) and the family stories making sense (mortgages a realistic fraction of consumption, not 50× a month's basket).
     </p>
   </div>
 
