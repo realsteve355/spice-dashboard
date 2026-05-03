@@ -17,7 +17,7 @@
   <nav>
     <a href="/">Dashboard</a>
     <a href="/how" class="active">How it works</a>
-    <a href="/story">The Convulsion story</a>
+    <a href="/story">The Transition story</a>
     <a href="/levers">Mitigation levers</a>
   </nav>
 </header>
@@ -50,18 +50,18 @@
 
     <h2 id="overview">1. Overview</h2>
     <p>
-      When you click <strong>Run simulation</strong> on the dashboard, the simulator does two things: <strong>builds the colony from scratch</strong> using your seed, then <strong>runs N monthly ticks</strong> (12 to 120 depending on the slider) to simulate the colony's economic life over time. Every transaction is recorded; monthly state snapshots are written; the dashboard charts read from this output.
+      When you click <strong>Run simulation</strong> on the dashboard, the simulator does two things: <strong>builds the colony from scratch</strong> using your variant number, then <strong>runs N monthly ticks</strong> (12 to 120 depending on the slider) to simulate the colony's economic life over time. Every transaction is recorded; monthly state snapshots are written; the dashboard charts read from this output.
     </p>
     <p>
       The simulator is not "agent-based" in the strict ABM sense — it's <strong>transaction-level with per-agent state and rule-based decisions</strong>. Every citizen has their own wallet, behavioural type, household, and state; every company has its own balance, equity holdings, and revenue capacity. But citizens don't make AI-driven decisions — they follow rules whose parameters you can tune.
     </p>
     <p>
-      The point of the simulator is not to grade a fixed design. It's to <strong>search for the configuration of mechanisms that delivers an oasis of calm during the convulsive scarcity-to-abundance transition</strong>. The sliders on the dashboard are the search levers.
+      The point of the simulator is not to grade a fixed design. It's to <strong>search for the configuration of mechanisms that delivers steady ground during the scarcity-to-abundance transition</strong>. The sliders on the dashboard are the search levers.
     </p>
 
     <h2 id="founding">2. Phase A — Founding setup</h2>
     <p>
-      Founding takes about half a second. The DB is wiped and rebuilt from your seed. Six steps:
+      Founding takes about half a second. The DB is wiped and rebuilt from your variant number. Six steps:
     </p>
 
     <h3 id="a1">2.1 Generate citizens</h3>
@@ -126,14 +126,14 @@
     <div class="step">
       <div class="step-num">Step 1</div>
       <div class="step-title">Read the external environment</div>
-      From the scenario table (e.g. Convulsion), look up this month's USD prices for energy, food, goods, services. Computed from annual % rates by geometric compounding: <code>monthly_factor = (1 + annual_rate)^(1/12)</code>. Sum gives total basket USD this month. Under Convulsion, energy starts at $8 and ends at $22.74; goods start at $5 and end at $0.36 (-93%).
+      From the scenario table (e.g. Transition), look up this month's USD prices for energy, food, goods, services. Computed from annual % rates by geometric compounding: <code>monthly_factor = (1 + annual_rate)^(1/12)</code>. Sum gives total basket USD this month. Under Transition, energy starts at $8 and ends at $22.74; goods start at $5 and end at $0.36 (-93%).
     </div>
 
     <div class="step">
       <div class="step-num">Step 2</div>
       <div class="step-title">Compute the Fisc rate</div>
       The Fisc tries to maintain <code>basket cost in S = 28</code>. So <code>target_rate = basket_USD / 28</code>. But it also has to defend the cover ratio: USDC reserve must cover at least 30% of (S supply × rate). If the reserve isn't enough, the rate is forced down (compressed) — basket cost in S then exceeds 28, and that's flagged as the stress signal.
-      <div class="callout crit"><strong>This is where the Convulsion peg-break shows up.</strong> At Y3 the reserve can no longer back the target rate, so the Fisc has to devalue S.</div>
+      <div class="callout crit"><strong>This is where the Transition peg-break shows up.</strong> At Y3 the reserve can no longer back the target rate, so the Fisc has to devalue S.</div>
     </div>
 
     <div class="step">
@@ -277,7 +277,7 @@
       <li><strong>Price competition.</strong> Companies don't compete on price — supplier choice is preference × capacity.</li>
       <li><strong>Macro feedback.</strong> The colony does not affect external markets.</li>
     </ul>
-    <p>If you find that mitigations are insufficient under Convulsion, these deferred mechanisms (especially the strivers economy producing new exporters) might shift the picture meaningfully. That's Phase 3.</p>
+    <p>If you find that mitigations are insufficient under The Transition, these deferred mechanisms (especially the strivers economy producing new exporters) might shift the picture meaningfully. That's Phase 3.</p>
   </article>
 </div>
 

@@ -2,7 +2,7 @@
 SimConfig — tunable parameters exposed to the dashboard sliders.
 
 Defaults match the v1 spec; the dashboard can override any of these per run
-to search for the configuration that delivers the oasis-of-calm criterion.
+to search for the configuration that delivers steady ground criterion.
 """
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
@@ -12,7 +12,7 @@ from typing import Dict, Optional, Any
 @dataclass
 class SimConfig:
     # ── Scenario + run length ─────────────────────────────────────────────
-    scenario: str = "convulsion"
+    scenario: str = "transition"
     months: int = 120
     seed: int = 42
     noise_sigma: float = 0.0                        # 0 = deterministic; 0.003 = ±0.3% monthly

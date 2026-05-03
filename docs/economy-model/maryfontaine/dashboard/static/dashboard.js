@@ -131,7 +131,7 @@ function renderSummary(s) {
     return;
   }
   document.getElementById('run-status').textContent =
-    `${s.metadata?.scenario || '?'} · seed ${s.metadata?.seed || '?'}`;
+    `${s.metadata?.scenario || '?'} · variant ${s.metadata?.seed || '?'}`;
 
   const ppl = s.purchasing_power_loss_pct;
   const pplClass = ppl > 50 ? 'crit' : ppl > 20 ? 'warn' : 'ok';

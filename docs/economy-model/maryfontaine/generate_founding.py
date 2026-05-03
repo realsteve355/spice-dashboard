@@ -724,7 +724,7 @@ def main() -> None:
     ap.add_argument("--db", required=True, help="path to output SQLite DB (will be overwritten)")
     ap.add_argument("--schema", default=None, help="path to schema.sql (defaults to alongside this script)")
     ap.add_argument("--scale", type=float, default=0.1, help="scale factor; 0.1 = 3,900 citizens")
-    ap.add_argument("--scenario", default="convulsion", help="scenario name (recorded in metadata; trajectory built by run.py)")
+    ap.add_argument("--scenario", default="transition", help="scenario name (recorded in metadata; trajectory built by run.py)")
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 

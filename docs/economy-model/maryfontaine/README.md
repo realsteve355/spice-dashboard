@@ -10,8 +10,8 @@ Transaction-level simulation of the MaryFontaine Earth colony per
       transactions, fisc_state, basket_categories, external_environment, citizen_snapshots,
       company_snapshots, archetype_history, unmet_demand, annual_summaries, run_metadata
 - [x] Scenario engine (`scenarios.py`) — six scenarios pre-computed to per-month per-category
-      USD price arrays (AI Realist, AI Optimist, Stagflation, AI+Healthcare, Convulsion,
-      Convulsion+Honda-shock); deterministic by default; optional Gaussian monthly noise
+      USD price arrays (AI Realist, AI Optimist, Stagflation, AI+Healthcare, Transition,
+      Transition+Honda-shock); deterministic by default; optional Gaussian monthly noise
 - [x] Founding data generator (`generate_founding.py`) — instantiates colony at month 0
       from parameters; 3,900 citizens / 2,200 households / 285 companies at 10% scale
 - [x] Validator (`validate.py`) — 8 sanity checks against the generated DB
@@ -30,7 +30,7 @@ python docs/economy-model/maryfontaine/generate_founding.py --db mf.db --seed 42
 python docs/economy-model/maryfontaine/validate.py --db mf.db
 
 # Inspect a scenario trajectory
-python docs/economy-model/maryfontaine/scenarios.py --scenario convulsion
+python docs/economy-model/maryfontaine/scenarios.py --scenario transition
 python docs/economy-model/maryfontaine/scenarios.py --scenario ai_realist --out ai_realist.csv
 ```
 

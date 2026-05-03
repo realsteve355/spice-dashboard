@@ -9,7 +9,7 @@ Usage:
     python generate_founding.py --db mf.db --seed 42
 
     # Then run
-    python run.py --db mf.db --scenario convulsion --months 120
+    python run.py --db mf.db --scenario transition --months 120
     python run.py --db mf.db --scenario ai_realist --months 12   # quick sanity check
 
 After running, the DB contains the full transaction history and snapshots.

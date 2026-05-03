@@ -22,8 +22,8 @@ Optional flags:
 - AI Optimist (aggressive deflation across the board)
 - Stagflation (USD instability dominates)
 - AI + Healthcare crisis (services spike from healthcare)
-- **Convulsion** (the credibility test — accelerating non-linear AI deflation + monetary inflation)
-- **Convulsion + Honda shock** (above + Honda exports drop 50% in Y4)
+- **Transition** (the credibility test — accelerating non-linear AI deflation + monetary inflation)
+- **Transition + Honda shock** (above + Honda exports drop 50% in Y4)
 
 **UBI levers:**
 - Per-citizen S/month (0–200, default 100)
@@ -33,7 +33,7 @@ Optional flags:
 **Fisc:**
 - Cover-ratio target (0.10–0.50, default 0.30)
 
-**Mitigations** (the search levers for the oasis-of-calm config):
+**Mitigations** (the search levers for the steady-ground config):
 - LAT (Local Automation Tax) rate (0–20% of company revenue capacity)
 - Honda Inc dividend vesting (toggle — keeps S in colony, no USDC cashout)
 - Refinance mortgages → S (toggle — colony bank buyout, no USDC outflow)
@@ -57,7 +57,7 @@ Optional flags:
 - `server.py` — stdlib `http.server.ThreadingHTTPServer`. Reads SQLite for query endpoints; spawns a daemon thread to run the sim on POST /api/run.
 - `templates/dashboard.html` — single page, mission-control aesthetic ported from `src/tokens.js`.
 - `static/dashboard.js` — vanilla JS, Chart.js for rendering, polls `/api/state` every 700ms while a run is in progress.
-- Each Run regenerates founding data with the configured seed + scale, then runs the configured tick. Previous run's DB is overwritten — single-run-at-a-time. (Comparison view is a v2 feature.)
+- Each Run regenerates founding data with the configured variant + scale, then runs the configured tick. Previous run's DB is overwritten — single-run-at-a-time. (Comparison view is a v2 feature.)
 
 ## What's deferred to v2
 

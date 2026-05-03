@@ -6,7 +6,7 @@ years 1-10. Within-month evolution is geometric: monthly_factor = (1 + annual)^(
 Optional Gaussian noise on top (default off for reproducibility).
 
 Run standalone to dump CSV trajectories for inspection:
-    python -m docs.economy-model.maryfontaine.scenarios --scenario convulsion --out trajectory.csv
+    python -m docs.economy-model.maryfontaine.scenarios --scenario transition --out trajectory.csv
 """
 from __future__ import annotations
 from dataclasses import dataclass
@@ -55,7 +55,7 @@ ANNUAL_RATES: Dict[str, Dict[str, List[float]]] = {
         "goods":    [-0.08, -0.12, -0.15, -0.15, -0.14, -0.12, -0.10, -0.08, -0.06, -0.04],
         "services": [0.05,  0.12,  0.15,  0.12,  0.08,  0.06,  0.05,  0.05,  0.04,  0.03],
     },
-    "convulsion": {
+    "transition": {
         # The credibility test. Accelerating non-linear AI deflation in goods peaking Y5;
         # simultaneous USD inflation in services + energy from monetary response peaking Y4.
         "energy":   [0.10,  0.14,  0.18,  0.22,  0.18,  0.12,  0.08,  0.05,  0.03,  0.02],
@@ -63,8 +63,8 @@ ANNUAL_RATES: Dict[str, Dict[str, List[float]]] = {
         "goods":    [-0.08, -0.16, -0.24, -0.32, -0.38, -0.34, -0.28, -0.20, -0.14, -0.10],
         "services": [0.08,  0.12,  0.16,  0.18,  0.14,  0.10,  0.07,  0.05,  0.03,  0.02],
     },
-    "convulsion_honda_shock": {
-        # Same per-category trajectory as Convulsion. The Honda export shock
+    "transition_honda_shock": {
+        # Same per-category trajectory as Transition. The Honda export shock
         # is layered separately by the simulator (on company_revenue), not on
         # category prices. See HONDA_SHOCK_SCHEDULE below.
         "energy":   [0.10,  0.14,  0.18,  0.22,  0.18,  0.12,  0.08,  0.05,  0.03,  0.02],
@@ -75,11 +75,11 @@ ANNUAL_RATES: Dict[str, Dict[str, List[float]]] = {
 }
 
 
-# Honda shock schedule (per spec §3.6 Convulsion + Honda shock).
+# Honda shock schedule (per spec §3.6 Transition + Honda shock).
 # Returns the multiplier to apply to Honda's monthly export USD baseline.
 # Month index is 1-based (month 1 = first month of simulation).
 def honda_shock_multiplier(month_index: int, scenario: str) -> float:
-    if scenario != "convulsion_honda_shock":
+    if scenario != "transition_honda_shock":
         return 1.0
     # Months 1-38: full strength
     if month_index <= 38:

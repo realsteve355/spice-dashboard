@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The Convulsion story — MaryFontaine Simulator</title>
+<title>The Transition story — MaryFontaine Simulator</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -11,13 +11,13 @@
   <div class="row1">
     <div>
       <h1>MaryFontaine — Colony Economy Simulator</h1>
-      <div class="subtitle">The Convulsion story — what happens at default settings</div>
+      <div class="subtitle">The Transition story — what happens at default settings</div>
     </div>
   </div>
   <nav>
     <a href="/">Dashboard</a>
     <a href="/how">How it works</a>
-    <a href="/story" class="active">The Convulsion story</a>
+    <a href="/story" class="active">The Transition story</a>
     <a href="/levers">Mitigation levers</a>
   </nav>
 </header>
@@ -38,9 +38,9 @@
   </aside>
 
   <article class="doc-body">
-    <h1>The Convulsion story</h1>
+    <h1>The Transition story</h1>
     <div class="lede">
-      Year-by-year, what happens to a 3,900-person colony under the Convulsion scenario at default settings. UBI 100 S/month, no LAT, no Honda vesting, no mortgage refinance. The peg breaks in year 3. By year 10, citizens have lost <strong>68% of real purchasing power</strong>. Then we look at what happens with mitigations on.
+      Year-by-year, what happens to a 3,900-person colony under the Transition scenario at default settings. UBI 100 S/month, no LAT, no Honda vesting, no mortgage refinance. The peg breaks in year 3. By year 10, citizens have lost <strong>68% of real purchasing power</strong>. Then we look at what happens with mitigations on.
     </div>
 
     <h2 id="setup">1. The setup</h2>
@@ -48,7 +48,7 @@
       The colony starts with <strong>3,900 citizens</strong> across 12 archetypes, <strong>2,200 households</strong>, <strong>285 companies</strong>. The Fisc has <strong>$5M USDC reserve</strong>. Total founding S supply is <strong>~$2.5M</strong> in company working capital. The basket of goods costs $28 USD = 28 S at parity ($1/S).
     </p>
     <p>
-      <strong>The Convulsion scenario</strong> is the credibility test: AI deflation in tradable goods accelerating non-linearly through the decade (-8% Y1 → -38% Y5 → -10% Y10), simultaneous USD inflation in services and energy from monetary response (energy +10% Y1 → +22% Y4 → +2% Y10), and food inflation peaking mid-decade. By Y10, the basket has cost in USD has roughly doubled from $28 to $58, but the composition has shifted dramatically — energy and services up, hard goods nearly worthless.
+      <strong>The Transition scenario</strong> is the credibility test: AI deflation in tradable goods accelerating non-linearly through the decade (-8% Y1 → -38% Y5 → -10% Y10), simultaneous USD inflation in services and energy from monetary response (energy +10% Y1 → +22% Y4 → +2% Y10), and food inflation peaking mid-decade. By Y10, the basket has cost in USD has roughly doubled from $28 to $58, but the composition has shifted dramatically — energy and services up, hard goods nearly worthless.
     </p>
     <p>
       <strong>The Fisc's job</strong>: keep the basket costing 28 S throughout, regardless of what the underlying USD prices do. Citizens shouldn't experience the wider world's chaos — they should see stable prices in their own currency.
@@ -69,7 +69,7 @@
       First 24 months: things look fine. UBI mints 4.7M S/year. Honda exports $4.5M/year, remote workers bring in ~$10M/year, retiree pensions add ~$3.8M/year. Total inflows ~$18M/year. Outflows: imports ~$5M, mortgages ~$13M, external rent ~$3.7M, Honda Inc dividend cashout ~$3M. Net: roughly balanced, slightly positive in early years.
     </p>
     <p>
-      The reserve grows from $5M to $13M as the colony cashes in on Honda exports. The Fisc rate edges up from $1 to $1.26 because basket USD prices are rising (energy inflation outpacing goods deflation in early Convulsion years). Cover ratio drops from 0.80 to 0.42 — still well above the 0.30 floor.
+      The reserve grows from $5M to $13M as the colony cashes in on Honda exports. The Fisc rate edges up from $1 to $1.26 because basket USD prices are rising (energy inflation outpacing goods deflation in early Transition years). Cover ratio drops from 0.80 to 0.42 — still well above the 0.30 floor.
     </p>
     <div class="callout">
       The colony looks like it's working. <strong>This is the dangerous bit</strong> — a viewer could see Y1 and Y2 numbers and conclude the design holds. The stress hasn't started compounding yet.
@@ -164,7 +164,7 @@
 
     <h2 id="mitigated">8. The same colony, mitigated</h2>
     <p>
-      Run Convulsion again with three switches: <strong>LAT 5%</strong>, <strong>Honda Inc dividend vesting</strong>, <strong>mortgage refinance to S</strong>.
+      Run Transition again with three switches: <strong>LAT 5%</strong>, <strong>Honda Inc dividend vesting</strong>, <strong>mortgage refinance to S</strong>.
     </p>
     <table>
       <thead>
@@ -190,11 +190,11 @@
       Half the welfare loss with three switches. None of the mitigations fundamentally change the design — they're plausible policy choices. LAT taxes automated firms (the source of the deflation in the first place); Honda vesting prevents external capital flight; mortgage refinancing converts USD obligations into S obligations.
     </p>
     <div class="callout ok">
-      <strong>This is what the simulation is for.</strong> The unmitigated Convulsion run shows the colony in trouble. The mitigated run shows what it takes to cope. Together they tell us the design <em>can</em> work, but only with deliberate reserve-replenishment + capital-retention mechanisms. The default no-LAT zero-mitigation baseline is <em>not</em> the recommended configuration — it's the experimental control.
+      <strong>This is what the simulation is for.</strong> The unmitigated Transition run shows the colony in trouble. The mitigated run shows what it takes to cope. Together they tell us the design <em>can</em> work, but only with deliberate reserve-replenishment + capital-retention mechanisms. The default no-LAT zero-mitigation baseline is <em>not</em> the recommended configuration — it's the experimental control.
     </div>
 
     <p>
-      Try the dashboard yourself. Start with Convulsion, no mitigations. Then turn on LAT, then Honda vesting, then mortgage refi, one at a time. Each lever's contribution becomes visible in the basket-cost and reserve charts.
+      Try the dashboard yourself. Start with Transition, no mitigations. Then turn on LAT, then Honda vesting, then mortgage refi, one at a time. Each lever's contribution becomes visible in the basket-cost and reserve charts.
     </p>
   </article>
 </div>

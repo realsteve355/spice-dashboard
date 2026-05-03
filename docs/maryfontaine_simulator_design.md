@@ -6,7 +6,7 @@ A 10-year, transaction-level simulation of the MaryFontaine colony at 10% scale 
 
 This document is the build specification. It pins down schema, founding data, monthly tick algorithm, archetype behaviour, and dashboard scope. The simulator instantiates the SPICE economic design as defined in `mars_colony_economy.md`, adapted for an Earth colony with external currency boundary, mortgages and other inherited obligations, and a narrow MCC scope (utilities billing only).
 
-**Framing — what success looks like.** The simulation's job is to demonstrate that the colony provides an *oasis of calm* during the convulsive transition from a scarcity economy to an abundance economy — not to demonstrate steady-state stability under benign conditions. The credibility test is the **Convulsion** scenario (§3.6), not the mild AI-Realist baseline. If the colony can sustain citizen welfare and a stable basket-cost-in-S through accelerating non-linear AI deflation, simultaneous USD service/energy inflation, and discrete employer shocks, the design works. If it can't, we've found a fundamental flaw — exactly what we want to know before building real colonies on it.
+**Framing — what success looks like.** The simulation's job is to find the configuration of mechanisms that gives the colony *steady ground* during the transition from a scarcity economy to an abundance economy — not to demonstrate steady-state stability under benign conditions. The credibility test is the **Transition** scenario (§3.6), not the mild AI-Realist baseline. If the colony can sustain citizen welfare and a stable basket-cost-in-S through accelerating non-linear AI deflation, simultaneous USD service/energy inflation, and discrete employer shocks, the design works. If it can't, we've found a fundamental flaw — exactly what we want to know before building real colonies on it.
 
 **Note on framing.** This is rule-based with per-agent state and stochastic decisions, not agent-based modelling in the strict academic sense. Describe externally as "transaction-level colony economy simulation" rather than "agent-based simulation."
 
@@ -355,7 +355,7 @@ Note: I've kept the 4-category basket from the macro page for consistency. A v2 
 
 ### 3.6 External environment scenarios
 
-Six scenarios. The first four are baselines (sanity-check the engine produces sensible numbers under benign-to-moderate conditions). The last two — **Convulsion** and **Convulsion + Honda shock** — are the credibility tests, calibrated to the convulsive scarcity→abundance transition that motivates the project.
+Six scenarios. The first four are baselines (sanity-check the engine produces sensible numbers under benign-to-moderate conditions). The last two — **Transition** and **Transition + Honda shock** — are the credibility tests, calibrated to the disruptive scarcity→abundance transition that motivates the project.
 
 Each scenario specifies **annual percentage change per basket category** for years 1–10. Within-month evolution uses geometric compounding: `monthly_factor = (1 + annual_rate) ** (1/12)`. Optional ±0.3% monthly Gaussian noise can be added for realism (configurable; off by default for reproducibility).
 
@@ -398,7 +398,7 @@ Services:   +5  +12  +15  +12   +8   +6   +5   +5   +4   +3
 ```
 *(Healthcare-driven services inflation; if healthcare were broken out as a 5th category we'd target it at +20% Y2–5; v1 lumps it into services.)*
 
-**Convulsion** (the credibility test — accelerating non-linear AI deflation in goods, simultaneous USD inflation in services and energy from monetary response, peaking mid-horizon then tapering as the new equilibrium emerges):
+**Transition** (the credibility test — accelerating non-linear AI deflation in goods, simultaneous USD inflation in services and energy from monetary response, peaking mid-horizon then tapering as the new equilibrium emerges):
 ```
 Year:        1    2    3    4    5    6    7    8    9   10
 Energy:    +10  +14  +18  +22  +18  +12   +8   +5   +3   +2
@@ -409,8 +409,8 @@ Services:   +8  +12  +16  +18  +14  +10   +7   +5   +3   +2
 
 Reading: by end of Y5 the USD price of hard goods has fallen by ~75% cumulatively (compounded), while services and energy have roughly doubled. That divergence is what the basket-anchoring has to absorb. The Fisc's job is keeping the basket costing 28 S throughout — citizens experience S as stable in real terms even as USD prices go wild in opposite directions.
 
-**Convulsion + Honda shock** (all of Convulsion plus a discrete employer shock — automotive demand collapses mid-decade as AI-driven design changes obsolete the existing line; the colony's largest external earner takes a structural hit):
-- Same per-category trajectory as Convulsion
+**Transition + Honda shock** (all of Transition plus a discrete employer shock — automotive demand collapses mid-decade as AI-driven design changes obsolete the existing line; the colony's largest external earner takes a structural hit):
+- Same per-category trajectory as Transition
 - Honda MaryFontaine exports drop **50% in month 39 (start of Q3 of Y4)** — implemented as a step function on `company_revenue.honda_export_usd`
 - Recovery: linear ramp from 50% back to **70% of original** over months 40–63 (24 months)
 - New baseline of 70% holds for months 64–120 (Honda has restructured around a smaller, more automated production line)
@@ -656,7 +656,7 @@ def pick_colony_supplier_for_category(category, household):
 
 **What this captures, what it doesn't.** Captures: market share emerging from preference + supply-side capacity, demand routing under stress, unmet demand as a stress signal. Doesn't capture: price competition, quality differentiation, advertising, network effects, switching costs. v1 is "good enough to test whether the macroeconomy works"; v2 can layer pricing dynamics if useful.
 
-**Instrumentation.** Track `unmet_demand_s` per category per month. If this is consistently > 5% of total demand under Convulsion, the failure mechanism (§4.10) isn't pruning the right companies and supply isn't reorganising — that's a finding worth surfacing.
+**Instrumentation.** Track `unmet_demand_s` per category per month. If this is consistently > 5% of total demand under The Transition, the failure mechanism (§4.10) isn't pruning the right companies and supply isn't reorganising — that's a finding worth surfacing.
 
 ### 4.8. Citizen behaviour decisions
 
@@ -726,7 +726,7 @@ for citizen in active_citizens:
 
 **What this captures.** The pathway from "passive UBI recipient" to "active equity-holding striver" to "small business owner with permanent equity" is the colony's social-mobility mechanism. If the simulation runs and almost no ubi_only_choice citizens transition to striver, the system isn't producing the dynamism Steve's vision requires — that's a finding. Conversely, if many transition out of ubi_only_choice into productive archetypes, the colony is doing its job. Reverse transitions (job loss back to UBI) are the safety-net mechanism — losing your job in MaryFontaine should be uncomfortable but not catastrophic.
 
-**Tuning.** SUBSISTENCE_S and SURPLUS_DURATION_MONTHS are config-driven. Calibrate at first run such that under AI-Realist baseline, ~10–20% of ubi_only_choice citizens transition over 10 years. Under Convulsion, observe what happens — too many or too few transitions are both signals.
+**Tuning.** SUBSISTENCE_S and SURPLUS_DURATION_MONTHS are config-driven. Calibrate at first run such that under AI-Realist baseline, ~10–20% of ubi_only_choice citizens transition over 10 years. Under Transition, observe what happens — too many or too few transitions are both signals.
 
 ### 4.9. Company founding (the strivers mechanism)
 
@@ -886,7 +886,7 @@ Following Mars patterns (`server.py` + `dashboard.html`).
 - Companies that successfully exported externally (boundary-crossing strivers)
 - Wealth accumulation profiles for top citizens
 - **Archetype transition flow** — Sankey or stacked-area showing citizens moving between archetypes over 120 months. Driven by `archetype_history` table (§2). Particular focus: ubi_only_choice → striver → small_business_owner pathway, and reverse flows from job loss.
-- Transition rate per scenario (compare AI-Realist vs Convulsion side-by-side)
+- Transition rate per scenario (compare AI-Realist vs Transition side-by-side)
 - "Stuck" citizens: cohort that remains in ubi_only_choice the entire run despite running surplus — diagnose whether colony has barriers to mobility, or these citizens are content there
 
 ---
@@ -927,7 +927,7 @@ Following Mars patterns (`server.py` + `dashboard.html`).
 ### Phase 5: Validation and analysis (~2-3 days)
 1. Run all six scenarios end-to-end
 2. Sanity-check outputs against macro-page expectations under AI-Realist
-3. **Convulsion scenario is the credibility test** — if the basket peg breaks, the reserve depletes, or median citizen welfare collapses, that's the finding to investigate
+3. **Transition scenario is the credibility test** — if the basket peg breaks, the reserve depletes, or median citizen welfare collapses, that's the finding to investigate
 4. Side-by-side scenario comparison; identify which mechanisms are load-bearing
 5. Adjust parameters that produce obviously wrong results; re-run
 
@@ -1001,7 +1001,7 @@ If we later want a fully interactive version on zpc.finance, we'd port the simul
 Recorded 2 May 2026 after Steve's review of the original spec.
 
 **Strategic reframing**
-- Added top-level "oasis of calm during the convulsive scarcity→abundance transition" framing as the simulation's success criterion
+- Added top-level "steady ground during the disruptive scarcity→abundance transition" framing as the simulation's success criterion
 - Reframed externally as "transaction-level simulation" not "agent-based simulation" (§8.9)
 - Two-product end-state acknowledged: this Earth simulator + a future Simple Colony simulator (university campus / religious community scale, Mars-style closed economy)
 
@@ -1010,7 +1010,7 @@ Recorded 2 May 2026 after Steve's review of the original spec.
 - §3, §8.8: **MCC scope narrowed to utilities billing only** (originally ambiguous "small MCC scope"). Healthcare and education explicitly moved to private colony companies.
 
 **Mechanisms specified that were previously stubs or hand-waves**
-- §3.6: External environment scenarios fully numerically specified for all four originals (AI Realist, AI Optimist, Stagflation, AI+Healthcare crisis), plus two new scenarios — **Convulsion** and **Convulsion + Honda shock** — calibrated as the credibility tests
+- §3.6: External environment scenarios fully numerically specified for all four originals (AI Realist, AI Optimist, Stagflation, AI+Healthcare crisis), plus two new scenarios — **Transition** and **Transition + Honda shock** — calibrated as the credibility tests
 - §4.7.1: Supplier-picker / market-share mechanism specified as preference × spare-capacity weighted random pick (Dirichlet-drawn household preferences, sector-typical max-revenue capacity)
 - §4.8.1 + §2: Archetype transition mechanism specified (ubi_only_choice → striver → small_business_owner pathway with thresholds and reverse flows). New `archetype_history` table.
 

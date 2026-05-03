@@ -17,7 +17,7 @@
   <nav>
     <a href="/">Dashboard</a>
     <a href="/how">How it works</a>
-    <a href="/story">The Convulsion story</a>
+    <a href="/story">The Transition story</a>
     <a href="/levers" class="active">Mitigation levers</a>
   </nav>
 </header>
@@ -45,7 +45,7 @@
   <article class="doc-body">
     <h1>Mitigation levers</h1>
     <div class="lede">
-      Each slider on the dashboard controls a specific mechanism in the monthly tick. This page explains what the mechanism does, what flow it changes, and when you'd use it. Use this as the field guide while you search for the configuration that delivers the oasis-of-calm.
+      Each slider on the dashboard controls a specific mechanism in the monthly tick. This page explains what the mechanism does, what flow it changes, and when you'd use it. Use this as the field guide while you search for the configuration that delivers steady ground.
     </div>
 
     <h2 id="scenario">Scenario</h2>
@@ -57,8 +57,8 @@
       <li><strong>AI Optimist</strong> — aggressive deflation across the board. Tests whether the colony handles a productivity boom. Reserve grows easily; risk is over-deflation.</li>
       <li><strong>Stagflation</strong> — USD instability dominates. Energy + food + services all inflate; goods barely deflate. Reserve drains faster than usual.</li>
       <li><strong>AI + Healthcare crisis</strong> — AI Optimist + a healthcare cost shock in services. Tests how a sector-specific shock propagates.</li>
-      <li><strong>Convulsion</strong> — the credibility test. Accelerating non-linear AI deflation in goods + simultaneous USD inflation in services/energy. The stress case the simulation was built for.</li>
-      <li><strong>Convulsion + Honda shock</strong> — Convulsion + Honda exports drop 50% in Q3 of Year 4, recover to 70% by Y6. Tests whether the colony survives a single-employer shock on top of structural deflation.</li>
+      <li><strong>Transition</strong> — the credibility test. Accelerating non-linear AI deflation in goods + simultaneous USD inflation in services/energy. The stress case the simulation was built for.</li>
+      <li><strong>Transition + Honda shock</strong> — Transition + Honda exports drop 50% in Q3 of Year 4, recover to 70% by Y6. Tests whether the colony survives a single-employer shock on top of structural deflation.</li>
     </ul>
 
     <h2 id="months">Run length</h2>
@@ -71,7 +71,7 @@
     <p><strong>Mechanism.</strong> At step 3 of every tick, the Fisc mints <code>ubi_s_per_citizen</code> S into each living adult's wallet. <em>USDC reserve is not affected — S is created out of nothing.</em> Total monthly mint = UBI × number of living adults.</p>
     <p><strong>Effect on flows.</strong> Higher UBI → faster S supply growth → more pressure on cover ratio → faster peg compression. Lower UBI → less inflation pressure but also less citizen welfare.</p>
     <div class="callout">
-      The default 100 S is one of the strongest welfare mechanisms (citizens get $100/month equivalent) but also one of the strongest reserve drains. <strong>Try lowering to 50</strong> under Convulsion and watch the basket-S curve flatten. The trade-off is purchasing power vs. peg stability.
+      The default 100 S is one of the strongest welfare mechanisms (citizens get $100/month equivalent) but also one of the strongest reserve drains. <strong>Try lowering to 50</strong> under The Transition and watch the basket-S curve flatten. The trade-off is purchasing power vs. peg stability.
     </div>
 
     <h2 id="ubi-children">UBI multiplier for children</h2>
@@ -94,7 +94,7 @@
     <p><strong>What it controls.</strong> The minimum fraction of (S supply × current rate) that the USDC reserve must cover.</p>
     <p><strong>Mechanism.</strong> At step 2 of every tick, the Fisc checks: if reserve &lt; (S × target_rate × cover_target), it forces the rate down to the highest value the reserve can back. Lower target = more aggressive defence (higher rate held longer); higher target = more conservative (rate compresses earlier but defends a bigger buffer).</p>
     <p><strong>Counter-intuitive trade-off.</strong> A lower cover target seems "looser" but actually <em>defends the peg longer</em> because the reserve doesn't need to grow as fast. A higher cover target compresses the rate sooner but leaves a fatter cushion for shocks.</p>
-    <p><strong>When to use.</strong> Try lowering to 0.15 under Convulsion — you'll see the peg hold longer at the cost of reduced shock-resilience. This is a parameter the design itself doesn't currently fix; the spec asserted 0.30 without derivation.</p>
+    <p><strong>When to use.</strong> Try lowering to 0.15 under The Transition — you'll see the peg hold longer at the cost of reduced shock-resilience. This is a parameter the design itself doesn't currently fix; the spec asserted 0.30 without derivation.</p>
 
     <h2 id="lat">LAT rate (Local Automation Tax)</h2>
     <p><strong>Default: 0% (off). Range: 0–20%.</strong></p>
@@ -102,7 +102,7 @@
     <p><strong>Mechanism.</strong> At step 7.5 of every tick (after MCC bills, before consumption), each non-MCC company pays <code>lat_rate × max_revenue_per_month_s</code> to the Fisc. The S is <strong>destroyed</strong> — taken out of supply. <em>This reduces the cover-ratio denominator (S supply × rate), so the same reserve covers more S, which lets the Fisc hold the peg longer.</em></p>
     <p><strong>Effect on flows.</strong> Burns S monthly. At LAT 5% on MaryFontaine's ~$1.7M/month total revenue capacity, that's ~$85K of S burned per month — about 22% of monthly UBI mint. Materially offsets supply growth.</p>
     <div class="callout ok">
-      <strong>The single most powerful reserve-defence lever.</strong> The original spec excluded LAT from v1 to test whether the design could work without it; under Convulsion, the answer was no. LAT 5% alone (no other mitigations) is enough to delay the peg break by 3-4 years.
+      <strong>The single most powerful reserve-defence lever.</strong> The original spec excluded LAT from v1 to test whether the design could work without it; under The Transition, the answer was no. LAT 5% alone (no other mitigations) is enough to delay the peg break by 3-4 years.
     </div>
     <p><strong>Real-world interpretation.</strong> LAT taxes automated firms (high-automation = high revenue per worker = the source of the AI deflation in the first place). The colony recaptures some of the wealth being concentrated in capital, redistributes it through the Fisc, and uses it to back citizens' currency. Politically defensible if framed as "machines pay tax."</p>
 
@@ -112,7 +112,7 @@
     <p><strong>Mechanism.</strong> At step 12, when distributing dividend to a holding with <code>holder_type = 'external'</code> (Honda Inc on Honda's books), the simulator normally converts the S to USDC at the current rate and ships it out — draining the reserve. With vesting on, the S stays in the colony economy (held conceptually at "external" wallet but not converted).</p>
     <p><strong>Effect on flows.</strong> Honda Inc's 60% stake in Honda generates $200-400K/month of dividend at 10% scale. Cashing this out drains the reserve persistently. Vesting it stops that drain dead. One of the largest single levers.</p>
     <div class="callout ok">
-      <strong>The second-strongest reserve-defence lever.</strong> Combined with LAT 5%, Honda vesting takes the Convulsion peg break from Y3 to Y7.
+      <strong>The second-strongest reserve-defence lever.</strong> Combined with LAT 5%, Honda vesting takes the Transition peg break from Y3 to Y7.
     </div>
     <p><strong>Real-world interpretation.</strong> When a colony is founded, the founding documents could require external strategic shareholders to vest their dividends in S for N years before allowed cashout. Standard practice in many emerging-market currency unions; protects the colony's capital base during build-up.</p>
 
@@ -147,22 +147,22 @@
     <h2 id="combos">Useful combinations</h2>
     <p>Some configurations to try, and what they tell you:</p>
 
-    <h3>Baseline / control: Convulsion, all defaults</h3>
+    <h3>Baseline / control: Transition, all defaults</h3>
     <p>The unmitigated case. Peg breaks Y3, citizens lose 68% PP. Use this as the comparison floor for everything else.</p>
 
-    <h3>Reasonable mitigations: Convulsion + LAT 5% + Honda vest + mortgage refi</h3>
+    <h3>Reasonable mitigations: Transition + LAT 5% + Honda vest + mortgage refi</h3>
     <p>Three plausible policy choices. Peg holds Y0-Y6, PP loss 32%. The headline finding from the build commit. <em>Try this first if you want to see the lever effects in one pass.</em></p>
 
-    <h3>Maximum reserve defence: Convulsion + LAT 10% + Honda vest + mortgage refi + ext rent refi + S-tax 3%</h3>
+    <h3>Maximum reserve defence: Transition + LAT 10% + Honda vest + mortgage refi + ext rent refi + S-tax 3%</h3>
     <p>Stack everything plausible. Tests how close to a fully-defended peg you can get without going to extreme measures (like cutting UBI).</p>
 
-    <h3>Welfare-first: Convulsion + UBI 150 + LAT 8% + Honda vest + mortgage refi</h3>
-    <p>What if you want to <em>raise</em> citizen welfare during the convulsion (boost UBI) while still using mitigations to protect the peg? Tests whether the levers are powerful enough to fund higher UBI.</p>
+    <h3>Welfare-first: Transition + UBI 150 + LAT 8% + Honda vest + mortgage refi</h3>
+    <p>What if you want to <em>raise</em> citizen welfare during the transition (boost UBI) while still using mitigations to protect the peg? Tests whether the levers are powerful enough to fund higher UBI.</p>
 
-    <h3>Means-tested experiment: Convulsion + retirees-only UBI</h3>
+    <h3>Means-tested experiment: Transition + retirees-only UBI</h3>
     <p>Cuts ~70% of UBI mint. Peg holds. But citizens not eligible for UBI experience zero direct income from the colony — they rely entirely on dividends + external income + savings. Tests whether the SPICE design can work as a safety-net rather than universal benefit. Politically loaded.</p>
 
-    <h3>Capital flight: Convulsion + cashout multiplier 2.0</h3>
+    <h3>Capital flight: Transition + cashout multiplier 2.0</h3>
     <p>Citizens lose confidence and convert S faster. How much extra reserve drain does this cause, and can the standard mitigations cope? Useful as a black-swan stress test.</p>
 
     <h3>The optimist case: AI Realist + all defaults</h3>
