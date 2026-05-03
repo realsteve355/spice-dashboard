@@ -319,6 +319,12 @@ class DashboardHandler(BaseHTTPRequestHandler):
         try:
             if p == "/" or p == "/index.html":
                 self._send_file(self.templates_dir / "dashboard.html", "text/html; charset=utf-8")
+            elif p == "/how":
+                self._send_file(self.templates_dir / "how.html", "text/html; charset=utf-8")
+            elif p == "/story":
+                self._send_file(self.templates_dir / "story.html", "text/html; charset=utf-8")
+            elif p == "/levers":
+                self._send_file(self.templates_dir / "levers.html", "text/html; charset=utf-8")
             elif p.startswith("/static/"):
                 rel = p[len("/static/"):]
                 content_type = "application/javascript" if rel.endswith(".js") else \

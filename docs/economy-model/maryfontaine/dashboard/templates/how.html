@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>How it works — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">How the simulator actually works</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/how" class="active">How it works</a>
+    <a href="/story">The Convulsion story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="doc-layout">
+  <aside class="doc-toc">
+    <h3>On this page</h3>
+    <ul>
+      <li><a href="#overview">1. Overview</a></li>
+      <li><a href="#founding">2. Phase A — Founding</a></li>
+      <li><a href="#a1">2.1 Citizens</a></li>
+      <li><a href="#a2">2.2 Households</a></li>
+      <li><a href="#a3">2.3 Companies</a></li>
+      <li><a href="#a4">2.4 Equity</a></li>
+      <li><a href="#a5">2.5 Wallets</a></li>
+      <li><a href="#a6">2.6 Preferences</a></li>
+      <li><a href="#tick">3. Phase B — Monthly tick</a></li>
+      <li><a href="#tick-order">3.1 Order of operations</a></li>
+      <li><a href="#tick-steps">3.2 The 15 steps</a></li>
+      <li><a href="#output">4. What lives in the DB</a></li>
+      <li><a href="#scope">5. What's not simulated</a></li>
+    </ul>
+  </aside>
+
+  <article class="doc-body">
+    <h1>How the MaryFontaine simulator works</h1>
+    <div class="lede">
+      A walk-through of what happens when you click <strong>Run simulation</strong>. Two phases — founding setup (one shot) and the monthly tick (120 times). About 15 distinct mechanisms move S and USDC around the colony each month, recording every transaction. The Fisc tries to keep the basket of goods costing 28 S; under stress, it has to compress the rate; that compression is the headline finding.
+    </div>
+
+    <h2 id="overview">1. Overview</h2>
+    <p>
+      When you click <strong>Run simulation</strong> on the dashboard, the simulator does two things: <strong>builds the colony from scratch</strong> using your seed, then <strong>runs N monthly ticks</strong> (12 to 120 depending on the slider) to simulate the colony's economic life over time. Every transaction is recorded; monthly state snapshots are written; the dashboard charts read from this output.
+    </p>
+    <p>
+      The simulator is not "agent-based" in the strict ABM sense — it's <strong>transaction-level with per-agent state and rule-based decisions</strong>. Every citizen has their own wallet, behavioural type, household, and state; every company has its own balance, equity holdings, and revenue capacity. But citizens don't make AI-driven decisions — they follow rules whose parameters you can tune.
+    </p>
+    <p>
+      The point of the simulator is not to grade a fixed design. It's to <strong>search for the configuration of mechanisms that delivers an oasis of calm during the convulsive scarcity-to-abundance transition</strong>. The sliders on the dashboard are the search levers.
+    </p>
+
+    <h2 id="founding">2. Phase A — Founding setup</h2>
+    <p>
+      Founding takes about half a second. The DB is wiped and rebuilt from your seed. Six steps:
+    </p>
+
+    <h3 id="a1">2.1 Generate citizens</h3>
+    <p>
+      The simulator creates <strong>3,900 individuals</strong> at 10% scale (10% of the full MaryFontaine target of 39,000). Each citizen gets:
+    </p>
+    <ul>
+      <li>An <strong>archetype</strong> drawn from 12 categories — children under 18 (23.1%), Honda assembly workers (8.2%), Honda admin (2.1%), other manufacturing (6.4%), healthcare workers (4.6%), education workers (3.1%), retail/services (10.3%), small business owners (3.8%), sole traders (5.1%), remote workers (3.8%), retirees (21.8%), ubi-only-by-choice (7.7%). Proportions match the spec to within ±0.5%.</li>
+      <li>A <strong>behavioural type</strong> — saver / balanced / striver / spender — drawn from a per-archetype distribution. Honda assembly workers are 30% saver / 50% balanced / 15% striver / 5% spender; strivers are over-represented among small business owners; retirees are 60% saver. This affects how they spend and save later.</li>
+      <li>A <strong>starting age</strong> — children 0–17, retirees 65–90, everyone else 18–65.</li>
+      <li>For <strong>remote workers</strong>: a monthly external USD income drawn from {60% × $50K/yr, 30% × $75K/yr, 10% × $120K/yr}.</li>
+      <li>For <strong>retirees</strong>: a 30% chance of an external pension of $500–$2,000/month USD; the other 70% rely on permanent equity dividends + savings.</li>
+    </ul>
+
+    <h3 id="a2">2.2 Form households</h3>
+    <p>
+      Citizens get grouped into ~2,200 households. Children must live with adults. The mix is roughly 1/3 family-with-kids, 1/4 single-adult, 1/6 couple-no-kids, 5% single-parent. Each household gets:
+    </p>
+    <ul>
+      <li>A <strong>housing type</strong>: 30% own outright, 35% own with a mortgage, 25% rent inside the colony, 10% rent from an external landlord.</li>
+      <li>For the 35% with mortgages: a remaining balance ($50K–$300K), interest rate (4–7%), and remaining months (60–360). The monthly payment is computed via the standard level-payment mortgage formula. <em>This becomes a USD outflow every month — a major reserve drain.</em></li>
+      <li>A <strong>basket consumption multiplier</strong> — 1.0 per adult + 0.5 per child. So a family of 4 (2 adults + 2 kids) consumes 3.0× a single adult.</li>
+      <li>A <strong>discretionary propensity</strong> based on the primary citizen's behavioural type — savers spend 20% of surplus on non-basket items; spenders 80%.</li>
+    </ul>
+
+    <h3 id="a3">2.3 Generate companies</h3>
+    <p>
+      ~85 catalogue companies (Honda, MCC, hospital, supermarket, etc.) plus 199 sole-trader companies (one per sole-trader citizen). Each company gets:
+    </p>
+    <ul>
+      <li>A <strong>sector</strong> ("automotive_manufacturing", "healthcare", "retail_grocery", etc.)</li>
+      <li>One or more <strong>basket categories served</strong> ("energy", "food", "goods", "services") — used by the supplier picker later</li>
+      <li>A <strong>max revenue per month</strong> in S — sets the capacity ceiling for how much business it can do</li>
+      <li>An <strong>export and import baseline</strong> in USD per month — Honda exports $375K/month, the hospital imports $15K/month for medical supplies, etc.</li>
+      <li>A <strong>CFO policy</strong> — conservative / aggressive_dividend / growth_focused — affects how much working capital it keeps before paying dividends.</li>
+    </ul>
+
+    <h3 id="a4">2.4 Allocate equity</h3>
+    <p>
+      This is the careful bit. Honda gets the canonical <strong>60% Honda Inc / 5% colony stakeholders / 35% workers</strong> split (assembly workers 0.5 shares each, admin 1.5 each). Sole traders get 100% permanent equity to themselves. Other companies get 1–3 small business owners holding ~80% permanent + workers from the relevant archetype holding ~20% time-limited. Total: 1,148 equity holdings.
+    </p>
+
+    <h3 id="a5">2.5 Wallets</h3>
+    <p>
+      One per citizen, one per company, one for the Fisc, one for "external" (the rest of the world). Companies start with working capital (~40% of their max-revenue-per-month, representing pre-colony assets converted to S at parity — companies inherit this from the pre-colony environment). The Fisc starts with <strong>$5M USDC reserve</strong>. Total founding S supply is ~<strong>$2.5M</strong> held by companies.
+    </p>
+
+    <h3 id="a6">2.6 Household preferences</h3>
+    <p>
+      This is the only part of founding that happens at simulation-load rather than at DB-build: each household draws a Dirichlet-style preference vector over the companies in each basket category. So household #47 might have a 35% preference for Diner 3, 25% for Cafe 1, etc. These determine which companies that household picks for each category over the 10 years.
+    </p>
+
+    <h2 id="tick">3. Phase B — The monthly tick</h2>
+
+    <h3 id="tick-order">3.1 Order of operations</h3>
+    <p>
+      For each month from 1 to 120, the simulator executes 15 steps in this order. <strong>Order matters</strong> — for example, citizens have to spend before companies can compute distributable surplus, because spending is what generates company revenue this month.
+    </p>
+
+    <h3 id="tick-steps">3.2 The 15 steps</h3>
+
+    <div class="step">
+      <div class="step-num">Step 1</div>
+      <div class="step-title">Read the external environment</div>
+      From the scenario table (e.g. Convulsion), look up this month's USD prices for energy, food, goods, services. Computed from annual % rates by geometric compounding: <code>monthly_factor = (1 + annual_rate)^(1/12)</code>. Sum gives total basket USD this month. Under Convulsion, energy starts at $8 and ends at $22.74; goods start at $5 and end at $0.36 (-93%).
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 2</div>
+      <div class="step-title">Compute the Fisc rate</div>
+      The Fisc tries to maintain <code>basket cost in S = 28</code>. So <code>target_rate = basket_USD / 28</code>. But it also has to defend the cover ratio: USDC reserve must cover at least 30% of (S supply × rate). If the reserve isn't enough, the rate is forced down (compressed) — basket cost in S then exceeds 28, and that's flagged as the stress signal.
+      <div class="callout crit"><strong>This is where the Convulsion peg-break shows up.</strong> At Y3 the reserve can no longer back the target rate, so the Fisc has to devalue S.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 3</div>
+      <div class="step-title">UBI mint</div>
+      Every living citizen gets 100 S minted from the Fisc (configurable per slider). At 3,900 citizens that's 390K S/month, $4.7M/year. The USDC reserve doesn't move — S is minted out of nothing. Each mint is recorded as a <code>ubi_mint</code> transaction. <em>Honda assembly worker Joe gets his 100 S right here.</em>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 4</div>
+      <div class="step-title">External income</div>
+      Remote workers receive their USD wages from outside the colony. The Fisc accepts the USD into the reserve and mints the equivalent S to the worker at the current rate. A remote worker on $66K/yr would get $5,500 USD → 5,500/$1.05 ≈ 5,238 S in their wallet, and the reserve grows by $5,500. Same mechanic for retirees with pensions.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 5</div>
+      <div class="step-title">Exporter revenue</div>
+      Honda's exports come in: $375K of USD goes into the Fisc reserve, Honda's wallet gets credited 375K/$1.05 ≈ 357K S. Same for the four Bellefontaine manufacturers. Total monthly USD inflow from exports at 10% scale is ~$500K. Honda-shock scenarios scale this down at month 39+.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 6</div>
+      <div class="step-title">MCC bills citizens</div>
+      The MCC (utilities only — water, electricity, sewer, internet) charges each household based on adult count. Single adult = 30 S; each additional adult = +15 S. A 2-adult household = 45 S. Charge gets debited from the primary citizen's wallet, credited to the MCC's wallet. If they don't have enough S, they pay what they can — a stress signal.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 7</div>
+      <div class="step-title">MCC bills companies</div>
+      Same mechanic but for companies. Honda pays 80 + 0.5% × $600K-capacity ≈ <strong>3,080 S</strong> to the MCC.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 7.5</div>
+      <div class="step-title">LAT (only if on)</div>
+      Each non-MCC company pays a configurable % of its max-revenue-per-month to the Fisc. The S is <strong>destroyed</strong> — taken out of supply. This reduces the cover-ratio denominator, strengthening the Fisc's defence of the peg.
+      <div class="callout ok">With LAT 5%, Honda pays 30K S/month into the burn pile. <strong>This is the lever that does most of the work in the headline mitigation case.</strong></div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 8</div>
+      <div class="step-title">Citizen consumption (the supplier picker)</div>
+      Each household goes shopping. Total spend = 28 S × household multiplier × current basket-cost-in-S adjustment. For a 2-adult household at parity, that's 56 S/month. Split across the 4 categories by their weights (energy 28.6%, food 32.1%, goods 17.9%, services 21.4%).
+      <p>
+        For each category, the <strong>supplier picker</strong> runs: it weights every active in-category company by <code>household preference × spare capacity</code>, then picks one weighted-randomly. The S transfers from the citizen's wallet to the supplier's wallet, the supplier records revenue, the supermarket's spare capacity drops.
+      </p>
+      <p>
+        If S-tax is on, a fraction of every purchase is taxed and burned at the Fisc. If a category has no available capacity (every in-category company is saturated), the spend is recorded as <strong>unmet demand</strong> — a signal that supply isn't keeping up.
+      </p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 9</div>
+      <div class="step-title">Citizen housing</div>
+      Three subcases:
+      <ul>
+        <li><strong>Mortgage:</strong> Monthly payment of, say, $1,400 USD is converted to S at the current rate (1,400/$1.05 ≈ 1,333 S). S balance drops; S is <strong>burned at the Fisc</strong>; Fisc's USDC reserve drops by $1,400 (sent to the external bank). At 746 mortgage households averaging $1,500/month, this is <strong>~$13M/year of USDC outflow</strong> at 10% scale. <em>This is the biggest reason the reserve doesn't grow.</em></li>
+        <li><strong>External rent:</strong> Same mechanism — S burned, USDC out.</li>
+        <li><strong>Internal rent:</strong> Different — picks an internal services-category supplier (a colony landlord), pays in S, no USDC flow.</li>
+      </ul>
+      <div class="callout ok">If <strong>mortgage-refinance-to-S</strong> is on, the S still burns but the USDC stays put — the colony's "bank" effectively bought the mortgage from the external bank. One of the strongest mitigations.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 10</div>
+      <div class="step-title">Companies pay imports</div>
+      Each importing company (Honda, supermarket, hospital) needs USD to buy goods/services from outside. They pay in S; the Fisc burns the S and ships USDC out. Honda imports $208K/month — $208K leaves the reserve every month. If a company doesn't have enough S, it defaults — recorded as an <code>import_default_count</code> for that company that month.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 11</div>
+      <div class="step-title">Operating costs</div>
+      Currently a no-op. The spec implies wages would be paid here, but in the SPICE design wages are replaced by dividends + UBI, so there's no separate wage flow. Operating cost is implicitly captured by the working-capital target in step 12.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 12</div>
+      <div class="step-title">Dividend distribution</div>
+      The company-to-citizen wealth flow.
+      <ul>
+        <li>For each company: compute working capital target (e.g. conservative CFO = 1.5× monthly revenue capacity × 55% op-cost factor). Surplus above this is distributable.</li>
+        <li>Pay each shareholder pro-rata to share count.</li>
+        <li>Citizens just see S land in their wallet.</li>
+        <li><strong>External shareholders (Honda Inc)</strong> — by default, the S converts to USDC immediately and leaves the colony. Honda Inc as a dominant external shareholder receiving 60% of Honda's distributable surplus drains $200-400K/month of USDC at 10% scale. <em>This is the second-biggest reserve drain after mortgages.</em></li>
+        <li>If <strong>Honda dividend vesting</strong> is on, the S accrues but doesn't cash out — keeps the reserve intact.</li>
+      </ul>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 13</div>
+      <div class="step-title">Citizen behavioural decisions</div>
+      Each citizen with surplus S above subsistence×1.5 (= 75 S) increments their <code>surplus_streak</code> counter. They cash out a fraction of the surplus to USDC based on their behavioural type — savers cash out 10%, balanced 5%, strivers 2%, spenders 0%. The cashout multiplier slider scales all of this. Cashout = S burned + USDC out of reserve.
+      <p>
+        Strivers with balance &gt; 5× threshold also flip a <code>has_made_first_equity_purchase</code> flag — the precursor to an archetype transition.
+      </p>
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 14</div>
+      <div class="step-title">Archetype transitions</div>
+      Check each citizen:
+      <ul>
+        <li><code>ubi_only_choice → striver</code>: needs 6 consecutive months of surplus + has-made-first-equity-purchase + balance &gt; 3× threshold</li>
+        <li><code>worker → striver</code>: same but stricter (12 months, 5× threshold)</li>
+        <li><code>striver → small_business_owner</code>: deferred to Phase 3 (depends on company founding)</li>
+        <li>Anyone with sustained job loss → <code>ubi_only_choice</code>: also Phase 3 (depends on company failure)</li>
+      </ul>
+      When a transition fires, record it in <code>archetype_history</code>.
+    </div>
+
+    <div class="step">
+      <div class="step-num">Step 15</div>
+      <div class="step-title">Snapshots</div>
+      Write a row to <code>fisc_state</code> every month (rate, reserve, supply, basket cost, cover ratio, compressed flag). Write per-citizen and per-company snapshots only at year-end (months 12, 24, ...) — keeps the DB at a manageable ~50K rows instead of 500K.
+    </div>
+
+    <h2 id="output">4. What lives in the DB at the end</h2>
+    <p>After 120 months:</p>
+    <table>
+      <thead>
+        <tr><th>Table</th><th class="num">Rows (typical)</th><th>What it stores</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>transactions</code></td><td class="num">~2.3M</td><td>Every S/USDC movement (UBI mints alone are 468K)</td></tr>
+        <tr><td><code>fisc_state</code></td><td class="num">120</td><td>Macro state per month — rate, reserve, supply, basket cost</td></tr>
+        <tr><td><code>citizen_snapshots</code></td><td class="num">39,000</td><td>3,900 citizens × 10 year-end snapshots</td></tr>
+        <tr><td><code>company_snapshots</code></td><td class="num">2,850</td><td>285 companies × 10 year-end snapshots</td></tr>
+        <tr><td><code>archetype_history</code></td><td class="num">~150</td><td>Sparse — only when transitions fire</td></tr>
+        <tr><td><code>unmet_demand</code></td><td class="num">480</td><td>4 categories × 120 months</td></tr>
+      </tbody>
+    </table>
+    <p>The dashboard reads from these — <code>fisc_state</code> for the macro charts, <code>transactions</code> aggregated by type for the boundary chart, <code>citizen_snapshots</code> for purchasing-power deciles, <code>archetype_history</code> for the transitions chart.</p>
+
+    <h2 id="scope">5. What's not yet simulated (deferred to Phase 3+)</h2>
+    <ul>
+      <li><strong>Births and deaths.</strong> Population is static within a run.</li>
+      <li><strong>Company founding by strivers.</strong> The flag fires (<code>has_made_first_equity_purchase</code>) but no actual new companies appear.</li>
+      <li><strong>Company failure.</strong> Companies don't go out of business even if persistently insolvent.</li>
+      <li><strong>Equity transfers.</strong> No second-hand equity market.</li>
+      <li><strong>Within-month timing.</strong> All settlement happens at month-end; intra-month liquidity stress is detected via <code>min_s_balance_within_month</code> but doesn't cause failures yet.</li>
+      <li><strong>Price competition.</strong> Companies don't compete on price — supplier choice is preference × capacity.</li>
+      <li><strong>Macro feedback.</strong> The colony does not affect external markets.</li>
+    </ul>
+    <p>If you find that mitigations are insufficient under Convulsion, these deferred mechanisms (especially the strivers economy producing new exporters) might shift the picture meaningfully. That's Phase 3.</p>
+  </article>
+</div>
+
+<script>
+// Simple TOC scroll-spy
+const links = document.querySelectorAll('.doc-toc a');
+const sections = Array.from(links).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function syncToc() {
+  const y = window.scrollY + 120;
+  let active = sections[0];
+  for (const s of sections) {
+    if (s.offsetTop <= y) active = s;
+  }
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active?.id));
+}
+window.addEventListener('scroll', syncToc, { passive: true });
+syncToc();
+</script>
+
+</body>
+</html>

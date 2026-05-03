@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Convulsion story — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">The Convulsion story — what happens at default settings</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/how">How it works</a>
+    <a href="/story" class="active">The Convulsion story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="doc-layout">
+  <aside class="doc-toc">
+    <h3>On this page</h3>
+    <ul>
+      <li><a href="#setup">1. The setup</a></li>
+      <li><a href="#early">2. Years 1–2 — solvent</a></li>
+      <li><a href="#peg">3. Year 3 — the peg breaks</a></li>
+      <li><a href="#mid">4. Years 4–6 — slow grind</a></li>
+      <li><a href="#late">5. Years 7–10 — citizens absorb the loss</a></li>
+      <li><a href="#joe">6. Joe's trajectory</a></li>
+      <li><a href="#why">7. Why it happens</a></li>
+      <li><a href="#mitigated">8. The same colony, mitigated</a></li>
+    </ul>
+  </aside>
+
+  <article class="doc-body">
+    <h1>The Convulsion story</h1>
+    <div class="lede">
+      Year-by-year, what happens to a 3,900-person colony under the Convulsion scenario at default settings. UBI 100 S/month, no LAT, no Honda vesting, no mortgage refinance. The peg breaks in year 3. By year 10, citizens have lost <strong>68% of real purchasing power</strong>. Then we look at what happens with mitigations on.
+    </div>
+
+    <h2 id="setup">1. The setup</h2>
+    <p>
+      The colony starts with <strong>3,900 citizens</strong> across 12 archetypes, <strong>2,200 households</strong>, <strong>285 companies</strong>. The Fisc has <strong>$5M USDC reserve</strong>. Total founding S supply is <strong>~$2.5M</strong> in company working capital. The basket of goods costs $28 USD = 28 S at parity ($1/S).
+    </p>
+    <p>
+      <strong>The Convulsion scenario</strong> is the credibility test: AI deflation in tradable goods accelerating non-linearly through the decade (-8% Y1 → -38% Y5 → -10% Y10), simultaneous USD inflation in services and energy from monetary response (energy +10% Y1 → +22% Y4 → +2% Y10), and food inflation peaking mid-decade. By Y10, the basket has cost in USD has roughly doubled from $28 to $58, but the composition has shifted dramatically — energy and services up, hard goods nearly worthless.
+    </p>
+    <p>
+      <strong>The Fisc's job</strong>: keep the basket costing 28 S throughout, regardless of what the underlying USD prices do. Citizens shouldn't experience the wider world's chaos — they should see stable prices in their own currency.
+    </p>
+
+    <h2 id="early">2. Years 1–2 — solvent</h2>
+    <table>
+      <thead>
+        <tr><th>Year-end</th><th class="num">Fisc rate</th><th class="num">Reserve</th><th class="num">S supply</th><th class="num">Basket S</th><th>Compressed?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Y0 (M12)</td><td class="num">$1.05</td><td class="num">$10.7M</td><td class="num">$12.7M</td><td class="num">28.00</td><td>No</td></tr>
+        <tr><td>Y1 (M24)</td><td class="num">$1.13</td><td class="num">$13.0M</td><td class="num">$19.5M</td><td class="num">28.00</td><td>No</td></tr>
+        <tr><td>Y2 (M36)</td><td class="num">$1.26</td><td class="num">$12.5M</td><td class="num">$23.8M</td><td class="num">28.00</td><td>No</td></tr>
+      </tbody>
+    </table>
+    <p>
+      First 24 months: things look fine. UBI mints 4.7M S/year. Honda exports $4.5M/year, remote workers bring in ~$10M/year, retiree pensions add ~$3.8M/year. Total inflows ~$18M/year. Outflows: imports ~$5M, mortgages ~$13M, external rent ~$3.7M, Honda Inc dividend cashout ~$3M. Net: roughly balanced, slightly positive in early years.
+    </p>
+    <p>
+      The reserve grows from $5M to $13M as the colony cashes in on Honda exports. The Fisc rate edges up from $1 to $1.26 because basket USD prices are rising (energy inflation outpacing goods deflation in early Convulsion years). Cover ratio drops from 0.80 to 0.42 — still well above the 0.30 floor.
+    </p>
+    <div class="callout">
+      The colony looks like it's working. <strong>This is the dangerous bit</strong> — a viewer could see Y1 and Y2 numbers and conclude the design holds. The stress hasn't started compounding yet.
+    </div>
+
+    <h2 id="peg">3. Year 3 — the peg breaks</h2>
+    <table>
+      <thead>
+        <tr><th>Year-end</th><th class="num">Fisc rate</th><th class="num">Reserve</th><th class="num">S supply</th><th class="num">Basket S</th><th>Compressed?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Y3 (M48)</td><td class="num">$1.29</td><td class="num">$10.0M</td><td class="num">$26.6M</td><td class="num"><strong>31.29</strong></td><td><strong>YES</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      Sometime around month 36, the cover-ratio constraint catches up. S supply has grown to $26.6M. At the basket-anchored target rate of $1.44/S (basket USD = $40.25 at this point), required reserve = $26.6M × $1.44 × 0.30 = $11.5M. But reserve is only $10.0M.
+    </p>
+    <p>
+      The Fisc has two choices: let cover ratio breach the floor, or force the rate down. It forces the rate down to $1.29 — what the reserve can actually back. At that rate, basket cost in S = $40.25 / $1.29 = <strong>31.29 S</strong>.
+    </p>
+    <div class="callout crit">
+      <strong>Citizens now experience inflation in their own currency.</strong> Their monthly UBI of 100 S buys 100/31.29 = 3.20 baskets, down from 3.57 at parity. That's an 11% real loss in one year. The peg has broken.
+    </div>
+
+    <h2 id="mid">4. Years 4–6 — slow grind</h2>
+    <table>
+      <thead>
+        <tr><th>Year-end</th><th class="num">Fisc rate</th><th class="num">Reserve</th><th class="num">S supply</th><th class="num">Basket S</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Y4 (M60)</td><td class="num">$1.02</td><td class="num">$9.3M</td><td class="num">$30.7M</td><td class="num">44.49</td></tr>
+        <tr><td>Y5 (M72)</td><td class="num">$0.89</td><td class="num">$9.4M</td><td class="num">$35.5M</td><td class="num">55.67</td></tr>
+        <tr><td>Y6 (M84)</td><td class="num">$0.81</td><td class="num">$9.8M</td><td class="num">$40.7M</td><td class="num">65.36</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Once the peg breaks, every month makes it worse. UBI keeps minting 390K S/month unconditionally. Mortgages keep draining USDC every month. Honda Inc keeps cashing out dividends in USDC. Remote workers keep bringing some USDC in but not enough.
+    </p>
+    <p>
+      The Fisc is now in a death-spiral feedback: <em>S supply grows → basket cost in S grows → citizens have less purchasing power → fewer cashouts (good for reserve) but also fewer purchases (bad for company revenue) → companies have less S to pay dividends → less S goes to citizens → but UBI still keeps minting.</em>
+    </p>
+    <p>
+      Critically, the reserve is <em>not</em> depleting catastrophically — it sits in the $9-10M range throughout. The Fisc <strong>is</strong> doing its job: it's defending the cover ratio at exactly 0.30. What it's giving up is the basket peg.
+    </p>
+
+    <h2 id="late">5. Years 7–10 — citizens absorb the loss</h2>
+    <table>
+      <thead>
+        <tr><th>Year-end</th><th class="num">Fisc rate</th><th class="num">Reserve</th><th class="num">S supply</th><th class="num">Basket S</th><th class="num">Real PP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Y7 (M96)</td><td class="num">$0.75</td><td class="num">$10.2M</td><td class="num">$45.9M</td><td class="num">73.89</td><td class="num">1.35</td></tr>
+        <tr><td>Y8 (M108)</td><td class="num">$0.70</td><td class="num">$10.7M</td><td class="num">$51.2M</td><td class="num">81.33</td><td class="num">1.23</td></tr>
+        <tr><td>Y9 (M120)</td><td class="num">$0.66</td><td class="num">$11.1M</td><td class="num">$56.5M</td><td class="num"><strong>87.86</strong></td><td class="num"><strong>1.14</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      By Y10, the basket costs <strong>87.86 S</strong>. A citizen on UBI alone (100 S/month) buys 1.14 baskets — barely above subsistence. At founding they bought 3.57 baskets. <strong>That's a 68% loss in real purchasing power.</strong>
+    </p>
+    <p>
+      Note the reserve has actually <em>recovered</em> slightly to $11.1M by Y10. The Fisc's defence is technically successful — the colony hasn't gone bankrupt. But the cost is paid by the citizens, who absorb the entire shock through devalued S.
+    </p>
+
+    <h2 id="joe">6. Joe's trajectory — the citizen view</h2>
+    <p>
+      Joe is a 35-year-old Honda assembly worker. At founding he owns 0.5 time-limited shares in Honda. He lives in a 2-adult, 2-child household. They have a $200K mortgage at 5% with 240 months remaining (~$1,320/month).
+    </p>
+
+    <h3>Year 0</h3>
+    <ul>
+      <li>UBI: 100 S × 4 family members = 400 S/month (kids' UBI accrues to household primary)</li>
+      <li>Honda dividend: ~150 S/month (his 0.5 share of distributable surplus)</li>
+      <li>Total income: 550 S/month</li>
+      <li>Outgoings: MCC 45 S, basket (3.0× single) = 84 S, mortgage 1,257 S (at $1/S parity), discretionary 50 S</li>
+      <li>Net surplus: 550 - 1,436 = <strong>-886 S/month</strong></li>
+    </ul>
+    <p>
+      <em>Wait, that's negative.</em> Joe can't afford his mortgage on UBI + dividend alone at 10% scale settings. His mortgage is sized as if he were earning external wages — but in the SPICE model, citizens don't earn external wages. So Joe runs his S balance down, defaults on housing, or relies on his spouse's income (if she's a remote worker, that helps a lot).
+    </p>
+    <p>
+      <em>This is itself a finding.</em> The default mortgage burden assumed in the founding generator is incompatible with the SPICE income model. Either citizens need much higher dividends, or the mortgage refinance lever has to be on, or UBI has to be much higher. Worth raising as a configuration question.
+    </p>
+
+    <h2 id="why">7. Why it happens — the mechanism</h2>
+    <ol>
+      <li><strong>UBI mints unconditionally</strong> — 100 S/citizen/month, regardless of reserve health. At 3,900 citizens this is 390K S/month, 4.7M S/year. Adds to S supply mechanically.</li>
+      <li><strong>Reserve replenishment is bounded</strong> — exports + remote-worker income are fixed flows that don't grow with the S supply.</li>
+      <li><strong>Reserve drains are persistent</strong> — mortgages ($13M/yr at 10% scale) + Honda Inc dividends ($3-5M/yr) + cashouts ($1-2M/yr) + imports ($5M/yr) consume most of the inflow.</li>
+      <li><strong>The Fisc defends cover ratio first, peg second</strong> — when reserve can't back target rate at 0.30 cover, rate compresses. Citizens bear the cost.</li>
+      <li><strong>No reserve-replenishment mechanism keyed to S supply</strong> — without LAT or S-tax, there's nothing to make the reserve grow as supply grows.</li>
+    </ol>
+
+    <h2 id="mitigated">8. The same colony, mitigated</h2>
+    <p>
+      Run Convulsion again with three switches: <strong>LAT 5%</strong>, <strong>Honda Inc dividend vesting</strong>, <strong>mortgage refinance to S</strong>.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Year-end</th><th class="num">Fisc rate</th><th class="num">Reserve</th><th class="num">S supply</th><th class="num">Basket S</th><th class="num">Real PP</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Y3 (M48)</td><td class="num">$1.44</td><td class="num"><strong>$24.6M</strong></td><td class="num">$29.1M</td><td class="num">28.00</td><td class="num">3.57</td></tr>
+        <tr><td>Y6 (M84)</td><td class="num">$1.78</td><td class="num">$21.8M</td><td class="num">$32.9M</td><td class="num">28.00</td><td class="num">3.57</td></tr>
+        <tr><td>Y7 (M96)</td><td class="num">$1.88</td><td class="num">$19.0M</td><td class="num">$34.3M</td><td class="num">28.25</td><td class="num">3.54</td></tr>
+        <tr><td>Y9 (M120)</td><td class="num">$1.41</td><td class="num">$17.6M</td><td class="num">$41.8M</td><td class="num"><strong>41.17</strong></td><td class="num"><strong>2.43</strong></td></tr>
+      </tbody>
+    </table>
+    <p>
+      With three mitigations on:
+    </p>
+    <ul>
+      <li>Peg holds for <strong>Y0 through Y6</strong> (vs. broken at Y3 in the unmitigated case)</li>
+      <li>Reserve grows to $24.6M by Y3 — comfortably above the cover-ratio floor</li>
+      <li>By Y10 basket cost in S = 41.17 (vs. 87.86 unmitigated)</li>
+      <li>Real purchasing power loss = <strong>32% (vs. 68%)</strong></li>
+    </ul>
+    <p>
+      Half the welfare loss with three switches. None of the mitigations fundamentally change the design — they're plausible policy choices. LAT taxes automated firms (the source of the deflation in the first place); Honda vesting prevents external capital flight; mortgage refinancing converts USD obligations into S obligations.
+    </p>
+    <div class="callout ok">
+      <strong>This is what the simulation is for.</strong> The unmitigated Convulsion run shows the colony in trouble. The mitigated run shows what it takes to cope. Together they tell us the design <em>can</em> work, but only with deliberate reserve-replenishment + capital-retention mechanisms. The default no-LAT zero-mitigation baseline is <em>not</em> the recommended configuration — it's the experimental control.
+    </div>
+
+    <p>
+      Try the dashboard yourself. Start with Convulsion, no mitigations. Then turn on LAT, then Honda vesting, then mortgage refi, one at a time. Each lever's contribution becomes visible in the basket-cost and reserve charts.
+    </p>
+  </article>
+</div>
+
+<script>
+const links = document.querySelectorAll('.doc-toc a');
+const sections = Array.from(links).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function syncToc() {
+  const y = window.scrollY + 120;
+  let active = sections[0];
+  for (const s of sections) if (s.offsetTop <= y) active = s;
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active?.id));
+}
+window.addEventListener('scroll', syncToc, { passive: true });
+syncToc();
+</script>
+
+</body>
+</html>

@@ -3,85 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>MaryFontaine — Colony Economy Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
 <style>
-  /* Mission-control palette ported from src/tokens.js */
-  :root {
-    --bg: #06070a;
-    --panel: #0d0f12;
-    --panel2: #11141a;
-    --line: #232831;
-    --line-hot: #353c47;
-    --txt: #e8e8e8;
-    --txt2: #d2d2d2;
-    --dim: #a4a4a4;
-    --faint: #767676;
-    --headline: #ffffff;
-    --ok: #5dd39e;
-    --warn: #d4a04a;
-    --crit: #ef4444;
-    --mono: 'IBM Plex Mono', ui-monospace, monospace;
-  }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--txt);
-    font-family: var(--mono);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-  header {
-    border-bottom: 1px solid var(--line-hot);
-    padding: 16px 24px;
-    background: var(--panel);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  header h1 {
-    font-size: 14px;
-    margin: 0;
-    color: var(--headline);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-  header .subtitle {
-    color: var(--dim);
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-  main {
+  /* Dashboard-specific styles */
+  main.dashboard {
     display: grid;
     grid-template-columns: 320px 1fr;
     gap: 16px;
-    padding: 16px 24px;
-    max-width: 1800px;
-    margin: 0 auto;
   }
-  .panel {
-    background: var(--panel);
-    border: 1px solid var(--line-hot);
-    padding: 16px;
-  }
-  .panel h2 {
-    font-size: 11px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--dim);
-    margin: 0 0 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--line);
-  }
-  .panel h3 {
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--dim);
-    margin: 16px 0 8px;
-  }
-
-  /* Sidebar — controls */
   .controls label {
     display: block;
     font-size: 11px;
@@ -104,100 +33,42 @@
   .slider-row input[type="range"] { flex: 1; }
   .slider-row .v { color: var(--txt); width: 60px; text-align: right; font-variant-numeric: tabular-nums; }
   .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 6px;
-    padding: 6px 8px;
-    background: var(--panel2);
-    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 6px; padding: 6px 8px;
+    background: var(--panel2); border: 1px solid var(--line);
     cursor: pointer;
   }
   .toggle-row.on { border-color: var(--ok); }
   .toggle-row span { font-size: 11px; color: var(--txt); }
   .toggle-row input { margin: 0; }
   .run-btn {
-    width: 100%;
-    margin-top: 16px;
-    padding: 12px;
-    background: transparent;
-    border: 1px solid var(--txt);
-    color: var(--txt);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.15s;
+    width: 100%; margin-top: 16px; padding: 12px;
+    background: transparent; border: 1px solid var(--txt); color: var(--txt);
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: background 0.15s;
   }
   .run-btn:hover:not(:disabled) { background: var(--txt); color: var(--bg); }
   .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .progress {
-    margin-top: 8px;
-    font-size: 11px;
-    color: var(--warn);
-    text-align: center;
-    min-height: 16px;
-  }
+  .progress { margin-top: 8px; font-size: 11px; color: var(--warn); text-align: center; min-height: 16px; }
 
-  /* Right column — charts */
-  .charts {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .summary-strip {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-  }
-  .stat {
-    background: var(--panel);
-    border: 1px solid var(--line-hot);
-    padding: 10px 12px;
-  }
-  .stat .label {
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--dim);
-  }
-  .stat .value {
-    font-size: 18px;
-    color: var(--headline);
-    font-variant-numeric: tabular-nums;
-    margin-top: 4px;
-  }
+  .charts { display: flex; flex-direction: column; gap: 16px; }
+  .summary-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+  .stat { background: var(--panel); border: 1px solid var(--line-hot); padding: 10px 12px; }
+  .stat .label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); }
+  .stat .value { font-size: 18px; color: var(--headline); font-variant-numeric: tabular-nums; margin-top: 4px; }
   .stat .value.warn { color: var(--warn); }
   .stat .value.crit { color: var(--crit); }
   .stat .value.ok { color: var(--ok); }
-  .stat .sub {
-    font-size: 10px;
-    color: var(--faint);
-    margin-top: 2px;
-  }
+  .stat .sub { font-size: 10px; color: var(--faint); margin-top: 2px; }
 
-  .chart-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .chart-row.full { grid-template-columns: 1fr; }
   .chart-box { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; }
   .chart-box canvas { max-height: 280px; }
 
   .help { font-size: 10px; color: var(--faint); line-height: 1.4; margin-top: 6px; }
+  .empty { color: var(--faint); text-align: center; padding: 60px 20px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 
-  .empty {
-    color: var(--faint);
-    text-align: center;
-    padding: 60px 20px;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  /* Compact tables */
   table { width: 100%; border-collapse: collapse; font-size: 11px; }
   table th, table td { text-align: left; padding: 4px 6px; }
   table th { color: var(--dim); border-bottom: 1px solid var(--line); }
@@ -207,15 +78,23 @@
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>MaryFontaine — Colony Economy Simulator</h1>
-    <div class="subtitle">Search for the configuration that delivers the oasis-of-calm</div>
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Search for the configuration that delivers the oasis-of-calm</div>
+    </div>
+    <div class="subtitle" id="run-status">No run yet</div>
   </div>
-  <div class="subtitle" id="run-status">No run yet</div>
+  <nav>
+    <a href="/" class="active">Dashboard</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Convulsion story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
 </header>
 
-<main>
+<main class="dashboard">
   <!-- LEFT: controls -->
   <aside class="panel controls">
     <h2>Configuration</h2>
@@ -293,15 +172,12 @@
     <h3>Run</h3>
     <button class="run-btn" id="run-btn">Run simulation</button>
     <div class="progress" id="progress"></div>
-    <div class="help">120-month run takes ~30-60s. Charts refresh on completion.</div>
+    <div class="help">120-month run takes ~30-60s. Charts refresh on completion. New to this? <a href="/how" style="color: var(--blue);">Read the walkthrough</a>.</div>
   </aside>
 
-  <!-- RIGHT: charts -->
   <section class="charts" id="charts-area">
-    <!-- Summary strip -->
     <div class="summary-strip" id="summary"></div>
 
-    <!-- Macro timeline -->
     <div class="chart-row">
       <div class="chart-box">
         <h2>Basket cost in S (target = 28)</h2>
@@ -328,7 +204,6 @@
       </div>
     </div>
 
-    <!-- Boundary flows -->
     <div class="chart-row full">
       <div class="chart-box">
         <h2>Boundary USDC flows by month</h2>
@@ -337,7 +212,6 @@
       </div>
     </div>
 
-    <!-- Welfare distribution -->
     <div class="chart-row full">
       <div class="chart-box">
         <h2>Citizen real purchasing power per year (deciles)</h2>
@@ -346,7 +220,6 @@
       </div>
     </div>
 
-    <!-- Transitions -->
     <div class="chart-row">
       <div class="chart-box">
         <h2>Archetype transitions per year</h2>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mitigation levers — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Mitigation levers — what each slider actually does</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Convulsion story</a>
+    <a href="/levers" class="active">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="doc-layout">
+  <aside class="doc-toc">
+    <h3>On this page</h3>
+    <ul>
+      <li><a href="#scenario">Scenario</a></li>
+      <li><a href="#months">Run length</a></li>
+      <li><a href="#ubi">UBI per citizen</a></li>
+      <li><a href="#ubi-children">Children UBI</a></li>
+      <li><a href="#retirees-only">Retirees-only UBI</a></li>
+      <li><a href="#cover">Cover ratio target</a></li>
+      <li><a href="#lat">LAT rate</a></li>
+      <li><a href="#honda-vest">Honda vesting</a></li>
+      <li><a href="#mortgage-refi">Mortgage refinance</a></li>
+      <li><a href="#rent-refi">External rent refinance</a></li>
+      <li><a href="#s-tax">S-tax on purchases</a></li>
+      <li><a href="#cashout-mult">Cashout multiplier</a></li>
+      <li><a href="#combos">Useful combinations</a></li>
+    </ul>
+  </aside>
+
+  <article class="doc-body">
+    <h1>Mitigation levers</h1>
+    <div class="lede">
+      Each slider on the dashboard controls a specific mechanism in the monthly tick. This page explains what the mechanism does, what flow it changes, and when you'd use it. Use this as the field guide while you search for the configuration that delivers the oasis-of-calm.
+    </div>
+
+    <h2 id="scenario">Scenario</h2>
+    <p><strong>What it controls.</strong> The monthly USD prices of each basket category over the 10-year horizon. Six pre-built trajectories.</p>
+    <p><strong>Mechanism.</strong> Read at step 1 of every tick. Sets the basket USD that the Fisc tries to anchor at 28 S.</p>
+    <p><strong>When to use what:</strong></p>
+    <ul>
+      <li><strong>AI Realist</strong> — sanity-check that the engine produces sensible numbers in benign conditions. Basket USD goes from $28 to $32 over 10 years. Most configurations should hold the peg here.</li>
+      <li><strong>AI Optimist</strong> — aggressive deflation across the board. Tests whether the colony handles a productivity boom. Reserve grows easily; risk is over-deflation.</li>
+      <li><strong>Stagflation</strong> — USD instability dominates. Energy + food + services all inflate; goods barely deflate. Reserve drains faster than usual.</li>
+      <li><strong>AI + Healthcare crisis</strong> — AI Optimist + a healthcare cost shock in services. Tests how a sector-specific shock propagates.</li>
+      <li><strong>Convulsion</strong> — the credibility test. Accelerating non-linear AI deflation in goods + simultaneous USD inflation in services/energy. The stress case the simulation was built for.</li>
+      <li><strong>Convulsion + Honda shock</strong> — Convulsion + Honda exports drop 50% in Q3 of Year 4, recover to 70% by Y6. Tests whether the colony survives a single-employer shock on top of structural deflation.</li>
+    </ul>
+
+    <h2 id="months">Run length</h2>
+    <p><strong>What it controls.</strong> Number of months simulated.</p>
+    <p><strong>When to use what:</strong> 12 for fast slider sanity-checks (~10s); 60 if you're tuning parameters and want quick feedback; 120 for the full 10-year story (~60-70s).</p>
+
+    <h2 id="ubi">UBI per citizen / month (S)</h2>
+    <p><strong>Default: 100. Range: 0–200.</strong></p>
+    <p><strong>What it controls.</strong> How much S is minted to each adult citizen each month.</p>
+    <p><strong>Mechanism.</strong> At step 3 of every tick, the Fisc mints <code>ubi_s_per_citizen</code> S into each living adult's wallet. <em>USDC reserve is not affected — S is created out of nothing.</em> Total monthly mint = UBI × number of living adults.</p>
+    <p><strong>Effect on flows.</strong> Higher UBI → faster S supply growth → more pressure on cover ratio → faster peg compression. Lower UBI → less inflation pressure but also less citizen welfare.</p>
+    <div class="callout">
+      The default 100 S is one of the strongest welfare mechanisms (citizens get $100/month equivalent) but also one of the strongest reserve drains. <strong>Try lowering to 50</strong> under Convulsion and watch the basket-S curve flatten. The trade-off is purchasing power vs. peg stability.
+    </div>
+
+    <h2 id="ubi-children">UBI multiplier for children</h2>
+    <p><strong>Default: 1.0 (children get full UBI). Range: 0–1.0.</strong></p>
+    <p><strong>What it controls.</strong> What fraction of the UBI children receive.</p>
+    <p><strong>Mechanism.</strong> At step 3, children get <code>ubi_s_per_citizen × ubi_children_pct</code> instead of the full amount. Their UBI accrues to the household's primary citizen wallet (children don't have independent spending).</p>
+    <p><strong>When to use.</strong> If UBI minting is the binding constraint on the peg, halving children's UBI cuts ~12% of the monthly mint without affecting adult welfare. (Children are 23% of population; halving their UBI = 11.5% reduction in total mint.) Politically defensible because children's basket consumption is also smaller (multiplier 0.5).</p>
+
+    <h2 id="retirees-only">Retirees-only UBI</h2>
+    <p><strong>Default: off.</strong></p>
+    <p><strong>What it controls.</strong> Whether UBI goes only to retirees and ubi-only-by-choice citizens (i.e. those without other income sources).</p>
+    <p><strong>Mechanism.</strong> At step 3, only citizens with archetype = <code>retiree</code> or <code>ubi_only_choice</code> receive UBI. Everyone else gets 0.</p>
+    <p><strong>Effect on flows.</strong> Cuts ~70% of the UBI mint. Dramatically reduces S supply growth.</p>
+    <div class="callout crit">
+      <strong>This is technically not "universal" basic income any more</strong> — it becomes a means-tested social safety net. Politically very different. But mechanically it's the strongest single-lever fix to the supply-growth problem. Use it as a stress test, not a recommendation.
+    </div>
+
+    <h2 id="cover">Cover ratio target</h2>
+    <p><strong>Default: 0.30. Range: 0.10–0.50.</strong></p>
+    <p><strong>What it controls.</strong> The minimum fraction of (S supply × current rate) that the USDC reserve must cover.</p>
+    <p><strong>Mechanism.</strong> At step 2 of every tick, the Fisc checks: if reserve &lt; (S × target_rate × cover_target), it forces the rate down to the highest value the reserve can back. Lower target = more aggressive defence (higher rate held longer); higher target = more conservative (rate compresses earlier but defends a bigger buffer).</p>
+    <p><strong>Counter-intuitive trade-off.</strong> A lower cover target seems "looser" but actually <em>defends the peg longer</em> because the reserve doesn't need to grow as fast. A higher cover target compresses the rate sooner but leaves a fatter cushion for shocks.</p>
+    <p><strong>When to use.</strong> Try lowering to 0.15 under Convulsion — you'll see the peg hold longer at the cost of reduced shock-resilience. This is a parameter the design itself doesn't currently fix; the spec asserted 0.30 without derivation.</p>
+
+    <h2 id="lat">LAT rate (Local Automation Tax)</h2>
+    <p><strong>Default: 0% (off). Range: 0–20%.</strong></p>
+    <p><strong>What it controls.</strong> Tax on companies, charged in S, used as a reserve-defence mechanism.</p>
+    <p><strong>Mechanism.</strong> At step 7.5 of every tick (after MCC bills, before consumption), each non-MCC company pays <code>lat_rate × max_revenue_per_month_s</code> to the Fisc. The S is <strong>destroyed</strong> — taken out of supply. <em>This reduces the cover-ratio denominator (S supply × rate), so the same reserve covers more S, which lets the Fisc hold the peg longer.</em></p>
+    <p><strong>Effect on flows.</strong> Burns S monthly. At LAT 5% on MaryFontaine's ~$1.7M/month total revenue capacity, that's ~$85K of S burned per month — about 22% of monthly UBI mint. Materially offsets supply growth.</p>
+    <div class="callout ok">
+      <strong>The single most powerful reserve-defence lever.</strong> The original spec excluded LAT from v1 to test whether the design could work without it; under Convulsion, the answer was no. LAT 5% alone (no other mitigations) is enough to delay the peg break by 3-4 years.
+    </div>
+    <p><strong>Real-world interpretation.</strong> LAT taxes automated firms (high-automation = high revenue per worker = the source of the AI deflation in the first place). The colony recaptures some of the wealth being concentrated in capital, redistributes it through the Fisc, and uses it to back citizens' currency. Politically defensible if framed as "machines pay tax."</p>
+
+    <h2 id="honda-vest">Honda Inc dividend vesting</h2>
+    <p><strong>Default: off.</strong></p>
+    <p><strong>What it controls.</strong> Whether external shareholders' dividends cash out immediately to USDC, or accrue in S without conversion.</p>
+    <p><strong>Mechanism.</strong> At step 12, when distributing dividend to a holding with <code>holder_type = 'external'</code> (Honda Inc on Honda's books), the simulator normally converts the S to USDC at the current rate and ships it out — draining the reserve. With vesting on, the S stays in the colony economy (held conceptually at "external" wallet but not converted).</p>
+    <p><strong>Effect on flows.</strong> Honda Inc's 60% stake in Honda generates $200-400K/month of dividend at 10% scale. Cashing this out drains the reserve persistently. Vesting it stops that drain dead. One of the largest single levers.</p>
+    <div class="callout ok">
+      <strong>The second-strongest reserve-defence lever.</strong> Combined with LAT 5%, Honda vesting takes the Convulsion peg break from Y3 to Y7.
+    </div>
+    <p><strong>Real-world interpretation.</strong> When a colony is founded, the founding documents could require external strategic shareholders to vest their dividends in S for N years before allowed cashout. Standard practice in many emerging-market currency unions; protects the colony's capital base during build-up.</p>
+
+    <h2 id="mortgage-refi">Refinance mortgages → S</h2>
+    <p><strong>Default: off.</strong></p>
+    <p><strong>What it controls.</strong> Whether mortgage payments stay in the colony economy as S, or convert to USDC and leave.</p>
+    <p><strong>Mechanism.</strong> At step 9, if a mortgage household pays their monthly mortgage, normally the S is burned and the equivalent USDC leaves the Fisc reserve (sent to external bank). With refinance on, the S still burns but the USDC stays — represents a colony bank that bought the mortgage from the external bank, so payments now flow internally.</p>
+    <p><strong>Effect on flows.</strong> Stops ~$13M/year of USDC outflow at 10% scale. Massive reserve preservation.</p>
+    <div class="callout">
+      <strong>Real-world interpretation.</strong> A pre-existing mortgage isn't owned by the colony — it's owned by an external bank. Refinancing means the colony's bank arm buys the loan from the external bank (paying USDC up front), then collects monthly payments in S from the citizen. The lump-sum buyout is a one-time reserve hit; the ongoing payment recovery is the win.
+    </div>
+    <p><em>v1 simplification:</em> The simulator doesn't model the lump-sum buyout cost — it just toggles the ongoing outflow off. A more honest v2 model would deduct the total outstanding mortgage principal from the reserve at month 0 if refinance is on.</p>
+
+    <h2 id="rent-refi">Refinance external rent → S</h2>
+    <p><strong>Default: off.</strong></p>
+    <p>Same mechanic as mortgage refinance, applied to external-landlord rent. ~10% of households (208 at 10% scale) rent from external landlords for an average $1,500/month USD. Refinancing this saves ~$3.7M/year of USDC outflow. Smaller lever than mortgage refi but same idea.</p>
+
+    <h2 id="s-tax">S-tax on internal purchases</h2>
+    <p><strong>Default: 0%. Range: 0–10%.</strong></p>
+    <p><strong>What it controls.</strong> A consumption tax taken at the Fisc on every internal-purchase transaction.</p>
+    <p><strong>Mechanism.</strong> At step 8 (citizen consumption), when a citizen buys from a colony company, <code>s_tax × cat_spend</code> is removed from the spend before crediting the supplier. The taxed S is <strong>burned</strong> at the Fisc, reducing supply.</p>
+    <p><strong>Effect on flows.</strong> Smaller scale than LAT (LAT taxes capacity which is bigger than actual revenue at any moment). At S-tax 5%, on ~120K S of monthly basket consumption, you burn 6K S/month — much smaller than LAT 5% which burns ~85K S/month.</p>
+    <p><strong>When to use.</strong> Combine with LAT for additional supply pressure relief. Or use as a substitute if you want the "tax incidence" to be on consumption (citizens) rather than on capital (companies).</p>
+
+    <h2 id="cashout-mult">Cashout multiplier</h2>
+    <p><strong>Default: 1.0. Range: 0–2.0.</strong></p>
+    <p><strong>What it controls.</strong> Scales the per-archetype cashout fractions. At 1.0, savers cash out 10% of surplus monthly, balanced 5%, strivers 2%. At 2.0, all of these double. At 0, citizens never cash out (all surplus stays in S).</p>
+    <p><strong>Mechanism.</strong> At step 13, multiplier scales the cashout fraction before computing the cashout amount.</p>
+    <p><strong>Effect on flows.</strong> At 0, ~$1-2M/year of cashout outflow stops. Modest reserve win. At 2.0, citizens convert savings to USDC much faster — useful for stress-testing reserve resilience under capital flight scenarios.</p>
+    <p><strong>When to use.</strong> Set to 0 to model capital controls. Set to 1.5-2.0 to stress-test what happens if citizens lose confidence in S and try to convert.</p>
+
+    <h2 id="combos">Useful combinations</h2>
+    <p>Some configurations to try, and what they tell you:</p>
+
+    <h3>Baseline / control: Convulsion, all defaults</h3>
+    <p>The unmitigated case. Peg breaks Y3, citizens lose 68% PP. Use this as the comparison floor for everything else.</p>
+
+    <h3>Reasonable mitigations: Convulsion + LAT 5% + Honda vest + mortgage refi</h3>
+    <p>Three plausible policy choices. Peg holds Y0-Y6, PP loss 32%. The headline finding from the build commit. <em>Try this first if you want to see the lever effects in one pass.</em></p>
+
+    <h3>Maximum reserve defence: Convulsion + LAT 10% + Honda vest + mortgage refi + ext rent refi + S-tax 3%</h3>
+    <p>Stack everything plausible. Tests how close to a fully-defended peg you can get without going to extreme measures (like cutting UBI).</p>
+
+    <h3>Welfare-first: Convulsion + UBI 150 + LAT 8% + Honda vest + mortgage refi</h3>
+    <p>What if you want to <em>raise</em> citizen welfare during the convulsion (boost UBI) while still using mitigations to protect the peg? Tests whether the levers are powerful enough to fund higher UBI.</p>
+
+    <h3>Means-tested experiment: Convulsion + retirees-only UBI</h3>
+    <p>Cuts ~70% of UBI mint. Peg holds. But citizens not eligible for UBI experience zero direct income from the colony — they rely entirely on dividends + external income + savings. Tests whether the SPICE design can work as a safety-net rather than universal benefit. Politically loaded.</p>
+
+    <h3>Capital flight: Convulsion + cashout multiplier 2.0</h3>
+    <p>Citizens lose confidence and convert S faster. How much extra reserve drain does this cause, and can the standard mitigations cope? Useful as a black-swan stress test.</p>
+
+    <h3>The optimist case: AI Realist + all defaults</h3>
+    <p>Sanity check that the engine works correctly under benign conditions. Basket peg should hold throughout, reserve should grow, no compression.</p>
+  </article>
+</div>
+
+<script>
+const links = document.querySelectorAll('.doc-toc a');
+const sections = Array.from(links).map(a => document.getElementById(a.getAttribute('href').slice(1))).filter(Boolean);
+function syncToc() {
+  const y = window.scrollY + 120;
+  let active = sections[0];
+  for (const s of sections) if (s.offsetTop <= y) active = s;
+  links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + active?.id));
+}
+window.addEventListener('scroll', syncToc, { passive: true });
+syncToc();
+</script>
+
+</body>
+</html>
