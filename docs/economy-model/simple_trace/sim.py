@@ -39,19 +39,19 @@ DEFAULT_LOCAL_COMPANIES = [
     # AND visitors").
     {"name": "Dave's Co",      "external_rev_usd": 80_000, "p_per_emp": 200_000,
      "employees": 4, "b2b_import_usd": 15_000, "b2b_import_sector": "retail_online"},
-    # Colony Café: 2 FT + 3 PT = 5 employees. Visitors deliver $25K/mo USDC; locals
-    # add ~$5-7K/mo. ~$30-32K/mo total = ~$80K/employee/yr — realistic small-café metrics.
-    {"name": "Colony Café",    "external_rev_usd": 25_000, "p_per_emp":  15_000,
+    # Colony Café: 2 FT + 3 PT = 5 employees. Per Steve: high proportion of revenue
+    # from visitors (truckers, salesmen, business visitors, tourists). $30K visitor, ~$6-8K local.
+    {"name": "Colony Café",    "external_rev_usd": 30_000, "p_per_emp":  15_000,
      "employees": 5, "b2b_import_usd":  6_000, "b2b_import_sector": "grocery"},
-    # FixIt Repair: 2 employees, some pass-through visitor traffic.
-    {"name": "FixIt Repair",   "external_rev_usd":  5_000, "p_per_emp":  40_000,
+    # FixIt Repair: 2 employees. Some pass-through visitor traffic (per Steve).
+    {"name": "FixIt Repair",   "external_rev_usd":  3_000, "p_per_emp":  40_000,
      "employees": 2, "b2b_import_usd":  2_500, "b2b_import_sector": "misc"},
     # Hilltop School: 2 teachers (small colony has only 5 family-with-kids = ~10 kids).
-    # In a larger colony you'd scale up; at 40 citizens, 2 teachers is the realistic size.
+    # No visitor revenue per Steve — schools are exclusively local.
     {"name": "Hilltop School", "external_rev_usd":      0, "p_per_emp":  30_000,
      "employees": 2, "b2b_import_usd":  4_000, "b2b_import_sector": "retail_online"},
-    # MedClinic: 3 employees, some visitor walk-in revenue.
-    {"name": "MedClinic",      "external_rev_usd": 10_000, "p_per_emp":  80_000,
+    # MedClinic: 3 employees. A little visitor revenue per Steve (occasional walk-ins).
+    {"name": "MedClinic",      "external_rev_usd":  2_000, "p_per_emp":  80_000,
      "employees": 3, "b2b_import_usd":  8_000, "b2b_import_sector": "healthcare"},
 ]
 
@@ -129,8 +129,15 @@ class Family:
     def total_members(self):
         return self.adults_working + self.adults_retired + self.adults_workless + self.children
 
-    def monthly_ubi(self, ubi_usd):
-        return self.total_members * ubi_usd
+    def monthly_ubi(self, ubi_usd, taper=0.0):
+        # NIT-style taper on working adults only:
+        #   UBI_for_worker = max(0, ubi_usd - taper × salary)
+        # Retirees, workless, children always get full UBI.
+        ubi_for_working = max(0.0, ubi_usd - self.salary_each_usd * taper)
+        return (
+            self.adults_working * ubi_for_working
+            + (self.adults_retired + self.adults_workless + self.children) * ubi_usd
+        )
 
     def monthly_salary(self):
         return self.adults_working * self.salary_each_usd
@@ -138,8 +145,8 @@ class Family:
     def monthly_pension(self):
         return self.adults_retired * self.pension_each_usd
 
-    def monthly_income(self, ubi_usd):
-        return self.monthly_ubi(ubi_usd) + self.monthly_salary() + self.monthly_pension()
+    def monthly_income(self, ubi_usd, taper=0.0):
+        return self.monthly_ubi(ubi_usd, taper) + self.monthly_salary() + self.monthly_pension()
 
 
 @dataclass
@@ -167,7 +174,7 @@ def build_families(family_types) -> List[Family]:
 
 def generate_transactions(families, local_companies, external_suppliers,
                           sector_spend_pattern, internal_sector_pattern,
-                          ubi_usd, external_spend_fraction):
+                          ubi_usd, external_spend_fraction, ubi_taper=0.0):
     txs = []
     suppliers_by_sector = defaultdict(list)
     for sector, name, p_emp in external_suppliers:
@@ -175,7 +182,7 @@ def generate_transactions(families, local_companies, external_suppliers,
 
     # Stream A: family -> external
     for f in families:
-        external_budget = f.monthly_income(ubi_usd) * external_spend_fraction
+        external_budget = f.monthly_income(ubi_usd, ubi_taper) * external_spend_fraction
         for sector, share, n_tx in sector_spend_pattern:
             if n_tx <= 0: continue
             sector_budget = external_budget * share
@@ -198,7 +205,7 @@ def generate_transactions(families, local_companies, external_suppliers,
             if co_name not in local_co_by_name: continue
             if co_name == "Hilltop School" and f.children == 0: continue
             if n_tx <= 0: continue
-            sector_budget = f.monthly_income(ubi_usd) * share
+            sector_budget = f.monthly_income(ubi_usd, ubi_taper) * share
             tx_amount = sector_budget / n_tx
             co = local_co_by_name[co_name]
             for _ in range(n_tx):
@@ -243,6 +250,9 @@ def run(config: dict | None = None) -> dict:
     cfg = {
         "basket_usd": 980.0,
         "ubi_multiplier": 1.10,           # UBI = basket * this
+        "ubi_taper": 0.0,                 # NIT-style taper: UBI -= taper × salary, floor 0.
+                                          #   0.0 = universal (current); 0.30 = Friedman classic;
+                                          #   1.0 = full clawback. Applied to working adults only.
         "external_spend_fraction": 0.55,  # was 0.66; lower because internal share grew
         "levy_cap_rate": 0.80,
         "levy_formula": "linear",         # 'linear' or 'asymptotic'
@@ -260,12 +270,13 @@ def run(config: dict | None = None) -> dict:
         cfg.update(config)
 
     ubi_usd = cfg["basket_usd"] * cfg["ubi_multiplier"]
+    taper = cfg["ubi_taper"]
 
     families = build_families(cfg["family_types"])
     txs = generate_transactions(
         families, cfg["local_companies"], cfg["external_suppliers"],
         cfg["sector_spend_pattern"], cfg["internal_sector_pattern"],
-        ubi_usd, cfg["external_spend_fraction"]
+        ubi_usd, cfg["external_spend_fraction"], ubi_taper=taper,
     )
 
     # Population summary
@@ -276,7 +287,9 @@ def run(config: dict | None = None) -> dict:
     n_children = sum(f.children for f in families)
 
     # Income
-    total_ubi = sum(f.monthly_ubi(ubi_usd) for f in families)
+    total_ubi_universal = sum(f.monthly_ubi(ubi_usd, 0.0) for f in families)
+    total_ubi = sum(f.monthly_ubi(ubi_usd, taper) for f in families)  # actually paid
+    ubi_savings_from_taper = total_ubi_universal - total_ubi
     total_salary = sum(f.monthly_salary() for f in families)
     total_pension = sum(f.monthly_pension() for f in families)
     total_income = total_ubi + total_salary + total_pension
@@ -355,8 +368,11 @@ def run(config: dict | None = None) -> dict:
         bt = by_type[f.label]
         bt["n_families"] += 1
         bt["members"] += f.total_members
-        bt["total_income"] += f.monthly_income(ubi_usd)
-        bt["total_external_spend"] += f.monthly_income(ubi_usd) * cfg["external_spend_fraction"]
+        bt["total_income"] += f.monthly_income(ubi_usd, taper)
+        bt["total_external_spend"] += f.monthly_income(ubi_usd, taper) * cfg["external_spend_fraction"]
+        bt["total_ubi_paid"] = bt.get("total_ubi_paid", 0) + f.monthly_ubi(ubi_usd, taper)
+        bt["total_salary"] = bt.get("total_salary", 0) + f.monthly_salary()
+        bt["total_pension"] = bt.get("total_pension", 0) + f.monthly_pension()
 
     # Stream summary
     fam_to_ext = [t for t in txs if t.buyer_kind == "family" and t.supplier_kind == "external"]
@@ -396,10 +412,13 @@ def run(config: dict | None = None) -> dict:
         },
         "income": {
             "total_ubi": total_ubi,
+            "total_ubi_universal": total_ubi_universal,
+            "ubi_savings_from_taper": ubi_savings_from_taper,
             "total_salary": total_salary,
             "total_pension": total_pension,
             "total_income": total_income,
             "ubi_usd_per_citizen": ubi_usd,
+            "ubi_taper_pct": taper * 100,
         },
         "by_family_type": [
             {
@@ -408,6 +427,9 @@ def run(config: dict | None = None) -> dict:
                 "members": d["members"],
                 "avg_income_per_family": d["total_income"] / d["n_families"],
                 "avg_external_spend_per_family": d["total_external_spend"] / d["n_families"],
+                "avg_ubi_per_family": d.get("total_ubi_paid", 0) / d["n_families"],
+                "avg_salary_per_family": d.get("total_salary", 0) / d["n_families"],
+                "avg_pension_per_family": d.get("total_pension", 0) / d["n_families"],
             }
             for label, d in by_type.items()
         ],

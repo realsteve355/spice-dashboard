@@ -14,6 +14,7 @@ const fmtPct = n => n.toFixed(1) + '%';
 const sliders = [
   { id: 'levy_cap',     fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'ubi_mult',     fmt: v => parseFloat(v).toFixed(2) + 'x' },
+  { id: 'ubi_taper',    fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'ext_spend',    fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'daves_rev',    fmt: v => '$' + (parseInt(v) / 1000) + 'K' },
   { id: 'daves_b2b',    fmt: v => '$' + (parseInt(v) / 1000) + 'K' },
@@ -32,6 +33,7 @@ function readConfig() {
   // Build a config dict that overrides the server defaults.
   // For Dave's Co specifically, we override its row in local_companies.
   const ubi_mult = parseFloat(document.getElementById('ubi_mult').value);
+  const ubi_taper = parseFloat(document.getElementById('ubi_taper').value);
   const ext_spend = parseFloat(document.getElementById('ext_spend').value);
   const levy_cap = parseFloat(document.getElementById('levy_cap').value);
   const daves_rev = parseInt(document.getElementById('daves_rev').value);
@@ -40,18 +42,18 @@ function readConfig() {
   const formula = document.getElementById('levy_formula').value;
 
   // We need to pass the local_companies list with the modified Dave's Co.
-  // Defaults from server (mirror sim.py):
+  // Defaults must mirror sim.py DEFAULT_LOCAL_COMPANIES exactly.
   const local_companies = [
     {name: "Dave's Co",      external_rev_usd: daves_rev, p_per_emp: 200000,
      employees: 4, b2b_import_usd: daves_b2b, b2b_import_sector: "retail_online"},
-    {name: "Colony Café",    external_rev_usd: 0,      p_per_emp:  15000,
-     employees: 3, b2b_import_usd:  4000, b2b_import_sector: "grocery"},
-    {name: "FixIt Repair",   external_rev_usd: 0,      p_per_emp:  40000,
-     employees: 2, b2b_import_usd:  2000, b2b_import_sector: "misc"},
-    {name: "Hilltop School", external_rev_usd: 0,      p_per_emp:  30000,
-     employees: 5, b2b_import_usd:  3000, b2b_import_sector: "retail_online"},
-    {name: "MedClinic",      external_rev_usd: 0,      p_per_emp:  80000,
-     employees: 3, b2b_import_usd:  6000, b2b_import_sector: "healthcare"},
+    {name: "Colony Café",    external_rev_usd: 30000,  p_per_emp:  15000,
+     employees: 5, b2b_import_usd:  6000, b2b_import_sector: "grocery"},
+    {name: "FixIt Repair",   external_rev_usd:  3000,  p_per_emp:  40000,
+     employees: 2, b2b_import_usd:  2500, b2b_import_sector: "misc"},
+    {name: "Hilltop School", external_rev_usd:     0,  p_per_emp:  30000,
+     employees: 2, b2b_import_usd:  4000, b2b_import_sector: "retail_online"},
+    {name: "MedClinic",      external_rev_usd:  2000,  p_per_emp:  80000,
+     employees: 3, b2b_import_usd:  8000, b2b_import_sector: "healthcare"},
   ];
 
   // Family types — also adjust Dave's family salary from the slider.
@@ -67,6 +69,7 @@ function readConfig() {
 
   return {
     ubi_multiplier: ubi_mult,
+    ubi_taper,
     external_spend_fraction: ext_spend,
     levy_cap_rate: levy_cap,
     levy_formula: formula,
@@ -173,6 +176,16 @@ function renderPopulation(d) {
 
 function renderIncome(d) {
   const i = d.income;
+  const taperRow = i.ubi_taper_pct > 0
+    ? `<tr style="color: var(--warn);">
+         <td>↳ UBI saved by ${i.ubi_taper_pct.toFixed(0)}% taper on workers</td>
+         <td class="num">−${fmtUSD(i.ubi_savings_from_taper)}</td>
+       </tr>
+       <tr style="color: var(--faint); font-size: 11px;">
+         <td>(Universal UBI would have been ${fmtUSD(i.total_ubi_universal)})</td>
+         <td class="num"></td>
+       </tr>`
+    : '';
   return `
   <div class="card">
     <h3>Monthly income flows</h3>
@@ -180,6 +193,7 @@ function renderIncome(d) {
       <thead><tr><th>Stream</th><th class="num">USD/month</th></tr></thead>
       <tbody>
         <tr><td>Total UBI minted by Fisc</td><td class="num">${fmtUSD(i.total_ubi)}</td></tr>
+        ${taperRow}
         <tr><td>Total salary (from local cos' external revenue)</td><td class="num">${fmtUSD(i.total_salary)}</td></tr>
         <tr><td>Total pension (from external)</td><td class="num">${fmtUSD(i.total_pension)}</td></tr>
         <tr><td><strong>Total income</strong></td><td class="num"><strong>${fmtUSD(i.total_income)}</strong></td></tr>
@@ -350,6 +364,7 @@ function renderFamilyTypes(d) {
     <table>
       <thead><tr>
         <th>Family type</th><th class="num">Count</th><th class="num">Members</th>
+        <th class="num">Avg UBI</th><th class="num">Avg salary</th><th class="num">Avg pension</th>
         <th class="num">Avg income</th><th class="num">Avg external spend</th>
       </tr></thead>
       <tbody>
@@ -358,12 +373,18 @@ function renderFamilyTypes(d) {
             <td class="cat">${t.label}</td>
             <td class="num">${t.n_families}</td>
             <td class="num">${t.members}</td>
+            <td class="num">${fmtUSD(t.avg_ubi_per_family || 0)}</td>
+            <td class="num">${fmtUSD(t.avg_salary_per_family || 0)}</td>
+            <td class="num">${fmtUSD(t.avg_pension_per_family || 0)}</td>
             <td class="num">${fmtUSD(t.avg_income_per_family)}</td>
             <td class="num">${fmtUSD(t.avg_external_spend_per_family)}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
+    <div style="font-size: 11px; color: var(--faint); margin-top: 8px;">
+      With UBI taper > 0%, working families' UBI shrinks as their salary rises (Friedman NIT logic).
+    </div>
   </div>`;
 }
 
