@@ -76,6 +76,13 @@ def run_one(name: str, **overrides) -> dict:
     for m in range(1, cfg.months + 1):
         tick_one_month(state, cfg, trajectory, m, txs, citizen_snaps, company_snaps, fisc_states, unmet)
     elapsed = time.time() - t0
+
+    # Capture levy aggregates BEFORE flush (which clears the records)
+    total_levy_usdc = sum(r[7] for r in SUPPLIER_LEVY_RECORDS) if SUPPLIER_LEVY_RECORDS else 0
+    total_protocol_usdc = sum(r[3] for r in PROTOCOL_TREASURY_RECORDS) if PROTOCOL_TREASURY_RECORDS else 0
+    total_gas_usdc = sum(r[3] for r in GAS_POOL_RECORDS) if GAS_POOL_RECORDS else 0
+    final_k = LEVY_CALIBRATION_RECORDS[-1][4] if LEVY_CALIBRATION_RECORDS else cfg.k
+
     flush_to_db(conn, state, txs, citizen_snaps, company_snaps, fisc_states, unmet)
     conn.close()
 
@@ -85,12 +92,6 @@ def run_one(name: str, **overrides) -> dict:
     y6 = next((f for f in fisc_states if f[0] * 12 + f[1] == 72), None)
     y10 = last
     peg_break = next((f[0]*12+f[1] for f in fisc_states if f[10]), None)
-
-    # Levy aggregates from in-memory records
-    total_levy_usdc = sum(r[7] for r in SUPPLIER_LEVY_RECORDS) if SUPPLIER_LEVY_RECORDS else 0
-    total_protocol_usdc = sum(r[3] for r in PROTOCOL_TREASURY_RECORDS) if PROTOCOL_TREASURY_RECORDS else 0
-    total_gas_usdc = sum(r[3] for r in GAS_POOL_RECORDS) if GAS_POOL_RECORDS else 0
-    final_k = LEVY_CALIBRATION_RECORDS[-1][4] if LEVY_CALIBRATION_RECORDS else cfg.k
 
     # PP loss
     pp_loss = (1 - (cfg.ubi_s_per_citizen / y10[8]) / (cfg.ubi_s_per_citizen / 28)) * 100 if (y10 and y10[8] > 0) else None

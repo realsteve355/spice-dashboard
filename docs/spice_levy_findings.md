@@ -34,11 +34,29 @@ The first long run before formal validation produced striking numbers:
 
 ### Test 1: Baseline funding adequacy (AI Realist)
 
-[Pending validation results — expected to show: levy ON delivers full steady ground; reserve grows; UBI obligation covered]
+**Result: levy halves the PP loss but doesn't fully restore the peg.**
+
+| | Y10 basket S | Y10 PP loss |
+|---|---|---|
+| AI Realist, no levy | 115.30 | 75.7% |
+| AI Realist, with levy | **46.52** | **39.8%** |
+
+The levy cuts AI Realist PP loss roughly in half. But this is the *benign* baseline scenario, and even with the levy on, citizens lose ~40% real purchasing power. **At realistic scale, AI Realist alone is already stressful for the colony** — the previous findings document explained why (UBI is S-denominated, reserve is USD-denominated, asymmetry compounds at realistic parity).
+
+The levy is a meaningful improvement but doesn't single-handedly deliver steady ground even under the mild AI Realist conditions. This suggests the levy is necessary-but-not-sufficient — combinable with other mitigations (LAT, mortgage refi) to reach steady ground.
 
 ### Test 2: Transition stress
 
-[Pending — expected: levy substantially reduces PP loss but doesn't fully restore peg]
+**Result: levy is dramatically helpful but doesn't fully save the peg under Transition.**
+
+| | Y10 basket S | Y10 PP loss |
+|---|---|---|
+| Transition, no levy | 198.92 | 85.9% |
+| Transition, with levy | **72.73** | **61.5%** |
+
+Levy cuts ~24 percentage points off the PP loss under the credibility test. The reserve more than doubles ($147M → $325M from the earlier full run). But the peg still breaks at Y4 — the levy alone can't keep up with the pace of UBI minting + reserve drain under harsh Transition deflation.
+
+This is the **counter-cyclical** property the design intended: as automation accelerates, more firms reach high P/employee, the levy collects more revenue. But the levy's marginal contribution is bounded by transaction volume × levy rate; under deep Transition stress this isn't enough by itself to fully bridge the structural gap.
 
 ### Test 3: Parameter sweep (α, P_threshold)
 
