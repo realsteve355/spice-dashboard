@@ -14,7 +14,6 @@ const fmtPct = n => n.toFixed(1) + '%';
 const sliders = [
   { id: 'levy_cap',     fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'ubi_mult',     fmt: v => parseFloat(v).toFixed(2) + 'x' },
-  { id: 'ubi_taper',    fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'ext_spend',    fmt: v => Math.round(parseFloat(v) * 100) + '%' },
   { id: 'daves_rev',    fmt: v => '$' + (parseInt(v) / 1000) + 'K' },
   { id: 'daves_b2b',    fmt: v => '$' + (parseInt(v) / 1000) + 'K' },
@@ -33,7 +32,6 @@ function readConfig() {
   // Build a config dict that overrides the server defaults.
   // For Dave's Co specifically, we override its row in local_companies.
   const ubi_mult = parseFloat(document.getElementById('ubi_mult').value);
-  const ubi_taper = parseFloat(document.getElementById('ubi_taper').value);
   const ext_spend = parseFloat(document.getElementById('ext_spend').value);
   const levy_cap = parseFloat(document.getElementById('levy_cap').value);
   const daves_rev = parseInt(document.getElementById('daves_rev').value);
@@ -44,15 +42,15 @@ function readConfig() {
   // We need to pass the local_companies list with the modified Dave's Co.
   // Defaults must mirror sim.py DEFAULT_LOCAL_COMPANIES exactly.
   const local_companies = [
-    {name: "Dave's Co",      external_rev_usd: daves_rev, p_per_emp: 200000,
+    {name: "Dave's Co",      external_rev_usd: daves_rev, p_per_emp: 200000, margin_pct: 35.0,
      employees: 4, b2b_import_usd: daves_b2b, b2b_import_sector: "retail_online"},
-    {name: "Colony Café",    external_rev_usd: 30000,  p_per_emp:  15000,
+    {name: "Colony Café",    external_rev_usd: 30000,  p_per_emp:  15000, margin_pct:  8.0,
      employees: 5, b2b_import_usd:  6000, b2b_import_sector: "grocery"},
-    {name: "FixIt Repair",   external_rev_usd:  3000,  p_per_emp:  40000,
+    {name: "FixIt Repair",   external_rev_usd:  3000,  p_per_emp:  40000, margin_pct: 15.0,
      employees: 2, b2b_import_usd:  2500, b2b_import_sector: "misc"},
-    {name: "Hilltop School", external_rev_usd:     0,  p_per_emp:  30000,
+    {name: "Hilltop School", external_rev_usd:     0,  p_per_emp:  30000, margin_pct:  5.0,
      employees: 2, b2b_import_usd:  4000, b2b_import_sector: "retail_online"},
-    {name: "MedClinic",      external_rev_usd:  2000,  p_per_emp:  80000,
+    {name: "MedClinic",      external_rev_usd:  2000,  p_per_emp:  80000, margin_pct: 12.0,
      employees: 3, b2b_import_usd:  8000, b2b_import_sector: "healthcare"},
   ];
 
@@ -69,7 +67,6 @@ function readConfig() {
 
   return {
     ubi_multiplier: ubi_mult,
-    ubi_taper,
     external_spend_fraction: ext_spend,
     levy_cap_rate: levy_cap,
     levy_formula: formula,
@@ -176,25 +173,14 @@ function renderPopulation(d) {
 
 function renderIncome(d) {
   const i = d.income;
-  const taperRow = i.ubi_taper_pct > 0
-    ? `<tr style="color: var(--warn);">
-         <td>↳ UBI saved by ${i.ubi_taper_pct.toFixed(0)}% taper on workers</td>
-         <td class="num">−${fmtUSD(i.ubi_savings_from_taper)}</td>
-       </tr>
-       <tr style="color: var(--faint); font-size: 11px;">
-         <td>(Universal UBI would have been ${fmtUSD(i.total_ubi_universal)})</td>
-         <td class="num"></td>
-       </tr>`
-    : '';
   return `
   <div class="card">
     <h3>Monthly income flows</h3>
     <table>
       <thead><tr><th>Stream</th><th class="num">USD/month</th></tr></thead>
       <tbody>
-        <tr><td>Total UBI minted by Fisc</td><td class="num">${fmtUSD(i.total_ubi)}</td></tr>
-        ${taperRow}
-        <tr><td>Total salary (from local cos' external revenue)</td><td class="num">${fmtUSD(i.total_salary)}</td></tr>
+        <tr><td>Total UBI minted by Fisc (universal, every citizen)</td><td class="num">${fmtUSD(i.total_ubi)}</td></tr>
+        <tr><td>Total salary (work pays in full as upside above UBI)</td><td class="num">${fmtUSD(i.total_salary)}</td></tr>
         <tr><td>Total pension (from external)</td><td class="num">${fmtUSD(i.total_pension)}</td></tr>
         <tr><td><strong>Total income</strong></td><td class="num"><strong>${fmtUSD(i.total_income)}</strong></td></tr>
       </tbody>
@@ -299,36 +285,57 @@ function renderSuppliers(d) {
   // Sort: external first, then local; within each, by gross desc.
   const ext = d.suppliers.filter(s => s.kind === 'external' && s.n_tx > 0).sort((a,b)=>b.gross-a.gross);
   const loc = d.suppliers.filter(s => s.kind === 'local' && s.n_tx > 0).sort((a,b)=>b.gross-a.gross);
+
   const row = s => {
-    const cls = s.is_broken ? 'broken' : (s.implied_rate_pct > 50 ? 'high' : '');
+    // 'broken' = red; 'high' = orange. Now we add margin-violation: red trumps high.
+    const cls = s.exceeds_margin ? 'broken' : (s.is_broken ? 'broken' : (s.implied_rate_pct > 50 ? 'high' : ''));
     const flag = s.shortfall > 0.01 ? ' ⚠' : '';
+    const marginFlag = s.exceeds_margin ? ' 💀' : '';
+    const postProfitColor = s.post_levy_profit_usd < 0 ? 'color: var(--crit);' : '';
     return `<tr class="${cls}">
       <td><span class="pill ${s.kind}">${s.kind}</span></td>
-      <td class="cat">${s.name}${flag}</td>
+      <td class="cat">${s.name}${flag}${marginFlag}</td>
       <td class="num">${fmtUSD(s.p_per_emp)}</td>
+      <td class="num">${s.margin_pct.toFixed(1)}%</td>
       <td class="num">${s.n_tx}</td>
       <td class="num">${fmtUSD(s.gross)}</td>
-      <td class="num">${s.implied_rate_pct.toFixed(1)}%</td>
+      <td class="num">${fmtUSD(s.profit_usd)}</td>
       <td class="num">${s.actual_rate_pct.toFixed(1)}%</td>
       <td class="num">${fmtUSD(s.automation_levy)}</td>
-      <td class="num">${fmtUSD(s.net_to_supplier)}</td>
+      <td class="num" style="${postProfitColor}">${fmtUSD(s.post_levy_profit_usd)}</td>
     </tr>`;
   };
+
+  // Count the casualties so the diagnostic is loud.
+  const casualties = d.suppliers.filter(s => s.exceeds_margin && s.n_tx > 0);
+  const casualtyCount = casualties.length;
+  const totalUnderwater = casualties.reduce((sum, s) => sum + Math.max(0, -s.post_levy_profit_usd), 0);
+  const calloutCls = casualtyCount === 0 ? 'ok' : 'crit';
+  const calloutText = casualtyCount === 0
+    ? `<strong>All suppliers retain positive profit after levy.</strong> Levy stays below margin everywhere.`
+    : `<strong>${casualtyCount} supplier${casualtyCount === 1 ? '' : 's'} run loss-making after levy</strong> — ` +
+      `total underwater profit ${fmtUSD(totalUnderwater)}/mo. ` +
+      `Real Walmart can't pay 20% levy on a 2% margin. Casualties: ` +
+      casualties.map(c => `${c.name} (rate ${c.actual_rate_pct.toFixed(0)}% vs margin ${c.margin_pct.toFixed(0)}%)`).join(', ') + '.';
+
   return `
   <div class="card">
-    <h3>Suppliers (sorted by gross)</h3>
+    <h3>Suppliers — does the levy survive their margins?</h3>
+    <div class="callout ${calloutCls}" style="margin-bottom:12px;">${calloutText}</div>
     <table>
       <thead><tr>
         <th>Kind</th><th>Supplier</th>
-        <th class="num">P/emp</th><th class="num"># tx</th><th class="num">Gross</th>
-        <th class="num">Rate (formula)</th><th class="num">Rate (capped)</th>
-        <th class="num">Auto levy</th><th class="num">Net</th>
+        <th class="num">P/emp</th><th class="num">Margin</th>
+        <th class="num"># tx</th><th class="num">Gross</th><th class="num">Profit</th>
+        <th class="num">Levy rate</th><th class="num">Levy $</th><th class="num">Profit after levy</th>
       </tr></thead>
       <tbody>${ext.map(row).join('')}${loc.map(row).join('')}</tbody>
     </table>
     <div style="margin-top:8px; font-size:11px; color: var(--faint);">
-      Red rows = formula breaks (rate &gt; 100%); orange = high (&gt; 50%).
-      ⚠ = capped at ${Math.round(d.config.levy_cap_rate * 100)}% with shortfall.
+      Red rows = levy exceeds margin OR formula rate &gt; 100% (💀 = bankrupt under levy);
+      orange = high rate (&gt; 50%). Profit = gross × margin %. The right-most column is what
+      the supplier keeps after the levy — negative means they lose money on every transaction
+      with the colony.
     </div>
   </div>`;
 }
@@ -383,7 +390,7 @@ function renderFamilyTypes(d) {
       </tbody>
     </table>
     <div style="font-size: 11px; color: var(--faint); margin-top: 8px;">
-      With UBI taper > 0%, working families' UBI shrinks as their salary rises (Friedman NIT logic).
+      UBI is universal: every citizen gets full UBI regardless of salary. Workers keep 100% of salary as upside.
     </div>
   </div>`;
 }
