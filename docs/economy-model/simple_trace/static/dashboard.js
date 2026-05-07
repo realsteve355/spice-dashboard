@@ -118,7 +118,7 @@ function render(d) {
 function renderSummary(d) {
   const b = d.budget;
   const gapClass = b.funding_gap_pct > 20 ? 'crit' : b.funding_gap_pct > 5 ? 'warn' : 'ok';
-  const capped = b.capped_suppliers.length;
+  const capped = (b.capped_suppliers || []).length;
   const cappedClass = capped === 0 ? 'ok' : capped <= 3 ? 'warn' : 'crit';
   const aValue = d.config.a;
   return `
@@ -336,10 +336,11 @@ function renderSuppliers(d) {
 function renderBudget(d) {
   const b = d.budget;
   const cls = b.funding_gap_pct > 20 ? 'crit' : b.funding_gap_pct > 5 ? '' : 'ok';
-  const cappedList = b.capped_suppliers.length === 0
+  const cappedSuppliers = b.capped_suppliers || [];
+  const cappedList = cappedSuppliers.length === 0
     ? '<em style="color:var(--ok);">none — calibrated capture stays within the cap for every supplier.</em>'
     : '<ul style="margin: 4px 0 0 0; padding-left: 18px;">' +
-      b.capped_suppliers.map(s => `<li>${s.name}: at ${s.capture_pct.toFixed(0)}% capture cap</li>`).join('') +
+      cappedSuppliers.map(s => `<li>${s.name}: at ${s.capture_pct.toFixed(0)}% capture cap</li>`).join('') +
       '</ul>';
   return `
   <div class="card">
