@@ -17,19 +17,21 @@
   <aside class="panel controls">
     <h2>Configuration</h2>
 
-    <h3>Levy mechanism</h3>
-    <label>Levy formula</label>
+    <h3>Levy mechanism (Option A)</h3>
+    <div class="help" style="margin-bottom:10px;">levy = capture × margin × gross. The colony captures a fraction of each supplier's profit; the supplier always retains (1 − capture) × profit.</div>
+    <label>Capture-rate formula</label>
     <select id="levy_formula">
-      <option value="linear" selected>Linear (a × P/emp)</option>
-      <option value="asymptotic">Asymptotic (caps at max rate)</option>
+      <option value="linear" selected>Linear (capture = a × P/emp, capped)</option>
+      <option value="asymptotic">Asymptotic (capture = cap × (1 − e<sup>−aP</sup>))</option>
     </select>
-    <div class="help">Linear: rate grows without bound; breaks for high-P/emp suppliers.<br>Asymptotic: rate = max × (1 − e<sup>−aP</sup>); always &lt; max_rate.</div>
+    <div class="help">Both scale capture with profit-per-employee, so automated firms cede more.</div>
 
-    <label>Max levy cap (% of transaction)</label>
+    <label>Max profit capture (cap)</label>
     <div class="slider-row">
       <input type="range" id="levy_cap" min="0.20" max="1.00" step="0.05" value="0.80">
       <div class="v" id="levy_cap_v">80%</div>
     </div>
+    <div class="help">Most we can take from any one supplier's profit. 80% leaves them 20% of profit minimum.</div>
 
     <h3>Income</h3>
     <label>UBI multiplier (× basket)</label>

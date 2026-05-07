@@ -242,15 +242,22 @@ def generate_transactions(families, local_companies, external_suppliers,
     return txs
 
 
-def levy_rate_for(p_per_emp, a, formula, max_rate):
-    """Compute the per-dollar levy rate for a supplier given P/employee."""
+def profit_capture_for(p_per_emp, a, formula, max_capture):
+    """Compute the fraction of a supplier's PROFIT that the levy captures.
+
+    Returns a number in [0, max_capture]. The levy on a transaction is then:
+        levy_$ = capture × margin × gross
+    so it can never exceed the supplier's profit on that sale.
+
+    `linear`:    capture = a × P/emp,  capped at max_capture.
+    `asymptotic`: capture = max_capture × (1 − exp(−a × P/emp));
+                  always < max_capture, smoother roll-on for low-P/emp firms.
+    """
     if formula == "linear":
-        return a * p_per_emp
+        return min(max_capture, a * p_per_emp)
     elif formula == "asymptotic":
-        # rate = max_rate * (1 - exp(-P/scale))
-        # `a` plays the role of 1/scale here (smaller a -> longer ramp)
         if a <= 0: return 0
-        return max_rate * (1 - math.exp(-a * p_per_emp))
+        return max_capture * (1 - math.exp(-a * p_per_emp))
     return 0
 
 
@@ -301,33 +308,61 @@ def run(config: dict | None = None) -> dict:
     n_txs = len(txs)
     total_gross = sum(t.gross_usd for t in txs)
     total_v_x_p = sum(t.gross_usd * t.supplier_p_per_emp for t in txs)
+    # Total pre-levy profit available for the levy to draw on. THIS is the
+    # constraint — Marysville's Fisc can only fund UBI from internal commerce
+    # profits (Streams A+B+C). Visitor revenue at local cos is NOT levied here
+    # (destination principle).
+    total_profit_pool = sum(t.gross_usd * t.supplier_margin_pct / 100 for t in txs)
 
-    # Calibrate `a`. Linear: a = total_UBI / Σ(V × P). Asymptotic: solve numerically.
-    if total_v_x_p > 0:
+    # Calibrate `a` so total profit captured = total UBI.
+    #   Linear:     a × Σ(P/emp × margin × gross) = UBI
+    #   Asymptotic: solve numerically.
+    # `a` is interpreted differently from before — it scales how aggressively
+    # capture-rate climbs with P/emp. The capture is BOUNDED at max_capture
+    # (= levy_cap_rate config), so we cannot extract more than that fraction
+    # of any supplier's profit no matter how high P/emp goes.
+    profit_weighted_p = sum(
+        t.supplier_p_per_emp * t.supplier_margin_pct / 100 * t.gross_usd
+        for t in txs
+    )
+    cap = cfg["levy_cap_rate"]
+
+    if profit_weighted_p > 0:
         if cfg["levy_formula"] == "linear":
-            a = total_ubi / total_v_x_p
+            # Naïve linear a = UBI / Σ(P/emp × margin × gross).
+            # If this gives capture > cap for some supplier, those caps will
+            # bite during application and the shortfall surfaces in the budget.
+            a = total_ubi / profit_weighted_p
         else:
-            # asymptotic: rate = max_rate * (1 - exp(-a * P))
-            # Solve for a such that sum(rate(P_i) * V_i) = total_ubi
-            # Use bisection over a.
-            def total_levy(a_):
+            # Asymptotic: capture = cap × (1 − exp(−a × P/emp))
+            # Solve for a such that Σ capture × margin × gross = total_ubi.
+            def total_capture(a_):
                 return sum(
-                    t.gross_usd * cfg["levy_cap_rate"] * (1 - math.exp(-a_ * t.supplier_p_per_emp))
+                    t.gross_usd * (t.supplier_margin_pct / 100)
+                    * cap * (1 - math.exp(-a_ * t.supplier_p_per_emp))
                     for t in txs
                 )
             lo, hi = 1e-9, 1e-2
-            target = total_ubi
             for _ in range(60):
                 mid = (lo + hi) / 2
-                if total_levy(mid) < target:
+                if total_capture(mid) < total_ubi:
                     lo = mid
                 else:
                     hi = mid
             a = (lo + hi) / 2
+            # If even maximum capture (cap × profit pool) < UBI, the formula
+            # has no solution — `a` will pin to `hi` and shortfall appears.
     else:
         a = 0
 
-    # Apply levies (with cap)
+    # Apply levies. Under Option A:
+    #   profit         = margin × gross  (pre-levy)
+    #   intended_auto  = capture(P/emp) × profit
+    #   room_left      = profit − gas − protocol
+    #   actual_auto    = min(intended_auto, room_left)
+    # The supplier ALWAYS retains (1 − total_levies/profit) of their profit;
+    # they can never go underwater on a sale (unless gas+protocol alone
+    # exceed their profit, which is rare and signals an unsustainable supplier).
     per_supplier = defaultdict(lambda: {
         "n": 0, "gross": 0.0, "automation_levy": 0.0,
         "gas_levy": 0.0, "protocol_levy": 0.0,
@@ -338,7 +373,6 @@ def run(config: dict | None = None) -> dict:
     total_gas = 0.0
     total_protocol = 0.0
     total_shortfall = 0.0
-    cap = cfg["levy_cap_rate"]
 
     for t in txs:
         s = per_supplier[t.supplier_name]
@@ -350,10 +384,18 @@ def run(config: dict | None = None) -> dict:
 
         gas = cfg["gas_levy_usd"]
         protocol = t.gross_usd * cfg["protocol_rate"]
-        rate = levy_rate_for(t.supplier_p_per_emp, a, cfg["levy_formula"], cap)
-        intended_auto = t.gross_usd * rate
-        room = max(0, t.gross_usd * cap - gas - protocol)
-        actual_auto = min(intended_auto, room)
+        margin_dec = t.supplier_margin_pct / 100
+        profit = t.gross_usd * margin_dec
+
+        # `capture` is already capped at max_capture. To detect if we WOULD have
+        # taken more from this supplier given more capacity, also compute the
+        # uncapped capture for the shortfall diagnostic.
+        capture = profit_capture_for(t.supplier_p_per_emp, a, cfg["levy_formula"], cap)
+        intended_auto = capture * profit
+        room_left = max(0.0, profit - gas - protocol)
+        actual_auto = min(intended_auto, room_left)
+        # Shortfall on this transaction = capture cap reached (we'd extract more if allowed)
+        # PLUS room ran out (gas+protocol crowded out automation levy on a thin-margin sale).
         shortfall = intended_auto - actual_auto
 
         s["gas_levy"] += gas
@@ -468,8 +510,11 @@ def run(config: dict | None = None) -> dict:
                 "p_per_emp": s["p_emp"],
                 "margin_pct": s["margin_pct"],
                 "profit_usd": s["gross"] * s["margin_pct"] / 100,
-                "implied_rate_pct": levy_rate_for(s["p_emp"], a, cfg["levy_formula"], cap) * 100,
+                # Profit capture rate (the f in Option A): % of profit captured
+                "capture_pct": profit_capture_for(s["p_emp"], a, cfg["levy_formula"], cap) * 100,
+                # The net rate on revenue the supplier sees on their bill
                 "actual_rate_pct": (s["automation_levy"] / s["gross"] * 100) if s["gross"] > 0 else 0,
+                # Should be False under Option A by construction
                 "exceeds_margin": (s["automation_levy"] / s["gross"] * 100) > s["margin_pct"] if s["gross"] > 0 else False,
                 "n_tx": s["n"],
                 "gross": s["gross"],
@@ -477,26 +522,36 @@ def run(config: dict | None = None) -> dict:
                 "gas_levy": s["gas_levy"],
                 "protocol_levy": s["protocol_levy"],
                 "net_to_supplier": s["gross"] - s["automation_levy"] - s["protocol_levy"] - s["gas_levy"],
-                "post_levy_profit_usd": s["gross"] * s["margin_pct"] / 100 - s["automation_levy"],
+                "post_levy_profit_usd": s["gross"] * s["margin_pct"] / 100 - s["automation_levy"] - s["gas_levy"] - s["protocol_levy"],
                 "shortfall": s["shortfall"],
-                "is_broken": levy_rate_for(s["p_emp"], a, cfg["levy_formula"], cap) > 1.0,
+                # 'broken' under Option A means cap was reached AND profit pool insufficient
+                "is_broken": profit_capture_for(s["p_emp"], a, cfg["levy_formula"], cap) >= cap and s["shortfall"] > 0.01,
             }
             for name, s in per_supplier.items()
         ],
         "budget": {
             "ubi_obligation": total_ubi,
             "automation_collected": total_auto,
-            "shortfall": total_shortfall,
-            "shortfall_pct": (total_shortfall / total_ubi * 100) if total_ubi > 0 else 0,
+            # Funding gap = what UBI needs minus what the levy can extract.
+            # This is the structural deficit the colony has to plug from
+            # somewhere else (reserves, minting, LAT, etc.).
+            "funding_gap": max(0.0, total_ubi - total_auto),
+            "funding_gap_pct": (max(0.0, total_ubi - total_auto) / total_ubi * 100) if total_ubi > 0 else 0,
+            # Per-supplier shortfall = sum of (intended − actual) across all txs.
+            # Distinct from funding_gap above. Non-zero when cap was binding or
+            # gas+protocol crowded out the automation levy.
+            "per_tx_shortfall": total_shortfall,
             "gas_pool": total_gas,
             "protocol_treasury": total_protocol,
-            "broken_suppliers": [
-                {"name": s["name"], "rate_pct": s["implied_rate_pct"]}
-                for s in (
-                    {"name": name, "implied_rate_pct": levy_rate_for(d["p_emp"], a, cfg["levy_formula"], cap) * 100}
-                    for name, d in per_supplier.items()
-                )
-                if s["implied_rate_pct"] > 100
+            "total_profit_pool": total_profit_pool,
+            "max_capturable": total_profit_pool * cap,
+            # Suppliers at the capture cap — would cede more profit if cap allowed
+            "capped_suppliers": [
+                {"name": name,
+                 "capture_pct": profit_capture_for(d["p_emp"], a, cfg["levy_formula"], cap) * 100}
+                for name, d in per_supplier.items()
+                if profit_capture_for(d["p_emp"], a, cfg["levy_formula"], cap) >= cap - 1e-9
+                   and d["n"] > 0
             ],
         },
     }

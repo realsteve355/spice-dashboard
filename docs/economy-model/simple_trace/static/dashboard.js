@@ -117,9 +117,9 @@ function render(d) {
 
 function renderSummary(d) {
   const b = d.budget;
-  const sLossClass = b.shortfall_pct > 20 ? 'crit' : b.shortfall_pct > 5 ? 'warn' : 'ok';
-  const broken = b.broken_suppliers.length;
-  const brokenClass = broken === 0 ? 'ok' : broken <= 3 ? 'warn' : 'crit';
+  const gapClass = b.funding_gap_pct > 20 ? 'crit' : b.funding_gap_pct > 5 ? 'warn' : 'ok';
+  const capped = b.capped_suppliers.length;
+  const cappedClass = capped === 0 ? 'ok' : capped <= 3 ? 'warn' : 'crit';
   const aValue = d.config.a;
   return `
   <div class="card">
@@ -131,25 +131,26 @@ function renderSummary(d) {
         <div class="sub">monthly · ${d.population.n_citizens} citizens × ${fmtUSD(d.income.ubi_usd_per_citizen)}</div>
       </div>
       <div class="stat">
+        <div class="label">Profit pool</div>
+        <div class="value">${fmtUSD(b.total_profit_pool)}</div>
+        <div class="sub">all levied tx · max capturable ${fmtUSD(b.max_capturable)} at ${Math.round(d.config.levy_cap_rate * 100)}% cap</div>
+      </div>
+      <div class="stat">
         <div class="label">Levy collected</div>
         <div class="value">${fmtUSD(b.automation_collected)}</div>
-        <div class="sub">automation · gas+protocol additionally ${fmtUSD(b.gas_pool + b.protocol_treasury)}</div>
+        <div class="sub">${(b.automation_collected / b.ubi_obligation * 100).toFixed(0)}% of UBI · gas+protocol additionally ${fmtUSD(b.gas_pool + b.protocol_treasury)}</div>
       </div>
       <div class="stat">
-        <div class="label">Shortfall</div>
-        <div class="value ${sLossClass}">${fmtPct(b.shortfall_pct)}</div>
-        <div class="sub">${fmtUSD(b.shortfall)} of UBI uncovered</div>
-      </div>
-      <div class="stat">
-        <div class="label">Broken suppliers</div>
-        <div class="value ${brokenClass}">${broken}</div>
-        <div class="sub">rate would exceed cap</div>
+        <div class="label">Funding gap</div>
+        <div class="value ${gapClass}">${fmtPct(b.funding_gap_pct)}</div>
+        <div class="sub">${fmtUSD(b.funding_gap)} UBI not covered by levy</div>
       </div>
     </div>
     <div style="margin-top:12px; font-size: 11px; color: var(--dim);">
       Levy coefficient a = ${aValue.toExponential(3)}
       &middot; formula: ${d.config.levy_formula}
-      &middot; cap: ${Math.round(d.config.levy_cap_rate * 100)}%
+      &middot; max profit capture: ${Math.round(d.config.levy_cap_rate * 100)}%
+      &middot; ${capped} of ${d.suppliers.filter(s => s.n_tx > 0).length} suppliers at cap
     </div>
   </div>`;
 }
@@ -287,79 +288,73 @@ function renderSuppliers(d) {
   const loc = d.suppliers.filter(s => s.kind === 'local' && s.n_tx > 0).sort((a,b)=>b.gross-a.gross);
 
   const row = s => {
-    // 'broken' = red; 'high' = orange. Now we add margin-violation: red trumps high.
-    const cls = s.exceeds_margin ? 'broken' : (s.is_broken ? 'broken' : (s.implied_rate_pct > 50 ? 'high' : ''));
-    const flag = s.shortfall > 0.01 ? ' ⚠' : '';
-    const marginFlag = s.exceeds_margin ? ' 💀' : '';
-    const postProfitColor = s.post_levy_profit_usd < 0 ? 'color: var(--crit);' : '';
+    const cls = s.exceeds_margin ? 'broken' : (s.capture_pct >= 79 ? 'high' : '');
+    const flag = s.is_broken ? ' ⚠' : '';
     return `<tr class="${cls}">
       <td><span class="pill ${s.kind}">${s.kind}</span></td>
-      <td class="cat">${s.name}${flag}${marginFlag}</td>
+      <td class="cat">${s.name}${flag}</td>
       <td class="num">${fmtUSD(s.p_per_emp)}</td>
       <td class="num">${s.margin_pct.toFixed(1)}%</td>
       <td class="num">${s.n_tx}</td>
       <td class="num">${fmtUSD(s.gross)}</td>
       <td class="num">${fmtUSD(s.profit_usd)}</td>
-      <td class="num">${s.actual_rate_pct.toFixed(1)}%</td>
+      <td class="num">${s.capture_pct.toFixed(1)}%</td>
+      <td class="num">${s.actual_rate_pct.toFixed(2)}%</td>
       <td class="num">${fmtUSD(s.automation_levy)}</td>
-      <td class="num" style="${postProfitColor}">${fmtUSD(s.post_levy_profit_usd)}</td>
+      <td class="num">${fmtUSD(s.post_levy_profit_usd)}</td>
     </tr>`;
   };
 
-  // Count the casualties so the diagnostic is loud.
   const casualties = d.suppliers.filter(s => s.exceeds_margin && s.n_tx > 0);
-  const casualtyCount = casualties.length;
-  const totalUnderwater = casualties.reduce((sum, s) => sum + Math.max(0, -s.post_levy_profit_usd), 0);
-  const calloutCls = casualtyCount === 0 ? 'ok' : 'crit';
-  const calloutText = casualtyCount === 0
-    ? `<strong>All suppliers retain positive profit after levy.</strong> Levy stays below margin everywhere.`
-    : `<strong>${casualtyCount} supplier${casualtyCount === 1 ? '' : 's'} run loss-making after levy</strong> — ` +
-      `total underwater profit ${fmtUSD(totalUnderwater)}/mo. ` +
-      `Real Walmart can't pay 20% levy on a 2% margin. Casualties: ` +
-      casualties.map(c => `${c.name} (rate ${c.actual_rate_pct.toFixed(0)}% vs margin ${c.margin_pct.toFixed(0)}%)`).join(', ') + '.';
+  const calloutCls = casualties.length === 0 ? 'ok' : 'crit';
+  const calloutText = casualties.length === 0
+    ? `<strong>Every supplier keeps profit after the levy.</strong> Levy never exceeds margin (Option A: capture is bounded by profit).`
+    : `<strong>${casualties.length} supplier${casualties.length === 1 ? '' : 's'} go negative</strong> — should not happen under Option A; check gas+protocol on thin-margin sales.`;
 
   return `
   <div class="card">
-    <h3>Suppliers — does the levy survive their margins?</h3>
+    <h3>Suppliers — profit capture per Option A</h3>
     <div class="callout ${calloutCls}" style="margin-bottom:12px;">${calloutText}</div>
     <table>
       <thead><tr>
         <th>Kind</th><th>Supplier</th>
         <th class="num">P/emp</th><th class="num">Margin</th>
         <th class="num"># tx</th><th class="num">Gross</th><th class="num">Profit</th>
-        <th class="num">Levy rate</th><th class="num">Levy $</th><th class="num">Profit after levy</th>
+        <th class="num">Capture %</th><th class="num">Rate on rev</th>
+        <th class="num">Levy $</th><th class="num">Profit retained</th>
       </tr></thead>
       <tbody>${ext.map(row).join('')}${loc.map(row).join('')}</tbody>
     </table>
     <div style="margin-top:8px; font-size:11px; color: var(--faint);">
-      Red rows = levy exceeds margin OR formula rate &gt; 100% (💀 = bankrupt under levy);
-      orange = high rate (&gt; 50%). Profit = gross × margin %. The right-most column is what
-      the supplier keeps after the levy — negative means they lose money on every transaction
-      with the colony.
+      <strong>Capture %</strong> = fraction of supplier's profit captured by Fisc (the f in Option A).
+      <strong>Rate on rev</strong> = capture × margin = what shows on the buyer's bill.
+      Orange = at the cap (would cede more profit if cap allowed). ⚠ = cap binding with shortfall.
     </div>
   </div>`;
 }
 
 function renderBudget(d) {
   const b = d.budget;
-  const cls = b.shortfall_pct > 20 ? 'crit' : b.shortfall_pct > 5 ? '' : 'ok';
-  const brokenList = b.broken_suppliers.length === 0
-    ? '<em style="color:var(--ok);">none — formula stays under the cap for every supplier.</em>'
+  const cls = b.funding_gap_pct > 20 ? 'crit' : b.funding_gap_pct > 5 ? '' : 'ok';
+  const cappedList = b.capped_suppliers.length === 0
+    ? '<em style="color:var(--ok);">none — calibrated capture stays within the cap for every supplier.</em>'
     : '<ul style="margin: 4px 0 0 0; padding-left: 18px;">' +
-      b.broken_suppliers.map(s => `<li>${s.name}: would-be rate ${s.rate_pct.toFixed(0)}%</li>`).join('') +
+      b.capped_suppliers.map(s => `<li>${s.name}: at ${s.capture_pct.toFixed(0)}% capture cap</li>`).join('') +
       '</ul>';
   return `
   <div class="card">
     <h3>Budget balance</h3>
     <table>
       <tr><td>UBI obligation</td><td class="num">${fmtUSD(b.ubi_obligation)}</td></tr>
-      <tr><td>Automation levy collected (capped)</td><td class="num">${fmtUSD(b.automation_collected)}</td></tr>
-      <tr><td>Shortfall</td><td class="num">${fmtUSD(b.shortfall)} (${fmtPct(b.shortfall_pct)})</td></tr>
+      <tr><td>Total profit pool (all levied tx)</td><td class="num">${fmtUSD(b.total_profit_pool)}</td></tr>
+      <tr><td>Max capturable at ${Math.round(d.config.levy_cap_rate * 100)}% cap</td><td class="num">${fmtUSD(b.max_capturable)}</td></tr>
+      <tr><td>Automation levy actually collected</td><td class="num">${fmtUSD(b.automation_collected)}</td></tr>
+      <tr><td><strong>Funding gap (UBI not covered)</strong></td><td class="num"><strong>${fmtUSD(b.funding_gap)} (${fmtPct(b.funding_gap_pct)})</strong></td></tr>
       <tr><td>Gas pool (chain validators)</td><td class="num">${fmtUSD(b.gas_pool)}</td></tr>
       <tr><td>Protocol treasury (founders)</td><td class="num">${fmtUSD(b.protocol_treasury)}</td></tr>
     </table>
     <div class="callout ${cls}" style="margin-top:10px;">
-      <strong>Suppliers where the formula breaks:</strong><br>${brokenList}
+      <strong>Suppliers at the capture cap:</strong> ${cappedList}
     </div>
   </div>`;
 }
