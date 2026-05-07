@@ -60,7 +60,22 @@ This is the **counter-cyclical** property the design intended: as automation acc
 
 ### Test 3: Parameter sweep (α, P_threshold)
 
-[Pending — sweep over α ∈ {1.0, 1.5, 2.0, 3.0} × P_threshold ∈ {$40K, $80K, $150K}. Looking for: which combination produces sustainable funding without crushing internal commerce]
+**Result so far (α=1.0, 1.5, 2.0 complete; α=3.0 in progress):**
+
+| α | P_thr=$40K | P_thr=$80K | P_thr=$150K |
+|---|---|---|---|
+| **1.0** | **58.7%** | 60.5% | 61.5% |
+| 1.5 | 61.0% | 61.5% (default) | 61.8% |
+| 2.0 | 61.6% | 61.8% | 62.0% |
+| 3.0 | _pending_ | _pending_ | _pending_ |
+
+PP loss values, all under The Transition with `levy_enabled` and otherwise default config.
+
+**Key finding:** the sweep is remarkably flat (range 58.7% – 62.0%, just 3.3pp variation across 9 configurations). This is **by design** — the annual k recalibration auto-balances the levy rate so that projected next-year levy revenue covers the projected UBI obligation. Different α/threshold combinations converge to similar total annual revenue; what varies is the early-year transient before k recalibration kicks in (Y1) and the inter-firm allocation of the levy burden.
+
+**Implication for the design:** the choice of α and P_threshold is mostly a **distributive** question (which firms bear the levy load), not a quantitative one (how much total revenue is collected). The k recalibration handles the quantity. This means policy choices about α and P_threshold can prioritise political fairness ("highly automated firms pay much more") without fundamentally changing the colony's funding adequacy.
+
+**Best in sweep so far:** **α = 1.0, P_threshold = $40K → 58.7% PP loss.** Linear progressivity with a low entry threshold collects the most revenue in early years (before k stabilises), giving the colony a slightly stronger founding-period reserve buffer.
 
 ### Test 4: Internal commerce wedge
 
