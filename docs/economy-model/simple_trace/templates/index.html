@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simple SPICE trace — interactive</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>Simple SPICE trace — single-month interactive</h1>
+  <div class="subtitle">20 families · ~25 external suppliers · 5 local companies · all data on one page</div>
+</header>
+
+<main>
+  <!-- LEFT: controls -->
+  <aside class="panel controls">
+    <h2>Configuration</h2>
+
+    <h3>Levy mechanism</h3>
+    <label>Levy formula</label>
+    <select id="levy_formula">
+      <option value="linear" selected>Linear (a × P/emp)</option>
+      <option value="asymptotic">Asymptotic (caps at max rate)</option>
+    </select>
+    <div class="help">Linear: rate grows without bound; breaks for high-P/emp suppliers.<br>Asymptotic: rate = max × (1 − e<sup>−aP</sup>); always &lt; max_rate.</div>
+
+    <label>Max levy cap (% of transaction)</label>
+    <div class="slider-row">
+      <input type="range" id="levy_cap" min="0.20" max="1.00" step="0.05" value="0.80">
+      <div class="v" id="levy_cap_v">80%</div>
+    </div>
+
+    <h3>Income</h3>
+    <label>UBI multiplier (× basket)</label>
+    <div class="slider-row">
+      <input type="range" id="ubi_mult" min="0.5" max="2.0" step="0.05" value="1.10">
+      <div class="v" id="ubi_mult_v">1.10×</div>
+    </div>
+    <div class="help">UBI = $980 basket × this multiplier. Default 1.10 = $1,078/mo per citizen.</div>
+
+    <label>External spend fraction</label>
+    <div class="slider-row">
+      <input type="range" id="ext_spend" min="0.30" max="0.95" step="0.05" value="0.66">
+      <div class="v" id="ext_spend_v">66%</div>
+    </div>
+    <div class="help">Of monthly income, what fraction goes to external suppliers (rest = internal + savings).</div>
+
+    <h3>Local exporter</h3>
+    <label>Dave's Co external revenue ($/mo)</label>
+    <div class="slider-row">
+      <input type="range" id="daves_rev" min="0" max="200000" step="5000" value="80000">
+      <div class="v" id="daves_rev_v">$80K</div>
+    </div>
+
+    <label>Dave's Co B2B import spend ($/mo)</label>
+    <div class="slider-row">
+      <input type="range" id="daves_b2b" min="0" max="50000" step="1000" value="15000">
+      <div class="v" id="daves_b2b_v">$15K</div>
+    </div>
+    <div class="help">B2B at Amazon (P/emp $180K). Big driver of levy revenue.</div>
+
+    <label>Dave's Co salaries ($/mo per employee)</label>
+    <div class="slider-row">
+      <input type="range" id="daves_salary" min="0" max="15000" step="500" value="6000">
+      <div class="v" id="daves_salary_v">$6K</div>
+    </div>
+
+    <button id="run-btn">Run trace</button>
+    <div class="status" id="status"></div>
+  </aside>
+
+  <!-- RIGHT: results -->
+  <section class="results" id="results">
+    <div class="empty">Click "Run trace" to compute.</div>
+  </section>
+</main>
+
+<script src="/static/dashboard.js"></script>
+</body>
+</html>
