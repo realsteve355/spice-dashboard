@@ -170,6 +170,26 @@
       <div class="v" id="cashout_mult_v">1.0</div>
     </div>
 
+    <h3>Levy mechanism</h3>
+    <div class="toggle-row" id="levy_enabled_row">
+      <span>Three-layer per-tx levy</span>
+      <input type="checkbox" id="levy_enabled">
+    </div>
+    <label>Levy α (progressivity)</label>
+    <div class="slider-row">
+      <input type="range" id="alpha" min="1.0" max="3.0" step="0.1" value="1.5">
+      <div class="v" id="alpha_v">1.5</div>
+    </div>
+    <label>Levy P_threshold ($K)</label>
+    <div class="slider-row">
+      <input type="range" id="p_threshold" min="20" max="200" step="10" value="80">
+      <div class="v" id="p_threshold_v">80</div>
+    </div>
+    <div class="toggle-row" id="mcc_federal_tax_row">
+      <span>MCC federal tax line</span>
+      <input type="checkbox" id="mcc_federal_tax">
+    </div>
+
     <h3>Run</h3>
     <button class="run-btn" id="run-btn">Run simulation</button>
     <div class="progress" id="progress"></div>

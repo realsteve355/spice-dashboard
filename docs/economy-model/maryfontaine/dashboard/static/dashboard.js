@@ -24,6 +24,8 @@ const sliders = [
   { id: 'lat', fmt: v => `${(parseFloat(v) * 100).toFixed(1)}%` },
   { id: 's_tax', fmt: v => `${(parseFloat(v) * 100).toFixed(1)}%` },
   { id: 'cashout_mult', fmt: v => parseFloat(v).toFixed(1) },
+  { id: 'alpha', fmt: v => parseFloat(v).toFixed(1) },
+  { id: 'p_threshold', fmt: v => '$' + parseFloat(v).toFixed(0) + 'K' },
 ];
 sliders.forEach(s => {
   const input = document.getElementById(s.id);
@@ -33,7 +35,7 @@ sliders.forEach(s => {
 });
 
 // Toggle rows — clicking the row toggles the checkbox + visual class
-['ubi_retirees_only', 'mortgage_refi', 'ext_rent_refi'].forEach(id => {
+['ubi_retirees_only', 'mortgage_refi', 'ext_rent_refi', 'levy_enabled', 'mcc_federal_tax'].forEach(id => {
   const row = document.getElementById(id + '_row');
   const cb = document.getElementById(id);
   const sync = () => row.classList.toggle('on', cb.checked);
@@ -64,6 +66,10 @@ function readConfig() {
     external_rent_refinance: document.getElementById('ext_rent_refi').checked,
     s_tax_on_purchases_pct: parseFloat(document.getElementById('s_tax').value),
     cashout_multiplier: parseFloat(document.getElementById('cashout_mult').value),
+    levy_enabled: document.getElementById('levy_enabled').checked,
+    alpha: parseFloat(document.getElementById('alpha').value),
+    p_threshold_usd: parseFloat(document.getElementById('p_threshold').value) * 1000,
+    mcc_federal_tax_enabled: document.getElementById('mcc_federal_tax').checked,
   };
 }
 
