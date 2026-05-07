@@ -83,6 +83,28 @@ class SimConfig:
     fisc_reserve_at_founding_usd: float = 175_000_000.0  # at 10% scale; $1.75B at full scale
     fisc_rate_at_founding: float = 35.0                  # USD per S — at parity, basket = $980
 
+    # ── Three-layer levy mechanism (per spice_levy_build_spec) ──────────
+    levy_enabled: bool = False                           # master toggle (off by default for back-compat)
+
+    # Layer 1: Gas levy — chain transaction cost
+    chain_gas_fee_usd: float = 0.005                     # ~$0.005 per transaction on Base
+
+    # Layer 2: Protocol levy — to SPICE founders treasury
+    protocol_rate: float = 0.001                         # 0.1% of transaction value
+
+    # Layer 3: Automation levy — to Fisc reserve, funds UBI
+    p_threshold_usd: float = 80_000.0                    # firms below this pay nothing
+    p_baseline_usd: float = 100_000.0                    # normalisation reference
+    alpha: float = 1.5                                   # progressivity exponent
+    k: float = 0.05                                      # initial guess; recalibrated annually
+    k_min: float = 0.001                                 # safety floor
+    k_max: float = 0.50                                  # safety ceiling
+    recalibration_month: int = 12                        # December of each year
+
+    # MCC federal tax compliance (residual federal obligations)
+    mcc_federal_tax_enabled: bool = False                # toggle (off by default)
+    mcc_federal_tax_per_citizen_usd_year: float = 3_600.0  # ~$300/month per citizen for residual federal share
+
 
 def to_json(cfg: SimConfig) -> Dict[str, Any]:
     """Convert to JSON-serialisable dict for storage/UI."""

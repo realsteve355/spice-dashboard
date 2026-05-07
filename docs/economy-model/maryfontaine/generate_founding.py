@@ -74,6 +74,28 @@ HOUSING_DIST = [
 ]
 
 
+# ── Sector profit-per-employee defaults (per spice_levy_build_spec §6) ────────
+# Founding annual profit-per-employee in USD. Mostly below the $80K levy threshold —
+# colony businesses are labour-intensive small operations at founding. Higher P/emp
+# only emerges as automation displaces workers (Y2+).
+SECTOR_DEFAULT_PROFIT_PER_EMPLOYEE = {
+    "automotive_manufacturing": 12_000,    # Honda factory: $4.5M revenue / 400 emp ≈ low margin
+    "utilities":                40_000,    # MCC small scale; scales up if automated
+    "manufacturing":            55_000,    # Bellefontaine small mfg
+    "healthcare":               90_000,    # specialised, paid services
+    "education":                55_000,    # labour-intensive
+    "retail_grocery":           25_000,    # very low margin
+    "retail":                   30_000,
+    "restaurant":               20_000,
+    "professional_services":   120_000,    # legal, accounting, IT — well above threshold
+    "construction":             50_000,
+    "trades":                   45_000,
+    "auto_services":            40_000,
+    "other":                    50_000,
+    "sole_trader":              60_000,    # one-person operations
+}
+
+
 # ── Company catalogue (per spec §3) ───────────────────────────────────────────
 # (sector, count_at_10pct, sectors_served, max_revenue_per_month_s, is_exporter, is_external_owned, monthly_export_usd, monthly_import_usd)
 
@@ -368,6 +390,7 @@ def gen_companies(ctx: GenContext, citizens: List[Dict]) -> List[Dict]:
     # Catalogue companies
     for prefix, sector, count, sectors_served, mo_rev, exporter, ext_owned, mo_export, mo_import, is_mcc in COMPANY_CATALOGUE:
         n = max(1, int(round(count * (ctx.scale / 0.1))))  # COMPANY_CATALOGUE counts are at 10% scale
+        ppe_default = SECTOR_DEFAULT_PROFIT_PER_EMPLOYEE.get(sector, 50_000)
         for i in range(n):
             cfo = ctx.rng.choice(["conservative", "aggressive_dividend", "growth_focused"])
             companies.append({
@@ -384,11 +407,18 @@ def gen_companies(ctx: GenContext, citizens: List[Dict]) -> List[Dict]:
                 "is_exporter": 1 if exporter else 0,
                 "monthly_export_usd_baseline": mo_export * (ctx.scale / 0.1),
                 "monthly_import_usd_baseline": mo_import * (ctx.scale / 0.1),
+                # Levy mechanism — populated now from sector defaults; employee_count
+                # gets overwritten in update_employee_counts() after equity is generated.
+                "profit_per_employee": ppe_default,
+                "profit_per_employee_year": 0,
+                "annual_profit": 0,            # accumulator, will be filled by tick
+                "employee_count": 1,           # placeholder, overwritten below
             })
             next_id += 1
 
     # Sole traders — one company per sole_trader citizen
     sole_traders = [c for c in citizens if c["archetype"] == "sole_trader"]
+    sole_ppe_default = SECTOR_DEFAULT_PROFIT_PER_EMPLOYEE["sole_trader"]
     for st in sole_traders:
         sectors_served = ctx.rng.choice(["services", "goods", "services,goods", "food"])
         companies.append({
@@ -406,10 +436,39 @@ def gen_companies(ctx: GenContext, citizens: List[Dict]) -> List[Dict]:
             "monthly_export_usd_baseline": 0,
             "monthly_import_usd_baseline": ctx.rng.uniform(0, 500),
             "_owner_citizen_id": st["id"],   # used in equity gen
+            "profit_per_employee": sole_ppe_default,
+            "profit_per_employee_year": 0,
+            "annual_profit": 0,
+            "employee_count": 1,             # exactly one (the owner)
         })
         next_id += 1
 
     return companies
+
+
+def update_employee_counts(companies: List[Dict], equity: List[Dict]) -> None:
+    """Set each company's employee_count from its equity holdings.
+    Counts: time-limited holders (workers) + active permanent owners.
+    Sole traders stay at 1; otherwise = (# distinct citizen time-limited holders + # permanent citizen owners)."""
+    by_co = {}
+    for h in equity:
+        if h.get("holder_type") != "citizen" or h.get("cancelled"):
+            continue
+        cid = h["company_id"]
+        if cid not in by_co:
+            by_co[cid] = {"workers": set(), "owners": set()}
+        if h["share_type"] == "time_limited":
+            by_co[cid]["workers"].add(h["holder_id"])
+        else:
+            by_co[cid]["owners"].add(h["holder_id"])
+    for co in companies:
+        if co["sector"] == "sole_trader":
+            co["employee_count"] = 1
+            continue
+        d = by_co.get(co["id"], {"workers": set(), "owners": set()})
+        co["employee_count"] = max(1, len(d["workers"]) + len(d["owners"]))
+        # Update annual_profit so it's consistent with profit_per_employee × employee_count
+        co["annual_profit"] = co["profit_per_employee"] * co["employee_count"]
 
 
 def gen_equity(ctx: GenContext, citizens: List[Dict], companies: List[Dict]) -> List[Dict]:
@@ -662,11 +721,23 @@ def write_to_db(conn: sqlite3.Connection, citizens: List[Dict], households: List
     cur.executemany("""
         INSERT INTO companies (id, name, sector, sectors_served, founded_year, closed_year,
             is_external_owned, cfo_policy, max_revenue_per_month_s, is_mcc, is_exporter,
-            monthly_export_usd_baseline, monthly_import_usd_baseline)
+            monthly_export_usd_baseline, monthly_import_usd_baseline,
+            profit_per_employee, profit_per_employee_year, annual_profit, employee_count)
         VALUES (:id, :name, :sector, :sectors_served, :founded_year, :closed_year,
             :is_external_owned, :cfo_policy, :max_revenue_per_month_s, :is_mcc, :is_exporter,
-            :monthly_export_usd_baseline, :monthly_import_usd_baseline)
+            :monthly_export_usd_baseline, :monthly_import_usd_baseline,
+            :profit_per_employee, :profit_per_employee_year, :annual_profit, :employee_count)
     """, companies)
+
+    # External suppliers — seed data from external_suppliers.py
+    from external_suppliers import get_external_suppliers
+    ext_rows = get_external_suppliers()
+    cur.executemany("""
+        INSERT INTO external_suppliers (id, name, sector, profit_per_employee,
+            employee_count, annual_revenue, annual_profit, last_updated_year)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, [(idx + 1, name, sector, ppe, n_emp, rev * scale, profit, 0)
+          for idx, (name, sector, ppe, n_emp, rev, profit) in enumerate(ext_rows)])
 
     cur.executemany("""
         INSERT INTO equity_holdings (company_id, holder_type, holder_id, external_holder_name,
@@ -753,6 +824,7 @@ def main() -> None:
     households = gen_households(ctx, citizens)
     companies = gen_companies(ctx, citizens)
     equity = gen_equity(ctx, citizens, companies)
+    update_employee_counts(companies, equity)   # set employee_count + annual_profit from equity
     wallets = gen_wallets(citizens, companies)
 
     print(f"  citizens:   {len(citizens):>6}", file=sys.stderr)

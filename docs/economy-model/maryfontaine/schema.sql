@@ -64,7 +64,12 @@ CREATE TABLE IF NOT EXISTS companies (
     is_mcc              INTEGER NOT NULL DEFAULT 0,
     is_exporter         INTEGER NOT NULL DEFAULT 0,
     monthly_export_usd_baseline   REAL DEFAULT 0,  -- for exporting companies
-    monthly_import_usd_baseline   REAL DEFAULT 0   -- for importing companies
+    monthly_import_usd_baseline   REAL DEFAULT 0,  -- for importing companies
+    -- Levy mechanism (per spice_levy_build_spec §4)
+    profit_per_employee REAL DEFAULT 100000,         -- USD; updated annually from filed accounts
+    profit_per_employee_year INTEGER DEFAULT 0,      -- year of last update
+    annual_profit       REAL DEFAULT 0,              -- accumulator, reset each year
+    employee_count      INTEGER DEFAULT 1            -- workers + active owners
 );
 
 CREATE INDEX IF NOT EXISTS idx_companies_sector ON companies(sector);
@@ -107,11 +112,16 @@ CREATE TABLE IF NOT EXISTS transactions (
     type                TEXT NOT NULL,          -- see spec §2 transaction types
     from_wallet_id      INTEGER,
     to_wallet_id        INTEGER,
-    s_amount            REAL DEFAULT 0,
+    s_amount            REAL DEFAULT 0,         -- net to recipient (post-levy)
     usdc_amount         REAL DEFAULT 0,         -- nonzero only for boundary crossings
     fisc_rate_at_time   REAL,                   -- USD per S
     description         TEXT,
-    related_company_id  INTEGER                 -- for dividends, MCC bills, exports, etc
+    related_company_id  INTEGER,                -- for dividends, MCC bills, exports, etc
+    -- Levy mechanism (per spice_levy_build_spec §4)
+    gross_value         REAL DEFAULT 0,         -- pre-levy value sent by buyer
+    gas_levy            REAL DEFAULT 0,         -- chain gas, in S
+    protocol_levy       REAL DEFAULT 0,         -- to SPICE protocol founders, in S
+    automation_levy     REAL DEFAULT 0          -- to Fisc reserve, in S (converted to USDC)
 );
 
 CREATE INDEX IF NOT EXISTS idx_tx_year_month ON transactions(year, month);
@@ -221,3 +231,69 @@ CREATE TABLE IF NOT EXISTS run_metadata (
     value   TEXT NOT NULL
 );
 -- expected keys: 'scenario', 'noise', 'seed', 'scale', 'started_at', 'finished_at', 'spec_version'
+
+-- ── Levy mechanism (per spice_levy_build_spec) ──────────────────────────────
+
+CREATE TABLE IF NOT EXISTS external_suppliers (
+    id                  INTEGER PRIMARY KEY,
+    name                TEXT NOT NULL,
+    sector              TEXT NOT NULL,
+    profit_per_employee REAL NOT NULL,           -- USD/year
+    annual_revenue      REAL,                    -- USD; revenue from MaryFontaine commerce
+    employee_count      INTEGER DEFAULT 1,
+    annual_profit       REAL,                    -- USD/year
+    last_updated_year   INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS protocol_treasury (
+    id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+    year                        INTEGER NOT NULL,
+    month                       INTEGER NOT NULL,
+    monthly_revenue_s           REAL NOT NULL DEFAULT 0,
+    monthly_revenue_usdc        REAL NOT NULL DEFAULT 0,
+    cumulative_revenue_usdc     REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS gas_pool (
+    id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+    year                        INTEGER NOT NULL,
+    month                       INTEGER NOT NULL,
+    monthly_gas_s               REAL NOT NULL DEFAULT 0,
+    monthly_gas_usdc            REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS levy_calibration (
+    id                              INTEGER PRIMARY KEY AUTOINCREMENT,
+    year                            INTEGER NOT NULL,
+    p_threshold                     REAL NOT NULL,
+    p_baseline                      REAL NOT NULL,
+    alpha                           REAL NOT NULL,
+    k                               REAL NOT NULL,
+    projected_annual_levy_revenue   REAL,                -- USD
+    projected_annual_ubi_obligation REAL,                -- USD
+    actual_levy_revenue_prior_year  REAL,                -- USD
+    actual_ubi_obligation_prior_year REAL                -- USD
+);
+
+CREATE TABLE IF NOT EXISTS mcc_federal_remittances (
+    id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+    year                        INTEGER NOT NULL,
+    month                       INTEGER NOT NULL,
+    total_collected_s           REAL NOT NULL DEFAULT 0,
+    total_remitted_usdc         REAL NOT NULL DEFAULT 0,
+    fisc_rate_at_remittance     REAL
+);
+
+-- Track per-supplier levy activity for the dashboard's "top-10 levy payers" panel
+CREATE TABLE IF NOT EXISTS supplier_levy_summary (
+    id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+    year                        INTEGER NOT NULL,
+    holder_type                 TEXT NOT NULL,          -- 'company' or 'external'
+    holder_id                   INTEGER NOT NULL,
+    name                        TEXT,
+    sector                      TEXT,
+    profit_per_employee         REAL,
+    automation_levy_s           REAL DEFAULT 0,
+    automation_levy_usdc        REAL DEFAULT 0,
+    transaction_count           INTEGER DEFAULT 0
+);

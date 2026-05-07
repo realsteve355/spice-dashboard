@@ -41,7 +41,7 @@ from scenarios import build_trajectory, ANNUAL_RATES, BASKET_WEIGHTS_USD, BASKET
 from tick import SimState, load_state, tick_one_month, flush_to_db, TxRecorder
 from generate_founding import (
     open_db, apply_schema, gen_citizens, gen_households, gen_companies,
-    gen_equity, gen_wallets, write_to_db, GenContext
+    gen_equity, gen_wallets, write_to_db, GenContext, update_employee_counts
 )
 import random
 
@@ -76,6 +76,7 @@ def ensure_founding(db_path: Path, cfg: SimConfig) -> None:
     households = gen_households(ctx, citizens)
     companies = gen_companies(ctx, citizens)
     equity = gen_equity(ctx, citizens, companies)
+    update_employee_counts(companies, equity)
     wallets = gen_wallets(citizens, companies)
     conn = open_db(db_path)
     apply_schema(conn, SIM_DIR / "schema.sql")
