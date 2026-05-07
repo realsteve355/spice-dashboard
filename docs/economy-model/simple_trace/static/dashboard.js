@@ -108,6 +108,7 @@ function render(d) {
   html.push(renderPopulation(d));
   html.push(renderIncome(d));
   html.push(renderStreams(d));
+  html.push(renderLocalCompanies(d));
   html.push(renderSuppliers(d));
   html.push(renderBudget(d));
   html.push(renderFamilyTypes(d));
@@ -235,7 +236,47 @@ function renderStreams(d) {
       </tbody>
     </table>
     <div style="font-size: 11px; color: var(--faint); margin-top: 8px;">
-      Avg P/emp weighted by gross: ${fmtUSD(d.transactions.avg_p_per_emp_weighted)}
+      Avg P/emp weighted by gross: ${fmtUSD(d.transactions.avg_p_per_emp_weighted)} ·
+      Avg ${d.transactions.txs_per_family.toFixed(1)} levied transactions/family/month ·
+      Plus ${fmtUSD(d.visitor_revenue_total_usd)}/mo flowing INTO the colony from external visitors at local cos (NOT levied)
+    </div>
+  </div>`;
+}
+
+function renderLocalCompanies(d) {
+  const realisticThreshold = 60000;  // $/employee/year — below this, undersized
+  const row = c => {
+    const ok = c.rev_per_employee_yr >= realisticThreshold;
+    const cls = ok ? '' : 'broken';
+    const flag = ok ? '' : ' ⚠';
+    return `<tr class="${cls}">
+      <td class="cat">${c.name}${flag}</td>
+      <td class="num">${c.employees}</td>
+      <td class="num">${fmtUSD(c.internal_rev_usd)}</td>
+      <td class="num">${fmtUSD(c.external_rev_usd)}</td>
+      <td class="num">${fmtUSD(c.total_rev_usd)}</td>
+      <td class="num">${fmtUSD(c.rev_per_employee_yr)}</td>
+      <td class="num">${fmtUSD(c.b2b_import_usd)}</td>
+    </tr>`;
+  };
+  return `
+  <div class="card">
+    <h3>Local company viability</h3>
+    <table>
+      <thead><tr>
+        <th>Company</th>
+        <th class="num">Emps</th>
+        <th class="num">Internal rev (levied)</th>
+        <th class="num">External rev (visitors, NOT levied)</th>
+        <th class="num">Total rev</th>
+        <th class="num">$/emp/yr</th>
+        <th class="num">B2B imports</th>
+      </tr></thead>
+      <tbody>${d.local_companies.map(row).join('')}</tbody>
+    </table>
+    <div style="font-size: 11px; color: var(--faint); margin-top: 8px;">
+      Red = revenue/employee below $60K/year (undersized — couldn't realistically support staff).
+      External revenue = visitors paying USDC into the colony (per Steve's destination-principle, not levied here).
     </div>
   </div>`;
 }

@@ -32,16 +32,27 @@ DEFAULT_FAMILY_TYPES = [
 ]
 
 DEFAULT_LOCAL_COMPANIES = [
+    # external_rev_usd is NOT levied (visitor or export revenue arriving as USDC).
+    # Internal revenue (from colony families) IS levied at the company's p_per_emp rate.
+    # Headcount + salaries are now realistic for a small US business serving 40 colony
+    # residents PLUS visiting external customers (per Steve's "café packed with locals
+    # AND visitors").
     {"name": "Dave's Co",      "external_rev_usd": 80_000, "p_per_emp": 200_000,
      "employees": 4, "b2b_import_usd": 15_000, "b2b_import_sector": "retail_online"},
-    {"name": "Colony Café",    "external_rev_usd": 0,      "p_per_emp":  15_000,
-     "employees": 3, "b2b_import_usd":  4_000, "b2b_import_sector": "grocery"},
-    {"name": "FixIt Repair",   "external_rev_usd": 0,      "p_per_emp":  40_000,
-     "employees": 2, "b2b_import_usd":  2_000, "b2b_import_sector": "misc"},
-    {"name": "Hilltop School", "external_rev_usd": 0,      "p_per_emp":  30_000,
-     "employees": 5, "b2b_import_usd":  3_000, "b2b_import_sector": "retail_online"},
-    {"name": "MedClinic",      "external_rev_usd": 0,      "p_per_emp":  80_000,
-     "employees": 3, "b2b_import_usd":  6_000, "b2b_import_sector": "healthcare"},
+    # Colony Café: 2 FT + 3 PT = 5 employees. Visitors deliver $25K/mo USDC; locals
+    # add ~$5-7K/mo. ~$30-32K/mo total = ~$80K/employee/yr — realistic small-café metrics.
+    {"name": "Colony Café",    "external_rev_usd": 25_000, "p_per_emp":  15_000,
+     "employees": 5, "b2b_import_usd":  6_000, "b2b_import_sector": "grocery"},
+    # FixIt Repair: 2 employees, some pass-through visitor traffic.
+    {"name": "FixIt Repair",   "external_rev_usd":  5_000, "p_per_emp":  40_000,
+     "employees": 2, "b2b_import_usd":  2_500, "b2b_import_sector": "misc"},
+    # Hilltop School: 2 teachers (small colony has only 5 family-with-kids = ~10 kids).
+    # In a larger colony you'd scale up; at 40 citizens, 2 teachers is the realistic size.
+    {"name": "Hilltop School", "external_rev_usd":      0, "p_per_emp":  30_000,
+     "employees": 2, "b2b_import_usd":  4_000, "b2b_import_sector": "retail_online"},
+    # MedClinic: 3 employees, some visitor walk-in revenue.
+    {"name": "MedClinic",      "external_rev_usd": 10_000, "p_per_emp":  80_000,
+     "employees": 3, "b2b_import_usd":  8_000, "b2b_import_sector": "healthcare"},
 ]
 
 DEFAULT_EXTERNAL_SUPPLIERS = [
@@ -72,24 +83,32 @@ DEFAULT_EXTERNAL_SUPPLIERS = [
     ("misc",          "Pet Supplies",             45_000),
 ]
 
+# Sector spend pattern: % of family external spend, # transactions/family/month.
+# Calibrated for realistic Amazon-era US household — many small online orders,
+# more restaurant visits, more frequent utility bills (split across providers).
 DEFAULT_SECTOR_SPEND_PATTERN = [
-    ("grocery",       0.30,  6),
-    ("restaurant",    0.10,  4),
-    ("utility",       0.12,  3),
-    ("retail_online", 0.18,  4),
-    ("healthcare",    0.08,  2),
-    ("entertainment", 0.04,  1),
-    ("transport",     0.06,  3),
-    ("professional",  0.03,  1),
+    # (sector, %_of_external_spend, #txs/family/month)
+    ("grocery",       0.28,  6),   # 6 trips × $150 ≈ $900
+    ("restaurant",    0.12, 12),   # 12 visits × ~$30 — mix of fast food + sit-down
+    ("utility",       0.12,  6),   # 6 bills (electric, gas, water, internet, mobile, cable) × ~$60
+    ("retail_online", 0.18, 10),   # Amazon-era — many small orders
+    ("healthcare",    0.06,  2),
+    ("entertainment", 0.04,  4),   # Netflix + Disney+ + Spotify + 1 ad-hoc
+    ("transport",     0.08,  8),   # gas fills + Uber rides
+    ("professional",  0.02,  1),
     ("handmade",      0.02,  1),
-    ("misc",          0.07,  2),
+    ("misc",          0.08,  5),   # hardware store, pet supplies, etc.
 ]
 
+# Internal sector pattern: % of family income spent at each local colony company.
+# Higher than before — Steve's note that local cafés get heavy local + visitor traffic
+# means the local economy carries more weight in family budgets than the previous trace.
 DEFAULT_INTERNAL_SECTOR_PATTERN = [
-    ("Colony Café",    0.04, 6),
-    ("FixIt Repair",   0.02, 1),
-    ("Hilltop School", 0.05, 1),
-    ("MedClinic",      0.03, 1),
+    # (local_co, %_of_family_income, #txs/family/month)
+    ("Colony Café",    0.06, 12),  # ~6% of income, 12 visits — coffee + lunch
+    ("FixIt Repair",   0.02,  1),
+    ("Hilltop School", 0.20,  1),  # 20% of income for families with kids (private tuition equiv)
+    ("MedClinic",      0.04,  1),
 ]
 
 
@@ -224,7 +243,7 @@ def run(config: dict | None = None) -> dict:
     cfg = {
         "basket_usd": 980.0,
         "ubi_multiplier": 1.10,           # UBI = basket * this
-        "external_spend_fraction": 0.66,
+        "external_spend_fraction": 0.55,  # was 0.66; lower because internal share grew
         "levy_cap_rate": 0.80,
         "levy_formula": "linear",         # 'linear' or 'asymptotic'
         "gas_levy_usd": 0.005,
@@ -344,6 +363,26 @@ def run(config: dict | None = None) -> dict:
     fam_to_local = [t for t in txs if t.buyer_kind == "family" and t.supplier_kind == "local"]
     co_to_ext = [t for t in txs if t.buyer_kind == "local_company" and t.supplier_kind == "external"]
 
+    # Local-company viability (per-employee revenue check)
+    local_co_summary = []
+    for co in cfg["local_companies"]:
+        s = per_supplier.get(co["name"], {"n": 0, "gross": 0.0})
+        internal_rev_usd = s["gross"]                  # from family-to-local txs
+        external_rev_usd = co["external_rev_usd"]      # visitors / exports (NOT levied)
+        total_rev_usd = internal_rev_usd + external_rev_usd
+        per_emp_per_year = (total_rev_usd * 12) / co["employees"] if co["employees"] > 0 else 0
+        local_co_summary.append({
+            "name": co["name"],
+            "employees": co["employees"],
+            "internal_rev_usd": internal_rev_usd,
+            "external_rev_usd": external_rev_usd,
+            "total_rev_usd": total_rev_usd,
+            "rev_per_employee_yr": per_emp_per_year,
+            "b2b_import_usd": co["b2b_import_usd"],
+        })
+
+    total_visitor_revenue_usd = sum(co["external_rev_usd"] for co in cfg["local_companies"])
+
     # Build output
     return {
         "config": {**cfg, "ubi_usd": ubi_usd, "a": a},
@@ -394,7 +433,10 @@ def run(config: dict | None = None) -> dict:
             "total_gross": total_gross,
             "total_v_x_p": total_v_x_p,
             "avg_p_per_emp_weighted": total_v_x_p / max(1, total_gross),
+            "txs_per_family": n_txs / max(1, len(families)),
         },
+        "local_companies": local_co_summary,
+        "visitor_revenue_total_usd": total_visitor_revenue_usd,
         "suppliers": [
             {
                 "name": name,

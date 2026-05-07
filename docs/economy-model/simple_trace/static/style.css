@@ -191,8 +191,8 @@ main {
 }
 
 /* Tables */
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-table th, table td { text-align: left; padding: 5px 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+table th, table td { text-align: left; padding: 5px 8px; vertical-align: middle; white-space: nowrap; }
 table th {
   font-weight: normal;
   color: var(--dim);
@@ -203,7 +203,9 @@ table th {
 }
 table td { color: var(--txt2); border-bottom: 1px dotted var(--line); }
 table tr:last-child td { border-bottom: none; }
-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Numeric columns: header AND data right-aligned, tabular nums for clean digit columns */
+table th.num, table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table td.num { font-feature-settings: 'tnum' 1, 'lnum' 1; }
 table td.cat { color: var(--headline); }
 table tr.broken td { color: var(--crit); }
 table tr.broken td.cat { color: var(--crit); }
