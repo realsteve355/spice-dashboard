@@ -54,14 +54,33 @@ FAMILY_TYPES = [
     (4, "family-with-kids, 1 earner", 1, 0, 1, 2, 4_000,     0),
 ]
 
-# Local companies — Dave's Co is the only exporter for now;
-# others are colony-internal and don't generate external USD revenue.
+# Local companies. Each has:
+#  - external_rev_usd:  monthly inbound USD from outside-colony customers (NOT LEVIED)
+#  - p_per_emp:         the supplier P/emp used when families buy from them (LEVIED)
+#  - b2b_import_usd:    monthly B2B spend at external suppliers (LEVIED)
+#  - b2b_import_sector: which external sector the imports come from
 LOCAL_COMPANIES = [
-    {"name": "Dave's Co",          "monthly_external_rev_usd": 80_000,  "employees": 4},
-    {"name": "Colony Café",        "monthly_external_rev_usd": 0,        "employees": 3},
-    {"name": "FixIt Repair",       "monthly_external_rev_usd": 0,        "employees": 2},
-    {"name": "Hilltop School",     "monthly_external_rev_usd": 0,        "employees": 5},
-    {"name": "MedClinic",          "monthly_external_rev_usd": 0,        "employees": 3},
+    {"name": "Dave's Co",      "external_rev_usd": 80_000, "p_per_emp": 200_000,
+     "employees": 4, "b2b_import_usd": 15_000, "b2b_import_sector": "retail_online"},
+    {"name": "Colony Café",    "external_rev_usd": 0,      "p_per_emp":  15_000,
+     "employees": 3, "b2b_import_usd":  4_000, "b2b_import_sector": "grocery"},
+    {"name": "FixIt Repair",   "external_rev_usd": 0,      "p_per_emp":  40_000,
+     "employees": 2, "b2b_import_usd":  2_000, "b2b_import_sector": "misc"},
+    {"name": "Hilltop School", "external_rev_usd": 0,      "p_per_emp":  30_000,
+     "employees": 5, "b2b_import_usd":  3_000, "b2b_import_sector": "retail_online"},
+    {"name": "MedClinic",      "external_rev_usd": 0,      "p_per_emp":  80_000,
+     "employees": 3, "b2b_import_usd":  6_000, "b2b_import_sector": "healthcare"},
+]
+
+# Internal-commerce spending pattern: % of family's monthly income that goes
+# to each local company (citizen → local company, levied at local supplier P/emp).
+# Total internal share is moderate — bulk still goes to external suppliers.
+INTERNAL_SECTOR_PATTERN = [
+    # (local_company_name, %_of_family_income, #txs_per_family_month)
+    ("Colony Café",    0.04, 6),   # coffee, lunch — frequent low-value
+    ("FixIt Repair",   0.02, 1),   # occasional repairs
+    ("Hilltop School", 0.05, 1),   # tuition (only family-with-kids in practice)
+    ("MedClinic",      0.03, 1),   # routine visits
 ]
 
 # External suppliers (sector, name, profit_per_employee_usd)
@@ -159,26 +178,31 @@ def build_families() -> List[Family]:
 
 @dataclass
 class Transaction:
-    family_id: int
+    family_id: int             # buyer's family id (or 0 if local company is buyer)
     sector: str
     supplier_name: str
     supplier_p_per_emp: float
+    supplier_kind: str         # 'external' or 'local'
+    buyer_kind: str            # 'family' or 'local_company'
     gross_usd: float
 
 
 def generate_transactions(families: List[Family]) -> List[Transaction]:
-    """For each family, allocate a fraction of their monthly external spend
-    across sectors per SECTOR_SPEND_PATTERN, then split each sector's allocation
-    across that sector's suppliers (round-robin across the supplier pool)."""
+    """Generate three streams of LEVIED transactions:
+    A) Family → external supplier  (outbound external commerce)
+    B) Family → local company      (internal commerce)
+    C) Local company → external    (B2B imports)
+    Inbound external (external_customer → local company) is NOT levied
+    per Steve's destination-principle clarification.
+    """
     txs: List[Transaction] = []
     suppliers_by_sector: Dict[str, List[Tuple[str, float]]] = defaultdict(list)
     for sector, name, p_emp in EXTERNAL_SUPPLIERS:
         suppliers_by_sector[sector].append((name, p_emp))
 
-    # Assume families spend 80% of their monthly income on external goods/services
-    # (the other 20% is internal commerce, savings, or sits idle for this trace).
-    EXTERNAL_SPEND_FRACTION = 0.80
+    EXTERNAL_SPEND_FRACTION = 0.66  # leave room for internal + savings
 
+    # ── A: Family → external ────────────────────────────────────────────
     for f in families:
         external_budget = f.monthly_income * EXTERNAL_SPEND_FRACTION
         for sector, share, n_tx in SECTOR_SPEND_PATTERN:
@@ -190,12 +214,47 @@ def generate_transactions(families: List[Family]) -> List[Transaction]:
             for i in range(n_tx):
                 supplier_name, p_emp = sector_suppliers[i % len(sector_suppliers)]
                 txs.append(Transaction(
-                    family_id=f.family_id,
-                    sector=sector,
-                    supplier_name=supplier_name,
-                    supplier_p_per_emp=p_emp,
+                    family_id=f.family_id, sector=sector,
+                    supplier_name=supplier_name, supplier_p_per_emp=p_emp,
+                    supplier_kind="external", buyer_kind="family",
                     gross_usd=tx_amount,
                 ))
+
+    # ── B: Family → local company (internal commerce) ─────────────────────
+    local_co_by_name = {co["name"]: co for co in LOCAL_COMPANIES}
+    for f in families:
+        for co_name, share, n_tx in INTERNAL_SECTOR_PATTERN:
+            # School only meaningful for families with children
+            if co_name == "Hilltop School" and f.children == 0:
+                continue
+            sector_budget = f.monthly_income * share
+            tx_amount = sector_budget / n_tx if n_tx > 0 else 0
+            co = local_co_by_name[co_name]
+            for _ in range(n_tx):
+                txs.append(Transaction(
+                    family_id=f.family_id, sector="internal",
+                    supplier_name=co_name, supplier_p_per_emp=co["p_per_emp"],
+                    supplier_kind="local", buyer_kind="family",
+                    gross_usd=tx_amount,
+                ))
+
+    # ── C: Local company → external supplier (B2B imports) ────────────────
+    for co in LOCAL_COMPANIES:
+        if co["b2b_import_usd"] <= 0:
+            continue
+        sector = co["b2b_import_sector"]
+        sector_suppliers = suppliers_by_sector.get(sector, [])
+        if not sector_suppliers:
+            continue
+        # Single B2B transaction per company per month for simplicity
+        supplier_name, p_emp = sector_suppliers[0]
+        txs.append(Transaction(
+            family_id=0, sector=sector,
+            supplier_name=supplier_name, supplier_p_per_emp=p_emp,
+            supplier_kind="external", buyer_kind="local_company",
+            gross_usd=co["b2b_import_usd"],
+        ))
+
     return txs
 
 
@@ -251,8 +310,8 @@ def main():
     print()
     print(f"  Local company external revenue:")
     for co in LOCAL_COMPANIES:
-        if co["monthly_external_rev_usd"] > 0:
-            print(f"    {co['name']:<25} ${co['monthly_external_rev_usd']:>10,.0f}/month  "
+        if co["external_rev_usd"] > 0:
+            print(f"    {co['name']:<25} ${co['external_rev_usd']:>10,.0f}/month  "
                   f"(employs {co['employees']})")
 
     # ── Generate transactions ────────────────────────────────────────────────
@@ -261,11 +320,21 @@ def main():
     total_gross = sum(t.gross_usd for t in txs)
     total_v_x_p = sum(t.gross_usd * t.supplier_p_per_emp for t in txs)
 
-    print_section(f"TRANSACTION VOLUME — {n_txs} transactions this month")
+    print_section(f"TRANSACTION VOLUME -- {n_txs} transactions this month")
+    fam_to_ext = [t for t in txs if t.buyer_kind == "family" and t.supplier_kind == "external"]
+    fam_to_local = [t for t in txs if t.buyer_kind == "family" and t.supplier_kind == "local"]
+    co_to_ext = [t for t in txs if t.buyer_kind == "local_company" and t.supplier_kind == "external"]
+    print(f"  Stream A  family -> external      {len(fam_to_ext):>4} txs  ${sum(t.gross_usd for t in fam_to_ext):>10,.0f}")
+    print(f"  Stream B  family -> local         {len(fam_to_local):>4} txs  ${sum(t.gross_usd for t in fam_to_local):>10,.0f}")
+    print(f"  Stream C  local -> external (B2B) {len(co_to_ext):>4} txs  ${sum(t.gross_usd for t in co_to_ext):>10,.0f}")
+    print(f"  ----------------------------------------------------------------")
     print(f"  Total gross transaction value:   ${total_gross:>12,.0f}")
     print(f"  Average transaction value:       ${total_gross / max(1, n_txs):>12,.2f}")
     print(f"  Sum of (V x P_per_emp):          ${total_v_x_p:>12,.0f}")
     print(f"  Avg P/emp weighted by gross:     ${total_v_x_p / max(1, total_gross):>12,.0f}")
+    print()
+    print(f"  Note: external customer -> local company (export sales like Dave's Co's $80K/mo)")
+    print(f"  is NOT levied per destination-principle; importing colony's Fisc captures it.")
 
     # ── Levy calibration ────────────────────────────────────────────────────
     # a x Sum(V x P) = total_UBI
@@ -324,14 +393,32 @@ def main():
 
     # ── Per-supplier ledger ──────────────────────────────────────────────────
     print_section("PER-SUPPLIER LEDGER (aggregate this month)")
-    print(f"  {'Supplier':<28} {'#tx':>4} {'Gross':>10} "
+    print(f"  {'Kind':<6} {'Supplier':<28} {'#tx':>4} {'Gross':>10} "
           f"{'Auto levy':>10} {'Rate':>7} {'Net':>10} {'Shortfall':>10}")
+
+    # External suppliers first
+    print(f"  -- EXTERNAL --")
     for sector, name, p_emp in EXTERNAL_SUPPLIERS:
         s = per_supplier[name]
+        if s["n"] == 0:
+            continue
         rate_actual = (s["automation_levy"] / s["gross"]) if s["gross"] > 0 else 0
         net_to_supplier = s["gross"] - s["automation_levy"] - s["protocol_levy"] - s["gas_levy"]
         flag = " **CAPPED" if s["shortfall"] > 0.01 else ""
-        print(f"  {name:<28} {s['n']:>4} ${s['gross']:>9,.0f} "
+        print(f"  ext    {name:<28} {s['n']:>4} ${s['gross']:>9,.0f} "
+              f"${s['automation_levy']:>9,.2f} {rate_actual * 100:>5.1f}% "
+              f"${net_to_supplier:>9,.0f} ${s['shortfall']:>9,.2f}{flag}")
+
+    # Local suppliers
+    print(f"  -- LOCAL --")
+    for co in LOCAL_COMPANIES:
+        s = per_supplier[co["name"]]
+        if s["n"] == 0:
+            continue
+        rate_actual = (s["automation_levy"] / s["gross"]) if s["gross"] > 0 else 0
+        net_to_supplier = s["gross"] - s["automation_levy"] - s["protocol_levy"] - s["gas_levy"]
+        flag = " **CAPPED" if s["shortfall"] > 0.01 else ""
+        print(f"  local  {co['name']:<28} {s['n']:>4} ${s['gross']:>9,.0f} "
               f"${s['automation_levy']:>9,.2f} {rate_actual * 100:>5.1f}% "
               f"${net_to_supplier:>9,.0f} ${s['shortfall']:>9,.2f}{flag}")
 
