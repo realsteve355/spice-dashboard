@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Levy mechanism — MaryFontaine Simulator</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .levy-layout { max-width: 1400px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; }
+  .stat .label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--dim); }
+  .stat .value { font-size: 22px; color: var(--headline); margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .stat .value.warn { color: var(--warn); }
+  .stat .value.ok { color: var(--ok); }
+  .stat .value.crit { color: var(--crit); }
+  .stat .sub { font-size: 11px; color: var(--faint); margin-top: 4px; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-row.full { grid-template-columns: 1fr; }
+  .chart-box { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; }
+  .chart-box h2 { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .chart-box canvas { max-height: 260px; }
+  .help { font-size: 10px; color: var(--faint); margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table th, table td { text-align: left; padding: 6px 10px; }
+  table th { color: var(--dim); border-bottom: 1px solid var(--line-hot); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: normal; }
+  table td { color: var(--txt2); border-bottom: 1px dotted var(--line); }
+  table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--faint); text-align: center; padding: 60px; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="row1">
+    <div>
+      <h1>MaryFontaine — Colony Economy Simulator</h1>
+      <div class="subtitle">Levy mechanism — three-layer per-transaction tax + UBI funding adequacy</div>
+    </div>
+  </div>
+  <nav>
+    <a href="/">Dashboard</a>
+    <a href="/external">External economy</a>
+    <a href="/criteria">Success criteria</a>
+    <a href="/families">Families</a>
+    <a href="/best-configs">Best configs</a>
+    <a href="/levy" class="active">Levy</a>
+    <a href="/how">How it works</a>
+    <a href="/story">The Transition story</a>
+    <a href="/levers">Mitigation levers</a>
+  </nav>
+</header>
+
+<div class="levy-layout">
+  <div id="summary" class="summary-strip"></div>
+
+  <div class="chart-row full">
+    <div class="chart-box">
+      <h2>Levy revenue by layer (USDC) — monthly</h2>
+      <canvas id="chart-by-layer"></canvas>
+      <div class="help">Stacked: gas + protocol + automation. The automation levy is the colony's primary funding source for UBI.</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-box">
+      <h2>Cumulative protocol treasury (USDC)</h2>
+      <canvas id="chart-cum-protocol"></canvas>
+      <div class="help">SPICE founders' treasury; accrues at 0.1% of every transaction.</div>
+    </div>
+    <div class="chart-box">
+      <h2>Funding adequacy: levy revenue vs UBI obligation</h2>
+      <canvas id="chart-funding"></canvas>
+      <div class="help">If automation levy keeps pace with annual UBI minted at the current Fisc rate, the colony funds itself. Below the line = reserve must absorb the gap.</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-box">
+      <h2>Top 12 levy-paying suppliers</h2>
+      <div id="top-suppliers"></div>
+    </div>
+    <div class="chart-box">
+      <h2>By sector</h2>
+      <div id="by-sector"></div>
+    </div>
+  </div>
+
+  <div class="chart-row full">
+    <div class="chart-box">
+      <h2>Annual recalibration of k</h2>
+      <div id="calibration-table"></div>
+      <div class="help">k is recomputed each December to balance projected next-year UBI obligation against projected weighted transaction volume.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const C = {
+  txt: '#e8e8e8', dim: '#a4a4a4', faint: '#767676',
+  ok: '#5dd39e', warn: '#d4a04a', crit: '#ef4444',
+  blue: '#3b82f6', purple: '#8b5cf6', amber: '#eab308',
+  cyan: '#7dd3fc', orange: '#fb923c',
+};
+Chart.defaults.color = C.dim;
+Chart.defaults.borderColor = '#232831';
+Chart.defaults.font.family = "'IBM Plex Mono', ui-monospace, monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.animation = false;
+const charts = {};
+const fmtUSD = n => '$' + (Math.abs(n) >= 1e6 ? (n/1e6).toFixed(2) + 'M' : (n/1e3).toFixed(1) + 'K');
+
+function lineChart(canvasId, labels, datasets, opts = {}) {
+  if (charts[canvasId]) charts[canvasId].destroy();
+  charts[canvasId] = new Chart(document.getElementById(canvasId), {
+    type: opts.type || 'line', data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } },
+      scales: {
+        x: { grid: { color: '#232831' }, stacked: opts.stacked },
+        y: { grid: { color: '#232831' }, stacked: opts.stacked, ticks: { callback: v => fmtUSD(v) } }
+      }
+    }
+  });
+}
+
+async function load() {
+  const r = await fetch('/api/levy');
+  const d = await r.json();
+  if (!d.has_data) {
+    document.getElementById('summary').innerHTML =
+      `<div class="empty" style="grid-column:span 4">${d.error || 'No levy data — run a sim with --levy'}</div>`;
+    return;
+  }
+  // Summary
+  const totalGas = d.gas_usdc.reduce((a,b) => a+b, 0);
+  const totalProt = d.protocol_usdc.reduce((a,b) => a+b, 0);
+  const totalAuto = d.automation_usdc.reduce((a,b) => a+b, 0);
+  const lastK = d.calibration.length ? d.calibration[d.calibration.length-1].k : null;
+  document.getElementById('summary').innerHTML = `
+    <div class="stat"><div class="label">Total automation levy</div><div class="value ok">${fmtUSD(totalAuto)}</div><div class="sub">funds UBI</div></div>
+    <div class="stat"><div class="label">Total protocol levy</div><div class="value">${fmtUSD(totalProt)}</div><div class="sub">SPICE founders</div></div>
+    <div class="stat"><div class="label">Total gas levy</div><div class="value">${fmtUSD(totalGas)}</div><div class="sub">chain validators</div></div>
+    <div class="stat"><div class="label">Current k</div><div class="value">${lastK ? lastK.toFixed(4) : '—'}</div><div class="sub">budget-balancing parameter</div></div>
+  `;
+
+  // Stacked levy by layer
+  lineChart('chart-by-layer', d.months,
+    [
+      { label: 'Automation', data: d.automation_usdc, backgroundColor: C.ok + 'CC', borderColor: C.ok, borderWidth: 1 },
+      { label: 'Protocol', data: d.protocol_usdc, backgroundColor: C.blue + 'CC', borderColor: C.blue, borderWidth: 1 },
+      { label: 'Gas', data: d.gas_usdc, backgroundColor: C.faint + 'CC', borderColor: C.faint, borderWidth: 1 },
+    ], { type: 'bar', stacked: true });
+
+  // Cumulative protocol
+  lineChart('chart-cum-protocol', d.months,
+    [{ label: 'Cumulative protocol revenue', data: d.cum_protocol_usdc, borderColor: C.blue, backgroundColor: C.blue + '22', fill: true, tension: 0.1, pointRadius: 0 }]);
+
+  // Funding adequacy
+  if (d.calibration.length) {
+    const years = d.calibration.map(c => `Y${c.year}`);
+    const projLevy = d.calibration.map(c => c.projected_levy);
+    const projUbi = d.calibration.map(c => c.projected_ubi);
+    lineChart('chart-funding', years, [
+      { label: 'Projected levy revenue', data: projLevy, borderColor: C.ok, backgroundColor: C.ok + '22', tension: 0.1, pointRadius: 3 },
+      { label: 'Projected UBI obligation', data: projUbi, borderColor: C.warn, backgroundColor: C.warn + '22', tension: 0.1, pointRadius: 3 },
+    ]);
+  }
+
+  // Top suppliers
+  document.getElementById('top-suppliers').innerHTML = `
+    <table>
+      <thead><tr><th>Supplier</th><th>Sector</th><th class="num">P/emp</th><th class="num">Levy paid</th></tr></thead>
+      <tbody>
+        ${d.top_suppliers.map(s => `
+          <tr><td>${s.name}</td><td>${s.sector}</td>
+              <td class="num">${fmtUSD(s.profit_per_employee)}</td>
+              <td class="num">${fmtUSD(s.automation_levy_usdc)}</td></tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  // By sector
+  document.getElementById('by-sector').innerHTML = `
+    <table>
+      <thead><tr><th>Sector</th><th class="num">N</th><th class="num">Total levy</th><th class="num">Avg P/emp</th></tr></thead>
+      <tbody>
+        ${d.by_sector.slice(0, 12).map(s => `
+          <tr><td>${s.sector}</td><td class="num">${s.n_suppliers}</td>
+              <td class="num">${fmtUSD(s.total_levy_usdc)}</td>
+              <td class="num">${fmtUSD(s.avg_p_per_emp)}</td></tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  // Calibration table
+  if (d.calibration.length) {
+    document.getElementById('calibration-table').innerHTML = `
+      <table>
+        <thead><tr><th>Year</th><th class="num">k</th><th class="num">Projected levy</th><th class="num">Projected UBI</th><th class="num">Coverage</th></tr></thead>
+        <tbody>
+          ${d.calibration.map(c => {
+            const cov = c.projected_ubi > 0 ? (c.projected_levy / c.projected_ubi * 100).toFixed(0) : '—';
+            return `<tr><td>Y${c.year}</td><td class="num">${c.k.toFixed(5)}</td>
+                <td class="num">${fmtUSD(c.projected_levy)}</td>
+                <td class="num">${fmtUSD(c.projected_ubi)}</td>
+                <td class="num">${cov}%</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    document.getElementById('calibration-table').innerHTML = '<div class="empty">No calibration data yet — needs at least one year-end</div>';
+  }
+}
+
+load();
+</script>
+
+</body>
+</html>

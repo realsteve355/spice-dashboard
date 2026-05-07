@@ -215,6 +215,111 @@ def transitions_data(db_path: Path) -> dict:
     return {"by_year": [{"year": r[0], "from": r[1], "to": r[2], "n": r[3]} for r in rows]}
 
 
+def levy_data(db_path: Path) -> dict:
+    """Aggregate levy data for the /levy dashboard page."""
+    if not db_path.exists():
+        return {"has_data": False}
+    conn = sqlite3.connect(str(db_path))
+    cur = conn.cursor()
+    out = {"has_data": True}
+
+    # Monthly levy revenue by layer
+    try:
+        gas_rows = cur.execute("""
+            SELECT year, month, monthly_gas_s, monthly_gas_usdc FROM gas_pool
+            ORDER BY year, month
+        """).fetchall()
+        prot_rows = cur.execute("""
+            SELECT year, month, monthly_revenue_s, monthly_revenue_usdc, cumulative_revenue_usdc
+            FROM protocol_treasury ORDER BY year, month
+        """).fetchall()
+    except sqlite3.OperationalError:
+        conn.close()
+        return {"has_data": False, "error": "levy tables missing — sim wasn't run with --levy"}
+    if not gas_rows and not prot_rows:
+        conn.close()
+        return {"has_data": False, "error": "no levy data — run a sim with --levy or the dashboard 'Enable levy' toggle"}
+
+    months = sorted(set([(r[0]*12 + r[1]) for r in gas_rows + prot_rows]))
+    gas_by_m = {r[0]*12+r[1]: r[3] for r in gas_rows}      # USDC
+    prot_by_m = {r[0]*12+r[1]: r[3] for r in prot_rows}    # USDC
+
+    # Automation levy from transactions: aggregate per month — but those weren't recorded with
+    # gross/levy split per row (we wrote net only). Use levy_calibration as a proxy for annual,
+    # and compute monthly automation as (cum levy this year - cum levy prior year) / 12.
+    # Simpler: pull from supplier_levy_summary which has automation_levy_usdc per year.
+    sl_rows = cur.execute("""
+        SELECT year, SUM(automation_levy_usdc), SUM(automation_levy_s) FROM supplier_levy_summary
+        GROUP BY year ORDER BY year
+    """).fetchall()
+    auto_by_year_usdc = {r[0]: r[1] for r in sl_rows}
+
+    # Fill monthly automation from year totals (spread evenly)
+    auto_by_m = {}
+    for y, total_usdc in auto_by_year_usdc.items():
+        per_month = total_usdc / 12
+        for m in range(1, 13):
+            auto_by_m[y*12 + m] = per_month
+
+    out["months"] = months
+    out["gas_usdc"] = [gas_by_m.get(m, 0) for m in months]
+    out["protocol_usdc"] = [prot_by_m.get(m, 0) for m in months]
+    out["automation_usdc"] = [auto_by_m.get(m, 0) for m in months]
+
+    # Cumulative
+    out["cum_protocol_usdc"] = []
+    cum = 0
+    for v in out["protocol_usdc"]:
+        cum += v; out["cum_protocol_usdc"].append(cum)
+
+    # Top 10 levy-paying suppliers (across all years)
+    top = cur.execute("""
+        SELECT name, sector, profit_per_employee, SUM(automation_levy_usdc) AS levy
+        FROM supplier_levy_summary
+        GROUP BY holder_type, holder_id
+        ORDER BY levy DESC LIMIT 12
+    """).fetchall()
+    out["top_suppliers"] = [
+        {"name": r[0], "sector": r[1], "profit_per_employee": r[2], "automation_levy_usdc": r[3]}
+        for r in top
+    ]
+
+    # By sector
+    by_sector = cur.execute("""
+        SELECT sector, COUNT(*), SUM(automation_levy_usdc), AVG(profit_per_employee)
+        FROM supplier_levy_summary GROUP BY sector ORDER BY SUM(automation_levy_usdc) DESC
+    """).fetchall()
+    out["by_sector"] = [
+        {"sector": r[0], "n_suppliers": r[1], "total_levy_usdc": r[2], "avg_p_per_emp": r[3]}
+        for r in by_sector
+    ]
+
+    # Funding adequacy: levy revenue vs UBI obligation (from levy_calibration)
+    cal_rows = cur.execute("""
+        SELECT year, projected_annual_levy_revenue, projected_annual_ubi_obligation,
+               actual_levy_revenue_prior_year, k
+        FROM levy_calibration ORDER BY year
+    """).fetchall()
+    out["calibration"] = [
+        {"year": r[0], "projected_levy": r[1], "projected_ubi": r[2],
+         "actual_levy": r[3], "k": r[4]}
+        for r in cal_rows
+    ]
+
+    # MCC federal remittance
+    fed_rows = cur.execute("""
+        SELECT year, month, total_collected_s, total_remitted_usdc
+        FROM mcc_federal_remittances ORDER BY year, month
+    """).fetchall()
+    out["mcc_federal"] = [
+        {"year": r[0], "month": r[1], "collected_s": r[2], "remitted_usdc": r[3]}
+        for r in fed_rows
+    ]
+
+    conn.close()
+    return out
+
+
 def families_data(db_path: Path) -> dict:
     """Pick 6 representative households + return their full trajectory.
     Uses criteria-based selection: medians of various archetypes."""
@@ -495,6 +600,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_file(self.templates_dir / "families.html", "text/html; charset=utf-8")
             elif p == "/best-configs":
                 self._send_file(self.templates_dir / "best_configs.html", "text/html; charset=utf-8")
+            elif p == "/levy":
+                self._send_file(self.templates_dir / "levy.html", "text/html; charset=utf-8")
             elif p.startswith("/static/"):
                 rel = p[len("/static/"):]
                 content_type = "application/javascript" if rel.endswith(".js") else \
@@ -523,6 +630,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._send_json(200, companies_data(self.db_path))
             elif p == "/api/families":
                 self._send_json(200, families_data(self.db_path))
+            elif p == "/api/levy":
+                self._send_json(200, levy_data(self.db_path))
             elif p == "/api/scenarios":
                 self._send_json(200, {"scenarios": list(ANNUAL_RATES.keys())})
             elif p == "/api/external":

@@ -53,6 +53,18 @@ def main() -> None:
     ap.add_argument("--ubi-retirees-only", action="store_true",
                     help="restrict UBI to retirees + ubi_only_choice")
     ap.add_argument("--cashout-mult", type=float, default=1.0)
+    # Levy mechanism (Phase B onwards)
+    ap.add_argument("--levy", action="store_true",
+                    help="enable three-layer levy (gas + protocol + automation)")
+    ap.add_argument("--p-threshold", type=float, default=80_000,
+                    help="levy threshold in USD profit-per-employee")
+    ap.add_argument("--p-baseline", type=float, default=100_000)
+    ap.add_argument("--alpha", type=float, default=1.5,
+                    help="progressivity exponent for the automation levy")
+    ap.add_argument("--k-init", type=float, default=0.05,
+                    help="initial levy k (recalibrated annually)")
+    ap.add_argument("--mcc-federal-tax", action="store_true",
+                    help="enable MCC residual federal tax line item")
     args = ap.parse_args()
 
     cfg = SimConfig(
@@ -68,6 +80,12 @@ def main() -> None:
         external_rent_refinance=args.ext_rent_refi,
         s_tax_on_purchases_pct=args.s_tax,
         cashout_multiplier=args.cashout_mult,
+        levy_enabled=args.levy,
+        p_threshold_usd=args.p_threshold,
+        p_baseline_usd=args.p_baseline,
+        alpha=args.alpha,
+        k=args.k_init,
+        mcc_federal_tax_enabled=args.mcc_federal_tax,
     )
 
     db_path = Path(args.db)
