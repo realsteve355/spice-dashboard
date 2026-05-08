@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 from sim import run as run_sim
+from trajectory import run as run_trajectory
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -55,6 +56,8 @@ class Handler(BaseHTTPRequestHandler):
         p = urlparse(self.path).path
         if p in ("/", "/index.html"):
             self._send_file(self.templates_dir / "index.html", "text/html; charset=utf-8")
+        elif p == "/trajectory":
+            self._send_file(self.templates_dir / "trajectory.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
@@ -68,7 +71,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urlparse(self.path).path
-        if p == "/api/run":
+        if p in ("/api/run", "/api/trajectory"):
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
             try:
@@ -77,7 +80,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": f"bad JSON: {e}"})
                 return
             try:
-                result = run_sim(cfg)
+                runner = run_sim if p == "/api/run" else run_trajectory
+                result = runner(cfg)
                 self._send_json(200, result)
             except Exception as e:
                 import traceback
