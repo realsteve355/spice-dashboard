@@ -87,13 +87,12 @@ function renderBasketBreakdown(d) {
                        .sort((a, b) => b.final.share_pct_now - a.final.share_pct_now);
   const row = pair => {
     const c = pair.first, f = pair.final;
-    const isLand = c.name.includes("LAND");
-    const isStruct = c.name.includes("STRUCTURE");
-    const cls = isLand ? 'broken' : (isStruct ? 'high' : '');
     const rateColor = c.annual_change_pct > 0 ? 'var(--warn)' : (c.annual_change_pct < -3 ? 'var(--ok)' : 'var(--txt2)');
+    const isStruct = c.name.includes("STRUCTURE");
+    const cls = isStruct ? 'high' : '';
     return `<tr class="${cls}">
       <td class="cat">${c.name}</td>
-      <td class="num">${c.share_pct_today.toFixed(0)}%</td>
+      <td class="num">${c.share_pct_today.toFixed(1)}%</td>
       <td class="num" style="color:${rateColor};">${c.annual_change_pct >= 0 ? '+' : ''}${c.annual_change_pct.toFixed(1)}%</td>
       <td class="num">${c.floor_pct === null ? '—' : c.floor_pct.toFixed(0) + '%'}</td>
       <td class="num">${f.price_factor.toFixed(2)}×</td>
@@ -116,12 +115,11 @@ function renderBasketBreakdown(d) {
       <tbody>${indexed.map(row).join('')}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      LAND (red) is the only category that inflates. Its share grows from
-      ${first.find(c => c.name.includes('LAND')).share_pct_today.toFixed(0)}% in 2026 to
-      ${final.find(c => c.name.includes('LAND')).share_pct_now.toFixed(1)}% in ${finalYear}.
-      A UBI-only citizen pays this fraction of their income to a landlord —
-      with nothing left to save toward land ownership.
-      Categories sourced from <code>basket_model.py</code> (research-derived).
+      <strong>LAND is out of scope</strong> — deferred to a separate model where
+      land acquisition flows through SPICE company ownership and dividends,
+      not the UBI basket. The 10 categories here represent everything else a
+      citizen needs to live. Rates sourced from <code>basket_model.py</code>
+      (research-derived in <code>basket_research.md</code>).
     </div>
   </div>`;
 }
@@ -140,10 +138,9 @@ function renderVerdict(d) {
     cls = 'crit';
     headline = `<strong>Neither milestone reached within ${d.config.years} years.</strong> Levy cannot fund welfare under these settings.`;
   }
-  const landDelta = d.final.land_share_pct - d.first.land_share_pct;
-  const detail = `Basket: ${fmtUSD(d.first.basket_usd)} → ${fmtUSD(d.final.basket_usd)} · ` +
-                 `Land share: ${d.first.land_share_pct.toFixed(0)}% → ${d.final.land_share_pct.toFixed(0)}% (+${landDelta.toFixed(0)} pp) · ` +
-                 `Levy ${d.first.year}: ${fmtUSD(d.first.levy_collected)} → ${d.final.year}: ${fmtUSD(d.final.levy_collected)}.`;
+  const detail = `Basket (ex-land): ${fmtUSD(d.first.basket_usd)} → ${fmtUSD(d.final.basket_usd)} · ` +
+                 `Levy ${d.first.year}: ${fmtUSD(d.first.levy_collected)} → ${d.final.year}: ${fmtUSD(d.final.levy_collected)} · ` +
+                 `Land deferred to separate model.`;
   return `
   <div class="card">
     <div class="callout ${cls}">${headline}<br>
@@ -292,11 +289,14 @@ function renderEndpoints(d) {
     <h3>Endpoints</h3>
     <div class="stats">
       ${stat('Basket cost',         f.basket_usd,         l.basket_usd,         'var(--warn)')}
-      ${stat('Land share of basket', f.land_share_pct,    l.land_share_pct,     'var(--crit)', fmtPctVal)}
       ${stat('UBI obligation',      f.ubi_obligation,     l.ubi_obligation,     'var(--warn)')}
       ${stat('Welfare obligation',  f.welfare_obligation, l.welfare_obligation, 'var(--blue)')}
       ${stat('Levy collected',      f.levy_collected,     l.levy_collected,     'var(--ok)')}
       ${stat('Profit pool',         f.profit_pool,        l.profit_pool,        null)}
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Basket excludes LAND — deferred to a separate model. Land acquisition is
+      via company-equity / dividends, not via the UBI basket.
     </div>
   </div>`;
 }

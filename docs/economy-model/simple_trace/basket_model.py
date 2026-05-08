@@ -1,17 +1,22 @@
 """
 Categorical basket model.
 
-Replaces the single `basket_decline_pct` slider with 11 categories, each
-with its own annual price-change rate and price floor. The aggregate
-basket trajectory falls out of these. See `basket_research.md` for the
-sources behind each rate.
+10 categories, each with its own annual price-change rate and price floor.
+The aggregate basket trajectory falls out of these. See `basket_research.md`
+for the sources behind each rate.
 
-Key insight: LAND is the only category that INFLATES under abundance,
-because supply is fixed. By 2046 it dominates the basket — making the
-company-equity wealth-building story arithmetically essential.
+LAND IS DEFERRED TO A SEPARATE MODEL.
+=====================================
+Land is structurally different from everything else: fixed supply, scarcity
+that intensifies under abundance, only acquirable via equity not income.
+The path to land ownership runs through SPICE company ownership and dividends,
+not through the UBI basket. That mechanism is its own future model.
+
+This basket therefore represents "everything a citizen needs to live OTHER
+than land". Shares re-normalised so the 10 remaining categories sum to 100%.
 
 Module exports:
-    DEFAULT_CATEGORIES — the 11 categories with research-derived rates
+    DEFAULT_CATEGORIES — the 10 categories with research-derived rates
     basket_factor(year, categories) — aggregate multiplier vs year 0
     basket_breakdown(year, categories) — per-category snapshot for UI
 """
@@ -23,37 +28,38 @@ from __future__ import annotations
 #   annual_change_pct   — net annual nominal price change (negative = deflation)
 #   floor_pct           — physical price floor as % of 2026 price (None = no floor)
 DEFAULT_CATEGORIES = [
+    # Shares re-normalised after dropping LAND (originally 20% of full basket).
+    # Each non-land share scaled by 1/0.80 = 1.25× to sum to 100% here.
+
     # Food
-    {"name": "Food (processed)",       "share_pct": 18, "annual_change_pct":  -1.0, "floor_pct": 40,
+    {"name": "Food (processed)",       "share_pct": 22.5, "annual_change_pct":  -1.0, "floor_pct": 40,
      "rationale": "Vertical farms + automated logistics + lab meat. BLS food avg ~+2%/yr offset by ~3%/yr automation."},
-    {"name": "Food (fresh)",           "share_pct":  6, "annual_change_pct":  +1.0, "floor_pct": 60,
+    {"name": "Food (fresh)",           "share_pct":  7.5, "annual_change_pct":  +1.0, "floor_pct": 60,
      "rationale": "Land-bound, slower automation. Net mild inflation continues."},
 
     # Energy & transport
-    {"name": "Energy & utilities",     "share_pct":  8, "annual_change_pct":  -5.0, "floor_pct": 15,
+    {"name": "Energy & utilities",     "share_pct": 10.0, "annual_change_pct":  -5.0, "floor_pct": 15,
      "rationale": "Solar 20%/doubling, batteries 18-35%/doubling Wright curves. Aggressive deflation."},
-    {"name": "Transport",              "share_pct":  8, "annual_change_pct":  -2.5, "floor_pct": 30,
+    {"name": "Transport",              "share_pct": 10.0, "annual_change_pct":  -2.5, "floor_pct": 30,
      "rationale": "EV cost decline + autonomous removes driver. Vehicle still has materials cost."},
 
     # Services (slow)
-    {"name": "Healthcare",             "share_pct":  5, "annual_change_pct":  +0.5, "floor_pct": 60,
+    {"name": "Healthcare",             "share_pct":  6.25, "annual_change_pct":  +0.5, "floor_pct": 60,
      "rationale": "AI offsets historical +4.5%/yr but aging demographics keep mildly positive."},
-    {"name": "Education",              "share_pct":  3, "annual_change_pct":  -1.0, "floor_pct": 30,
+    {"name": "Education",              "share_pct":  3.75, "annual_change_pct":  -1.0, "floor_pct": 30,
      "rationale": "AI tutors deflate content delivery; networking/credentialing value sticky."},
-    {"name": "Services (hospitality)", "share_pct":  6, "annual_change_pct":  +2.0, "floor_pct": 90,
+    {"name": "Services (hospitality)", "share_pct":  7.5, "annual_change_pct":  +2.0, "floor_pct": 90,
      "rationale": "Slowest to automate — physical presence + emotional labour. Premium prices."},
 
     # Goods (deflating)
-    {"name": "Apparel & manufactured", "share_pct":  7, "annual_change_pct":  -3.0, "floor_pct": 30,
+    {"name": "Apparel & manufactured", "share_pct":  8.75, "annual_change_pct":  -3.0, "floor_pct": 30,
      "rationale": "BLS apparel already deflating (-0.5%/yr early 2026). AI accelerates."},
-    {"name": "Digital/electronics",    "share_pct":  4, "annual_change_pct": -10.0, "floor_pct":  5,
+    {"name": "Digital/electronics",    "share_pct":  5.0, "annual_change_pct": -10.0, "floor_pct":  5,
      "rationale": "BLS computers -16%/yr historical. Approaches near-zero marginal cost."},
 
-    # Housing (split)
-    {"name": "Housing — STRUCTURE",    "share_pct": 15, "annual_change_pct":  -1.5, "floor_pct": 40,
-     "rationale": "Construction automatable (3D printing, modular, robotic). Materials cost remains."},
-    {"name": "Housing — LAND",         "share_pct": 20, "annual_change_pct":  +7.0, "floor_pct": None,
-     "rationale": "Knoll-Schularick: 80% of post-WWII house boom is LAND. Fixed supply. Inflates more as everything else falls."},
+    # Housing (structure only — land is deferred to a separate model)
+    {"name": "Housing — STRUCTURE",    "share_pct": 18.75, "annual_change_pct":  -1.5, "floor_pct": 40,
+     "rationale": "Construction automatable (3D printing, modular, robotic). Materials cost remains. LAND deferred."},
 ]
 
 

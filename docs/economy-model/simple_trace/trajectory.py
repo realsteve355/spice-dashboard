@@ -148,18 +148,12 @@ def run(config: dict | None = None) -> dict:
         welfare_ob = welfare_obligation(family_types, cfg["welfare_per_family"]) * welfare_factor(y)
 
         # Basket category breakdown — what fraction of THIS year's basket each
-        # category represents. Land's share grows year-on-year as it's the only
-        # category that inflates while everything else deflates.
-        breakdown = basket_breakdown(y, cfg["basket_categories"])
-        land_share_now_pct = next(
-            (r["share_pct_now"] for r in breakdown if "LAND" in r["name"]), 0
-        )
-
+        # category represents. Land is OUT OF SCOPE (deferred to a separate model
+        # tied to company-equity wealth-building).
         snap = {
             "year": cfg["start_year"] + y,
             "year_offset": y,
             "basket_usd": sim_cfg["basket_usd"],
-            "land_share_pct": land_share_now_pct,
             "ubi_per_citizen": i["ubi_usd_per_citizen"],
             "ubi_obligation": b["ubi_obligation"],
             "welfare_obligation": welfare_ob,
