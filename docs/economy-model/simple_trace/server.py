@@ -22,6 +22,7 @@ sys.path.insert(0, str(HERE))
 
 from sim import run as run_sim
 from trajectory import run as run_trajectory
+from forecasts import get_forecasts
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -58,6 +59,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "index.html", "text/html; charset=utf-8")
         elif p == "/trajectory":
             self._send_file(self.templates_dir / "trajectory.html", "text/html; charset=utf-8")
+        elif p == "/forecasts":
+            self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
@@ -66,6 +69,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.static_dir / rel, ct)
         elif p == "/api/defaults":
             self._send_json(200, run_sim())
+        elif p == "/api/forecasts":
+            self._send_json(200, get_forecasts())
         else:
             self.send_error(404, "unknown path")
 
