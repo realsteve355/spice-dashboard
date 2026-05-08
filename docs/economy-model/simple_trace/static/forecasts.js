@@ -24,11 +24,37 @@ function render(d) {
   results.innerHTML = [
     renderHeadline(d),
     renderQuotes(d.quotes),
-    renderChart(d.categories),
+    renderBasketStat(d.basket_trajectory),
+    renderChart(d.categories, d.basket_trajectory),
     renderSkeptic(d.skeptic),
     renderCategories(d.categories),
     renderSources(d.sources),
   ].join('\n');
+}
+
+function renderBasketStat(traj) {
+  if (!traj || traj.length === 0) return '';
+  const todayBasket = 980;
+  const stat = pt => `
+    <div class="stat">
+      <div class="label">${pt.year}</div>
+      <div class="value">${pt.cost_index.toFixed(0)}%</div>
+      <div class="sub">$${Math.round(todayBasket * pt.cost_index / 100).toLocaleString()}/mo</div>
+    </div>
+  `;
+  return `
+  <div class="card" style="margin-bottom:14px;">
+    <h3>Aggregate basket — typical year's purchases (excl. land)</h3>
+    <div class="stats" style="grid-template-columns: repeat(${traj.length}, 1fr);">
+      ${traj.map(stat).join('')}
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Weighted aggregate of the 11 categories below (LAND excluded — handled by separate model).
+      Today's basket of ~$980/mo collapses to ~$${Math.round(todayBasket * traj[traj.length-1].cost_index / 100)}/mo by 2045 under the bull consensus —
+      <strong>${(100 - traj[traj.length-1].cost_index).toFixed(0)}% deflation in 20 years</strong>.
+      That means a UBI calibrated to this basket also falls in nominal $.
+    </div>
+  </div>`;
 }
 
 function renderHeadline(d) {
@@ -56,22 +82,21 @@ function renderQuotes(quotes) {
 }
 
 // SVG chart — log Y-axis from 1% to 500% of 2026 cost. Each category
-// is a line. Land highlighted, going UP.
-function renderChart(categories) {
-  const W = 1200, H = 480;
-  const PAD_L = 70, PAD_R = 220, PAD_T = 30, PAD_B = 50;
+// is a line. Land highlighted (going UP). Basket aggregate as thick line.
+// Labels at the right edge are collision-resolved.
+function renderChart(categories, basketTrajectory) {
+  const W = 1280, H = 520;
+  const PAD_L = 70, PAD_R = 260, PAD_T = 30, PAD_B = 50;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
 
-  // X axis: 2026 to 2045 (5 anchor years: 2026, 2030, 2035, 2040, 2045)
   const years = [2026, 2030, 2035, 2040, 2045];
   const xToPx = year => PAD_L + plotW * (year - 2026) / (2045 - 2026);
 
-  // Y axis: log scale from 1 to 500 (% of 2026 cost)
   const yMin = 1, yMax = 500;
   const yToPx = v => PAD_T + plotH * (1 - Math.log(v / yMin) / Math.log(yMax / yMin));
 
-  // Y gridlines at major decades
+  // Y gridlines
   const yTicks = [1, 5, 10, 25, 50, 100, 200, 500];
   const yGrid = yTicks.map(t => {
     const y = yToPx(t);
@@ -91,18 +116,61 @@ function renderChart(categories) {
     <line x1="${xToPx(yr)}" y1="${PAD_T}" x2="${xToPx(yr)}" y2="${H - PAD_B}" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 3"/>
   `).join('');
 
-  // Category lines
-  const lines = categories.map((cat, i) => {
-    const color = colorVar(cat.color_class);
-    const points = [{year: 2026, cost_index: cat.today_index}, ...cat.checkpoints];
-    const path = points.map((p, j) => `${j === 0 ? 'M' : 'L'} ${xToPx(p.year).toFixed(1)} ${yToPx(p.cost_index).toFixed(1)}`).join(' ');
-    const dots = points.map(p => `<circle cx="${xToPx(p.year)}" cy="${yToPx(p.cost_index)}" r="3" fill="${color}"/>`).join('');
-    // Label at the right end of the line
-    const last = points[points.length - 1];
-    const label = `<text x="${xToPx(last.year) + 8}" y="${yToPx(last.cost_index) + 4}" fill="${color}" font-size="10" font-family="var(--mono)">${cat.name} (${last.cost_index}%)</text>`;
-    const isLand = cat.name === "LAND";
-    const strokeWidth = isLand ? 3 : 1.6;
-    return `<path d="${path}" fill="none" stroke="${color}" stroke-width="${strokeWidth}"/>${dots}${label}`;
+  // Build series list including basket as a special line (drawn on top)
+  const series = categories.map(cat => ({
+    label: cat.name,
+    color: colorVar(cat.color_class),
+    points: [{year: 2026, cost_index: cat.today_index}, ...cat.checkpoints],
+    strokeWidth: cat.name === "LAND" ? 3 : 1.6,
+    isBasket: false,
+  }));
+  if (basketTrajectory && basketTrajectory.length > 0) {
+    series.push({
+      label: "BASKET (aggregate)",
+      color: "var(--headline)",
+      points: basketTrajectory,
+      strokeWidth: 3.5,
+      isBasket: true,
+    });
+  }
+
+  // Lines + dots (no inline labels — those are collision-resolved below)
+  const lines = series.map(s => {
+    const path = s.points.map((p, j) => `${j === 0 ? 'M' : 'L'} ${xToPx(p.year).toFixed(1)} ${yToPx(p.cost_index).toFixed(1)}`).join(' ');
+    const dots = s.points.map(p => `<circle cx="${xToPx(p.year)}" cy="${yToPx(p.cost_index)}" r="${s.isBasket ? 4 : 3}" fill="${s.color}"/>`).join('');
+    const dasharray = s.isBasket ? 'stroke-dasharray="6 3"' : '';
+    return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="${s.strokeWidth}" ${dasharray}/>${dots}`;
+  }).join('');
+
+  // ----- Collision-resolved right-edge labels -----
+  // For each series, compute the desired label Y (where the line ends).
+  // Then sort by desired Y and walk through, ensuring minimum vertical separation.
+  const minSpacing = 14;
+  const labels = series.map(s => {
+    const last = s.points[s.points.length - 1];
+    return {
+      label: `${s.label} (${last.cost_index}%)`,
+      color: s.color,
+      lineEndX: xToPx(last.year),
+      lineEndY: yToPx(last.cost_index),
+      desiredY: yToPx(last.cost_index),
+      isBasket: s.isBasket,
+    };
+  });
+  // Sort by desired Y ascending
+  labels.sort((a, b) => a.desiredY - b.desiredY);
+  // Walk through and push down any that overlap
+  for (let i = 1; i < labels.length; i++) {
+    const minY = labels[i - 1].placedY + minSpacing;
+    labels[i].placedY = Math.max(labels[i].desiredY, minY);
+  }
+  labels[0].placedY = labels[0].desiredY;
+  // Render with leader lines
+  const labelEls = labels.map(L => {
+    const labelX = xToPx(2045) + 14;
+    const leader = `<line x1="${L.lineEndX + 4}" y1="${L.lineEndY}" x2="${labelX - 2}" y2="${L.placedY}" stroke="${L.color}" stroke-width="0.5" opacity="0.5"/>`;
+    const fontWeight = L.isBasket ? 'bold' : 'normal';
+    return `${leader}<text x="${labelX}" y="${L.placedY + 4}" fill="${L.color}" font-size="10" font-weight="${fontWeight}" font-family="var(--mono)">${L.label}</text>`;
   }).join('');
 
   return `
@@ -113,11 +181,12 @@ function renderChart(categories) {
       ${yGrid}
       ${xLabels}
       ${lines}
+      ${labelEls}
     </svg>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Y-axis is logarithmic — each gridline is a roughly 2× change. The 100% line is the 2026 baseline.
-      Lines below 100% deflate; lines above inflate.
-      <strong style="color: var(--crit);">LAND</strong> is the only category that rises — Sam Altman's exact words: "the price of luxury goods and a few inherently limited resources like land may rise even more dramatically".
+      Y-axis logarithmic — each gridline ≈ 2× change. <strong style="color: var(--headline);">BASKET</strong> (dashed white)
+      is the weighted aggregate of all categories. <strong style="color: var(--crit);">LAND</strong> is the only category that rises —
+      Altman's words: "inherently limited resources like land may rise dramatically".
     </div>
   </div>`;
 }

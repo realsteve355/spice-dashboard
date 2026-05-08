@@ -169,14 +169,14 @@ FORECASTS = {
             "name": "Services (hospitality, care)",
             "today_index": 100,
             "checkpoints": [
-                {"year": 2030, "cost_index": 110, "anchor": "Premium pricing emerges as goods deflate"},
-                {"year": 2035, "cost_index": 130, "anchor": "Robots augment but don't replace"},
-                {"year": 2040, "cost_index": 150, "anchor": "Human-touch luxury"},
-                {"year": 2045, "cost_index": 180, "anchor": "Premium-only human service"},
+                {"year": 2030, "cost_index":  80, "anchor": "First-wave service robots in fast food, hotels, basic care"},
+                {"year": 2035, "cost_index":  50, "anchor": "Optimus-class robots in housekeeping, food prep, eldercare"},
+                {"year": 2040, "cost_index":  25, "anchor": "Most service work robotic; humans for premium / specialty only"},
+                {"year": 2045, "cost_index":  15, "anchor": "Service largely free at the floor; human-touch is luxury"},
             ],
-            "color_class": "warn",
-            "mechanism": "Slowest to automate — physical presence + emotional labour. Demand grows because everyone is rich; supply of human attention is fixed. Inflates moderately.",
-            "sources": ["consensus inference"],
+            "color_class": "ok",
+            "mechanism": "Reversed — Steve's view that services go mostly robotic. Optimus + dedicated kitchen/cleaning bots replace most service labour. Premium human-touch persists as luxury but the floor approaches free.",
+            "sources": ["Musk (Optimus)", "consensus inference"],
         },
         {
             "name": "LAND",
@@ -232,6 +232,61 @@ FORECASTS = {
 }
 
 
+# Basket weights — share of a typical year's household spending allocated
+# to each forecast category. Excludes LAND (out of scope per Steve, handled
+# by the separate company-equity wealth-building model).
+# Shares sum to 100%.
+BASKET_WEIGHTS = {
+    "Intelligence / digital":          3.0,   # streaming, apps, cloud, software
+    "Energy":                         10.0,   # utilities, fuel
+    "Transport":                      12.0,   # fuel, vehicles, services
+    "Manufactured goods":             18.0,   # incl housing structure (durable goods)
+    "Food (proteins)":                 8.0,   # meat, fish
+    "Education":                       5.0,
+    "Apparel":                         4.0,
+    "Food (general groceries)":       17.0,   # produce, packaged, staples
+    "Healthcare":                      8.0,
+    "Services (hospitality, care)":   15.0,
+    # LAND deliberately excluded — separate model.
+}
+
+
+def compute_basket_trajectory() -> list:
+    """Aggregate the categorical forecasts into a single basket cost trajectory.
+
+    Each year's basket cost = sum across categories of (weight × cost_index).
+    Cost index is in % of 2026 cost; basket trajectory is also in % of 2026.
+    """
+    cats_by_name = {c["name"]: c for c in FORECASTS["categories"]}
+    years = [2026, 2030, 2035, 2040, 2045]
+
+    # Confirm basket weights sum to 100
+    total_weight = sum(BASKET_WEIGHTS.values())
+    if abs(total_weight - 100.0) > 0.01:
+        raise ValueError(f"Basket weights sum to {total_weight}, expected 100")
+
+    trajectory = []
+    for year in years:
+        basket_index = 0.0
+        for name, weight in BASKET_WEIGHTS.items():
+            cat = cats_by_name.get(name)
+            if cat is None:
+                raise ValueError(f"Forecast category '{name}' not found")
+            if year == 2026:
+                cost_index = cat["today_index"]
+            else:
+                checkpoint = next(cp for cp in cat["checkpoints"] if cp["year"] == year)
+                cost_index = checkpoint["cost_index"]
+            basket_index += (weight / 100) * cost_index
+        trajectory.append({"year": year, "cost_index": round(basket_index, 1)})
+    return trajectory
+
+
+# Compute and attach the basket trajectory at module load time
+FORECASTS["basket_weights"] = BASKET_WEIGHTS
+FORECASTS["basket_trajectory"] = compute_basket_trajectory()
+
+
 def get_forecasts() -> dict:
     """Return the structured forecast data — used by the /api/forecasts endpoint."""
     return FORECASTS
@@ -239,4 +294,7 @@ def get_forecasts() -> dict:
 
 if __name__ == "__main__":
     import json
-    print(json.dumps(get_forecasts(), indent=2))
+    f = get_forecasts()
+    print("Basket trajectory:")
+    for pt in f["basket_trajectory"]:
+        print(f"  {pt['year']}: {pt['cost_index']:5.1f}% of today's basket  = ${980 * pt['cost_index']/100:>6,.0f}/mo")
