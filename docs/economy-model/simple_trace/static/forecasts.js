@@ -25,11 +25,114 @@ function render(d) {
     renderHeadline(d),
     renderQuotes(d.quotes),
     renderBasketStat(d.basket_trajectory),
+    renderBasketComposition(d.categories, d.basket_weights, d.basket_trajectory),
     renderChart(d.categories, d.basket_trajectory),
     renderSkeptic(d.skeptic),
     renderCategories(d.categories),
     renderSources(d.sources),
   ].join('\n');
+}
+
+// Show what's IN the aggregate basket: weight, $/mo today, $/mo in 2045,
+// and how each category's share shifts as deflation rates differ.
+function renderBasketComposition(categories, weights, trajectory) {
+  if (!weights || !categories || !trajectory) return '';
+  const todayBasketUSD = 980;
+  const final = trajectory[trajectory.length - 1];
+  const finalBasketUSD = todayBasketUSD * final.cost_index / 100;
+  const finalYear = final.year;
+
+  // Build per-category rows
+  const cats = categories.filter(c => weights[c.name] !== undefined);
+  const rows = cats.map(cat => {
+    const weight = weights[cat.name];
+    const dollarsToday = todayBasketUSD * weight / 100;
+    // Find this category's cost_index at finalYear
+    const finalCheckpoint = cat.checkpoints.find(cp => cp.year === finalYear);
+    const finalCostIndex = finalCheckpoint ? finalCheckpoint.cost_index : cat.today_index;
+    const dollarsFinal = dollarsToday * finalCostIndex / 100;
+    const finalShareOfBasket = (dollarsFinal / finalBasketUSD) * 100;
+    return {
+      name: cat.name,
+      weight,
+      dollarsToday,
+      shareToday: weight,
+      finalCostIndex,
+      dollarsFinal,
+      finalShareOfBasket,
+      shareDelta: finalShareOfBasket - weight,
+      colorClass: cat.color_class,
+    };
+  });
+  // Sort by today's weight desc
+  rows.sort((a, b) => b.dollarsToday - a.dollarsToday);
+
+  // Family-of-four annual figures
+  const annualToday = todayBasketUSD * 12;
+  const annualFinal = finalBasketUSD * 12;
+  const fam4Today = annualToday * 4;
+  const fam4Final = annualFinal * 4;
+
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const fmtPct = n => n.toFixed(1) + '%';
+
+  const row = r => {
+    const deltaColor = r.shareDelta > 0 ? 'var(--warn)' : 'var(--ok)';
+    return `<tr>
+      <td class="cat">${r.name}</td>
+      <td class="num">${fmtPct(r.weight)}</td>
+      <td class="num">${fmt(r.dollarsToday)}</td>
+      <td class="num">${r.finalCostIndex}%</td>
+      <td class="num">${fmt(r.dollarsFinal)}</td>
+      <td class="num">${fmtPct(r.finalShareOfBasket)}</td>
+      <td class="num" style="color:${deltaColor};">${r.shareDelta >= 0 ? '+' : ''}${r.shareDelta.toFixed(1)} pp</td>
+    </tr>`;
+  };
+
+  return `
+  <div class="card" style="margin-bottom:14px;">
+    <h3>What's in the basket — composition today vs ${finalYear}</h3>
+    <table>
+      <thead><tr>
+        <th>Category</th>
+        <th class="num">Weight</th>
+        <th class="num">2026 $/mo</th>
+        <th class="num">${finalYear} cost factor</th>
+        <th class="num">${finalYear} $/mo</th>
+        <th class="num">${finalYear} share of basket</th>
+        <th class="num">Share Δ</th>
+      </tr></thead>
+      <tbody>${rows.map(row).join('')}</tbody>
+      <tfoot>
+        <tr style="border-top: 1px solid var(--line-hot); color: var(--headline);">
+          <td class="cat"><strong>Total basket</strong></td>
+          <td class="num">100%</td>
+          <td class="num">${fmt(todayBasketUSD)}</td>
+          <td class="num">${final.cost_index.toFixed(1)}%</td>
+          <td class="num">${fmt(finalBasketUSD)}</td>
+          <td class="num">100%</td>
+          <td class="num">—</td>
+        </tr>
+      </tfoot>
+    </table>
+    <div style="margin-top:12px; padding-top:12px; border-top: 1px solid var(--line); font-size:12px; color:var(--txt);">
+      <strong style="color:var(--headline);">Household scale:</strong>
+      &nbsp;&nbsp;Per person/yr today: <strong>${fmt(annualToday)}</strong> →
+      ${finalYear}: <strong>${fmt(annualFinal)}</strong>
+      &nbsp;·&nbsp;
+      Family of 4/yr today: <strong>${fmt(fam4Today)}</strong> →
+      ${finalYear}: <strong>${fmt(fam4Final)}</strong>
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5;">
+      Weights drawn from US BLS Consumer Expenditure Survey norms for a typical
+      household. Each row shows what fraction of today's $980/mo goes to this
+      category, the cost factor that category falls to by ${finalYear}, the
+      resulting dollar amount, and how its <em>share of the (smaller) basket</em>
+      shifts. Share-Δ in <span style="color:var(--warn);">orange</span> = category
+      share grows (deflated less); <span style="color:var(--ok);">green</span> =
+      shrinks (deflated more). LAND and savings are excluded — separate models.
+    </div>
+  </div>`;
 }
 
 function renderBasketStat(traj) {
@@ -159,12 +262,13 @@ function renderChart(categories, basketTrajectory) {
   });
   // Sort by desired Y ascending
   labels.sort((a, b) => a.desiredY - b.desiredY);
-  // Walk through and push down any that overlap
+  // Initialise the first label's placed position BEFORE the loop reads it
+  labels[0].placedY = labels[0].desiredY;
+  // Walk through and push down any that would overlap the previous one
   for (let i = 1; i < labels.length; i++) {
     const minY = labels[i - 1].placedY + minSpacing;
     labels[i].placedY = Math.max(labels[i].desiredY, minY);
   }
-  labels[0].placedY = labels[0].desiredY;
   // Render with leader lines
   const labelEls = labels.map(L => {
     const labelX = xToPx(2045) + 14;
