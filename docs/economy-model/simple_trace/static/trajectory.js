@@ -11,11 +11,12 @@ const fmtPct = n => n.toFixed(1) + '%';
 
 // Slider display sync
 const sliders = [
-  { id: 'years',              fmt: v => parseInt(v) + '' },
-  { id: 'basket_decline_pct', fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'salary_decline_pct', fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'p_emp_growth_pct',   fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'levy_cap',           fmt: v => Math.round(parseFloat(v) * 100) + '%' },
+  { id: 'years',               fmt: v => parseInt(v) + '' },
+  { id: 'basket_decline_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'salary_decline_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'p_emp_growth_pct',    fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'welfare_growth_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'levy_cap',            fmt: v => Math.round(parseFloat(v) * 100) + '%' },
 ];
 sliders.forEach(s => {
   const inp = document.getElementById(s.id);
@@ -32,6 +33,7 @@ function readConfig() {
     basket_decline_pct: parseFloat(document.getElementById('basket_decline_pct').value),
     salary_decline_pct: parseFloat(document.getElementById('salary_decline_pct').value),
     p_emp_growth_pct: parseFloat(document.getElementById('p_emp_growth_pct').value),
+    welfare_growth_pct: parseFloat(document.getElementById('welfare_growth_pct').value),
     levy_cap_rate: parseFloat(document.getElementById('levy_cap').value),
     levy_formula: document.getElementById('levy_formula').value,
   };
@@ -74,13 +76,21 @@ function render(d) {
 }
 
 function renderVerdict(d) {
-  const closed = d.crossover_year !== null;
-  const cls = closed ? 'ok' : 'crit';
-  const headline = closed
-    ? `<strong>Funding gap closes in ${d.crossover_year}</strong> — automation curves alone fund UBI.`
-    : `<strong>Gap never closes within ${d.config.years} years</strong> — cost decline alone is insufficient.`;
-  const detail = `From ${d.first.funding_gap_pct.toFixed(1)}% gap in ${d.first.year} ` +
-                 `to ${d.final.funding_gap_pct.toFixed(1)}% gap in ${d.final.year}.`;
+  const m1 = d.milestone_1_year, m2 = d.milestone_2_year;
+  let cls, headline;
+
+  if (m2) {
+    cls = 'ok';
+    headline = `<strong>Welfare-capable in ${m1} · UBI-capable in ${m2}</strong> — both milestones hit within the projection window.`;
+  } else if (m1) {
+    cls = 'warn';
+    headline = `<strong>Welfare-capable in ${m1} · full UBI not reached within ${d.config.years} years.</strong>`;
+  } else {
+    cls = 'crit';
+    headline = `<strong>Neither milestone reached within ${d.config.years} years.</strong> Levy cannot fund welfare under these settings.`;
+  }
+  const detail = `Levy 2026: ${fmtUSD(d.first.levy_collected)} · Welfare: ${fmtUSD(d.first.welfare_obligation)} · UBI target: ${fmtUSD(d.first.ubi_obligation)} · ` +
+                 `Levy ${d.final.year}: ${fmtUSD(d.final.levy_collected)}.`;
   return `
   <div class="card">
     <div class="callout ${cls}">${headline}<br>
@@ -91,17 +101,17 @@ function renderVerdict(d) {
 
 // Mission-control SVG line chart. No dependencies.
 function renderChart(d) {
-  const W = 800, H = 320;
-  const PAD_L = 70, PAD_R = 30, PAD_T = 30, PAD_B = 50;
+  const W = 800, H = 340;
+  const PAD_L = 70, PAD_R = 30, PAD_T = 40, PAD_B = 50;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
 
   const snaps = d.snapshots;
   const years = snaps.map(s => s.year);
   const series = [
-    { key: 'ubi_obligation',  label: 'UBI obligation', color: 'var(--warn)' },
-    { key: 'levy_collected',  label: 'Levy collected', color: 'var(--ok)'   },
-    { key: 'funding_gap',     label: 'Funding gap',    color: 'var(--crit)' },
+    { key: 'ubi_obligation',     label: 'UBI obligation',     color: 'var(--warn)' },
+    { key: 'welfare_obligation', label: 'Welfare obligation', color: 'var(--blue)' },
+    { key: 'levy_collected',     label: 'Levy collected',     color: 'var(--ok)'   },
   ];
 
   // Y-scale: linear from 0 to max of all series
@@ -129,17 +139,50 @@ function renderChart(d) {
     return `<text x="${xToPx(i)}" y="${H - PAD_B + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${s.year}</text>`;
   }).join('');
 
-  // Crossover marker
-  let crossLine = '';
-  if (d.crossover_year !== null) {
-    const idx = years.indexOf(d.crossover_year);
-    if (idx >= 0) {
-      const x = xToPx(idx);
-      crossLine = `
-        <line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${H - PAD_B}" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3"/>
-        <text x="${x + 4}" y="${PAD_T + 12}" fill="var(--ok)" font-size="10" font-family="var(--mono)">crossover ${d.crossover_year}</text>
-      `;
-    }
+  // Phase background bands (subtle): impl band (default), welfare band (M1+), UBI band (M2+)
+  const m1 = d.milestone_1_year, m2 = d.milestone_2_year;
+  const m1Idx = m1 ? years.indexOf(m1) : -1;
+  const m2Idx = m2 ? years.indexOf(m2) : -1;
+  let phaseBands = '';
+  if (m1Idx > 0) {
+    const xEnd = m2Idx > 0 ? xToPx(m2Idx) : (W - PAD_R);
+    phaseBands += `<rect x="${xToPx(m1Idx)}" y="${PAD_T}" width="${xEnd - xToPx(m1Idx)}" height="${plotH}" fill="var(--blue)" opacity="0.05"/>`;
+  }
+  if (m2Idx > 0) {
+    phaseBands += `<rect x="${xToPx(m2Idx)}" y="${PAD_T}" width="${(W - PAD_R) - xToPx(m2Idx)}" height="${plotH}" fill="var(--ok)" opacity="0.07"/>`;
+  }
+
+  // Phase labels at top of chart
+  let phaseLabels = '';
+  const labelAt = (xStart, xEnd, text, color) => {
+    const xMid = (xStart + xEnd) / 2;
+    return `<text x="${xMid}" y="${PAD_T - 10}" fill="${color}" font-size="10" font-family="var(--mono)" text-anchor="middle" letter-spacing="0.15em">${text}</text>`;
+  };
+  const implEnd = m1Idx > 0 ? xToPx(m1Idx) : (W - PAD_R);
+  phaseLabels += labelAt(PAD_L, implEnd, 'IMPLEMENTATION', 'var(--dim)');
+  if (m1Idx > 0) {
+    const welfareEnd = m2Idx > 0 ? xToPx(m2Idx) : (W - PAD_R);
+    phaseLabels += labelAt(xToPx(m1Idx), welfareEnd, 'WELFARE', 'var(--blue)');
+  }
+  if (m2Idx > 0) {
+    phaseLabels += labelAt(xToPx(m2Idx), (W - PAD_R), 'FULL UBI', 'var(--ok)');
+  }
+
+  // Milestone markers
+  let milestoneLines = '';
+  if (m1Idx >= 0) {
+    const x = xToPx(m1Idx);
+    milestoneLines += `
+      <line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${H - PAD_B}" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--blue)" font-size="10" font-family="var(--mono)">M1 ${m1}</text>
+    `;
+  }
+  if (m2Idx >= 0) {
+    const x = xToPx(m2Idx);
+    milestoneLines += `
+      <line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${H - PAD_B}" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--ok)" font-size="10" font-family="var(--mono)">M2 ${m2}</text>
+    `;
   }
 
   // Series lines + dots
@@ -150,7 +193,7 @@ function renderChart(d) {
 
   // Legend
   const legend = series.map((sr, i) => `
-    <g transform="translate(${PAD_L + i * 160}, ${H - 12})">
+    <g transform="translate(${PAD_L + i * 180}, ${H - 12})">
       <line x1="0" y1="0" x2="20" y2="0" stroke="${sr.color}" stroke-width="2"/>
       <text x="26" y="4" fill="var(--txt2)" font-size="11" font-family="var(--mono)">${sr.label}</text>
     </g>
@@ -158,18 +201,21 @@ function renderChart(d) {
 
   return `
   <div class="card">
-    <h3>Trajectory chart</h3>
+    <h3>Trajectory chart — three phases</h3>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">
+      ${phaseBands}
       <rect x="${PAD_L}" y="${PAD_T}" width="${plotW}" height="${plotH}" fill="none" stroke="var(--line-hot)" stroke-width="0.5"/>
       ${yGrid}
       ${xLabels}
-      ${crossLine}
+      ${phaseLabels}
+      ${milestoneLines}
       ${lines}
       ${legend}
     </svg>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Each annual snapshot reruns the per-month sim with parameters adjusted for elapsed years.
-      All values are monthly $ at that year.
+      M1 = first year levy ≥ welfare obligation (SPICE replaces State welfare cost-neutrally).
+      M2 = first year levy ≥ full UBI obligation (universal payment becomes affordable).
+      Three phases: implementation (no payouts) · welfare (means-tested) · full UBI (universal).
     </div>
   </div>`;
 }
@@ -181,32 +227,37 @@ function renderEndpoints(d) {
     <div class="stat">
       <div class="label">${label}</div>
       <div class="value" ${color ? `style="color:${color};"` : ''}>${fmtUSD(v0)} → ${fmtUSD(v1)}</div>
-      <div class="sub">${f.year} → ${l.year} · Δ ${((v1-v0)/v0*100).toFixed(1)}%</div>
+      <div class="sub">${f.year} → ${l.year} · Δ ${((v1-v0)/Math.max(1,v0)*100).toFixed(1)}%</div>
     </div>
   `;
   return `
   <div class="card">
     <h3>Endpoints</h3>
     <div class="stats">
-      ${stat('UBI obligation',  f.ubi_obligation,  l.ubi_obligation,  'var(--warn)')}
-      ${stat('Profit pool',     f.profit_pool,     l.profit_pool,     null)}
-      ${stat('Levy collected',  f.levy_collected,  l.levy_collected,  'var(--ok)')}
-      ${stat('Funding gap',     f.funding_gap,     l.funding_gap,     'var(--crit)')}
+      ${stat('Welfare obligation', f.welfare_obligation, l.welfare_obligation, 'var(--blue)')}
+      ${stat('UBI obligation',     f.ubi_obligation,     l.ubi_obligation,     'var(--warn)')}
+      ${stat('Levy collected',     f.levy_collected,     l.levy_collected,     'var(--ok)')}
+      ${stat('Profit pool',        f.profit_pool,        l.profit_pool,        null)}
     </div>
   </div>`;
 }
 
 function renderTable(d) {
+  const m1 = d.milestone_1_year, m2 = d.milestone_2_year;
+  const phaseFor = year => {
+    if (m2 && year >= m2) return '<span style="color:var(--ok);">FULL UBI</span>';
+    if (m1 && year >= m1) return '<span style="color:var(--blue);">WELFARE</span>';
+    return '<span style="color:var(--dim);">IMPL</span>';
+  };
   const row = s => `
     <tr>
       <td class="cat">${s.year}</td>
+      <td>${phaseFor(s.year)}</td>
       <td class="num">${fmtUSD(s.basket_usd)}</td>
+      <td class="num">${fmtUSD(s.welfare_obligation)}</td>
       <td class="num">${fmtUSD(s.ubi_obligation)}</td>
-      <td class="num">${fmtUSD(s.profit_pool)}</td>
-      <td class="num">${fmtUSD(s.max_capturable)}</td>
       <td class="num">${fmtUSD(s.levy_collected)}</td>
-      <td class="num">${fmtUSD(s.funding_gap)}</td>
-      <td class="num">${fmtPct(s.funding_gap_pct)}</td>
+      <td class="num">${fmtUSD(s.profit_pool)}</td>
     </tr>
   `;
   return `
@@ -215,13 +266,12 @@ function renderTable(d) {
     <table>
       <thead><tr>
         <th>Year</th>
+        <th>Phase</th>
         <th class="num">Basket</th>
-        <th class="num">UBI</th>
-        <th class="num">Profit pool</th>
-        <th class="num">Max cap</th>
+        <th class="num">Welfare</th>
+        <th class="num">UBI target</th>
         <th class="num">Levy</th>
-        <th class="num">Gap $</th>
-        <th class="num">Gap %</th>
+        <th class="num">Profit pool</th>
       </tr></thead>
       <tbody>${d.snapshots.map(row).join('')}</tbody>
     </table>
