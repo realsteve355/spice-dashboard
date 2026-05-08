@@ -60,24 +60,32 @@ def run(config: dict | None = None) -> dict:
     cfg = {
         "years": 20,
         "start_year": 2026,
-        "basket_decline_pct": 5.0,        # % per year basket cost falls
+        "basket_decline_pct": 8.0,        # % per year basket cost falls (automation deflation)
         "salary_decline_pct": 3.0,        # % per year salaries decline (AI wage pressure)
-        "p_emp_growth_pct": 5.0,          # % per year supplier P/emp rises
-        "welfare_growth_pct": 1.0,        # % per year welfare obligation grows (more displacement)
+        "p_emp_growth_pct": 8.0,          # % per year supplier P/emp rises
+        "margin_growth_pct": 5.0,         # % per year supplier margins expand toward ceiling
+        "margin_ceiling_pct": 90.0,       # cap on supplier margin (physical/land floor on costs)
+        "welfare_displacement_pct": 1.0,  # % per year more residents qualify for welfare (real terms)
         "ubi_multiplier": 1.10,           # held constant — UBI = basket × this
         "external_spend_fraction": 0.55,
         "levy_cap_rate": 0.80,
-        "levy_formula": "linear",
+        "levy_formula": "asymptotic",     # linear miscalibrates when cap binds; asymptotic uses bisection
         "welfare_per_family": DEFAULT_WELFARE_PER_FAMILY,
     }
     if config:
         cfg.update(config)
 
     years = cfg["years"]
-    basket_factor   = lambda y: (1 - cfg["basket_decline_pct"]  / 100) ** y
-    salary_factor   = lambda y: (1 - cfg["salary_decline_pct"]  / 100) ** y
-    p_emp_factor    = lambda y: (1 + cfg["p_emp_growth_pct"]   / 100) ** y
-    welfare_factor  = lambda y: (1 + cfg["welfare_growth_pct"] / 100) ** y
+    basket_factor   = lambda y: (1 - cfg["basket_decline_pct"]   / 100) ** y
+    salary_factor   = lambda y: (1 - cfg["salary_decline_pct"]   / 100) ** y
+    p_emp_factor    = lambda y: (1 + cfg["p_emp_growth_pct"]    / 100) ** y
+    margin_factor       = lambda y: (1 + cfg["margin_growth_pct"]      / 100) ** y
+    displacement_factor = lambda y: (1 + cfg["welfare_displacement_pct"]/ 100) ** y
+    margin_ceiling      = cfg["margin_ceiling_pct"]
+    grow_margin = lambda m, y: min(margin_ceiling, m * margin_factor(y))
+    # Welfare obligation scales with basket (real-terms: as living costs fall,
+    # welfare $ amounts also fall) and grows with displacement (more recipients).
+    welfare_factor = lambda y: basket_factor(y) * displacement_factor(y)
 
     snapshots = []
     crossover_year = None
@@ -89,16 +97,21 @@ def run(config: dict | None = None) -> dict:
             family_types.append((count, label, w, r, wo, k,
                                  salary * salary_factor(y), pension))
 
-        # Grow P/emp on external suppliers (automation makes them more profitable
-        # per worker — this is the mechanism that grows the colony's profit pool)
+        # Grow P/emp AND margins on external suppliers. As costs fall toward zero
+        # (automation), margins expand toward the ceiling. This is the mechanism
+        # that grows the profit pool even as gross spending falls with the basket.
         external_suppliers = []
         for (sector, name, p_emp, margin) in DEFAULT_EXTERNAL_SUPPLIERS:
             external_suppliers.append(
-                (sector, name, p_emp * p_emp_factor(y), margin)
+                (sector, name, p_emp * p_emp_factor(y), grow_margin(margin, y))
             )
 
-        # Local cos held constant — small colony cos don't auto-automate the same way
-        local_companies = deepcopy(DEFAULT_LOCAL_COMPANIES)
+        # Local cos: same margin growth applies (automation eats their costs too)
+        local_companies = []
+        for co in DEFAULT_LOCAL_COMPANIES:
+            co_copy = deepcopy(co)
+            co_copy["margin_pct"] = grow_margin(co["margin_pct"], y)
+            local_companies.append(co_copy)
 
         sim_cfg = {
             "basket_usd": 980.0 * basket_factor(y),

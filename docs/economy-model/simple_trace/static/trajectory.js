@@ -11,12 +11,14 @@ const fmtPct = n => n.toFixed(1) + '%';
 
 // Slider display sync
 const sliders = [
-  { id: 'years',               fmt: v => parseInt(v) + '' },
-  { id: 'basket_decline_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'salary_decline_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'p_emp_growth_pct',    fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'welfare_growth_pct',  fmt: v => parseFloat(v).toFixed(1) + '%' },
-  { id: 'levy_cap',            fmt: v => Math.round(parseFloat(v) * 100) + '%' },
+  { id: 'years',                    fmt: v => parseInt(v) + '' },
+  { id: 'basket_decline_pct',       fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'salary_decline_pct',       fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'p_emp_growth_pct',         fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'margin_growth_pct',        fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'margin_ceiling_pct',       fmt: v => Math.round(parseFloat(v)) + '%' },
+  { id: 'welfare_displacement_pct', fmt: v => parseFloat(v).toFixed(1) + '%' },
+  { id: 'levy_cap',                 fmt: v => Math.round(parseFloat(v) * 100) + '%' },
 ];
 sliders.forEach(s => {
   const inp = document.getElementById(s.id);
@@ -33,7 +35,9 @@ function readConfig() {
     basket_decline_pct: parseFloat(document.getElementById('basket_decline_pct').value),
     salary_decline_pct: parseFloat(document.getElementById('salary_decline_pct').value),
     p_emp_growth_pct: parseFloat(document.getElementById('p_emp_growth_pct').value),
-    welfare_growth_pct: parseFloat(document.getElementById('welfare_growth_pct').value),
+    margin_growth_pct: parseFloat(document.getElementById('margin_growth_pct').value),
+    margin_ceiling_pct: parseFloat(document.getElementById('margin_ceiling_pct').value),
+    welfare_displacement_pct: parseFloat(document.getElementById('welfare_displacement_pct').value),
     levy_cap_rate: parseFloat(document.getElementById('levy_cap').value),
     levy_formula: document.getElementById('levy_formula').value,
   };
