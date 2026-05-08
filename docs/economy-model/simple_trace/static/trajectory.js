@@ -12,7 +12,6 @@ const fmtPct = n => n.toFixed(1) + '%';
 // Slider display sync
 const sliders = [
   { id: 'years',                    fmt: v => parseInt(v) + '' },
-  { id: 'basket_decline_pct',       fmt: v => parseFloat(v).toFixed(1) + '%' },
   { id: 'salary_decline_pct',       fmt: v => parseFloat(v).toFixed(1) + '%' },
   { id: 'p_emp_growth_pct',         fmt: v => parseFloat(v).toFixed(1) + '%' },
   { id: 'margin_growth_pct',        fmt: v => parseFloat(v).toFixed(1) + '%' },
@@ -32,7 +31,6 @@ sliders.forEach(s => {
 function readConfig() {
   return {
     years: parseInt(document.getElementById('years').value),
-    basket_decline_pct: parseFloat(document.getElementById('basket_decline_pct').value),
     salary_decline_pct: parseFloat(document.getElementById('salary_decline_pct').value),
     p_emp_growth_pct: parseFloat(document.getElementById('p_emp_growth_pct').value),
     margin_growth_pct: parseFloat(document.getElementById('margin_growth_pct').value),
@@ -75,8 +73,57 @@ function render(d) {
     renderVerdict(d),
     renderChart(d),
     renderEndpoints(d),
+    renderBasketBreakdown(d),
     renderTable(d),
   ].join('\n');
+}
+
+function renderBasketBreakdown(d) {
+  const first = d.basket_breakdown_first || [];
+  const final = d.basket_breakdown_final || [];
+  if (first.length === 0) return '';
+  // Sort by share-now in final year, descending
+  const indexed = first.map((c, i) => ({ first: c, final: final[i] }))
+                       .sort((a, b) => b.final.share_pct_now - a.final.share_pct_now);
+  const row = pair => {
+    const c = pair.first, f = pair.final;
+    const isLand = c.name.includes("LAND");
+    const isStruct = c.name.includes("STRUCTURE");
+    const cls = isLand ? 'broken' : (isStruct ? 'high' : '');
+    const rateColor = c.annual_change_pct > 0 ? 'var(--warn)' : (c.annual_change_pct < -3 ? 'var(--ok)' : 'var(--txt2)');
+    return `<tr class="${cls}">
+      <td class="cat">${c.name}</td>
+      <td class="num">${c.share_pct_today.toFixed(0)}%</td>
+      <td class="num" style="color:${rateColor};">${c.annual_change_pct >= 0 ? '+' : ''}${c.annual_change_pct.toFixed(1)}%</td>
+      <td class="num">${c.floor_pct === null ? '—' : c.floor_pct.toFixed(0) + '%'}</td>
+      <td class="num">${f.price_factor.toFixed(2)}×</td>
+      <td class="num">${f.share_pct_now.toFixed(1)}%</td>
+    </tr>`;
+  };
+  const finalYear = d.final.year;
+  return `
+  <div class="card">
+    <h3>Basket category breakdown · today vs ${finalYear}</h3>
+    <table>
+      <thead><tr>
+        <th>Category</th>
+        <th class="num">Share today</th>
+        <th class="num">Annual change</th>
+        <th class="num">Floor</th>
+        <th class="num">${finalYear} factor</th>
+        <th class="num">${finalYear} share</th>
+      </tr></thead>
+      <tbody>${indexed.map(row).join('')}</tbody>
+    </table>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      LAND (red) is the only category that inflates. Its share grows from
+      ${first.find(c => c.name.includes('LAND')).share_pct_today.toFixed(0)}% in 2026 to
+      ${final.find(c => c.name.includes('LAND')).share_pct_now.toFixed(1)}% in ${finalYear}.
+      A UBI-only citizen pays this fraction of their income to a landlord —
+      with nothing left to save toward land ownership.
+      Categories sourced from <code>basket_model.py</code> (research-derived).
+    </div>
+  </div>`;
 }
 
 function renderVerdict(d) {
@@ -93,8 +140,10 @@ function renderVerdict(d) {
     cls = 'crit';
     headline = `<strong>Neither milestone reached within ${d.config.years} years.</strong> Levy cannot fund welfare under these settings.`;
   }
-  const detail = `Levy 2026: ${fmtUSD(d.first.levy_collected)} · Welfare: ${fmtUSD(d.first.welfare_obligation)} · UBI target: ${fmtUSD(d.first.ubi_obligation)} · ` +
-                 `Levy ${d.final.year}: ${fmtUSD(d.final.levy_collected)}.`;
+  const landDelta = d.final.land_share_pct - d.first.land_share_pct;
+  const detail = `Basket: ${fmtUSD(d.first.basket_usd)} → ${fmtUSD(d.final.basket_usd)} · ` +
+                 `Land share: ${d.first.land_share_pct.toFixed(0)}% → ${d.final.land_share_pct.toFixed(0)}% (+${landDelta.toFixed(0)} pp) · ` +
+                 `Levy ${d.first.year}: ${fmtUSD(d.first.levy_collected)} → ${d.final.year}: ${fmtUSD(d.final.levy_collected)}.`;
   return `
   <div class="card">
     <div class="callout ${cls}">${headline}<br>
@@ -227,21 +276,27 @@ function renderChart(d) {
 function renderEndpoints(d) {
   const f = d.first;
   const l = d.final;
-  const stat = (label, v0, v1, color) => `
+  const stat = (label, v0, v1, color, fmtFn) => {
+    const fmt = fmtFn || fmtUSD;
+    return `
     <div class="stat">
       <div class="label">${label}</div>
-      <div class="value" ${color ? `style="color:${color};"` : ''}>${fmtUSD(v0)} → ${fmtUSD(v1)}</div>
+      <div class="value" ${color ? `style="color:${color};"` : ''}>${fmt(v0)} → ${fmt(v1)}</div>
       <div class="sub">${f.year} → ${l.year} · Δ ${((v1-v0)/Math.max(1,v0)*100).toFixed(1)}%</div>
     </div>
   `;
+  };
+  const fmtPctVal = n => n.toFixed(1) + '%';
   return `
   <div class="card">
     <h3>Endpoints</h3>
     <div class="stats">
-      ${stat('Welfare obligation', f.welfare_obligation, l.welfare_obligation, 'var(--blue)')}
-      ${stat('UBI obligation',     f.ubi_obligation,     l.ubi_obligation,     'var(--warn)')}
-      ${stat('Levy collected',     f.levy_collected,     l.levy_collected,     'var(--ok)')}
-      ${stat('Profit pool',        f.profit_pool,        l.profit_pool,        null)}
+      ${stat('Basket cost',         f.basket_usd,         l.basket_usd,         'var(--warn)')}
+      ${stat('Land share of basket', f.land_share_pct,    l.land_share_pct,     'var(--crit)', fmtPctVal)}
+      ${stat('UBI obligation',      f.ubi_obligation,     l.ubi_obligation,     'var(--warn)')}
+      ${stat('Welfare obligation',  f.welfare_obligation, l.welfare_obligation, 'var(--blue)')}
+      ${stat('Levy collected',      f.levy_collected,     l.levy_collected,     'var(--ok)')}
+      ${stat('Profit pool',         f.profit_pool,        l.profit_pool,        null)}
     </div>
   </div>`;
 }

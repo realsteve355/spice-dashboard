@@ -26,13 +26,12 @@
       <div class="v" id="years_v">20</div>
     </div>
 
-    <h3>Cost decline</h3>
-    <label>Basket cost decline (% / yr)</label>
-    <div class="slider-row">
-      <input type="range" id="basket_decline_pct" min="0" max="20" step="0.5" value="8.0">
-      <div class="v" id="basket_decline_pct_v">8.0%</div>
+    <div class="help" style="margin-bottom:12px;">
+      Basket trajectory comes from the <strong>11-category model</strong>
+      (basket_model.py). Each category has its own deflation/inflation rate,
+      with LAND as the structural counter-force. See the basket breakdown
+      card on the right.
     </div>
-    <div class="help">Automation makes goods cheaper. Basket falls each year, so UBI ($ amount) falls. By 2046 at 8%/yr the basket is ~$185 vs $980 today.</div>
 
     <h3>Labour</h3>
     <label>Salary decline (% / yr)</label>

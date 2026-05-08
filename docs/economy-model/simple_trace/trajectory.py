@@ -24,6 +24,11 @@ from sim import (
     DEFAULT_SECTOR_SPEND_PATTERN,
     DEFAULT_INTERNAL_SECTOR_PATTERN,
 )
+from basket_model import (
+    DEFAULT_CATEGORIES,
+    basket_factor as categorical_basket_factor,
+    basket_breakdown,
+)
 
 
 # Existing-State welfare cost per family per month (rough US 2026 baseline).
@@ -60,7 +65,6 @@ def run(config: dict | None = None) -> dict:
     cfg = {
         "years": 20,
         "start_year": 2026,
-        "basket_decline_pct": 8.0,        # % per year basket cost falls (automation deflation)
         "salary_decline_pct": 3.0,        # % per year salaries decline (AI wage pressure)
         "p_emp_growth_pct": 8.0,          # % per year supplier P/emp rises
         "margin_growth_pct": 5.0,         # % per year supplier margins expand toward ceiling
@@ -71,20 +75,28 @@ def run(config: dict | None = None) -> dict:
         "levy_cap_rate": 0.80,
         "levy_formula": "asymptotic",     # linear miscalibrates when cap binds; asymptotic uses bisection
         "welfare_per_family": DEFAULT_WELFARE_PER_FAMILY,
+        # Basket categories (replaces the old basket_decline_pct single slider).
+        # See basket_model.py for the 11-category research-derived defaults.
+        "basket_categories": DEFAULT_CATEGORIES,
     }
     if config:
         cfg.update(config)
 
     years = cfg["years"]
-    basket_factor   = lambda y: (1 - cfg["basket_decline_pct"]   / 100) ** y
+    # Basket factor now comes from the categorical model — aggregate of 11
+    # category trajectories, with LAND as the structural inflation force.
+    basket_factor   = lambda y: categorical_basket_factor(y, cfg["basket_categories"])
     salary_factor   = lambda y: (1 - cfg["salary_decline_pct"]   / 100) ** y
     p_emp_factor    = lambda y: (1 + cfg["p_emp_growth_pct"]    / 100) ** y
     margin_factor       = lambda y: (1 + cfg["margin_growth_pct"]      / 100) ** y
     displacement_factor = lambda y: (1 + cfg["welfare_displacement_pct"]/ 100) ** y
     margin_ceiling      = cfg["margin_ceiling_pct"]
     grow_margin = lambda m, y: min(margin_ceiling, m * margin_factor(y))
-    # Welfare obligation scales with basket (real-terms: as living costs fall,
-    # welfare $ amounts also fall) and grows with displacement (more recipients).
+    # Welfare obligation scales with basket (real-terms: as living costs change,
+    # welfare $ amounts track them) and grows with displacement.
+    # Note: under the categorical model, basket actually rises (land-driven), so
+    # welfare nominally rises — but the recipients aren't worse off because their
+    # purchasing power tracks the same basket.
     welfare_factor = lambda y: basket_factor(y) * displacement_factor(y)
 
     snapshots = []
@@ -135,10 +147,19 @@ def run(config: dict | None = None) -> dict:
         # below welfare thresholds.
         welfare_ob = welfare_obligation(family_types, cfg["welfare_per_family"]) * welfare_factor(y)
 
+        # Basket category breakdown — what fraction of THIS year's basket each
+        # category represents. Land's share grows year-on-year as it's the only
+        # category that inflates while everything else deflates.
+        breakdown = basket_breakdown(y, cfg["basket_categories"])
+        land_share_now_pct = next(
+            (r["share_pct_now"] for r in breakdown if "LAND" in r["name"]), 0
+        )
+
         snap = {
             "year": cfg["start_year"] + y,
             "year_offset": y,
             "basket_usd": sim_cfg["basket_usd"],
+            "land_share_pct": land_share_now_pct,
             "ubi_per_citizen": i["ubi_usd_per_citizen"],
             "ubi_obligation": b["ubi_obligation"],
             "welfare_obligation": welfare_ob,
@@ -162,6 +183,10 @@ def run(config: dict | None = None) -> dict:
         if m2_year is None and s["levy_collected"] >= s["ubi_obligation"]:
             m2_year = s["year"]
 
+    # Basket breakdown at first and final year — for the dashboard
+    final_breakdown = basket_breakdown(years, cfg["basket_categories"])
+    first_breakdown = basket_breakdown(0, cfg["basket_categories"])
+
     return {
         "config": cfg,
         "snapshots": snapshots,
@@ -170,6 +195,8 @@ def run(config: dict | None = None) -> dict:
         "milestone_2_year": m2_year,
         "first": snapshots[0],
         "final": snapshots[-1],
+        "basket_breakdown_first": first_breakdown,
+        "basket_breakdown_final": final_breakdown,
     }
 
 
