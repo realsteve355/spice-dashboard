@@ -288,12 +288,23 @@ function renderUnemploymentScenarios(unemp) {
     <h3>Unemployment scenarios — per-source predictions</h3>
     <div class="cat-grid">
       ${unemp.scenarios.map(s => `
-        <div class="cat-card ${s.color_class}">
+        <div class="cat-card ${s.color_class}" style="overflow: hidden;">
           <div class="cat-name" style="margin-bottom:6px;">${s.name}</div>
           <div style="font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.5;">${s.interpretation}</div>
-          <table>
+          <table style="table-layout: fixed; width: 100%;">
+            <colgroup>
+              <col style="width: 18%;">
+              <col style="width: 18%;">
+              <col style="width: 64%;">
+            </colgroup>
             <thead><tr><th>Year</th><th class="num">Unemp %</th><th>Anchored to</th></tr></thead>
-            <tbody>${s.checkpoints.map(cp => `<tr><td class="cat">${cp.year}</td><td class="num">${cp.unemployment_pct}%</td><td style="font-size:10px;">${cp.anchor}</td></tr>`).join('')}</tbody>
+            <tbody>${s.checkpoints.map(cp => `
+              <tr>
+                <td class="cat" style="vertical-align: top;">${cp.year}</td>
+                <td class="num" style="vertical-align: top;">${cp.unemployment_pct}%</td>
+                <td style="font-size:10px; white-space: normal; line-height: 1.4; vertical-align: top;">${cp.anchor}</td>
+              </tr>
+            `).join('')}</tbody>
           </table>
         </div>
       `).join('')}
