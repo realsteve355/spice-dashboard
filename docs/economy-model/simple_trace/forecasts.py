@@ -293,12 +293,12 @@ UNEMPLOYMENT_FORECASTS = {
         ),
         "examples": [
             {
-                "role": "Software development (Steve's example)",
+                "role": "Software engineering — full stack (devs + tech leads + architect)",
                 "ai_cost_per_month": 90,
-                "human_cost_per_month": 50_000,
-                "human_baseline": "Equivalent of 5-15 senior devs replaced by 1 sub",
-                "cost_ratio": 555,
-                "note": "$90/mo Claude Code subscription, used by a knowledgeable architect, produces output equivalent to 5-15 developers — not 1. Routine work 20-30× faster, refactoring 10-20×, research 30-50×. Offshore team @ $3.3K/mo each × 15 = $50K. The original 37× figure undersold by 15×. Architectural judgment still human.",
+                "human_cost_per_month": 71_000,
+                "human_baseline": "12 offshore devs ($40K) + 2 tech leads ($16K) + 1 architect ($15K)",
+                "cost_ratio": 789,
+                "note": "$90/mo Claude Code does NOT just replace developers — it replaces the architecture, design, and tech-lead functions too. System design, data modelling, abstraction choices, refactoring decisions, bug diagnosis: all done by the AI given strategic direction. What survives intact for the human: purpose-setting, judgment, reality-testing, saying no. Steve's own session today is the proof — every architectural decision was AI-made under strategic direction. US rates push the ratio toward 3000×.",
             },
             {
                 "role": "Customer service",
