@@ -284,6 +284,77 @@ UNEMPLOYMENT_FORECASTS = {
         {"label": "Anthropic — Labor Market Impacts of AI",
          "url": "https://www.anthropic.com/research/labor-market-impacts"},
     ],
+    "workforce_composition": {
+        "title": "Today's jobs displaced by 2035 — the SPICE trajectory",
+        "intro": (
+            "Past automation waves (steam, electricity, computing) hit physical "
+            "labour first while knowledge work expanded. AI inverts the order: "
+            "knowledge work is being displaced FIRST, services and manual labour "
+            "follow together when humanoid robotics scale (Optimus-class, ~2030). "
+            "Each category loses ~85% of its workers under this trajectory — "
+            "could be 75% or 90%, outcome is basically the same."
+        ),
+        "categories": [
+            {
+                "name": "Management",
+                "share_pct_low": 8,
+                "share_pct_high": 10,
+                "examples": "Executives, supervisors, project leads, ops managers",
+                "ai_exposure_now": "Low-medium — decisions and relationships resist automation; routine reporting and scheduling automatable",
+                "robotics_exposure": "Low — judgment and accountability roles persist",
+                "displacement_window": "2040+ (long tail)",
+                "color_class": "ok",
+            },
+            {
+                "name": "Digital / knowledge work",
+                "share_pct_low": 25,
+                "share_pct_high": 30,
+                "examples": "Coders, accountants, illustrators, analysts, lawyers, copywriters, admin support, B2B account managers",
+                "ai_exposure_now": "HIGH — happening now. STEM, writing-intensive, analytical domains show highest exposure (Anthropic Economic Index)",
+                "robotics_exposure": "Already digital — full LLM / agent substitution",
+                "displacement_window": "2026-2030 (the wave we're in)",
+                "color_class": "crit",
+            },
+            {
+                "name": "Service work",
+                "share_pct_low": 35,
+                "share_pct_high": 40,
+                "examples": "Food prep, retail sales, hospitality, personal care, teachers, doctors / nurses / therapists, healthcare support, cleaning",
+                "ai_exposure_now": "Low for software-AI — physical presence and emotional labour resist current models",
+                "robotics_exposure": "Rising as Optimus-class humanoid robots scale",
+                "displacement_window": "2030-2035 (next wave)",
+                "color_class": "warn",
+            },
+            {
+                "name": "Manual labour",
+                "share_pct_low": 22,
+                "share_pct_high": 25,
+                "examples": "Construction, drivers, production, maintenance, agriculture",
+                "ai_exposure_now": "Low for software-AI",
+                "robotics_exposure": "Rising as autonomous vehicles and industrial robotics scale",
+                "displacement_window": "2030-2035 (same window as services)",
+                "color_class": "blue",
+            },
+        ],
+        "displacement_pct": 85,
+        "transition_gap": (
+            "85% displacement does NOT mean 85% permanent unemployment. Many "
+            "displaced workers will find new work in emergent categories that "
+            "don't yet exist — AI supervision, premium human-touch service, "
+            "novel craft, community and relational roles, AI-curated experience "
+            "design. (60% of 2025 jobs didn't exist in 1940.) SPICE's role is "
+            "to handle the TRANSITION GAP — supporting people during the period "
+            "between losing their old role and finding the new one — and "
+            "provide UBI as a permanent floor for those for whom no replacement "
+            "role emerges."
+        ),
+        "sources": [
+            {"label": "BLS Occupational Employment and Wage Statistics 2024",
+             "url": "https://www.bls.gov/oes/tables.htm"},
+            {"label": "Anthropic Economic Index — March 2026",
+             "url": "https://www.anthropic.com/research/economic-index-march-2026-report"},
+        ],
+    },
     "displacement_evidence": {
         "intro": (
             "Cost ratios for AI tools versus human labour, in 2026. Sources cited "
@@ -463,9 +534,9 @@ PROFITABILITY_FORECASTS = {
             "funds the income that funds its own revenues."
         ),
         "design_implication": (
-            "SPICE's cost-neutral M1 design lowers the political cost of switch-on — "
+            "SPICE's cost-neutral MS1 design lowers the political cost of switch-on — "
             "the State loses nothing because SPICE just takes over existing welfare "
-            "obligations. Once that channel is open, scaling toward M2 becomes a "
+            "obligations. Once that channel is open, scaling toward MS2 becomes a "
             "growth conversation, not a tax conversation. Capital prefers a managed "
             "levy over: civil unrest, mass policy intervention, or revolution."
         ),
@@ -539,10 +610,10 @@ FORECASTS["unemployment"] = UNEMPLOYMENT_FORECASTS
 FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 
 
-# --- Synthesis: when do M1 and M2 land under these forecasts? -----------------
+# --- Synthesis: when do MS1 and MS2 land under these forecasts? -----------------
 # Takes the basket trajectory + an unemployment scenario + a profitability
-# scenario and computes the year SPICE becomes welfare-capable (M1) and full-
-# UBI-capable (M2). The math is deliberately closed-form here — the trajectory
+# scenario and computes the year SPICE becomes welfare-capable (MS1) and full-
+# UBI-capable (MS2). The math is deliberately closed-form here — the trajectory
 # simulator does the detailed per-supplier version; this is the synthesis page's
 # back-of-envelope view that ties the three drivers together.
 def compute_synthesis(
@@ -566,7 +637,7 @@ def compute_synthesis(
     """
     Closed-form synthesis: per year, compute UBI obligation, welfare obligation,
     and levy capacity from the basket trajectory + unemployment + profitability
-    scenarios. M1 = year levy >= welfare. M2 = year levy >= UBI.
+    scenarios. MS1 = year levy >= welfare. MS2 = year levy >= UBI.
 
     Margin trajectory derived from profitability scenario's capital share.
     Salary nominal-sticky (doesn't fall with basket); employment shrinks per

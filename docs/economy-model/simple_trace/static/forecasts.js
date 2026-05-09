@@ -6,10 +6,61 @@ runPage(d => [
   renderQuotes(d.quotes),
   renderNavCards(d),
   renderSynthesisVerdict(d.synthesis),
+  renderBuildUrgency(d.synthesis),
   renderSynthesisTable(d.synthesis),
   renderSynthesisExplanation(d.synthesis),
   renderHenryFordCallout(d.profitability),
 ].join('\n'));
+
+// MS1 working backwards — build window for SPICE.
+function renderBuildUrgency(syn) {
+  const ms1 = syn.milestone_1_year;
+  if (!ms1) return '';
+  const today = 2026;
+  // Working back from MS1: operational ~1 yr before, pilot ~3 yr before, MVP ~5 yr before
+  const operationalYear = ms1 - 1;
+  const pilotYear = ms1 - 3;
+  const mvpYear = ms1 - 5;
+  const yrsUntilMVP = mvpYear - today;
+  const urgencyClass = yrsUntilMVP <= 2 ? 'crit' : yrsUntilMVP <= 5 ? 'warn' : 'ok';
+  const yrsLabel = yrsUntilMVP <= 0 ? `MVP IS DUE NOW (${Math.abs(yrsUntilMVP)} years overdue)` : `${yrsUntilMVP} years to MVP`;
+
+  return `
+  <div class="card" style="margin-bottom:14px; border-left: 3px solid var(--${urgencyClass});">
+    <h3>Build urgency — working back from MS1: Welfare</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">
+      MS1 is the year SPICE must be operational and absorbing displaced citizens.
+      Working back: SPICE needs to be at scale 1 year before, in pilot 3 years before,
+      and MVP-ready 5 years before. <strong style="color:var(--${urgencyClass});">${yrsLabel}.</strong>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+      <div class="stat">
+        <div class="label">MVP build</div>
+        <div class="value" style="font-size:18px;">${mvpYear}</div>
+        <div class="sub">${yrsUntilMVP <= 0 ? 'overdue' : `${yrsUntilMVP} yrs from now`}</div>
+      </div>
+      <div class="stat">
+        <div class="label">Pilot colonies</div>
+        <div class="value" style="font-size:18px;">${pilotYear}</div>
+        <div class="sub">${pilotYear - today} yrs from now</div>
+      </div>
+      <div class="stat">
+        <div class="label">Operational at scale</div>
+        <div class="value" style="font-size:18px;">${operationalYear}</div>
+        <div class="sub">${operationalYear - today} yrs from now</div>
+      </div>
+      <div class="stat">
+        <div class="label">MS1: Welfare hits</div>
+        <div class="value ok" style="font-size:18px;">${ms1}</div>
+        <div class="sub">${ms1 - today} yrs from now</div>
+      </div>
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px;">
+      The synthesis math currently lands MS1 in ${ms1} under the default scenario.
+      Bull-case scenarios (faster automation) push MS1 earlier and shorten this window.
+    </div>
+  </div>`;
+}
 
 function renderHenryFordCallout(prof) {
   const pe = prof && prof.political_economy;
@@ -69,7 +120,7 @@ function renderNavCards(d) {
     <div style="font-size:11px; color:var(--faint); margin-top:10px;">
       Each sub-page presents the source-attributed forecast data for that driver.
       The synthesis below combines all three to compute when SPICE reaches
-      welfare-capable (M1) and full-UBI-capable (M2).
+      welfare-capable (MS1) and full-UBI-capable (MS2).
     </div>
   </div>`;
 }
@@ -82,15 +133,15 @@ function renderSynthesisVerdict(syn) {
   const a = syn.assumptions;
   return `
   <div class="card" style="margin-bottom:14px;">
-    <h3>Synthesis verdict — when do M1 and M2 land?</h3>
+    <h3>Synthesis verdict — when do MS1 and MS2 land?</h3>
     <div class="stats" style="grid-template-columns: repeat(2, 1fr);">
       <div class="stat">
-        <div class="label">M1 — Welfare-capable</div>
+        <div class="label">MS1 — Welfare-capable</div>
         <div class="value ${m1Class}" style="font-size: 28px;">${m1 || '—'}</div>
         <div class="sub">first year levy ≥ State welfare obligation (cost-neutral switch-on)</div>
       </div>
       <div class="stat">
-        <div class="label">M2 — Full UBI-capable</div>
+        <div class="label">MS2 — Full UBI-capable</div>
         <div class="value ${m2Class}" style="font-size: 28px;">${m2 || '—'}</div>
         <div class="sub">first year levy ≥ basket-pegged UBI for all citizens</div>
       </div>
@@ -148,7 +199,7 @@ function renderSynthesisTable(syn) {
       <tbody>${syn.snapshots.map(row).join('')}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      ⬢ = M1 (welfare-capable). ★ = M2 (UBI-capable). M1 row tinted blue, M2 tinted green.
+      ⬢ = MS1 (welfare-capable). ★ = MS2 (UBI-capable). MS1 row tinted blue, MS2 tinted green.
       <strong style="color:var(--warn);">Founder income</strong> turns orange when it overtakes wage income — the pivot from labour-economy to capital-economy.
       Levy = (wage spending + founder spending) × margin × 80%.
     </div>
@@ -166,7 +217,7 @@ function renderSynthesisExplanation(syn) {
     <h3>How the math works</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       <p>
-        SPICE funds <strong>welfare</strong> (M1) and eventually <strong>universal UBI</strong> (M2)
+        SPICE funds <strong>welfare</strong> (MS1) and eventually <strong>universal UBI</strong> (MS2)
         by levying transactions in the colony's commerce. Three driver inputs:
       </p>
       <ul style="padding-left: 20px;">
@@ -184,8 +235,8 @@ function renderSynthesisExplanation(syn) {
         bull-unemployment <em>breaking</em> the model. That was an artefact of treating wages as the only income.
         Once we recognise that capital owners (founders, automation winners) live in the colony and spend their
         capital income locally, the levy base survives even as wage labour collapses. Bull-unemployment + capital-heavy
-        profit now hits M1 in <strong style="color:var(--ok);">${syn.milestone_1_year}</strong>
-        and M2 in <strong style="color:var(--ok);">${syn.milestone_2_year}</strong>.
+        profit now hits MS1 in <strong style="color:var(--ok);">${syn.milestone_1_year}</strong>
+        and MS2 in <strong style="color:var(--ok);">${syn.milestone_2_year}</strong>.
       </p>
       <p style="font-size:12px; color:var(--dim);">
         Closed-form synthesis. Full per-supplier simulation at

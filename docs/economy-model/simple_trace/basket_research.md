@@ -111,7 +111,7 @@ By 2046, **land alone exceeds 50% of the basket** even though most other categor
 
 ### What this changes about UBI affordability
 
-The UBI obligation falls but slower than the simplistic 8%/yr basket decline. Around -4%/yr aggregate over the 20-year window. So UBI 2046 ≈ $640 × 1.10 × 40 = $25K/mo. Combined with margin expansion in the supplier side, the levy should cover it but with less margin than the 8% decline scenario. M2 likely shifts from 2045 to ~2042.
+The UBI obligation falls but slower than the simplistic 8%/yr basket decline. Around -4%/yr aggregate over the 20-year window. So UBI 2046 ≈ $640 × 1.10 × 40 = $25K/mo. Combined with margin expansion in the supplier side, the levy should cover it but with less margin than the 8% decline scenario. MS2 likely shifts from 2045 to ~2042.
 
 ### What this exposes
 

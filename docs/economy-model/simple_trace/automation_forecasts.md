@@ -112,7 +112,7 @@ The transition lasts 15–25 years. During it:
 The SPICE colony's job during the transition is to:
 1. Levy automation at a level that funds welfare for displaced citizens
 2. Build the company-equity infrastructure that lets citizens accumulate wealth (path to land ownership)
-3. Reach welfare-capable (M1) and full UBI-capable (M2) milestones on a defensible timeline
+3. Reach welfare-capable (MS1) and full UBI-capable (MS2) milestones on a defensible timeline
 
 ---
 

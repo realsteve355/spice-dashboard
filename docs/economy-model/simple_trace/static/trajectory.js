@@ -189,7 +189,7 @@ function renderChart(d) {
     return `<text x="${xToPx(i)}" y="${H - PAD_B + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${s.year}</text>`;
   }).join('');
 
-  // Phase background bands (subtle): impl band (default), welfare band (M1+), UBI band (M2+)
+  // Phase background bands (subtle): impl band (default), welfare band (MS1+), UBI band (MS2+)
   const m1 = d.milestone_1_year, m2 = d.milestone_2_year;
   const m1Idx = m1 ? years.indexOf(m1) : -1;
   const m2Idx = m2 ? years.indexOf(m2) : -1;
@@ -224,14 +224,14 @@ function renderChart(d) {
     const x = xToPx(m1Idx);
     milestoneLines += `
       <line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${H - PAD_B}" stroke="var(--blue)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--blue)" font-size="10" font-family="var(--mono)">M1 ${m1}</text>
+      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--blue)" font-size="10" font-family="var(--mono)">MS1 ${m1}</text>
     `;
   }
   if (m2Idx >= 0) {
     const x = xToPx(m2Idx);
     milestoneLines += `
       <line x1="${x}" y1="${PAD_T}" x2="${x}" y2="${H - PAD_B}" stroke="var(--ok)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--ok)" font-size="10" font-family="var(--mono)">M2 ${m2}</text>
+      <text x="${x + 4}" y="${PAD_T + 14}" fill="var(--ok)" font-size="10" font-family="var(--mono)">MS2 ${m2}</text>
     `;
   }
 
@@ -263,8 +263,8 @@ function renderChart(d) {
       ${legend}
     </svg>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      M1 = first year levy ≥ welfare obligation (SPICE replaces State welfare cost-neutrally).
-      M2 = first year levy ≥ full UBI obligation (universal payment becomes affordable).
+      MS1 = first year levy ≥ welfare obligation (SPICE replaces State welfare cost-neutrally).
+      MS2 = first year levy ≥ full UBI obligation (universal payment becomes affordable).
       Three phases: implementation (no payouts) · welfare (means-tested) · full UBI (universal).
     </div>
   </div>`;

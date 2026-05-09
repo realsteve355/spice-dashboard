@@ -237,6 +237,79 @@ function renderUnemploymentChart(unemp) {
   </div>`;
 }
 
+function renderWorkforceComposition(unemp) {
+  const wc = unemp && unemp.workforce_composition;
+  if (!wc) return '';
+  const dispPct = wc.displacement_pct || 85;
+  const retainedPct = 100 - dispPct;
+
+  const totalLow = wc.categories.reduce((s, c) => s + c.share_pct_low, 0);
+  const totalHigh = wc.categories.reduce((s, c) => s + c.share_pct_high, 0);
+  const totalDisplaced = (totalLow + totalHigh) / 2 * dispPct / 100;
+  const totalRetained = (totalLow + totalHigh) / 2 * retainedPct / 100;
+
+  const cards = wc.categories.map(c => {
+    const shareMid = (c.share_pct_low + c.share_pct_high) / 2;
+    const displaced = (shareMid * dispPct / 100).toFixed(1);
+    const retained = (shareMid * retainedPct / 100).toFixed(1);
+    return `
+    <div class="cat-card ${c.color_class}" style="overflow:hidden;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+        <div class="cat-name">${c.name}</div>
+        <div style="font-size:11px; color:var(--dim);">${c.share_pct_low}-${c.share_pct_high}% of workforce</div>
+      </div>
+      <div style="font-size:11px; color:var(--dim); line-height:1.5; margin-bottom:8px;">
+        <strong style="color:var(--txt2);">Examples:</strong> ${c.examples}
+      </div>
+      <table style="table-layout: fixed; width: 100%; font-size:11px;">
+        <colgroup><col style="width:30%;"><col style="width:70%;"></colgroup>
+        <tbody>
+          <tr><td class="cat" style="vertical-align:top;">AI exposure now</td>
+              <td style="white-space:normal; line-height:1.4; vertical-align:top;">${c.ai_exposure_now}</td></tr>
+          <tr><td class="cat" style="vertical-align:top;">Robotics exposure</td>
+              <td style="white-space:normal; line-height:1.4; vertical-align:top;">${c.robotics_exposure}</td></tr>
+          <tr><td class="cat" style="vertical-align:top;">Displacement window</td>
+              <td style="white-space:normal; line-height:1.4; vertical-align:top; color:var(--warn);">${c.displacement_window}</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px; padding-top:8px; border-top: 1px solid var(--line); display:flex; gap:6px;">
+        <div style="flex:${dispPct}; background: var(--crit); padding:3px 6px; font-size:10px; color:var(--bg); text-align:center;">DISPLACED ${displaced}%</div>
+        <div style="flex:${retainedPct}; background: var(--ok); padding:3px 6px; font-size:10px; color:var(--bg); text-align:center;">RETAINED ${retained}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card" style="margin-top:14px; border-left: 3px solid var(--crit);">
+    <h3>${wc.title}</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${wc.intro}</div>
+    <div class="cat-grid" style="grid-template-columns: repeat(2, 1fr);">${cards}</div>
+    <div style="margin-top:14px; padding:12px 16px; background:var(--panel2); border:1px solid var(--line-hot);">
+      <div style="display:flex; justify-content:space-between; gap:14px; font-size:13px;">
+        <div>
+          <div style="font-size:10px; color:var(--dim); letter-spacing:0.15em; text-transform:uppercase;">Total today's jobs</div>
+          <div style="font-size:18px; color:var(--headline); font-variant-numeric:tabular-nums;">~${Math.round((totalLow+totalHigh)/2)}%</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--crit); letter-spacing:0.15em; text-transform:uppercase;">Displaced by 2035</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">~${totalDisplaced.toFixed(0)}%</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase;">Retained intact</div>
+          <div style="font-size:18px; color:var(--ok); font-variant-numeric:tabular-nums;">~${totalRetained.toFixed(0)}%</div>
+        </div>
+      </div>
+    </div>
+    <div style="background: rgba(93, 211, 158, 0.08); border-left: 3px solid var(--ok); padding:14px 18px; margin-top:14px; font-size:13px; line-height:1.6; color:var(--txt);">
+      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Critical caveat — the transition gap</div>
+      ${wc.transition_gap}
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Sources: ${wc.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}
+    </div>
+  </div>`;
+}
+
 function renderUnemploymentScenarios(unemp) {
   if (!unemp) return '';
   const ev = unemp.displacement_evidence;

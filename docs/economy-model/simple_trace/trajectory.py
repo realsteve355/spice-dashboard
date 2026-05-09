@@ -4,13 +4,13 @@ while automation progresses.
 
 Three-phase model:
   - Implementation (no payouts): reserves accumulate, building infrastructure
-  - Welfare (M1 onward): SPICE replaces State welfare for colony residents,
+  - Welfare (MS1 onward): SPICE replaces State welfare for colony residents,
                          cost-neutral to the State, means-tested as today
-  - Full UBI (M2 onward): universal payment to every citizen at target level
+  - Full UBI (MS2 onward): universal payment to every citizen at target level
 
 Two milestones detected on the trajectory:
-  M1 = first year levy can fund the welfare obligation
-  M2 = first year levy can fund full UBI for every citizen
+  MS1 = first year levy can fund the welfare obligation
+  MS2 = first year levy can fund full UBI for every citizen
 
 Annual snapshots (20 data points for a 20-year window).
 """
@@ -169,7 +169,7 @@ def run(config: dict | None = None) -> dict:
         if crossover_year is None and b["funding_gap"] <= 0.01:
             crossover_year = cfg["start_year"] + y
 
-    # Two milestones: M1 = welfare-capable, M2 = full-UBI-capable
+    # Two milestones: MS1 = welfare-capable, MS2 = full-UBI-capable
     m1_year = m2_year = None
     for s in snapshots:
         if m1_year is None and s["levy_collected"] >= s["welfare_obligation"]:
