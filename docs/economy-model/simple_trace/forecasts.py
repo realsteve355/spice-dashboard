@@ -363,9 +363,11 @@ UNEMPLOYMENT_FORECASTS = {
 PROFITABILITY_FORECASTS = {
     "framework": (
         "Acemoglu-Restrepo task-based model: AI productivity gains are distributed "
-        "across three claimants. The split determines whether the SPICE levy pool "
-        "grows (capital capture), shrinks in $ but matches a smaller UBI "
-        "obligation (consumer capture), or rebalances toward wages (labor capture)."
+        "across three claimants — capital (margins expand), consumer (prices fall), "
+        "or labour (new tasks emerge at higher wages). The three scenarios below "
+        "describe how the EXTERNAL economy may evolve. See the SPICE insulation "
+        "panel below — internally, the colony's pegged basket means citizens "
+        "experience price stability regardless of which scenario plays out."
     ),
     "scenarios": [
         {
@@ -416,6 +418,30 @@ PROFITABILITY_FORECASTS = {
         {"label": "Economy.ac — Corporate Profits Surge While Labor's Share Shrinks",
          "url": "https://economy.ac/news/2026/02/202602287973"},
     ],
+    "spice_insulation": {
+        "title": "Why this debate is insulated from SPICE — the basket peg",
+        "summary": (
+            "The capital-vs-consumer-vs-labour debate is about who captures AI "
+            "productivity gains in the EXTERNAL fiat economy. SPICE is a parallel "
+            "economy whose internal currency (S-tokens) is pegged to the basket. "
+            "Citizens pay the same number of S-tokens for the same goods, year after "
+            "year, regardless of external profit-share dynamics."
+        ),
+        "mechanism": [
+            ("Basket definition", "A fixed composition of essential goods and services (food, energy, transport, structure-rent, etc.). Composition is set; quantities are pegged."),
+            ("S-token peg", "1 basket-unit = 1 S-token. The peg is maintained by Fisc reserves, not market arbitrage. Citizens experience stable prices in S regardless of USD volatility."),
+            ("USD pass-through", "When external prices fall (consumer-capture scenario), the USD value of an S-token rises. When external prices rise (capital-capture), S-token's USD value falls. The colony absorbs the FX volatility; the citizen does not."),
+            ("Levy in S-tokens", "Levy is collected on internal S-denominated transactions. Levy revenue in S is a function of internal commerce, not external macro split."),
+            ("UBI in S-tokens", "UBI obligation in S is fixed by basket × multiplier × citizens. Stable internally regardless of which external scenario plays out."),
+        ],
+        "implication": (
+            "The three scenarios above tell us what to expect in the OUTSIDE world "
+            "and inform inter-colony trade pricing. Inside the colony, daily life "
+            "is shielded by design. This is the central reason a parallel economy "
+            "exists at all — to provide stability that the external fiat system, "
+            "amid AI-driven price disruption, cannot guarantee."
+        ),
+    },
     "political_economy": {
         "title": "Why capital pays the levy — the Henry Ford insight",
         "tension": (

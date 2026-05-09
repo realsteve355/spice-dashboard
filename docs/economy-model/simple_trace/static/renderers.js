@@ -341,7 +341,30 @@ function renderProfitability(prof) {
       <div style="font-size:11px; color:var(--txt); line-height:1.5;"><strong style="color:var(--headline);">SPICE implication:</strong> ${s.spice_implication}</div>
     </div>
   `).join('');
-  const dataPoints = prof.key_data_points.map(d => `<tr><td>${d.label}</td><td class="num"><strong>${d.value}</strong></td></tr>`).join('');
+
+  // SPICE insulation panel — the basket peg makes the external split less consequential internally
+  const ins = prof.spice_insulation;
+  const insulationCard = !ins ? '' : `
+  <div class="card" style="margin-top:14px; border-left: 3px solid var(--blue);">
+    <h3>${ins.title}</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${ins.summary}</div>
+    <table style="table-layout: fixed; width: 100%;">
+      <colgroup><col style="width: 22%;"><col style="width: 78%;"></colgroup>
+      <thead><tr><th>Mechanism</th><th>How it works</th></tr></thead>
+      <tbody>
+        ${ins.mechanism.map(([label, desc]) => `
+          <tr>
+            <td class="cat" style="white-space: normal; vertical-align: top;">${label}</td>
+            <td style="white-space: normal; line-height: 1.5; vertical-align: top;">${desc}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="background:var(--panel2); border-left: 2px solid var(--blue); padding:14px 18px; margin-top:14px;">
+      <div style="font-size:10px; color:var(--blue); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Implication for SPICE</div>
+      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ins.implication}</div>
+    </div>
+  </div>`;
 
   // Political-economy panel (Henry Ford insight)
   const pe = prof.political_economy;
@@ -379,10 +402,9 @@ function renderProfitability(prof) {
     <h3>Profitability — who captures the AI productivity gains?</h3>
     <div style="font-size:12px; color:var(--txt); margin-bottom:14px; line-height:1.5;">${prof.framework}</div>
     <div class="cat-grid">${scenarios}</div>
-    <h3 style="margin-top:18px;">Key data points</h3>
-    <table>${dataPoints}</table>
-    <div style="font-size:11px; color:var(--faint); margin-top:8px;">Sources: ${prof.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}</div>
+    <div style="font-size:11px; color:var(--faint); margin-top:14px;">Sources: ${prof.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}</div>
   </div>
+  ${insulationCard}
   ${peCard}`;
 }
 
