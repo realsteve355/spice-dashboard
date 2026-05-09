@@ -232,6 +232,122 @@ FORECASTS = {
 }
 
 
+# --- Unemployment forecasts ----------------------------------------------------
+# Three scenarios — mainstream consensus, bull tech voices, skeptic.
+# Each scenario gives unemployment % at four year-checkpoints.
+UNEMPLOYMENT_FORECASTS = {
+    "scenarios": [
+        {
+            "name": "Mainstream consensus (Goldman, McKinsey, WEF, Forrester)",
+            "color_class": "blue",
+            "checkpoints": [
+                {"year": 2026, "unemployment_pct":  4.0, "anchor": "Current US unemployment rate"},
+                {"year": 2030, "unemployment_pct":  6.5, "anchor": "Goldman: 6-7% workforce displaced; +0.6 ppt rate; Forrester: 6.1% jobs lost"},
+                {"year": 2035, "unemployment_pct":  9.0, "anchor": "WEF: 12-14% workers transition occupations; net +78M jobs globally"},
+                {"year": 2040, "unemployment_pct": 12.0, "anchor": "Continued automation but new task creation"},
+                {"year": 2045, "unemployment_pct": 15.0, "anchor": "Mature AI economy; significant restructuring"},
+            ],
+            "interpretation": "Net job-positive (new tasks emerge). Transitional unemployment but no mass permanent displacement.",
+        },
+        {
+            "name": "Bull / acceleration (Musk, Anthropic, RethinkX)",
+            "color_class": "crit",
+            "checkpoints": [
+                {"year": 2026, "unemployment_pct":  4.0, "anchor": "Same starting point"},
+                {"year": 2030, "unemployment_pct": 15.0, "anchor": "Musk: 12-15% workforce; Anthropic Balwit: 'most jobs obsolete in a few years'"},
+                {"year": 2035, "unemployment_pct": 50.0, "anchor": "Musk: work effectively optional; Optimus at scale; sectoral collapse"},
+                {"year": 2040, "unemployment_pct": 75.0, "anchor": "Most service + manual labour replaced; remaining work is creative/oversight"},
+                {"year": 2045, "unemployment_pct": 90.0, "anchor": "Musk: 'work like playing sports or video game'; 'universal high income'"},
+            ],
+            "interpretation": "Rapid displacement; new tasks don't keep pace. UBI structurally necessary.",
+        },
+        {
+            "name": "Skeptic (Acemoglu)",
+            "color_class": "warn",
+            "checkpoints": [
+                {"year": 2026, "unemployment_pct":  4.0, "anchor": "Same starting point"},
+                {"year": 2030, "unemployment_pct":  4.5, "anchor": "Only 20% of tasks exposed; even fewer profitably automatable"},
+                {"year": 2035, "unemployment_pct":  5.0, "anchor": "TFP gain only 0.5-0.7% over decade; modest displacement"},
+                {"year": 2040, "unemployment_pct":  5.5, "anchor": "Hard-to-learn tasks slow further automation"},
+                {"year": 2045, "unemployment_pct":  6.0, "anchor": "AI hype overdone; most workers still employed"},
+            ],
+            "interpretation": "AI is a normal technology shock — modest impact, similar to past automation waves. UBI not urgent.",
+        },
+    ],
+    "sources": [
+        {"label": "Goldman Sachs — How Will AI Affect the US Labor Market",
+         "url": "https://www.goldmansachs.com/insights/articles/how-will-ai-affect-the-us-labor-market"},
+        {"label": "WEF Future of Jobs Report 2025",
+         "url": "https://www.weforum.org/publications/the-future-of-jobs-report-2025/"},
+        {"label": "Forrester — AI and Automation Will Take 6% of US Jobs by 2030",
+         "url": "https://www.forrester.com/blogs/ai-and-automation-will-take-6-of-us-jobs-by-2030/"},
+        {"label": "Anthropic — Labor Market Impacts of AI",
+         "url": "https://www.anthropic.com/research/labor-market-impacts"},
+    ],
+}
+
+# --- Profitability forecasts ---------------------------------------------------
+# The Acemoglu/Restrepo three-way split: who captures AI productivity gains?
+# - CAPITAL (margins expand) - CONSUMER (prices fall) - LABOR (new higher-paid tasks)
+PROFITABILITY_FORECASTS = {
+    "framework": (
+        "Acemoglu-Restrepo task-based model: AI productivity gains are distributed "
+        "across three claimants. The split determines whether the SPICE levy pool "
+        "grows (capital capture), shrinks in $ but matches a smaller UBI "
+        "obligation (consumer capture), or rebalances toward wages (labor capture)."
+    ),
+    "scenarios": [
+        {
+            "name": "Capital-heavy capture (current US trajectory)",
+            "capital_pct": 60,
+            "consumer_pct": 25,
+            "labor_pct": 15,
+            "anchor": "Restrepo (Yale): half of labor share decline since 1980s from automation. McKinsey: $2.6-4.4T/yr to corporate profits.",
+            "spice_implication": "Profit pool grows substantially. Levy capacity high. UBI obligation stays high (prices fall slowly). Both scale up together.",
+            "color_class": "warn",
+        },
+        {
+            "name": "Consumer-heavy capture (competitive markets)",
+            "capital_pct": 20,
+            "consumer_pct": 65,
+            "labor_pct": 15,
+            "anchor": "Bull thesis: prices crash 85% by 2045 means consumer captures most gains. Profit pool grows modestly in $. Margins flat-to-slightly-up.",
+            "spice_implication": "Levy pool small in $. But UBI obligation also collapses (basket falls 85%). Both small together. Math closes IF trajectories align.",
+            "color_class": "ok",
+        },
+        {
+            "name": "Labor-rebalanced (new tasks emerge fast)",
+            "capital_pct": 30,
+            "consumer_pct": 30,
+            "labor_pct": 40,
+            "anchor": "Acemoglu's 'new task creation' channel; historical pattern (60% of 2025 jobs didn't exist in 1940).",
+            "spice_implication": "Wages grow with AI. UBI less urgent — most citizens still employed at higher real wages. Levy from corporate profit modest but adequate for residual welfare.",
+            "color_class": "blue",
+        },
+    ],
+    "key_data_points": [
+        {"label": "AI's potential annual global corporate profit boost (McKinsey, 2023)", "value": "$2.6–4.4 trillion"},
+        {"label": "AI's potential industry profitability uplift by 2035 (Accenture, 2017)", "value": "Avg +38% across 16 industries"},
+        {"label": "AI productivity contribution to global GDP over 10 years (Goldman/Briggs-Kodnani, 2023)", "value": "+7%"},
+        {"label": "BoA projection: AI margin uplift over 5 years", "value": "+2 percentage points"},
+        {"label": "Labor share of US national income (1980 → 2024)", "value": "65% → 56% (declined 9 pp)"},
+        {"label": "Restrepo (Yale): share of labor decline attributable to automation", "value": "≈50%"},
+    ],
+    "sources": [
+        {"label": "Acemoglu-Restrepo — Tasks, Automation and the Rise in US Wage Inequality (Econometrica 2022)",
+         "url": "https://economics.mit.edu/sites/default/files/2022-10/Tasks%20Automation%20and%20the%20Rise%20in%20US%20Wage%20Inequality.pdf"},
+        {"label": "Acemoglu — Simple Macroeconomics of AI (NBER 2024)",
+         "url": "https://www.nber.org/papers/w32487"},
+        {"label": "McKinsey — AI could increase corporate profits by $4.4T/yr",
+         "url": "https://www.mckinsey.com/mgi/overview/in-the-news/ai-could-increase-corporate-profits-by-4-trillion-a-year-according-to-new-research"},
+        {"label": "Accenture — AI 38% profitability uplift by 2035",
+         "url": "https://newsroom.accenture.com/news/2017/accenture-report-artificial-intelligence-has-potential-to-increase-corporate-profitability-in-16-industries-by-an-average-of-38-percent-by-2035"},
+        {"label": "Economy.ac — Corporate Profits Surge While Labor's Share Shrinks",
+         "url": "https://economy.ac/news/2026/02/202602287973"},
+    ],
+}
+
+
 # Basket weights — share of a typical year's household spending allocated
 # to each forecast category. Excludes LAND (out of scope per Steve, handled
 # by the separate company-equity wealth-building model).
@@ -285,6 +401,8 @@ def compute_basket_trajectory() -> list:
 # Compute and attach the basket trajectory at module load time
 FORECASTS["basket_weights"] = BASKET_WEIGHTS
 FORECASTS["basket_trajectory"] = compute_basket_trajectory()
+FORECASTS["unemployment"] = UNEMPLOYMENT_FORECASTS
+FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 
 
 def get_forecasts() -> dict:

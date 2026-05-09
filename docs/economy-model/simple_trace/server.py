@@ -61,6 +61,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "trajectory.html", "text/html; charset=utf-8")
         elif p == "/forecasts":
             self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
+        elif p == "/references":
+            self._send_file(self.templates_dir / "references.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")

@@ -27,10 +27,112 @@ function render(d) {
     renderBasketStat(d.basket_trajectory),
     renderBasketComposition(d.categories, d.basket_weights, d.basket_trajectory),
     renderChart(d.categories, d.basket_trajectory),
+    renderUnemployment(d.unemployment),
+    renderProfitability(d.profitability),
     renderSkeptic(d.skeptic),
     renderCategories(d.categories),
     renderSources(d.sources),
   ].join('\n');
+}
+
+function renderUnemployment(unemp) {
+  if (!unemp) return '';
+  // SVG line chart: 3 scenarios, X = year, Y = unemployment %
+  const W = 1280, H = 360;
+  const PAD_L = 70, PAD_R = 280, PAD_T = 30, PAD_B = 50;
+  const plotW = W - PAD_L - PAD_R;
+  const plotH = H - PAD_T - PAD_B;
+
+  const years = [2026, 2030, 2035, 2040, 2045];
+  const xToPx = year => PAD_L + plotW * (year - 2026) / (2045 - 2026);
+  const yMin = 0, yMax = 100;
+  const yToPx = v => PAD_T + plotH * (1 - (v - yMin) / (yMax - yMin));
+
+  const yTicks = [0, 20, 40, 60, 80, 100];
+  const yGrid = yTicks.map(t => {
+    const y = yToPx(t);
+    return `<line x1="${PAD_L}" y1="${y}" x2="${PAD_L + plotW}" y2="${y}" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 3"/>
+            <text x="${PAD_L - 8}" y="${y + 4}" fill="var(--dim)" font-size="10" text-anchor="end" font-family="var(--mono)">${t}%</text>`;
+  }).join('');
+  const xLabels = years.map(yr => `<text x="${xToPx(yr)}" y="${H - PAD_B + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${yr}</text>`).join('');
+
+  const labels = [];
+  const lines = unemp.scenarios.map(s => {
+    const color = colorVar(s.color_class);
+    const path = s.checkpoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xToPx(p.year).toFixed(1)} ${yToPx(p.unemployment_pct).toFixed(1)}`).join(' ');
+    const dots = s.checkpoints.map(p => `<circle cx="${xToPx(p.year)}" cy="${yToPx(p.unemployment_pct)}" r="3" fill="${color}"/>`).join('');
+    const last = s.checkpoints[s.checkpoints.length - 1];
+    labels.push({ label: `${s.name.split(' (')[0]} (${last.unemployment_pct}%)`, color, desiredY: yToPx(last.unemployment_pct), endX: xToPx(last.year) });
+    return `<path d="${path}" fill="none" stroke="${color}" stroke-width="2.5"/>${dots}`;
+  }).join('');
+
+  // Resolve label collisions
+  labels.sort((a, b) => a.desiredY - b.desiredY);
+  labels[0].placedY = labels[0].desiredY;
+  for (let i = 1; i < labels.length; i++) labels[i].placedY = Math.max(labels[i].desiredY, labels[i - 1].placedY + 14);
+  const labelEls = labels.map(L => {
+    const labelX = xToPx(2045) + 14;
+    return `<line x1="${L.endX + 4}" y1="${L.desiredY}" x2="${labelX - 2}" y2="${L.placedY}" stroke="${L.color}" stroke-width="0.5" opacity="0.5"/>
+            <text x="${labelX}" y="${L.placedY + 4}" fill="${L.color}" font-size="10" font-family="var(--mono)">${L.label}</text>`;
+  }).join('');
+
+  return `
+  <div class="card" style="margin-top:14px;">
+    <h3>Unemployment forecasts — three scenarios</h3>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">
+      ${yGrid}
+      ${xLabels}
+      ${lines}
+      ${labelEls}
+    </svg>
+    <div class="cat-grid" style="margin-top:14px;">
+      ${unemp.scenarios.map(s => `
+        <div class="cat-card ${s.color_class}">
+          <div class="cat-name" style="margin-bottom:6px;">${s.name}</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.5;">${s.interpretation}</div>
+          <table>
+            <thead><tr><th>Year</th><th class="num">Unemp %</th><th>Anchored to</th></tr></thead>
+            <tbody>${s.checkpoints.map(cp => `<tr><td class="cat">${cp.year}</td><td class="num">${cp.unemployment_pct}%</td><td style="font-size:10px;">${cp.anchor}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      `).join('')}
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Sources: ${unemp.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}
+    </div>
+  </div>`;
+}
+
+function renderProfitability(prof) {
+  if (!prof) return '';
+  const scenarios = prof.scenarios.map(s => `
+    <div class="cat-card ${s.color_class}">
+      <div class="cat-name" style="margin-bottom:6px;">${s.name}</div>
+      <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">${s.anchor}</div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <div style="flex:${s.capital_pct}; background: var(--warn); padding:4px 6px; font-size:10px; color:var(--bg); text-align:center;">CAPITAL ${s.capital_pct}%</div>
+        <div style="flex:${s.consumer_pct}; background: var(--ok); padding:4px 6px; font-size:10px; color:var(--bg); text-align:center;">CONSUMER ${s.consumer_pct}%</div>
+        <div style="flex:${s.labor_pct}; background: var(--blue); padding:4px 6px; font-size:10px; color:var(--bg); text-align:center;">LABOR ${s.labor_pct}%</div>
+      </div>
+      <div style="font-size:11px; color:var(--txt); line-height:1.5;"><strong style="color:var(--headline);">SPICE implication:</strong> ${s.spice_implication}</div>
+    </div>
+  `).join('');
+
+  const dataPoints = prof.key_data_points.map(d => `<tr><td>${d.label}</td><td class="num"><strong>${d.value}</strong></td></tr>`).join('');
+
+  return `
+  <div class="card" style="margin-top:14px;">
+    <h3>Profitability — who captures the AI productivity gains?</h3>
+    <div style="font-size:12px; color:var(--txt); margin-bottom:14px; line-height:1.5;">
+      ${prof.framework}
+    </div>
+    <div class="cat-grid">${scenarios}</div>
+    <h3 style="margin-top:18px;">Key data points</h3>
+    <table>${dataPoints}</table>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Sources: ${prof.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}
+    </div>
+  </div>`;
 }
 
 // Show what's IN the aggregate basket: weight, $/mo today, $/mo in 2045,
