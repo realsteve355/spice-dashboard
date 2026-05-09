@@ -266,17 +266,16 @@ function renderUnemploymentScenarios(unemp) {
       </tr></thead>
       <tbody>
         ${ev.examples.map(e => {
-          const isEstimate = !e.source_url;
           const sources = [];
           if (e.source_url) sources.push(`<a href="${e.source_url}" target="_blank" style="color:var(--ok);">primary source</a>`);
           if (e.secondary_url) sources.push(`<a href="${e.secondary_url}" target="_blank" style="color:var(--ok);">secondary</a>`);
-          const sourceLine = sources.length ? sources.join(' · ') : '<span style="color:var(--warn);">⚠ ESTIMATE — no rigorous study</span>';
+          const sourceLine = sources.join(' · ');
           return `
           <tr>
-            <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}${isEstimate ? '<br><span style="font-size:9px; color:var(--warn); letter-spacing:0.1em; text-transform:uppercase;">estimate</span>' : ''}</td>
+            <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}</td>
             <td class="num" style="vertical-align: top;">$${e.ai_cost_per_month.toLocaleString()}</td>
             <td class="num" style="vertical-align: top;">$${e.human_cost_per_month.toLocaleString()}</td>
-            <td class="num" style="color:${isEstimate ? 'var(--warn)' : 'var(--crit)'}; vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
+            <td class="num" style="color: var(--crit); vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
             <td style="font-size:11px; color:var(--dim); white-space: normal; line-height: 1.5; vertical-align: top;">
               <strong style="color:var(--txt2);">Evidence:</strong> ${e.evidence}<br>
               <strong style="color:var(--txt2);">Notes:</strong> ${e.note}<br>
