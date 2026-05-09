@@ -295,10 +295,10 @@ UNEMPLOYMENT_FORECASTS = {
             {
                 "role": "Software development (Steve's example)",
                 "ai_cost_per_month": 90,
-                "human_cost_per_month": 3_300,
-                "human_baseline": "$150/day offshore × 22 days",
-                "cost_ratio": 37,
-                "note": "$90 Claude Code Pro/Max produces 150-400 equivalent solo-coder hours via 3-5× productivity multiplier. Replaces a small offshore team.",
+                "human_cost_per_month": 50_000,
+                "human_baseline": "Equivalent of 5-15 senior devs replaced by 1 sub",
+                "cost_ratio": 555,
+                "note": "$90/mo Claude Code subscription, used by a knowledgeable architect, produces output equivalent to 5-15 developers — not 1. Routine work 20-30× faster, refactoring 10-20×, research 30-50×. Offshore team @ $3.3K/mo each × 15 = $50K. The original 37× figure undersold by 15×. Architectural judgment still human.",
             },
             {
                 "role": "Customer service",
