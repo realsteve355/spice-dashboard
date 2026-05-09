@@ -284,6 +284,96 @@ UNEMPLOYMENT_FORECASTS = {
         {"label": "Anthropic — Labor Market Impacts of AI",
          "url": "https://www.anthropic.com/research/labor-market-impacts"},
     ],
+    "displacement_evidence": {
+        "intro": (
+            "Mainstream forecasts say 6–15% displacement by 2030. The bull voices "
+            "say much more, much sooner. Below is concrete present-day evidence — "
+            "not predictions, but cost ratios already observed in 2026 — that "
+            "argues the bull line is closer to truth."
+        ),
+        "examples": [
+            {
+                "role": "Software development (Steve's example)",
+                "ai_cost_per_month": 90,
+                "human_cost_per_month": 3_300,
+                "human_baseline": "$150/day offshore × 22 days",
+                "cost_ratio": 37,
+                "note": "$90 Claude Code Pro/Max produces 150-400 equivalent solo-coder hours via 3-5× productivity multiplier. Replaces a small offshore team.",
+            },
+            {
+                "role": "Customer service",
+                "ai_cost_per_month": 200,
+                "human_cost_per_month": 3_500,
+                "human_baseline": "Offshore call-centre agent $20K/yr",
+                "cost_ratio": 18,
+                "note": "AI voice agents handle Tier-1 queries at scale. Klarna shifted 700 agents' workload to AI in 2024.",
+            },
+            {
+                "role": "Content / copywriting",
+                "ai_cost_per_month": 60,
+                "human_cost_per_month": 4_000,
+                "human_baseline": "Mid-level marketing copywriter, blended rate",
+                "cost_ratio": 67,
+                "note": "Long-form articles, ads, social copy. Editorial review still needed but volume per editor 5-10× pre-AI.",
+            },
+            {
+                "role": "Illustration / graphic design",
+                "ai_cost_per_month": 60,
+                "human_cost_per_month": 5_000,
+                "human_baseline": "Freelance designer, mid-tier",
+                "cost_ratio": 83,
+                "note": "Midjourney + Photoshop generative fill. Final polish still human, but draft volume up 20×+. Stock-image industry already collapsed.",
+            },
+            {
+                "role": "Translation / transcription",
+                "ai_cost_per_month": 30,
+                "human_cost_per_month": 2_500,
+                "human_baseline": "Per-word professional translator",
+                "cost_ratio": 83,
+                "note": "Whisper + GPT/Claude. Human review for legal/medical only. Routine translation already a commodity.",
+            },
+            {
+                "role": "Financial advice / planning",
+                "ai_cost_per_month": 40,
+                "human_cost_per_month": 4_500,
+                "human_baseline": "1% AUM on $500K portfolio = $5K/yr ÷ 12",
+                "cost_ratio": 113,
+                "note": "Robo-advisers + LLM Q&A cover most retail planning needs. Steve's example: 'I no longer need financial advisers'.",
+            },
+            {
+                "role": "Legal document review",
+                "ai_cost_per_month": 200,
+                "human_cost_per_month": 12_000,
+                "human_baseline": "Junior associate at $300/hr × 40 hrs",
+                "cost_ratio": 60,
+                "note": "Contract review, due diligence, e-discovery. Big-law associate hours already shrinking.",
+            },
+            {
+                "role": "Data entry / clerical",
+                "ai_cost_per_month": 50,
+                "human_cost_per_month": 2_800,
+                "human_baseline": "Admin assistant at $35K/yr",
+                "cost_ratio": 56,
+                "note": "Form processing, data extraction, scheduling. Among the first to fall; many roles already gone in 2024-25.",
+            },
+        ],
+        "macro_summary": (
+            "Anthropic alone runs ~$5-7B annualised revenue (late 2025) at strong "
+            "gross margins. Capital share of these gains is heavily skewed: Anthropic "
+            "captures ~$90/customer/month, customers capture multiples of that in "
+            "displaced wages. The displaced workers capture nothing. This is the "
+            "capital-heavy profitability scenario in real time — happening at a pace "
+            "Goldman/McKinsey forecasts simply do not register."
+        ),
+        "spice_implication": (
+            "These customers are the SPICE founder class. Each $90 they spend on "
+            "Anthropic returns $3K-$12K of saved labour cost — captured as company "
+            "margin or personal income. If they live in a SPICE colony, their spending "
+            "of that captured value is the levy base that funds UBI for the displaced. "
+            "The founder-class loop is not hypothetical — it is already the dominant "
+            "structure of AI-era economics."
+        ),
+    },
 }
 
 # --- Profitability forecasts ---------------------------------------------------

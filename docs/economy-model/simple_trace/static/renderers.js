@@ -239,6 +239,41 @@ function renderUnemploymentChart(unemp) {
 
 function renderUnemploymentScenarios(unemp) {
   if (!unemp) return '';
+  const ev = unemp.displacement_evidence;
+  const evidenceCard = !ev ? '' : `
+  <div class="card" style="margin-top:14px; border-left: 3px solid var(--crit);">
+    <h3>Labour displacement — already happening · 2026 cost ratios</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${ev.intro}</div>
+    <table>
+      <thead><tr>
+        <th>Role</th>
+        <th class="num">AI cost / mo</th>
+        <th class="num">Human cost / mo</th>
+        <th class="num">Cost ratio</th>
+        <th>Notes</th>
+      </tr></thead>
+      <tbody>
+        ${ev.examples.map(e => `
+          <tr>
+            <td class="cat">${e.role}</td>
+            <td class="num">$${e.ai_cost_per_month.toLocaleString()}</td>
+            <td class="num">$${e.human_cost_per_month.toLocaleString()}</td>
+            <td class="num" style="color:var(--crit);"><strong>${e.cost_ratio}×</strong></td>
+            <td style="font-size:11px; color:var(--dim);">${e.note}<br><span style="color:var(--faint);">Human baseline: ${e.human_baseline}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div style="background:var(--panel2); border-left: 2px solid var(--warn); padding:14px 18px; margin-top:14px;">
+      <div style="font-size:10px; color:var(--warn); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Macro picture</div>
+      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.macro_summary}</div>
+    </div>
+    <div style="background:var(--panel2); border-left: 2px solid var(--ok); padding:14px 18px; margin-top:10px;">
+      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">SPICE implication</div>
+      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.spice_implication}</div>
+    </div>
+  </div>`;
+
   return `
   <div class="card" style="margin-top:14px;">
     <h3>Unemployment scenarios — per-source predictions</h3>
@@ -255,7 +290,8 @@ function renderUnemploymentScenarios(unemp) {
       `).join('')}
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">Sources: ${unemp.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}</div>
-  </div>`;
+  </div>
+  ${evidenceCard}`;
 }
 
 function renderProfitability(prof) {
