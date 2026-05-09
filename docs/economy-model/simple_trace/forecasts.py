@@ -286,92 +286,122 @@ UNEMPLOYMENT_FORECASTS = {
     ],
     "displacement_evidence": {
         "intro": (
-            "Mainstream forecasts say 6–15% displacement by 2030. The bull voices "
-            "say much more, much sooner. Below is concrete present-day evidence — "
-            "not predictions, but cost ratios already observed in 2026 — that "
-            "argues the bull line is closer to truth."
+            "Cost ratios for AI tools versus human labour, in 2026. Sources cited "
+            "where available; ranges given to reflect uncertainty between "
+            "peak-scenario (knowledgeable user, well-defined task) and typical-team "
+            "use. Caveat below explains why most figures are conservative."
+        ),
+        "caveat": (
+            "**These are productivity ratios, not full-replacement ratios.** Anthropic's "
+            "own Economic Index (March 2026) shows only 4% of jobs use AI for 75%+ of "
+            "tasks; 52% of all Claude conversations are augmentation rather than "
+            "automation. Klarna replaced 700 customer-service agents with AI in 2024 "
+            "and partially reversed in 2025 when customer satisfaction dropped. "
+            "Real-world deployments are typically **hybrid** (AI handles 60-70%, humans "
+            "handle complex 30-40%). Peak-scenario savings (one architect-level user "
+            "replacing a small team) exist but are NOT typical. Most teams see "
+            "1.5-2× productivity per worker, not full replacement."
         ),
         "examples": [
             {
-                "role": "Software engineering — full stack (devs + tech leads + architect)",
+                "role": "Software engineering",
                 "ai_cost_per_month": 90,
-                "human_cost_per_month": 71_000,
-                "human_baseline": "12 offshore devs ($40K) + 2 tech leads ($16K) + 1 architect ($15K)",
-                "cost_ratio": 789,
-                "note": "$90/mo Claude Code does NOT just replace developers — it replaces the architecture, design, and tech-lead functions too. System design, data modelling, abstraction choices, refactoring decisions, bug diagnosis: all done by the AI given strategic direction. What survives intact for the human: purpose-setting, judgment, reality-testing, saying no. Steve's own session today is the proof — every architectural decision was AI-made under strategic direction. US rates push the ratio toward 3000×.",
+                "human_cost_per_month": 4_500,
+                "human_baseline": "Productivity uplift on 1 mid-level dev ($60-90K/yr)",
+                "cost_ratio": 50,
+                "evidence": "Anthropic 2025: 50% avg productivity gain across own engineers; 67% increase in merged PRs after Claude Code rollout. GitHub Copilot 2023 (peer-reviewed): 55.8% faster on controlled task, 95% CI [21%, 89%].",
+                "source_url": "https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic",
+                "secondary_url": "https://arxiv.org/abs/2302.06590",
+                "note": "$90/mo enables 1 dev to produce ~1.5-1.8x output — replaces about half a dev's cost. Steve's own example (one architect replacing a small team) is peak-scenario for an experienced architect with strong domain expertise; not typical. Anthropic itself reports augmentation > automation in 52% of conversations.",
             },
             {
                 "role": "Customer service",
                 "ai_cost_per_month": 200,
-                "human_cost_per_month": 3_500,
-                "human_baseline": "Offshore call-centre agent $20K/yr",
-                "cost_ratio": 18,
-                "note": "AI voice agents handle Tier-1 queries at scale. Klarna shifted 700 agents' workload to AI in 2024.",
+                "human_cost_per_month": 4_000,
+                "human_baseline": "Hybrid model: AI handles 60-70%, humans 30-40%",
+                "cost_ratio": 20,
+                "evidence": "Klarna 2024: AI handled 2.3M conversations in first month, equivalent to 700 full-time agents. $40M annual savings projected. PARTIALLY REVERSED 2025 — customer satisfaction dropped on complex cases; rehired humans for edge cases. Stable hybrid is the actual deployment.",
+                "source_url": "https://www.klarna.com/international/press/klarna-ai-assistant-handles-two-thirds-of-customer-service-chats-in-its-first-month/",
+                "secondary_url": "https://www.digitalapplied.com/blog/klarna-reverses-ai-layoffs-replacing-700-workers-backfired",
+                "note": "Initial pure-replacement attempt failed on quality. Hybrid 60/40 split is what actually worked. Real savings closer to ~50% headcount reduction, not 100%.",
             },
             {
                 "role": "Content / copywriting",
                 "ai_cost_per_month": 60,
                 "human_cost_per_month": 4_000,
-                "human_baseline": "Mid-level marketing copywriter, blended rate",
+                "human_baseline": "Mid-level marketing copywriter ($48K/yr)",
                 "cost_ratio": 67,
-                "note": "Long-form articles, ads, social copy. Editorial review still needed but volume per editor 5-10× pre-AI.",
+                "evidence": "Anecdotal / industry reports. No single peer-reviewed study; widely-reported 5-10x volume uplift per editor. Estimate, not measurement.",
+                "source_url": None,
+                "note": "ESTIMATE. Long-form content, ads, social. Editorial review still needed. Volume per editor reportedly up 5-10× but no rigorous study found.",
             },
             {
                 "role": "Illustration / graphic design",
                 "ai_cost_per_month": 60,
                 "human_cost_per_month": 5_000,
-                "human_baseline": "Freelance designer, mid-tier",
+                "human_baseline": "Freelance designer mid-tier ($60K/yr)",
                 "cost_ratio": 83,
-                "note": "Midjourney + Photoshop generative fill. Final polish still human, but draft volume up 20×+. Stock-image industry already collapsed.",
+                "evidence": "Stock-image market collapse documented (Getty layoffs 2024). Midjourney + Adobe Generative Fill widely deployed. No single rigorous productivity study.",
+                "source_url": None,
+                "note": "ESTIMATE. Draft volume up but final polish still human. Premium illustration largely intact; commodity work hardest hit.",
             },
             {
                 "role": "Translation / transcription",
                 "ai_cost_per_month": 30,
                 "human_cost_per_month": 2_500,
-                "human_baseline": "Per-word professional translator",
+                "human_baseline": "Professional per-word translator",
                 "cost_ratio": 83,
-                "note": "Whisper + GPT/Claude. Human review for legal/medical only. Routine translation already a commodity.",
+                "evidence": "Whisper + GPT/Claude widely deployed. Anecdotal — no rigorous study found. Routine translation already a commodity per industry trade press.",
+                "source_url": None,
+                "note": "ESTIMATE. Legal/medical translation still requires human. Routine business translation largely automated.",
             },
             {
                 "role": "Financial advice / planning",
                 "ai_cost_per_month": 40,
                 "human_cost_per_month": 4_500,
-                "human_baseline": "1% AUM on $500K portfolio = $5K/yr ÷ 12",
+                "human_baseline": "1% AUM on $500K portfolio ÷ 12",
                 "cost_ratio": 113,
-                "note": "Robo-advisers + LLM Q&A cover most retail planning needs. Steve's example: 'I no longer need financial advisers'.",
+                "evidence": "Robo-advisers established for a decade (Wealthfront, Betterment). LLM Q&A new. No rigorous productivity study found.",
+                "source_url": None,
+                "note": "ESTIMATE. Steve's anecdote (no longer needs adviser) reflects high-information self-direction, not typical retail user. Most retail still uses humans for emotional/behavioural reasons.",
             },
             {
                 "role": "Legal document review",
                 "ai_cost_per_month": 200,
                 "human_cost_per_month": 12_000,
-                "human_baseline": "Junior associate at $300/hr × 40 hrs",
+                "human_baseline": "Junior associate $300/hr × 40 hrs",
                 "cost_ratio": 60,
-                "note": "Contract review, due diligence, e-discovery. Big-law associate hours already shrinking.",
+                "evidence": "Industry reports: contract review, e-discovery, due diligence. Harvey, Spellbook deployed at major firms. No single rigorous study found.",
+                "source_url": None,
+                "note": "ESTIMATE. Big-law associate hours reportedly shrinking but liability concerns slow adoption. Final sign-off still partner.",
             },
             {
                 "role": "Data entry / clerical",
                 "ai_cost_per_month": 50,
                 "human_cost_per_month": 2_800,
-                "human_baseline": "Admin assistant at $35K/yr",
+                "human_baseline": "Admin assistant $35K/yr",
                 "cost_ratio": 56,
-                "note": "Form processing, data extraction, scheduling. Among the first to fall; many roles already gone in 2024-25.",
+                "evidence": "BLS administrative-support employment data shows ongoing decline pre-AI. Form processing, data extraction increasingly automated.",
+                "source_url": None,
+                "note": "ESTIMATE. Among the most-automatable role categories per Anthropic Economic Index. Many roles already gone before LLMs.",
             },
         ],
         "macro_summary": (
-            "Anthropic alone runs ~$5-7B annualised revenue (late 2025) at strong "
-            "gross margins. Capital share of these gains is heavily skewed: Anthropic "
-            "captures ~$90/customer/month, customers capture multiples of that in "
-            "displaced wages. The displaced workers capture nothing. This is the "
-            "capital-heavy profitability scenario in real time — happening at a pace "
-            "Goldman/McKinsey forecasts simply do not register."
+            "Anthropic Claude Code revenue: $1B annualised (Nov 2025), ~$2B (Jan 2026). "
+            "Anthropic Economic Index (March 2026): 4% of jobs use AI for 75%+ of tasks; "
+            "augmentation 52% > automation 45% (but automation share rising slowly). "
+            "Capital share of gains is heavily skewed — Anthropic captures ~$90/user/month "
+            "but enabled productivity gains are 50-80% per user (the customer captures "
+            "the lion's share). Mainstream displacement forecasts (Goldman 6-7%, WEF "
+            "12-14%) may be conservative but the bull narrative of mass overnight "
+            "replacement is not what the data shows either."
         ),
         "spice_implication": (
-            "These customers are the SPICE founder class. Each $90 they spend on "
-            "Anthropic returns $3K-$12K of saved labour cost — captured as company "
-            "margin or personal income. If they live in a SPICE colony, their spending "
-            "of that captured value is the levy base that funds UBI for the displaced. "
-            "The founder-class loop is not hypothetical — it is already the dominant "
-            "structure of AI-era economics."
+            "AI users are partial founder class — they capture the productivity gain "
+            "(~50-80% per worker), but their actual saved-wage value is 30-100× the "
+            "AI subscription cost, not 800×. If they live in a SPICE colony, their "
+            "spending of those savings is the levy base. Founder-class loop is real "
+            "but more modest than peak-scenario rhetoric suggests."
         ),
     },
 }

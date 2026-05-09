@@ -242,35 +242,48 @@ function renderUnemploymentScenarios(unemp) {
   const ev = unemp.displacement_evidence;
   const evidenceCard = !ev ? '' : `
   <div class="card" style="margin-top:14px; border-left: 3px solid var(--crit);">
-    <h3>Labour displacement — already happening · 2026 cost ratios</h3>
+    <h3>Labour displacement — 2026 cost ratios with sources</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${ev.intro}</div>
+    ${ev.caveat ? `
+    <div style="background: rgba(212, 160, 74, 0.08); border-left: 3px solid var(--warn); padding: 14px 18px; margin-bottom: 14px; font-size: 12px; line-height: 1.6; color: var(--txt);">
+      <div style="font-size:10px; color:var(--warn); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Caveat — read before the table</div>
+      ${ev.caveat.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--headline);">$1</strong>')}
+    </div>` : ''}
     <table style="table-layout: fixed; width: 100%;">
       <colgroup>
-        <col style="width: 22%;">
-        <col style="width: 10%;">
-        <col style="width: 12%;">
-        <col style="width: 8%;">
-        <col style="width: 48%;">
+        <col style="width: 18%;">
+        <col style="width: 9%;">
+        <col style="width: 11%;">
+        <col style="width: 7%;">
+        <col style="width: 55%;">
       </colgroup>
       <thead><tr>
         <th>Role</th>
         <th class="num">AI / mo</th>
         <th class="num">Human / mo</th>
         <th class="num">Ratio</th>
-        <th>Notes</th>
+        <th>Evidence + notes</th>
       </tr></thead>
       <tbody>
-        ${ev.examples.map(e => `
+        ${ev.examples.map(e => {
+          const isEstimate = !e.source_url;
+          const sources = [];
+          if (e.source_url) sources.push(`<a href="${e.source_url}" target="_blank" style="color:var(--ok);">primary source</a>`);
+          if (e.secondary_url) sources.push(`<a href="${e.secondary_url}" target="_blank" style="color:var(--ok);">secondary</a>`);
+          const sourceLine = sources.length ? sources.join(' · ') : '<span style="color:var(--warn);">⚠ ESTIMATE — no rigorous study</span>';
+          return `
           <tr>
-            <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}</td>
+            <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}${isEstimate ? '<br><span style="font-size:9px; color:var(--warn); letter-spacing:0.1em; text-transform:uppercase;">estimate</span>' : ''}</td>
             <td class="num" style="vertical-align: top;">$${e.ai_cost_per_month.toLocaleString()}</td>
             <td class="num" style="vertical-align: top;">$${e.human_cost_per_month.toLocaleString()}</td>
-            <td class="num" style="color:var(--crit); vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
+            <td class="num" style="color:${isEstimate ? 'var(--warn)' : 'var(--crit)'}; vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
             <td style="font-size:11px; color:var(--dim); white-space: normal; line-height: 1.5; vertical-align: top;">
-              ${e.note}<br><span style="color:var(--faint);">Human baseline: ${e.human_baseline}</span>
+              <strong style="color:var(--txt2);">Evidence:</strong> ${e.evidence}<br>
+              <strong style="color:var(--txt2);">Notes:</strong> ${e.note}<br>
+              <span style="color:var(--faint);">Baseline: ${e.human_baseline} · ${sourceLine}</span>
             </td>
-          </tr>
-        `).join('')}
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>
     <div style="background:var(--panel2); border-left: 2px solid var(--warn); padding:14px 18px; margin-top:14px;">
