@@ -61,6 +61,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "trajectory.html", "text/html; charset=utf-8")
         elif p == "/forecasts":
             self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
+        elif p == "/cost-deflation":
+            self._send_file(self.templates_dir / "cost-deflation.html", "text/html; charset=utf-8")
+        elif p == "/unemployment":
+            self._send_file(self.templates_dir / "unemployment.html", "text/html; charset=utf-8")
+        elif p == "/profitability":
+            self._send_file(self.templates_dir / "profitability.html", "text/html; charset=utf-8")
         elif p == "/references":
             self._send_file(self.templates_dir / "references.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):

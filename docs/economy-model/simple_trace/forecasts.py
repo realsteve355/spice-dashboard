@@ -405,6 +405,128 @@ FORECASTS["unemployment"] = UNEMPLOYMENT_FORECASTS
 FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 
 
+# --- Synthesis: when do M1 and M2 land under these forecasts? -----------------
+# Takes the basket trajectory + an unemployment scenario + a profitability
+# scenario and computes the year SPICE becomes welfare-capable (M1) and full-
+# UBI-capable (M2). The math is deliberately closed-form here — the trajectory
+# simulator does the detailed per-supplier version; this is the synthesis page's
+# back-of-envelope view that ties the three drivers together.
+def compute_synthesis(
+    basket_traj: list,
+    unemployment_scenario_idx: int = 0,  # 0=mainstream, 1=bull, 2=skeptic
+    profitability_scenario_idx: int = 0, # 0=capital-heavy, 1=consumer-heavy, 2=labor-rebalanced
+    n_citizens: int = 40,
+    n_working_adults_today: int = 13,    # from family-types model
+    avg_salary_monthly_today: float = 4_000,  # $/mo per working adult today
+    ubi_multiplier: float = 1.10,
+    welfare_obligation_today: float = 60_000,  # annual State welfare cost for these residents
+    welfare_growth_pct_per_year: float = 1.0,  # nominal growth (sticky)
+    today_margin_pct: float = 5.0,
+    spending_share: float = 0.55,
+    levy_capture_pct: float = 80.0,
+) -> dict:
+    """
+    Closed-form synthesis: per year, compute UBI obligation, welfare obligation,
+    and levy capacity from the basket trajectory + unemployment + profitability
+    scenarios. M1 = year levy >= welfare. M2 = year levy >= UBI.
+
+    Margin trajectory derived from profitability scenario's capital share.
+    Salary nominal-sticky (doesn't fall with basket); employment shrinks per
+    unemployment scenario.
+    """
+    unemp_scenario = UNEMPLOYMENT_FORECASTS["scenarios"][unemployment_scenario_idx]
+    prof_scenario = PROFITABILITY_FORECASTS["scenarios"][profitability_scenario_idx]
+
+    # Target margin: scales with capital-capture share of AI gains.
+    # capital_pct=20 → target ~14%, =60 → ~32%, =30 → ~19%.
+    capital_pct = prof_scenario["capital_pct"]
+    margin_ceiling_pct = 50.0
+    target_margin = today_margin_pct + (margin_ceiling_pct - today_margin_pct) * (capital_pct / 100)
+
+    today_basket_usd = 980.0
+    snapshots = []
+    m1_year = m2_year = None
+    base_year = basket_traj[0]["year"]
+    final_year = basket_traj[-1]["year"]
+    years_total = final_year - base_year
+
+    for pt in basket_traj:
+        year = pt["year"]
+        years_elapsed = year - base_year
+        progress = years_elapsed / years_total if years_total > 0 else 0
+
+        # Basket and UBI
+        basket_usd = today_basket_usd * pt["cost_index"] / 100
+        ubi_obligation = n_citizens * basket_usd * ubi_multiplier * 12
+
+        # Welfare: State-set, nominally sticky (small annual growth)
+        welfare_obligation = welfare_obligation_today * ((1 + welfare_growth_pct_per_year / 100) ** years_elapsed)
+
+        # Salary: nominal-sticky per worker, but employment shrinks
+        unemp_at_year = next((cp["unemployment_pct"] for cp in unemp_scenario["checkpoints"] if cp["year"] == year), 0)
+        # Effective employed workers = today's count × (1 - additional_unemployment%)
+        # additional unemployment above today's 4% baseline
+        baseline_unemp = 4.0
+        extra_unemp = max(0, unemp_at_year - baseline_unemp)
+        employment_factor = max(0, (100 - extra_unemp) / 100)
+        salary_total_annual = n_working_adults_today * avg_salary_monthly_today * 12 * employment_factor
+
+        # Income flowing through colony = UBI + salary (rough — ignore pensions for synthesis)
+        income = ubi_obligation + salary_total_annual
+        spending = income * spending_share
+
+        # Margin expands toward target across the projection
+        margin_pct_now = today_margin_pct + (target_margin - today_margin_pct) * progress
+        profit_pool = spending * margin_pct_now / 100
+        levy_capacity = profit_pool * levy_capture_pct / 100
+
+        snapshots.append({
+            "year": year,
+            "basket_usd": round(basket_usd, 1),
+            "ubi_obligation": round(ubi_obligation, 0),
+            "welfare_obligation": round(welfare_obligation, 0),
+            "income": round(income, 0),
+            "spending": round(spending, 0),
+            "margin_pct": round(margin_pct_now, 2),
+            "profit_pool": round(profit_pool, 0),
+            "levy_capacity": round(levy_capacity, 0),
+            "unemployment_pct": unemp_at_year,
+            "employment_factor": round(employment_factor, 3),
+        })
+
+        if m1_year is None and levy_capacity >= welfare_obligation:
+            m1_year = year
+        if m2_year is None and levy_capacity >= ubi_obligation:
+            m2_year = year
+
+    return {
+        "snapshots": snapshots,
+        "milestone_1_year": m1_year,
+        "milestone_2_year": m2_year,
+        "assumptions": {
+            "n_citizens": n_citizens,
+            "n_working_adults_today": n_working_adults_today,
+            "avg_salary_monthly_today": avg_salary_monthly_today,
+            "ubi_multiplier": ubi_multiplier,
+            "welfare_obligation_today": welfare_obligation_today,
+            "welfare_growth_pct_per_year": welfare_growth_pct_per_year,
+            "today_margin_pct": today_margin_pct,
+            "target_margin_pct": round(target_margin, 1),
+            "margin_ceiling_pct": margin_ceiling_pct,
+            "spending_share": spending_share,
+            "levy_capture_pct": levy_capture_pct,
+            "unemployment_scenario": unemp_scenario["name"],
+            "profitability_scenario": prof_scenario["name"],
+            "capital_share_of_gains": capital_pct,
+        },
+    }
+
+
+# Compute the default synthesis at module load
+# (mainstream unemp + capital-heavy profit = the most realistic combination)
+FORECASTS["synthesis"] = compute_synthesis(FORECASTS["basket_trajectory"])
+
+
 def get_forecasts() -> dict:
     """Return the structured forecast data — used by the /api/forecasts endpoint."""
     return FORECASTS
