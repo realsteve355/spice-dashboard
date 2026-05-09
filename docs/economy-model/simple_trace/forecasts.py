@@ -345,6 +345,43 @@ PROFITABILITY_FORECASTS = {
         {"label": "Economy.ac — Corporate Profits Surge While Labor's Share Shrinks",
          "url": "https://economy.ac/news/2026/02/202602287973"},
     ],
+    "political_economy": {
+        "title": "Why capital pays the levy — the Henry Ford insight",
+        "tension": (
+            "Capital owners will fight to retain margins. They'll lobby against tax, "
+            "relocate operations, optimise for evasion. The naïve view of the SPICE "
+            "levy treats it as adversarial — capital vs colony, zero-sum."
+        ),
+        "alignment": (
+            "The deeper truth: capital cannot realise its margins without consumers. "
+            "Automation eliminates the wage channel that historically funded consumer "
+            "demand. Without an alternative, capital faces a customer-base extinction "
+            "event — high margins on zero sales is zero profit. The levy is what "
+            "keeps the consumer base solvent."
+        ),
+        "precedent": (
+            "Henry Ford, 1914: paid $5/day (double prevailing wage) so his own workers "
+            "could afford the cars he was producing. Not philanthropy — pure capital "
+            "preservation. The SPICE levy is the same idea at societal scale: capital "
+            "funds the income that funds its own revenues."
+        ),
+        "design_implication": (
+            "SPICE's cost-neutral M1 design lowers the political cost of switch-on — "
+            "the State loses nothing because SPICE just takes over existing welfare "
+            "obligations. Once that channel is open, scaling toward M2 becomes a "
+            "growth conversation, not a tax conversation. Capital prefers a managed "
+            "levy over: civil unrest, mass policy intervention, or revolution."
+        ),
+        "key_quote": {
+            "text": "It is not the employer who pays the wages. Employers only handle the money. It is the customer who pays the wages.",
+            "author": "Henry Ford, 1922",
+        },
+        "spice_principle": (
+            "The SPICE levy is not a tax ON capital — it is a service fee FOR ACCESS "
+            "to consumers whose income capital itself ultimately funds. Reframed this "
+            "way, capital's rational stance is to support the levy, not resist it."
+        ),
+    },
 }
 
 

@@ -273,6 +273,38 @@ function renderProfitability(prof) {
     </div>
   `).join('');
   const dataPoints = prof.key_data_points.map(d => `<tr><td>${d.label}</td><td class="num"><strong>${d.value}</strong></td></tr>`).join('');
+
+  // Political-economy panel (Henry Ford insight)
+  const pe = prof.political_economy;
+  const peCard = !pe ? '' : `
+  <div class="card" style="margin-top:14px; border-left: 3px solid var(--ok);">
+    <h3>${pe.title}</h3>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:14px;">
+      <div>
+        <div style="font-size:10px; color:var(--warn); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Surface tension</div>
+        <div style="font-size:13px; color:var(--txt); line-height:1.6;">${pe.tension}</div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Deeper alignment</div>
+        <div style="font-size:13px; color:var(--txt); line-height:1.6;">${pe.alignment}</div>
+      </div>
+    </div>
+    <div style="background:var(--panel2); border-left: 2px solid var(--ok); padding:14px 18px; margin: 14px 0;">
+      <div style="font-size:14px; color:var(--headline); font-style:italic; line-height:1.5; margin-bottom:6px;">"${pe.key_quote.text}"</div>
+      <div style="font-size:11px; color:var(--dim); letter-spacing:0.1em; text-transform:uppercase;">— ${pe.key_quote.author}</div>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:10px;">
+      <strong style="color:var(--headline);">Historical precedent:</strong> ${pe.precedent}
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:10px;">
+      <strong style="color:var(--headline);">SPICE design implication:</strong> ${pe.design_implication}
+    </div>
+    <div style="background:var(--panel2); border:1px solid var(--ok); padding:14px 18px; margin-top:14px;">
+      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">SPICE principle</div>
+      <div style="font-size:14px; color:var(--headline); line-height:1.5;">${pe.spice_principle}</div>
+    </div>
+  </div>`;
+
   return `
   <div class="card">
     <h3>Profitability — who captures the AI productivity gains?</h3>
@@ -281,7 +313,8 @@ function renderProfitability(prof) {
     <h3 style="margin-top:18px;">Key data points</h3>
     <table>${dataPoints}</table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">Sources: ${prof.sources.map(s => `<a href="${s.url}" target="_blank" style="color:var(--faint);">${s.label}</a>`).join(' · ')}</div>
-  </div>`;
+  </div>
+  ${peCard}`;
 }
 
 function renderSkeptic(s) {

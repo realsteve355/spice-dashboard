@@ -8,7 +8,30 @@ runPage(d => [
   renderSynthesisVerdict(d.synthesis),
   renderSynthesisTable(d.synthesis),
   renderSynthesisExplanation(d.synthesis),
+  renderHenryFordCallout(d.profitability),
 ].join('\n'));
+
+function renderHenryFordCallout(prof) {
+  const pe = prof && prof.political_economy;
+  if (!pe) return '';
+  return `
+  <div class="card" style="margin-top:14px; border-left: 3px solid var(--ok);">
+    <h3>${pe.title}</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:10px;">
+      The synthesis above shows that SPICE math closes only under capital-heavy
+      profit capture (margins expand, levy grows). Capital owners will fight to
+      retain those margins — but the deeper logic actually <em>aligns</em> them
+      with the levy.
+    </div>
+    <div style="background:var(--panel2); border-left: 2px solid var(--ok); padding:14px 18px; margin: 12px 0;">
+      <div style="font-size:14px; color:var(--headline); font-style:italic; line-height:1.5; margin-bottom:6px;">"${pe.key_quote.text}"</div>
+      <div style="font-size:11px; color:var(--dim); letter-spacing:0.1em; text-transform:uppercase;">— ${pe.key_quote.author}</div>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6;">
+      ${pe.alignment} — <a href="/profitability" style="color:var(--ok);">full argument on /profitability</a>.
+    </div>
+  </div>`;
+}
 
 function renderNavCards(d) {
   const lastBasket = d.basket_trajectory[d.basket_trajectory.length - 1];
