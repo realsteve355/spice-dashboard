@@ -105,6 +105,7 @@ function renderSynthesisVerdict(syn) {
 }
 
 function renderSynthesisTable(syn) {
+  const fmtUSDk = n => n >= 1e6 ? '$' + (n/1e6).toFixed(2) + 'M' : '$' + (n/1000).toFixed(0) + 'K';
   const row = s => {
     const m1Hit = syn.milestone_1_year === s.year;
     const m2Hit = syn.milestone_2_year === s.year;
@@ -113,17 +114,22 @@ function renderSynthesisTable(syn) {
     else if (syn.milestone_1_year && s.year >= syn.milestone_1_year) phase = '<span style="color:var(--blue);">WELFARE</span>';
     else phase = '<span style="color:var(--dim);">IMPL</span>';
 
+    // Wage-vs-founder share of total income — the headline pivot
+    const totalIncome = s.wage_income + s.founder_income;
+    const founderSharePct = (s.founder_income / Math.max(1, totalIncome)) * 100;
+
     return `<tr ${m2Hit ? 'style="background:rgba(93, 211, 158, 0.08);"' : (m1Hit ? 'style="background:rgba(59, 130, 246, 0.08);"' : '')}>
       <td class="cat">${s.year}${m1Hit ? ' ⬢' : ''}${m2Hit ? ' ★' : ''}</td>
       <td>${phase}</td>
       <td class="num">$${Math.round(s.basket_usd).toLocaleString()}</td>
       <td class="num">${s.unemployment_pct}%</td>
-      <td class="num">$${Math.round(s.income).toLocaleString()}</td>
+      <td class="num">${fmtUSDk(s.wage_income)}</td>
+      <td class="num" style="color: ${founderSharePct > 50 ? 'var(--warn)' : 'var(--txt2)'};">${fmtUSDk(s.founder_income)}</td>
+      <td class="num">${founderSharePct.toFixed(0)}%</td>
       <td class="num">${s.margin_pct}%</td>
-      <td class="num">$${Math.round(s.profit_pool).toLocaleString()}</td>
-      <td class="num">$${Math.round(s.levy_capacity).toLocaleString()}</td>
-      <td class="num">$${Math.round(s.welfare_obligation).toLocaleString()}</td>
-      <td class="num">$${Math.round(s.ubi_obligation).toLocaleString()}</td>
+      <td class="num">${fmtUSDk(s.levy_capacity)}</td>
+      <td class="num">${fmtUSDk(s.welfare_obligation)}</td>
+      <td class="num">${fmtUSDk(s.ubi_obligation)}</td>
     </tr>`;
   };
 
@@ -134,16 +140,17 @@ function renderSynthesisTable(syn) {
       <thead><tr>
         <th>Year</th><th>Phase</th>
         <th class="num">Basket $/mo</th><th class="num">Unemp %</th>
-        <th class="num">Income $/yr</th><th class="num">Margin</th>
-        <th class="num">Profit pool $/yr</th><th class="num">Levy capacity $/yr</th>
-        <th class="num">Welfare $/yr</th><th class="num">UBI $/yr</th>
+        <th class="num">Wage income</th><th class="num">Founder income</th><th class="num">Founder %</th>
+        <th class="num">Margin</th>
+        <th class="num">Levy</th>
+        <th class="num">Welfare</th><th class="num">UBI</th>
       </tr></thead>
       <tbody>${syn.snapshots.map(row).join('')}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      ⬢ = M1 (welfare-capable). ★ = M2 (UBI-capable). M1 row highlighted blue, M2 row highlighted green.
-      Income = UBI + (working-adults × salary × employment-factor). Spending = income × 55%.
-      Profit pool = spending × margin. Levy = profit × 80% capture cap.
+      ⬢ = M1 (welfare-capable). ★ = M2 (UBI-capable). M1 row tinted blue, M2 tinted green.
+      <strong style="color:var(--warn);">Founder income</strong> turns orange when it overtakes wage income — the pivot from labour-economy to capital-economy.
+      Levy = (wage spending + founder spending) × margin × 80%.
     </div>
   </div>`;
 }
@@ -152,30 +159,39 @@ function renderSynthesisExplanation(syn) {
   const a = syn.assumptions;
   const first = syn.snapshots[0];
   const last = syn.snapshots[syn.snapshots.length - 1];
+  const founderShareFirst = first.founder_income / Math.max(1, first.wage_income + first.founder_income) * 100;
+  const founderShareLast = last.founder_income / Math.max(1, last.wage_income + last.founder_income) * 100;
   return `
   <div class="card">
     <h3>How the math works</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       <p>
-        SPICE's job is to fund <strong>welfare</strong> (M1) and eventually <strong>universal UBI</strong> (M2).
-        The model needs three numbers per year, all of which come from the sub-pages:
+        SPICE funds <strong>welfare</strong> (M1) and eventually <strong>universal UBI</strong> (M2)
+        by levying transactions in the colony's commerce. Three driver inputs:
       </p>
       <ul style="padding-left: 20px;">
-        <li><strong style="color:var(--ok);">Cost deflation</strong> drives the UBI obligation. Basket falls from $${Math.round(first.basket_usd)} to $${Math.round(last.basket_usd)} → UBI obligation falls from $${Math.round(first.ubi_obligation/1000)}K to $${Math.round(last.ubi_obligation/1000)}K/yr.</li>
-        <li><strong style="color:var(--blue);">Unemployment</strong> drives the income side. Working-adult employment factor falls from ${(first.employment_factor*100).toFixed(0)}% to ${(last.employment_factor*100).toFixed(0)}% — wages collapse with displacement, reducing spending and therefore the profit pool.</li>
-        <li><strong style="color:var(--warn);">Profitability split</strong> determines margin growth. Capital-heavy scenario expands margins from ${a.today_margin_pct}% to ${a.target_margin_pct}% — this is what offsets shrinking spending volume.</li>
+        <li><strong style="color:var(--ok);">Cost deflation</strong> drives the UBI obligation down: basket from $${Math.round(first.basket_usd)} to $${Math.round(last.basket_usd)} → UBI obligation from $${Math.round(first.ubi_obligation/1000)}K to $${Math.round(last.ubi_obligation/1000)}K/yr.</li>
+        <li><strong style="color:var(--blue);">Unemployment</strong> drives wage income DOWN. Wage component falls from $${Math.round(first.wage_income/1000)}K to $${Math.round(last.wage_income/1000)}K/yr.</li>
+        <li><strong style="color:var(--warn);">Founder capital income</strong> drives total income BACK UP. Capital owners who captured AI gains spend in the colony — from $${Math.round(first.founder_income/1000)}K (${founderShareFirst.toFixed(0)}% of income) to ${last.founder_income > 1e6 ? '$' + (last.founder_income/1e6).toFixed(1) + 'M' : '$' + Math.round(last.founder_income/1000) + 'K'} (${founderShareLast.toFixed(0)}% of income).</li>
       </ul>
       <p>
-        The synthesis: per-year levy capacity = (UBI + salary income) × 55% spending share × margin × 80% capture cap. Compare against welfare and UBI obligations to find M1 and M2.
+        <strong style="color:var(--headline);">The pivot:</strong> the colony's economy transitions from labour-funded
+        (today, ~${founderShareFirst.toFixed(0)}% founder) to capital-funded
+        (${last.year}, ~${founderShareLast.toFixed(0)}% founder). The displaced eat from the table; the founders set the table; the levy is the price of dining there.
       </p>
-      <p>
-        <strong style="color:var(--headline);">Critical finding:</strong> the math only closes under <em>capital-heavy profitability</em>. Bull-case unemployment (90% by 2045) actually <em>breaks</em> the model — when nobody is employed, salary income vanishes, spending shrinks, the profit pool isn't there to levy. SPICE depends on the colony retaining a working economy that produces a profit pool, even as automation expands.
+      <p style="background: var(--panel2); border-left: 2px solid var(--ok); padding: 12px 16px; font-size: 13px;">
+        <strong style="color:var(--headline);">Earlier finding revised.</strong> A previous version of this synthesis showed
+        bull-unemployment <em>breaking</em> the model. That was an artefact of treating wages as the only income.
+        Once we recognise that capital owners (founders, automation winners) live in the colony and spend their
+        capital income locally, the levy base survives even as wage labour collapses. Bull-unemployment + capital-heavy
+        profit now hits M1 in <strong style="color:var(--ok);">${syn.milestone_1_year}</strong>
+        and M2 in <strong style="color:var(--ok);">${syn.milestone_2_year}</strong>.
       </p>
       <p style="font-size:12px; color:var(--dim);">
-        These numbers are a closed-form back-of-envelope. The full per-supplier, per-transaction simulation lives at
-        <a href="/trajectory" style="color:var(--dim);">/trajectory</a>. Switch sub-page assumptions
-        in <code>forecasts.py</code> (compute_synthesis defaults) to explore alternative scenarios.
-        Deep references at <a href="/references" style="color:var(--dim);">/references</a>.
+        Closed-form synthesis. Full per-supplier simulation at
+        <a href="/trajectory" style="color:var(--dim);">/trajectory</a>.
+        Switch assumptions in <code>forecasts.py</code> compute_synthesis defaults.
+        Sources at <a href="/references" style="color:var(--dim);">/references</a>.
       </p>
     </div>
   </div>`;

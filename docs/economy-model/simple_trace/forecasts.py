@@ -460,7 +460,11 @@ def compute_synthesis(
     welfare_growth_pct_per_year: float = 1.0,  # nominal growth (sticky)
     today_margin_pct: float = 5.0,
     spending_share: float = 0.55,
+    founder_spending_share: float = 0.60,     # founders spend more locally (no SNAP/EITC clawback)
     levy_capture_pct: float = 80.0,
+    n_founder_class_today: int = 1,           # Dave's family today; grows as more entrepreneurs join
+    founder_capital_income_today: float = 120_000,  # annual capital income per founder today
+    founder_growth_pct_per_year: float = 12.0,      # capital income grows fast as automation matures
 ) -> dict:
     """
     Closed-form synthesis: per year, compute UBI obligation, welfare obligation,
@@ -508,9 +512,21 @@ def compute_synthesis(
         employment_factor = max(0, (100 - extra_unemp) / 100)
         salary_total_annual = n_working_adults_today * avg_salary_monthly_today * 12 * employment_factor
 
-        # Income flowing through colony = UBI + salary (rough — ignore pensions for synthesis)
-        income = ubi_obligation + salary_total_annual
-        spending = income * spending_share
+        # FOUNDER CHANNEL — capital owners who captured AI gains. Their personal
+        # spending in the colony IS the levy base, especially as wages collapse.
+        # This is the actual SPICE funding mechanism that the salary-only model
+        # missed. Grows fast under bull automation; depends on capital share.
+        # Reasoning: under bull-displacement, the value formerly going to wages
+        # now flows to capital owners. Their consumption is what's left to levy.
+        capital_growth_factor = 1.0 + (founder_growth_pct_per_year / 100) * (capital_pct / 30)  # adjusted by capital_pct
+        founder_capital_income_now = founder_capital_income_today * (capital_growth_factor ** years_elapsed)
+        founder_total_capital_income = n_founder_class_today * founder_capital_income_now
+        founder_spending = founder_total_capital_income * founder_spending_share
+
+        # Income flowing through colony = UBI + salary + founder capital income
+        wage_spending = (ubi_obligation + salary_total_annual) * spending_share
+        spending = wage_spending + founder_spending
+        income = ubi_obligation + salary_total_annual + founder_total_capital_income
 
         # Margin expands toward target across the projection
         margin_pct_now = today_margin_pct + (target_margin - today_margin_pct) * progress
@@ -523,7 +539,11 @@ def compute_synthesis(
             "ubi_obligation": round(ubi_obligation, 0),
             "welfare_obligation": round(welfare_obligation, 0),
             "income": round(income, 0),
+            "wage_income": round(ubi_obligation + salary_total_annual, 0),
+            "founder_income": round(founder_total_capital_income, 0),
             "spending": round(spending, 0),
+            "wage_spending": round(wage_spending, 0),
+            "founder_spending": round(founder_spending, 0),
             "margin_pct": round(margin_pct_now, 2),
             "profit_pool": round(profit_pool, 0),
             "levy_capacity": round(levy_capacity, 0),
@@ -551,7 +571,11 @@ def compute_synthesis(
             "target_margin_pct": round(target_margin, 1),
             "margin_ceiling_pct": margin_ceiling_pct,
             "spending_share": spending_share,
+            "founder_spending_share": founder_spending_share,
             "levy_capture_pct": levy_capture_pct,
+            "n_founder_class_today": n_founder_class_today,
+            "founder_capital_income_today": founder_capital_income_today,
+            "founder_growth_pct_per_year": founder_growth_pct_per_year,
             "unemployment_scenario": unemp_scenario["name"],
             "profitability_scenario": prof_scenario["name"],
             "capital_share_of_gains": capital_pct,
