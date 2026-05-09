@@ -244,22 +244,31 @@ function renderUnemploymentScenarios(unemp) {
   <div class="card" style="margin-top:14px; border-left: 3px solid var(--crit);">
     <h3>Labour displacement — already happening · 2026 cost ratios</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${ev.intro}</div>
-    <table>
+    <table style="table-layout: fixed; width: 100%;">
+      <colgroup>
+        <col style="width: 22%;">
+        <col style="width: 10%;">
+        <col style="width: 12%;">
+        <col style="width: 8%;">
+        <col style="width: 48%;">
+      </colgroup>
       <thead><tr>
         <th>Role</th>
-        <th class="num">AI cost / mo</th>
-        <th class="num">Human cost / mo</th>
-        <th class="num">Cost ratio</th>
+        <th class="num">AI / mo</th>
+        <th class="num">Human / mo</th>
+        <th class="num">Ratio</th>
         <th>Notes</th>
       </tr></thead>
       <tbody>
         ${ev.examples.map(e => `
           <tr>
-            <td class="cat">${e.role}</td>
-            <td class="num">$${e.ai_cost_per_month.toLocaleString()}</td>
-            <td class="num">$${e.human_cost_per_month.toLocaleString()}</td>
-            <td class="num" style="color:var(--crit);"><strong>${e.cost_ratio}×</strong></td>
-            <td style="font-size:11px; color:var(--dim);">${e.note}<br><span style="color:var(--faint);">Human baseline: ${e.human_baseline}</span></td>
+            <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}</td>
+            <td class="num" style="vertical-align: top;">$${e.ai_cost_per_month.toLocaleString()}</td>
+            <td class="num" style="vertical-align: top;">$${e.human_cost_per_month.toLocaleString()}</td>
+            <td class="num" style="color:var(--crit); vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
+            <td style="font-size:11px; color:var(--dim); white-space: normal; line-height: 1.5; vertical-align: top;">
+              ${e.note}<br><span style="color:var(--faint);">Human baseline: ${e.human_baseline}</span>
+            </td>
           </tr>
         `).join('')}
       </tbody>
