@@ -175,7 +175,7 @@ function renderLogChart(opts) {
   </div>`;
 }
 
-function renderCategoryChart(categories, basketTrajectory) {
+function renderCategoryChart(categories, basketTrajectory, spiceBasketTrajectory) {
   const series = categories.map(cat => ({
     label: cat.name,
     color: colorVar(cat.color_class),
@@ -184,14 +184,19 @@ function renderCategoryChart(categories, basketTrajectory) {
     dashed: false,
   }));
   if (basketTrajectory) {
-    series.push({ label: "BASKET (aggregate)", color: "var(--headline)", points: basketTrajectory, strokeWidth: 3.5, dashed: true, emphasised: true });
+    series.push({ label: "BASKET (research aggregate)", color: "var(--headline)", points: basketTrajectory, strokeWidth: 3, dashed: true, emphasised: true });
+  }
+  if (spiceBasketTrajectory) {
+    series.push({ label: "SPICE BASKET (planning)", color: "var(--crit)", points: spiceBasketTrajectory, strokeWidth: 3.5, dashed: true, emphasised: true });
   }
   return renderLogChart({
     title: "Cost trajectory by category · 2026 = 100%",
     series,
-    height: 520,
-    footer: `Y-axis logarithmic — each gridline ≈ 2× change. <strong style="color: var(--headline);">BASKET</strong> (dashed white) is the weighted aggregate.
-             <strong style="color: var(--crit);">LAND</strong> rises (Altman: "inherently limited resources may rise dramatically"). Land is excluded from the BASKET aggregate per Steve's scope decision.`,
+    height: 540,
+    footer: `Y-axis logarithmic — each gridline ≈ 2× change.
+             <strong style="color: var(--headline);">BASKET</strong> (dashed white) = research-anchored aggregate.
+             <strong style="color: var(--crit);">SPICE BASKET</strong> (dashed red) = the more aggressive planning assumption used for SPICE colony architecture.
+             <strong style="color: var(--crit);">LAND</strong> rises (Altman) and is excluded from both baskets.`,
   });
 }
 

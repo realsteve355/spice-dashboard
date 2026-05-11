@@ -85,42 +85,44 @@ function renderHenryFordCallout(prof) {
 }
 
 function renderNavCards(d) {
-  const lastBasket = d.basket_trajectory[d.basket_trajectory.length - 1];
-  const mainstreamUnemp = d.unemployment.scenarios[0].checkpoints[d.unemployment.scenarios[0].checkpoints.length - 1];
-  const capitalScenario = d.profitability.scenarios[0];
+  // Show SPICE projection numbers — that's what the synthesis below uses
+  const spiceBasket = d.spice_basket_trajectory[d.spice_basket_trajectory.length - 1];
+  const spiceUnemp = d.unemployment.scenarios.find(s => s.name.startsWith("SPICE"));
+  const spiceUnempFinal = spiceUnemp.checkpoints[spiceUnemp.checkpoints.length - 1];
+  const spiceProfit = d.profitability.scenarios.find(s => s.name.startsWith("SPICE"));
   return `
   <div class="card" style="margin-bottom:14px;">
-    <h3>Three drivers · click for detail</h3>
+    <h3>Three drivers · SPICE projection · click for detail</h3>
     <div class="cat-grid" style="grid-template-columns: repeat(3, 1fr);">
       <a href="/cost-deflation" style="text-decoration:none;">
-        <div class="cat-card ok" style="cursor:pointer; height:100%;">
+        <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Cost deflation →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">11 categories with research-anchored cost trajectories. Land excluded.</div>
-          <div style="font-size:18px; color:var(--ok); font-variant-numeric:tabular-nums;">${lastBasket.cost_index.toFixed(0)}%</div>
-          <div style="font-size:10px; color:var(--faint);">basket cost in ${lastBasket.year} (vs 100% today)</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">10 categories + basket aggregate + SPICE planning curve.</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceBasket.cost_index.toFixed(0)}%</div>
+          <div style="font-size:10px; color:var(--faint);">SPICE basket cost in ${spiceBasket.year} (vs 100% today)</div>
         </div>
       </a>
       <a href="/unemployment" style="text-decoration:none;">
-        <div class="cat-card blue" style="cursor:pointer; height:100%;">
+        <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Unemployment →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Three scenarios: mainstream, bull, sceptic. Spread is enormous.</div>
-          <div style="font-size:18px; color:var(--blue); font-variant-numeric:tabular-nums;">${mainstreamUnemp.unemployment_pct}%</div>
-          <div style="font-size:10px; color:var(--faint);">mainstream forecast for ${mainstreamUnemp.year}</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Four scenarios: mainstream, bull, SPICE, sceptic + workforce breakdown.</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceUnempFinal.unemployment_pct}%</div>
+          <div style="font-size:10px; color:var(--faint);">SPICE projection for ${spiceUnempFinal.year}</div>
         </div>
       </a>
       <a href="/profitability" style="text-decoration:none;">
-        <div class="cat-card warn" style="cursor:pointer; height:100%;">
+        <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Profitability →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Acemoglu-Restrepo: who captures the gains — capital, consumer, labour?</div>
-          <div style="font-size:18px; color:var(--warn); font-variant-numeric:tabular-nums;">${capitalScenario.capital_pct}%</div>
-          <div style="font-size:10px; color:var(--faint);">capital share in current US trajectory</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Acemoglu-Restrepo split + SPICE insulation + Henry Ford.</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceProfit.capital_pct}%</div>
+          <div style="font-size:10px; color:var(--faint);">SPICE: capital share of AI gains</div>
         </div>
       </a>
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:10px;">
-      Each sub-page presents the source-attributed forecast data for that driver.
-      The synthesis below combines all three to compute when SPICE reaches
-      welfare-capable (MS1) and full-UBI-capable (MS2).
+      The synthesis below uses the <strong style="color:var(--crit);">SPICE projection</strong>
+      consistently across all three drivers. This is the design case for SPICE colony architecture —
+      more aggressive than the public bull voices.
     </div>
   </div>`;
 }

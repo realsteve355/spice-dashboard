@@ -251,7 +251,7 @@ UNEMPLOYMENT_FORECASTS = {
         },
         {
             "name": "Bull / acceleration (Musk, Anthropic, RethinkX)",
-            "color_class": "crit",
+            "color_class": "warn",
             "checkpoints": [
                 {"year": 2026, "unemployment_pct":  4.0, "anchor": "Same starting point"},
                 {"year": 2030, "unemployment_pct": 15.0, "anchor": "Musk: 12-15% workforce; Anthropic Balwit: 'most jobs obsolete in a few years'"},
@@ -262,8 +262,20 @@ UNEMPLOYMENT_FORECASTS = {
             "interpretation": "Rapid displacement; new tasks don't keep pace. UBI structurally necessary.",
         },
         {
+            "name": "SPICE projection (planning assumption)",
+            "color_class": "crit",
+            "checkpoints": [
+                {"year": 2026, "unemployment_pct":  4.0, "anchor": "Current baseline"},
+                {"year": 2030, "unemployment_pct": 30.0, "anchor": "Digital wave: ~85% of knowledge work (coders, advisers, illustrators, analysts) displaced"},
+                {"year": 2035, "unemployment_pct": 80.0, "anchor": "Services + manual waves: humanoid robots at scale; 85% of today's jobs gone"},
+                {"year": 2040, "unemployment_pct": 85.0, "anchor": "Management thinning begins; long-tail roles fade"},
+                {"year": 2045, "unemployment_pct": 88.0, "anchor": "Of today's jobs ~12% remain (human-touch/craft); new emergent categories absorb some displaced"},
+            ],
+            "interpretation": "Faster than the public bull voices. SPICE colonies plan for this case: ~85% of today's jobs gone by 2035, compressed timeline from sequential waves (digital → services + manual → management long tail). This is the design case for SPICE architecture.",
+        },
+        {
             "name": "Skeptic (Acemoglu)",
-            "color_class": "warn",
+            "color_class": "dim",
             "checkpoints": [
                 {"year": 2026, "unemployment_pct":  4.0, "anchor": "Same starting point"},
                 {"year": 2030, "unemployment_pct":  4.5, "anchor": "Only 20% of tasks exposed; even fewer profitably automatable"},
@@ -442,6 +454,15 @@ PROFITABILITY_FORECASTS = {
     ),
     "scenarios": [
         {
+            "name": "SPICE projection (capital-extreme, planning case)",
+            "capital_pct": 75,
+            "consumer_pct": 20,
+            "labor_pct": 5,
+            "anchor": "Most aggressive capital capture. Automation winners take outsize share; labour share collapses near-zero; consumers benefit through cheaper goods but slowly. This is what SPICE colonies plan for.",
+            "spice_implication": "Largest levy pool. Margins expand toward 50%+. Founder-class capture concentrated. SPICE math closes earliest under this scenario — MS1 around 2032, MS2 by 2038.",
+            "color_class": "crit",
+        },
+        {
             "name": "Capital-heavy capture (current US trajectory)",
             "capital_pct": 60,
             "consumer_pct": 25,
@@ -610,6 +631,19 @@ FORECASTS["unemployment"] = UNEMPLOYMENT_FORECASTS
 FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 
 
+# --- SPICE projection (more aggressive than bull) ---------------------------
+# Compressed timeline: 95% deflation by 2045 vs ~85% under research-aggregate.
+# Reflects the SPICE planning assumption — design case for colony architecture.
+SPICE_BASKET_TRAJECTORY = [
+    {"year": 2026, "cost_index": 100.0},
+    {"year": 2030, "cost_index":  35.0},
+    {"year": 2035, "cost_index":  15.0},
+    {"year": 2040, "cost_index":   8.0},
+    {"year": 2045, "cost_index":   5.0},
+]
+FORECASTS["spice_basket_trajectory"] = SPICE_BASKET_TRAJECTORY
+
+
 # --- Synthesis: when do MS1 and MS2 land under these forecasts? -----------------
 # Takes the basket trajectory + an unemployment scenario + a profitability
 # scenario and computes the year SPICE becomes welfare-capable (MS1) and full-
@@ -618,8 +652,8 @@ FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 # back-of-envelope view that ties the three drivers together.
 def compute_synthesis(
     basket_traj: list,
-    unemployment_scenario_idx: int = 0,  # 0=mainstream, 1=bull, 2=skeptic
-    profitability_scenario_idx: int = 0, # 0=capital-heavy, 1=consumer-heavy, 2=labor-rebalanced
+    unemployment_scenario_idx: int = 2,  # 0=mainstream, 1=bull, 2=SPICE, 3=skeptic
+    profitability_scenario_idx: int = 0, # 0=SPICE-extreme, 1=capital-heavy, 2=consumer-heavy, 3=labor-rebalanced
     n_citizens: int = 40,
     n_working_adults_today: int = 13,    # from family-types model
     avg_salary_monthly_today: float = 4_000,  # $/mo per working adult today
@@ -751,9 +785,13 @@ def compute_synthesis(
     }
 
 
-# Compute the default synthesis at module load
-# (mainstream unemp + capital-heavy profit = the most realistic combination)
-FORECASTS["synthesis"] = compute_synthesis(FORECASTS["basket_trajectory"])
+# Compute the default synthesis at module load.
+# Defaults now SPICE projection across all three drivers — the planning case
+# for SPICE colony architecture (most aggressive than bull where applicable):
+#   - SPICE basket trajectory (95% deflation by 2045)
+#   - SPICE unemployment scenario (80% by 2035)
+#   - SPICE capital-extreme profitability split (75/20/5)
+FORECASTS["synthesis"] = compute_synthesis(SPICE_BASKET_TRAJECTORY)
 
 
 def get_forecasts() -> dict:
