@@ -44,7 +44,7 @@ export default function TopBar({ navItems = [], cta }) {
         <img
           src="/brand/axion-wordmark-light.png"
           alt="AXION"
-          style={{ height: 18, width: "auto", display: "block" }}
+          style={{ height: 28, width: "auto", display: "block" }}
         />
         <span style={S.brandSep}>/</span>
         <span style={S.brandTag}>mission control</span>

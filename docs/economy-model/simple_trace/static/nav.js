@@ -31,7 +31,7 @@
       margin-right: 8px;
     }
     .site-nav .brand img {
-      height: 14px; width: auto; display: block;
+      height: 22px; width: auto; display: block;
     }
     .site-nav .brand .tag {
       color: var(--dim);

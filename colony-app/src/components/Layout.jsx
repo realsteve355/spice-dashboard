@@ -188,7 +188,7 @@ export default function Layout({ children, title, back, colonySlug }) {
               {title}
             </span>
           ) : (
-            <img src="/brand/axion-wordmark-light.png" alt="AXION" style={{ height: 14, width: 'auto', display: 'block' }} />
+            <img src="/brand/axion-wordmark-light.png" alt="AXION" style={{ height: 22, width: 'auto', display: 'block' }} />
           )}
         </div>
 
