@@ -171,7 +171,7 @@ export default function Layout({ children, title, back, colonySlug }) {
         background: C.panel || C.white,
         borderBottom: `1px solid ${C.borderHot || C.border}`,
         padding: '0 16px',
-        height: 52,
+        height: 64,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -188,7 +188,7 @@ export default function Layout({ children, title, back, colonySlug }) {
               {title}
             </span>
           ) : (
-            <img src="/brand/axion-wordmark-light.png" alt="AXION" style={{ height: 22, width: 'auto', display: 'block' }} />
+            <img src="/brand/axion-wordmark-light.png" alt="AXION" style={{ height: 44, width: 'auto', display: 'block' }} />
           )}
         </div>
 
