@@ -6,22 +6,23 @@ import { logInfo, logError } from './utils/logger'
 import Directory       from './pages/Directory'
 import ColonyPage      from './pages/ColonyPage'
 import CreateColony    from './pages/CreateColony'
-import Dashboard       from './pages/Dashboard'
 import Admin           from './pages/Admin'
-import Company         from './pages/Company'
 import RegisterCompany  from './pages/RegisterCompany'
 import Votes            from './pages/Votes'
-import Profile          from './pages/Profile'
-import Guardian         from './pages/Guardian'
 import RequestPayment   from './pages/RequestPayment'
 import PaymentConfirm   from './pages/PaymentConfirm'
-import Assets           from './pages/Assets'
 import Mall             from './pages/Mall'
 import Store            from './pages/Store'
 import Mcc              from './pages/Mcc'
 import Fisc             from './pages/Fisc'
-import Budget           from './pages/Budget'
 import Basket           from './pages/Basket'
+
+// Variant-aware routing: pages that differ between Earth and Mars colonies
+// are mounted via VariantRoute, which reads the colony's variant and renders
+// the right page from variants/{earth,mars}/. Everything else (Mall, Profile,
+// Votes, Mcc, Fisc, Directory, etc.) stays on direct imports — those pages
+// are jurisdiction-agnostic.
+import VariantRoute from './router/VariantRoute'
 
 export const WalletCtx = createContext(null)
 export const useWallet = () => useContext(WalletCtx)
@@ -297,22 +298,24 @@ export default function App() {
         <Routes>
           <Route path="/"                        element={<Directory />}    />
           <Route path="/colony/:slug"            element={<ColonyPage />}   />
-          <Route path="/colony/:slug/dashboard"  element={<Dashboard />}    />
+          {/* Variant-aware: Dashboard, Company, Profile, Guardian, Assets, Budget. */}
+          <Route path="/colony/:slug/dashboard"            element={<VariantRoute page="Dashboard" />} />
+          <Route path="/colony/:slug/company/:companyId"   element={<VariantRoute page="Company"   />} />
+          <Route path="/colony/:slug/profile"              element={<VariantRoute page="Profile"   />} />
+          <Route path="/colony/:slug/profile/:viewAddress" element={<VariantRoute page="Profile"   />} />
+          <Route path="/colony/:slug/guardian"             element={<VariantRoute page="Guardian"  />} />
+          <Route path="/colony/:slug/assets"               element={<VariantRoute page="Assets"    />} />
+          <Route path="/colony/:slug/budget"               element={<VariantRoute page="Budget"    />} />
+          {/* Jurisdiction-agnostic: same component for every variant. */}
           <Route path="/colony/:slug/admin"               element={<Admin />}           />
           <Route path="/colony/:slug/company/new"        element={<RegisterCompany />} />
-          <Route path="/colony/:slug/company/:companyId" element={<Company />}         />
           <Route path="/colony/:slug/votes"               element={<Votes />}           />
-          <Route path="/colony/:slug/profile"            element={<Profile />}         />
-          <Route path="/colony/:slug/profile/:viewAddress" element={<Profile />}      />
-          <Route path="/colony/:slug/guardian"           element={<Guardian />}        />
           <Route path="/colony/:slug/request"            element={<RequestPayment />}  />
           <Route path="/colony/:slug/pay"                element={<PaymentConfirm />}  />
-          <Route path="/colony/:slug/assets"             element={<Assets />}          />
           <Route path="/colony/:slug/mall"               element={<Mall />}            />
           <Route path="/colony/:slug/mall/:companyAddr"  element={<Store />}           />
           <Route path="/colony/:slug/mcc"                element={<Mcc />}             />
           <Route path="/colony/:slug/fisc"               element={<Fisc />}            />
-          <Route path="/colony/:slug/budget"             element={<Budget />}          />
           <Route path="/colony/:slug/basket"            element={<Basket />}          />
           <Route path="/create"                          element={<CreateColony />}    />
         </Routes>
