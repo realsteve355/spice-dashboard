@@ -15,7 +15,7 @@ const CARDS = [
   {
     symbol: 'S → V',
     title: 'Two-token currency',
-    body: 'S-tokens are issued monthly as UBI and expire at month end — driving velocity with no inflation. V-tokens are permanent savings, earned through equity dividends and converted from UBI surplus.'
+    body: 'MOND are issued monthly as UBI and expire at month end — driving velocity with no inflation. V-tokens are permanent savings, earned through equity dividends and converted from UBI surplus.'
   },
   {
     symbol: '⬡',
@@ -124,16 +124,16 @@ export default function Mars() {
           ))}
         </div>
 
-        {/* ── SPICE connection ── */}
+        {/* ── AXION connection ── */}
         <div className="mars-section-label">The connection to Act I</div>
         <div className="mars-connection">
-          The <span className="highlight">SPICE Collision</span> model shows where
+          The <span className="highlight">AXION Collision</span> model shows where
           the current fiat economy is heading — AI displacement compressing the wage
           base, sovereign debt spiralling, fiscal systems under terminal stress.
           The <span className="highlight">Mars Colony</span> model shows what a
           functioning alternative looks like. These are not unrelated. The colony
           economy is a working implementation of the post-scarcity transition the
-          SPICE thesis predicts is coming. The question is not whether the transition
+          AXION thesis predicts is coming. The question is not whether the transition
           will happen. The question is whether anyone is ready for it.
         </div>
 

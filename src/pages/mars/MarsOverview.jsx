@@ -55,7 +55,7 @@ export default function MarsOverview() {
       {/* ── Stat cards ── */}
       <div className="md-stat-row" style={{ marginBottom: 20 }}>
         <StatCard label="Population"       value={fmt(snap.population)}      sub="active adults"          color="#e8a020" />
-        <StatCard label="UBI Payment"      value="1,000 S"                   sub="5-tokens/month · fixed"  color="#3dffa0" />
+        <StatCard label="UBI Payment"      value="1,000 MOND"                   sub="5-tokens/month · fixed"  color="#3dffa0" />
         <StatCard label="Mean V-Holdings"  value={fmt(snap.mean_v)}          sub="per citizen"             color="#4488ff" />
         <StatCard label="Median V-Holdings" value={fmt(snap.median_v)}       sub="50th percentile"         color="#3dffa0" />
         <StatCard label="Colony GDP"       value={fmt(snap.colony_gdp)}      sub="cumulative"              color="#9966ff" />

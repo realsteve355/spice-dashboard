@@ -39,7 +39,7 @@ function getCollisionContext(t) {
     return `NO CRISIS TRIGGERED: All thresholds remain intact throughout 2026–2035. System adjusts without breaking.`;
   }
   if (hasMaterialAI || hasSignifCrypto) {
-    return `THE COLLISION (${t.crisisYear}): This is the SPICE thesis — NOT a conventional crisis.
+    return `THE COLLISION (${t.crisisYear}): This is the AXION thesis — NOT a conventional crisis.
 Novel dynamics present: AI displacement ${Math.round((t.displaced ?? 0) * 100)}%${hasSignifCrypto ? `, crypto flight peaks at ${t.peakCrypto}%` : ""}.
 What makes this different from historical crises:
 1. AI-driven deflation prevents the Fed from inflating away debt (the traditional escape route)
@@ -103,7 +103,7 @@ RULES:
 - Ground every claim in the trajectory numbers above
 - Explain causality — WHY things happen, not just WHAT
 - No bullet points, no headers within paragraphs
-- Do NOT mention "SPICE" or "ZPC"
+- Do NOT mention "AXION" or "ZPC"
 - Tone: analytical narrative — tell the story of how this scenario unfolds`;
 }
 

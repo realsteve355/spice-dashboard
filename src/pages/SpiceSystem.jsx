@@ -1,4 +1,4 @@
-// SpiceSystem.jsx — SPICE Colony Economic System
+// SpiceSystem.jsx — AXION Colony Economic System
 // Post-collapse communities organise as colonies using S/V tokens internally,
 // BTC/ETH/SOL externally. The Collision is the precursor — this is what comes after.
 
@@ -13,7 +13,7 @@ const T3   = "#767676";
 const GOLD = "#c8a96e";
 
 const C = {
-  s:       "#ef4444",   // S token — everyday currency, expires monthly
+  s:       "#ef4444",   // MOND — everyday currency, expires monthly
   v:       "#c8a96e",   // V token — permanent savings
   fisc:    "#4488ff",   // The Fisc — automated constitutional utility
   mcc:     "#3dffa0",   // MCC — infrastructure company
@@ -48,12 +48,12 @@ export default function SpiceSystem() {
           Post-Collision Economy
         </div>
         <h1 style={{ margin:"0 0 6px", fontSize:22, fontWeight:700, color:T1, letterSpacing:"0.04em" }}>
-          The SPICE Colony Economic System
+          The AXION Colony Economic System
         </h1>
         <p style={{ margin:"0 0 32px", fontSize:12, color:T2, lineHeight:1.7, maxWidth:740 }}>
           After the Collision — fiat breakdown, AI unemployment, civil reorganisation —
-          communities form self-governing colonies. The Fisc issues 1,000 S-tokens to every
-          citizen monthly as Universal Basic Income. S-tokens expire at month end — an
+          communities form self-governing colonies. The Fisc issues 1,000 MOND to every
+          citizen monthly as Universal Basic Income. MOND expire at month end — an
           automatic anti-inflation mechanism. Up to 20% may be converted to permanent V-tokens.
           External trade settles in BTC, ETH, or SOL.
         </p>
@@ -135,10 +135,10 @@ export default function SpiceSystem() {
             <text x={108} y={402} textAnchor="middle" fontSize={7} fill={T3} fontFamily={F}>infrastructure company</text>
             <text x={108} y={413} textAnchor="middle" fontSize={7} fill={T3} fontFamily={F}>dome · power · water · air</text>
 
-            {/* ── S Token ── */}
+            {/* ── MOND ── */}
             <circle cx={155} cy={200} r={28} fill={`${C.s}18`} stroke={C.s} strokeWidth={1.5}/>
-            <text x={155} y={196} textAnchor="middle" fontSize={11} fontWeight={700} fill={C.s} fontFamily={F}>S</text>
-            <text x={155} y={209} textAnchor="middle" fontSize={6.5} fill={C.s} fontFamily={F}>SPICE</text>
+            <text x={155} y={196} textAnchor="middle" fontSize={11} fontWeight={700} fill={C.s} fontFamily={F}>Ɱ</text>
+            <text x={155} y={209} textAnchor="middle" fontSize={6.5} fill={C.s} fontFamily={F}>MOND</text>
             <text x={155} y={240} textAnchor="middle" fontSize={7} fill={C.s} fontFamily={F}>expires month end</text>
 
             {/* ── V Token ── */}
@@ -149,29 +149,29 @@ export default function SpiceSystem() {
 
             {/* ── FLOWS ── */}
 
-            {/* Fisc → S → Citizen: 1,000 S UBI */}
+            {/* Fisc → S → Citizen: 1,000 MOND UBI */}
             <line x1={215} y1={222} x2={200} y2={210}
               stroke={C.s} strokeWidth={1.5} markerEnd={mk(C.s)}/>
             <line x1={155} y1={172} x2={102} y2={120}
               stroke={C.s} strokeWidth={1.5} markerEnd={mk(C.s)}/>
-            <text x={136} y={148} textAnchor="middle" fontSize={7} fill={C.s} fontFamily={F}>1,000 S</text>
+            <text x={136} y={148} textAnchor="middle" fontSize={7} fill={C.s} fontFamily={F}>1,000 MOND</text>
             <text x={136} y={158} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>(UBI · monthly)</text>
             <text x={184} y={218} textAnchor="middle" fontSize={6} fill={T3} fontFamily={F}>issues</text>
 
-            {/* Citizen → MCC: bill ~200 S */}
+            {/* Citizen → MCC: bill ~200 MOND */}
             <line x1={78} y1={123} x2={78} y2={350}
               stroke={C.s} strokeWidth={1.2} strokeDasharray="4 3" markerEnd={mk(C.s)}/>
-            <text x={62} y={245} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F} transform="rotate(-90,62,245)">MCC bill ~200 S</text>
+            <text x={62} y={245} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F} transform="rotate(-90,62,245)">MCC bill ~200 MOND</text>
 
-            {/* Citizen → Company: spend S on goods/services */}
+            {/* Citizen → Company: spend MOND on goods/services */}
             <line x1={128} y1={80} x2={390} y2={80}
               stroke={C.s} strokeWidth={1.4} markerEnd={mk(C.s)}/>
-            <text x={260} y={72} textAnchor="middle" fontSize={7} fill={C.s} fontFamily={F}>spend S (goods · services)</text>
+            <text x={260} y={72} textAnchor="middle" fontSize={7} fill={C.s} fontFamily={F}>spend MOND (goods · services)</text>
 
-            {/* Citizen → V: convert up to 200 S */}
+            {/* Citizen → V: convert up to 200 MOND */}
             <path d="M 128 100 Q 290 150 432 185"
               fill="none" stroke={C.v} strokeWidth={1.2} strokeDasharray="4 3" markerEnd={mk(C.v)}/>
-            <text x={280} y={148} textAnchor="middle" fontSize={7} fill={C.v} fontFamily={F}>convert → V (max 200 S/mo)</text>
+            <text x={280} y={148} textAnchor="middle" fontSize={7} fill={C.v} fontFamily={F}>convert → V (max 200 MOND/mo)</text>
 
             {/* S expires */}
             <text x={155} y={256} textAnchor="middle" fontSize={7} fill={`${C.s}99`} fontFamily={F}>↓ expires</text>
@@ -190,17 +190,17 @@ export default function SpiceSystem() {
               stroke={C.v} strokeWidth={1} strokeDasharray="3 3" markerEnd={mk(C.v)}/>
             <text x={510} y={208} textAnchor="middle" fontSize={6.5} fill={T3} fontFamily={F}>20%→V</text>
 
-            {/* ── S token note ── */}
+            {/* ── MOND note ── */}
             <rect x={160} y={390} width={390} height={52} rx={3}
               fill="rgba(239,68,68,0.06)" stroke={`${C.s}50`} strokeWidth={0.8}/>
             <text x={355} y={408} textAnchor="middle" fontSize={8} fontWeight={700} fill={C.s} fontFamily={F} letterSpacing="0.08em">
-              S TOKEN = SPICE COIN (ZPC)
+              MOND — THE AXION COLONY COIN
             </text>
             <text x={355} y={422} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>
               Issued by the Fisc · colony unit of account · not backed by fiat
             </text>
             <text x={355} y={434} textAnchor="middle" fontSize={7} fill={T2} fontFamily={F}>
-              1,000 S/citizen/month · expires at midnight on last day of month
+              1,000 MOND/citizen/month · expires at midnight on last day of month
             </text>
 
           </svg>
@@ -213,19 +213,19 @@ export default function SpiceSystem() {
             <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase",
               marginBottom:16, borderBottom:`1px solid #141c2e`, paddingBottom:8 }}>Legend</div>
             <LegendItem color={C.fisc}    label="The Fisc"
-              sub="The colony's fully automated constitutional utility. Issues 1,000 S-tokens to every citizen on the 1st of each month. Maintains the blockchain registry. Cannot be lobbied, voted out, or placed under MCC control." />
-            <LegendItem color={C.s}       label="S Token — SPICE Coin (ZPC)"
+              sub="The colony's fully automated constitutional utility. Issues 1,000 MOND to every citizen on the 1st of each month. Maintains the blockchain registry. Cannot be lobbied, voted out, or placed under MCC control." />
+            <LegendItem color={C.s}       label="MOND — the colony coin"
               sub="The colony's everyday currency. Expires at midnight on the last day of every month. The month-end reset is the anti-inflation mechanism — unspent supply is destroyed, not accumulated." />
             <LegendItem color={C.v}       label="V Token — Vault"
-              sub="Permanent savings. Citizens may convert up to 200 S/month to V (20% of UBI). Companies convert up to 20% of net monthly earnings. V-tokens never expire and cannot be seized." />
+              sub="Permanent savings. Citizens may convert up to 200 MOND/month to V (20% of UBI). Companies convert up to 20% of net monthly earnings. V-tokens never expire and cannot be seized." />
             <LegendItem color={C.mcc}     label="MCC — Infrastructure Company"
-              sub="Provides dome, life support, power, water, waste, comms. Owned equally by all citizens (one non-transferable share each). Bills citizens for actual consumption — target ~200 S/month average." />
+              sub="Provides dome, life support, power, water, waste, comms. Owned equally by all citizens (one non-transferable share each). Bills citizens for actual consumption — target ~200 MOND/month average." />
             <LegendItem color={C.citizen} label="Citizen"
-              sub="Receives 1,000 S monthly from the Fisc. Pays MCC bill. Spends remaining S on goods/services. May convert up to 200 S to V as savings. Holds equity in companies and receives V dividends." />
+              sub="Receives 1,000 MOND monthly from the Fisc. Pays MCC bill. Spends remaining MOND on goods/services. May convert up to 200 MOND to V as savings. Holds equity in companies and receives V dividends." />
             <LegendItem color={C.company} label="Company"
-              sub="Provides goods or services for S-tokens. At month end, converts up to 20% of net earnings to V, distributed as dividends to equity holders. Remaining S expires." />
+              sub="Provides goods or services for MOND. At month end, converts up to 20% of net earnings to V, distributed as dividends to equity holders. Remaining S expires." />
             <LegendItem color={C.ext}     label="BTC · ETH · SOL"
-              sub="External settlement layer. Used for inter-colony trade, imports, and exports. Not part of the internal SPICE system." />
+              sub="External settlement layer. Used for inter-colony trade, imports, and exports. Not part of the internal AXION system." />
           </div>
 
           <div style={{ background:BG2, border:`1px solid ${BD}`, borderRadius:3, padding:"20px" }}>
@@ -233,11 +233,11 @@ export default function SpiceSystem() {
               marginBottom:16, borderBottom:`1px solid #141c2e`, paddingBottom:8 }}>Key Mechanics</div>
             {[
               { head:"The anti-inflation mechanism",
-                body:"S-tokens expire at midnight on the last day of every month. The total supply resets to zero regardless of what was spent. There is no mechanism by which unspent money can chase a fixed supply of goods. Inflation in S-tokens is structurally impossible." },
+                body:"MOND expire at midnight on the last day of every month. The total supply resets to zero regardless of what was spent. There is no mechanism by which unspent money can chase a fixed supply of goods. Inflation in MOND is structurally impossible." },
               { head:"UBI as the foundation",
-                body:"Every citizen receives 1,000 S-tokens unconditionally from the Fisc — for life, from birth, without means testing. This covers the MCC infrastructure bill (~200 S average) with enough remaining for goods and services. The floor is guaranteed; the ceiling is infinite." },
+                body:"Every citizen receives 1,000 MOND unconditionally from the Fisc — for life, from birth, without means testing. This covers the MCC infrastructure bill (~200 MOND average) with enough remaining for goods and services. The floor is guaranteed; the ceiling is infinite." },
               { head:"Savings via V-tokens",
-                body:"Citizens and companies may convert S-tokens to V-tokens — permanent savings that never expire. The conversion cap (20% for citizens, 20% of net earnings for companies) prevents V from accumulating faster than colony output grows, which is the system's only inflation risk." },
+                body:"Citizens and companies may convert MOND to V-tokens — permanent savings that never expire. The conversion cap (20% for citizens, 20% of net earnings for companies) prevents V from accumulating faster than colony output grows, which is the system's only inflation risk." },
               { head:"The Fisc — constitutional, not political",
                 body:"The Fisc is not a company and not part of MCC. It is a constitutional utility — operated entirely by software, governed by rules not people. Changing its rules requires an 80% blockchain referendum of all registered citizens. It cannot be lobbied, controlled, or voted out." },
             ].map(({ head, body }) => (
@@ -253,12 +253,12 @@ export default function SpiceSystem() {
         {/* Benefits panel */}
         <div style={{ background:BG2, border:`1px solid ${BD}`, borderRadius:3, padding:"20px", marginTop:24 }}>
           <div style={{ fontSize:8, color:T3, letterSpacing:"0.2em", textTransform:"uppercase",
-            marginBottom:16, borderBottom:`1px solid #141c2e`, paddingBottom:8 }}>Benefits of the SPICE System</div>
+            marginBottom:16, borderBottom:`1px solid #141c2e`, paddingBottom:8 }}>Benefits of the AXION System</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:20 }}>
             {[
               { head:"Security", body:"Full universal basic income throughout life — sufficient to cover all basic needs including housing, food, medical, and infrastructure. The target: public services at 20% of basic income." },
               { head:"No tax", body:"Citizens pay only for services they actually use, at metered rates set by the MCC board. No income tax, no VAT, no mandatory contribution beyond the monthly MCC bill." },
-              { head:"No inflation", body:"No money printing, no fractional reserve banking. S-tokens reset to zero monthly. V-token accumulation is capped. The system is structurally non-inflationary." },
+              { head:"No inflation", body:"No money printing, no fractional reserve banking. MOND reset to zero monthly. V-token accumulation is capped. The system is structurally non-inflationary." },
               { head:"Responsibility", body:"No such thing as a free lunch — you pay for all services you consume, incentivising efficient use of resources. Waste processing, power, water — all metered." },
               { head:"Entrepreneurship", body:"Accumulated V-tokens and company equity provide incentive to save, strive, and prosper. No licence required to found a company — register with the Fisc and compete." },
               { head:"Transparency", body:"All ownership — wallets, shares, assets, land rights — is publicly visible on the blockchain at all times. MCC financials are published in real time. No anonymous ownership." },

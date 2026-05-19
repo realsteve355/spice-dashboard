@@ -42,7 +42,7 @@ export default function Invest() {
         {/* HERO */}
         <div style={S.hero}>
           <StatusPill status="warn" label="Page in progress" />
-          <h1 style={S.h1}>Invest in SPICE</h1>
+          <h1 style={S.h1}>Invest in AXION</h1>
           <p style={S.lead}>
             How the protocol generates revenue, how to get involved as a contributor
             or backer, and our open Wefunder campaign. Detailed terms and the
@@ -51,8 +51,8 @@ export default function Invest() {
           </p>
         </div>
 
-        {/* HOW SPICE GENERATES REVENUE */}
-        <SectionHead tag="I-01" title="How SPICE generates revenue" timestamp="DRAFT" />
+        {/* HOW AXION GENERATES REVENUE */}
+        <SectionHead tag="I-01" title="How AXION generates revenue" timestamp="DRAFT" />
         <article style={S.card}>
           <CornerFrame />
           <div style={S.cardTag}>Protocol economics</div>
@@ -79,7 +79,7 @@ export default function Invest() {
           <h2 style={S.cardH}>Three ways in</h2>
           <p style={S.cardBody}>
             {/* TODO: Steve — three lanes:
-               1. Contributors: build SPICE — DeFi, simulation, design, ops
+               1. Contributors: build AXION — DeFi, simulation, design, ops
                2. Backers: invest via Wefunder (see below) or direct equity
                3. Operators: launch a colony when the protocol opens to public deploys
                Add a contact form / Calendly / email here. */}
@@ -94,7 +94,7 @@ export default function Invest() {
         <article style={S.card}>
           <CornerFrame />
           <div style={S.cardTag}>Equity crowdfunding</div>
-          <h2 style={S.cardH}>Back the SPICE protocol on Wefunder</h2>
+          <h2 style={S.cardH}>Back the AXION protocol on Wefunder</h2>
           <p style={S.cardBody}>
             {/* TODO: Steve — Wefunder campaign details:
                raise size, valuation, security type (SAFE / Reg CF), use of funds,

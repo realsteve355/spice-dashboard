@@ -2,12 +2,12 @@
  * BalanceOfPayments — single-colony 24-month sim focused on trade balance.
  *
  * The earlier twinning page treats two colonies as a unit. This page asks
- * the harder question: can a single colony, on its own, run SPICE without
+ * the harder question: can a single colony, on its own, run AXION without
  * the protection of a partner? Drag the sliders and watch the peg break or
  * hold based purely on the colony's own export/import balance and citizen
  * cashout pressure.
  *
- * Basket-anchored: the Fisc keeps a fixed basket of goods costing 28 S.
+ * Basket-anchored: the Fisc keeps a fixed basket of goods costing 28 MOND.
  * USD inflation drives the target rate up; reserve adequacy determines
  * whether the actual rate can keep up. Peg "breaks" = actual rate drifts
  * below target = basket cost in S rises above 28 = real-terms loss.
@@ -148,7 +148,7 @@ function runSim(p) {
     s.sSmallCo *= (1 - p.companyMccBillPct)
     s.sMcc += bills
 
-    // 5. S → V
+    // 5. MOND → V
     const coSave = (s.sLargeCo + s.sMidCo + s.sSmallCo) * p.companyVSavePct
     s.sLargeCo *= (1 - p.companyVSavePct)
     s.sMidCo   *= (1 - p.companyVSavePct)
@@ -268,11 +268,11 @@ export default function BalanceOfPayments() {
     <div style={{ minHeight: '100vh', background: BG0, color: T1, fontFamily: F, paddingBottom: 40 }}>
       <div style={{ borderBottom: BD, padding: '20px 24px', background: BG1 }}>
         <div style={{ fontSize: 11, color: GOLD, letterSpacing: '0.3em', marginBottom: 8 }}>
-          SPICE COLONY · BALANCE OF PAYMENTS
+          AXION COLONY · BALANCE OF PAYMENTS
         </div>
         <div style={{ fontSize: 13, color: T2, lineHeight: 1.6, maxWidth: 880 }}>
           Single-colony 24-month sim. The hard question: can this colony, on
-          its own, run SPICE without a twin partner? Drag the sliders to model
+          its own, run AXION without a twin partner? Drag the sliders to model
           a real US municipality and watch the peg hold or break based on its
           export/import balance, citizen cashout pressure, and the surrounding
           USD volatility.
@@ -315,7 +315,7 @@ export default function BalanceOfPayments() {
               min={0} max={0.10} step={0.005} display={`${(cashout*100).toFixed(1)}%`}
               onChange={v => startTransition(() => setCashout(v))} />
             <Slider label="UBI per citizen / month" value={ubi}
-              min={0} max={1000} step={10} display={`${ubi} S`}
+              min={0} max={1000} step={10} display={`${ubi} MOND`}
               onChange={v => startTransition(() => setUbi(v))} />
             <Slider label="Initial USDC reserve" value={reserve_}
               min={1_000_000} max={500_000_000} step={1_000_000}
@@ -332,8 +332,8 @@ export default function BalanceOfPayments() {
             {/* KPIs */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
               <Kpi label="End basket cost"
-                   value={`${summary.endBasketInS.toFixed(1)} S`}
-                   sub={`target ${TARGET_BASKET_S} S`}
+                   value={`${summary.endBasketInS.toFixed(1)} MOND`}
+                   sub={`target ${TARGET_BASKET_S} MOND`}
                    colour={summary.endBasketInS <= TARGET_BASKET_S * 1.02 ? GRN
                          : summary.endBasketInS <= TARGET_BASKET_S * 1.10 ? GOLD : RED} />
               <Kpi label="End rate ($/S)" value={summary.endRate.toFixed(2)}
@@ -368,7 +368,7 @@ export default function BalanceOfPayments() {
                     <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
                     <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831" domain={[20, 'auto']} />
                     <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" label={{ value: 'target', fill: GRN, fontSize: 9, position: 'right' }} />
-                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
+                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} MOND`} />
                     <Line type="monotone" dataKey="basketInS" stroke={GOLD} strokeWidth={2} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -409,21 +409,21 @@ export default function BalanceOfPayments() {
                 <>
                   <strong style={{ color: RED }}>Peg breaks at month {summary.pegBreakMonth}.</strong>{' '}
                   Trade balance: ${(summary.tradeBalance/1_000_000).toFixed(0)}M over 24 months.
-                  By month 24 the basket costs <strong style={{ color: T1 }}>{summary.endBasketInS.toFixed(1)} S</strong>{' '}
+                  By month 24 the basket costs <strong style={{ color: T1 }}>{summary.endBasketInS.toFixed(1)} MOND</strong>{' '}
                   ({((summary.endBasketInS / TARGET_BASKET_S - 1) * 100).toFixed(0)}% real-terms loss for V holders).
-                  This colony cannot run SPICE on its own — it needs a twin partner with surplus exports.
+                  This colony cannot run AXION on its own — it needs a twin partner with surplus exports.
                 </>
               ) : summary.endBasketInS > TARGET_BASKET_S * 1.02 ? (
                 <>
                   <strong style={{ color: GOLD }}>Drift.</strong>{' '}
-                  Basket cost {summary.endBasketInS.toFixed(1)} S vs target {TARGET_BASKET_S} S — citizens losing real-terms purchasing power. Workable but on a thin margin.
+                  Basket cost {summary.endBasketInS.toFixed(1)} MOND vs target {TARGET_BASKET_S} MOND — citizens losing real-terms purchasing power. Workable but on a thin margin.
                 </>
               ) : (
                 <>
                   <strong style={{ color: GRN }}>Peg holds.</strong>{' '}
                   Trade balance ${(summary.tradeBalance/1_000_000).toFixed(0)}M over 24 months.
-                  Basket holds at {summary.endBasketInS.toFixed(1)} S — citizens experience S as stable.
-                  This colony can run SPICE on its own.
+                  Basket holds at {summary.endBasketInS.toFixed(1)} MOND — citizens experience MOND as stable.
+                  This colony can run AXION on its own.
                 </>
               )}
             </div>

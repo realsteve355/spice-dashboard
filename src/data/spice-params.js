@@ -1,5 +1,5 @@
-// ─── SPICE FIXED PARAMETERS ──────────────────────────────────────────────────
-// These are SPICE's base case assumptions — the thesis, not user scenarios.
+// ─── AXION FIXED PARAMETERS ──────────────────────────────────────────────────
+// These are AXION's base case assumptions — the thesis, not user scenarios.
 // Update current{} values periodically as data changes.
 // Last updated: 2026-03-16
 
@@ -15,7 +15,7 @@ export const SPICE_PARAMS = {
     gini:         0.49,   // Gini coefficient — estimate
   },
 
-  // SPICE projected trajectory (base case, no major policy intervention)
+  // AXION projected trajectory (base case, no major policy intervention)
   projection: {
     debt:         [122, 135, 150, 175, 195, 220, 245],   // 2026–2032
     ai:           [8,   12,  18,  25,  35,  42,  48],
@@ -43,7 +43,7 @@ export const SPICE_PARAMS = {
 
   // Policy assumptions underlying the base case
   policy: {
-    fiscal:   "robot_ubi",  // Robot tax funds UBI — SPICE base case
+    fiscal:   "robot_ubi",  // Robot tax funds UBI — AXION base case
     monetary: "qe",         // QE deployed as crisis response
     crypto:   "tax",        // Tax & Regulate regime
   },

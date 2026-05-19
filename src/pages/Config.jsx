@@ -9,7 +9,7 @@ export default function Config() {
   return (
     <div style={S.page}>
       <div style={S.pageHeader}>
-        <div style={S.eyebrow}>SPICE PROTOCOL · INTERNAL</div>
+        <div style={S.eyebrow}>AXION PROTOCOL · INTERNAL</div>
         <h1 style={S.title}>Configuration</h1>
         <p style={S.subtitle}>
           This page is not publicly linked. It displays current portfolio allocations

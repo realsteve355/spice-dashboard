@@ -179,18 +179,18 @@ export default function Home() {
             manage scarcity, to an economy designed to manage abundance.
           </p>
           <p style={{ ...S.lead, marginBottom: 18 }}>
-            SPICE is a blockchain-based product designed to implement a rollout
+            AXION is a blockchain-based product designed to implement a rollout
             of a UBI system, featuring near-zero inflation, near-zero taxation,
             in an automated, low regulation environment.
           </p>
           <p style={S.lead}>
-            The SPICE product exists today and is available for demonstration
+            The AXION product exists today and is available for demonstration
             and pilot implementation.
           </p>
         </div>
 
         {/* INTRO VIDEO */}
-        <SectionHead tag="V-01" title="Introduction · the SPICE colony economy" timestamp="2-MIN OVERVIEW" />
+        <SectionHead tag="V-01" title="Introduction · the AXION colony economy" timestamp="2-MIN OVERVIEW" />
         <div style={S.videoWrap}>
           {/* TODO: drop in YouTube embed once script is recorded */}
           <div style={{ textAlign: "center" }}>

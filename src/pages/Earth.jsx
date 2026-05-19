@@ -173,7 +173,7 @@ export default function Earth() {
 
       {/* ── I. Hero ── */}
       <Section>
-        <SectionLabel>Earth Colony · SPICE Protocol</SectionLabel>
+        <SectionLabel>Earth Colony · AXION Protocol</SectionLabel>
         <H2>The Next Colony Is Earth</H2>
         <Body>
           The Mars simulation proves the model under extreme scarcity. A closed
@@ -184,7 +184,7 @@ export default function Earth() {
         <Body>
           The same mathematics applies on Earth. The Ergon breakeven threshold —
           where automated output exceeds community survival costs — is not a
-          distant utopian horizon. It is an engineering target. SPICE is the
+          distant utopian horizon. It is an engineering target. AXION is the
           instrument designed to cross it.
         </Body>
         <div style={{
@@ -211,7 +211,7 @@ export default function Earth() {
         <SectionLabel>Currency Architecture · S-Token + V-Token</SectionLabel>
         <H2>Two Tokens, One Economy</H2>
         <Body>
-          The SPICE currency system separates velocity from equity. S-tokens fund
+          The AXION currency system separates velocity from equity. MOND fund
           daily economic activity — they are issued as UBI, expire monthly, and
           circulate continuously. V-tokens represent accumulated productive value —
           earned through work and contribution, permanent, and appreciating with
@@ -219,7 +219,7 @@ export default function Earth() {
         </Body>
         <Body>
           This dual structure solves the hoarding problem that breaks traditional
-          UBI proposals. S-tokens cannot be accumulated; they must circulate.
+          UBI proposals. MOND cannot be accumulated; they must circulate.
           V-tokens cannot be printed; they can only be earned.
         </Body>
         <div style={{
@@ -228,7 +228,7 @@ export default function Earth() {
         }}>
           <TokenCard
             symbol="S"
-            name="Spice Token — Velocity"
+            name="MOND — Velocity"
             color={GREEN}
             role="The circulation layer. Issued monthly as UBI to all colony members. Expire at month-end if not spent."
             mechanics={[
@@ -272,7 +272,7 @@ export default function Earth() {
           <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.7 }}>
             ZPC is the external settlement and reserve token — live on Base Sepolia,
             ultimately on mainnet. S and V tokens are issued and settled on-chain via
-            the SPICE smart contract system. ZPC provides the liquidity bridge to
+            the AXION smart contract system. ZPC provides the liquidity bridge to
             external capital markets, Bitcoin, and gold reserves.
           </div>
         </div>
@@ -302,7 +302,7 @@ export default function Earth() {
             type="Academic Campus"
             title="University or research campus"
             pop="2,000–10,000 residents"
-            note="Food, housing, services, and intellectual labour already partially communalised. S-tokens replace meal plans and campus credits. V-tokens reward teaching, research output, and maintenance work."
+            note="Food, housing, services, and intellectual labour already partially communalised. MOND replace meal plans and campus credits. V-tokens reward teaching, research output, and maintenance work."
           />
           <PilotCard
             type="Rural Cooperative"
@@ -314,7 +314,7 @@ export default function Earth() {
             type="Business Park / SEZ"
             title="Special economic zone"
             pop="1,000–5,000 workers"
-            note="Defined geographic and economic boundary. Employer buy-in replaces individual recruitment. S-tokens supplement wages; V-tokens reward productivity above baseline."
+            note="Defined geographic and economic boundary. Employer buy-in replaces individual recruitment. MOND supplement wages; V-tokens reward productivity above baseline."
           />
           <PilotCard
             type="Remote Town"
@@ -360,7 +360,7 @@ export default function Earth() {
         <SectionLabel>Macro Context · Why Now</SectionLabel>
         <H2>The Collision Creates the Opportunity</H2>
         <Body>
-          SPICE does not assume a benevolent state or a smooth transition. The
+          AXION does not assume a benevolent state or a smooth transition. The
           collision between sovereign debt and AI deflation is already underway.
           Governments will respond with inflation — financial repression, yield
           curve control, monetary expansion. The purchasing power of fiat wages will
@@ -378,7 +378,7 @@ export default function Earth() {
           {[
             { label: "US Debt/GDP", val: "123%", sub: "CBO 2025 baseline", color: "#ef4444" },
             { label: "Projected 2054", val: "154–199%", sub: "CBO long-term outlook", color: "#ef4444" },
-            { label: "AI displacement (base)", val: "40%", sub: "SPICE estimate by 2035", color: PURPLE },
+            { label: "AI displacement (base)", val: "40%", sub: "AXION estimate by 2035", color: PURPLE },
             { label: "Ergon threshold", val: "η × Pai > Cmin", sub: "Automation coverage needed", color: GOLD },
           ].map(({ label, val, sub, color }) => (
             <div key={label} style={{

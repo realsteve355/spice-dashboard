@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SPICE Collision Model v2 — built 2026-03-01 12:58 -->
+<!-- AXION Collision Model v2 — built 2026-03-01 12:58 -->
 <html lang="en">
 <head>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -211,7 +211,7 @@
   .narrative-text .danger { color:var(--red); font-weight:600; }
   .narrative-text .good { color:var(--green); font-weight:600; }
 
-  /* SPICE BAR */
+  /* AXION BAR */
   .spice-bar { background:var(--gold-bg); border:1px solid var(--gold-dim); padding:14px 20px; display:flex; align-items:center; gap:20px; margin-bottom:12px; border-radius:4px; }
   .spice-logo-sm { font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--gold); letter-spacing:0.1em; min-width:70px; line-height:1.1; }
   .spice-div { width:1px; height:40px; background:var(--border); }
@@ -348,7 +348,7 @@
 
 <header>
   <div>
-    <div class="logo-eyebrow">SPICE [ZPC] — Macro Simulation Engine v2.0</div>
+    <div class="logo-eyebrow">AXION [ZPC] — Macro Simulation Engine v2.0</div>
     <div class="logo-title">THE <span>COLLISION</span> MODEL</div>
   </div>
   <div class="header-right">
@@ -370,7 +370,7 @@
         Debt &gt;160%. No major economy has stabilised here without YCC or default.<br><br>
         <span style="color:#c0392b;">●</span> <strong style="color:#c0392b;">Terminal (80–100)</strong><br>
         Debt &gt;200%. Restructuring is a mathematical certainty. Argentina 2001, Greece 2012.<br><br>
-        <em>Crisis is triggered (SPICE activates) when score first crosses 35.</em>
+        <em>Crisis is triggered (AXION activates) when score first crosses 35.</em>
       </div>
     </div>
   </div>
@@ -398,7 +398,7 @@
         <span class="regime-desc">2% automation · 75% reinstatement · Low recursion</span>
       </button>
       <button class="regime-btn" id="auto-spice" onclick="applyPreset('spice',this)">
-        <span class="regime-name">⚡ SPICE Base Case</span>
+        <span class="regime-name">⚡ AXION Base Case</span>
         <span class="regime-desc">15% automation · 20% reinstatement · 4× productivity</span>
       </button>
       <button class="regime-btn" id="auto-singularity" onclick="applyPreset('singularity',this)">
@@ -450,7 +450,7 @@
   <div class="sidebar-section">
     <div class="section-title">AI &amp; Automation</div>
     <div class="slider-group">
-      <div class="slider-header"><span class="slider-label tooltip-wrap">Automation Rate<span class="tooltip left"><strong>Annual Automation Rate</strong><br>The percentage of human tasks absorbed by AI and robotics each year. Compounds via the recursion multiplier.<br><br>Acemoglu (conservative): 2%. SPICE base case: 15%. Singularity scenario: 10% with high recursion.<br><br><em>Even 5% annually eliminates half the current task base within a decade.</em></span></span><span class="slider-value" id="v-auto">15%</span></div>
+      <div class="slider-header"><span class="slider-label tooltip-wrap">Automation Rate<span class="tooltip left"><strong>Annual Automation Rate</strong><br>The percentage of human tasks absorbed by AI and robotics each year. Compounds via the recursion multiplier.<br><br>Acemoglu (conservative): 2%. AXION base case: 15%. Singularity scenario: 10% with high recursion.<br><br><em>Even 5% annually eliminates half the current task base within a decade.</em></span></span><span class="slider-value" id="v-auto">15%</span></div>
       <div class="slider-desc">% of tasks absorbed by AI/robotics annually</div>
       <input type="range" class="danger" id="sl-auto" min="1" max="20" value="15" step="0.5" oninput="update()">
     </div>
@@ -460,17 +460,17 @@
       <input type="range" class="safe" id="sl-reinstate" min="0" max="100" value="20" step="5" oninput="update()">
     </div>
     <div class="slider-group">
-      <div class="slider-header"><span class="slider-label tooltip-wrap">AI Productivity<span class="tooltip left"><strong>AI Productivity Multiplier</strong><br>How much more output one automated task produces versus the human it replaced.<br><br>1× = no gain. 4× = SPICE base case (AI does the work of four workers). 6× = singularity territory.<br><br>Higher productivity grows GDP — but that growth flows to asset owners, not the tax base. The Output Index rises; real wages and revenues fall.<br><br><em>This is the mechanism that makes the Collision paradoxical: growth and crisis simultaneously.</em></span></span><span class="slider-value" id="v-prod">4.0×</span></div>
+      <div class="slider-header"><span class="slider-label tooltip-wrap">AI Productivity<span class="tooltip left"><strong>AI Productivity Multiplier</strong><br>How much more output one automated task produces versus the human it replaced.<br><br>1× = no gain. 4× = AXION base case (AI does the work of four workers). 6× = singularity territory.<br><br>Higher productivity grows GDP — but that growth flows to asset owners, not the tax base. The Output Index rises; real wages and revenues fall.<br><br><em>This is the mechanism that makes the Collision paradoxical: growth and crisis simultaneously.</em></span></span><span class="slider-value" id="v-prod">4.0×</span></div>
       <div class="slider-desc">Output per automated task vs. human equivalent</div>
       <input type="range" id="sl-prod" min="1.1" max="8" value="4.0" step="0.1" oninput="update()">
     </div>
     <div class="slider-group">
-      <div class="slider-header"><span class="slider-label tooltip-wrap">Recursion<span class="tooltip left"><strong>Recursion Multiplier</strong><br>The annual acceleration of automation — AI improving AI. Each year's automation rate is multiplied by this factor.<br><br>1.0 = no acceleration. 1.20 = 20% faster each year (SPICE base). 1.25 = near-singularity territory.<br><br>Small differences compound dramatically over 10 years. 1.20 vs 1.25 is the difference between manageable disruption and civilisational transformation.<br><br><em>This is the most uncertain parameter in the model — and the most consequential.</em></span></span><span class="slider-value" id="v-rec">1.20×</span></div>
+      <div class="slider-header"><span class="slider-label tooltip-wrap">Recursion<span class="tooltip left"><strong>Recursion Multiplier</strong><br>The annual acceleration of automation — AI improving AI. Each year's automation rate is multiplied by this factor.<br><br>1.0 = no acceleration. 1.20 = 20% faster each year (AXION base). 1.25 = near-singularity territory.<br><br>Small differences compound dramatically over 10 years. 1.20 vs 1.25 is the difference between manageable disruption and civilisational transformation.<br><br><em>This is the most uncertain parameter in the model — and the most consequential.</em></span></span><span class="slider-value" id="v-rec">1.20×</span></div>
       <div class="slider-desc">Annual AI-on-AI acceleration multiplier</div>
       <input type="range" class="danger" id="sl-rec" min="1.00" max="1.30" value="1.20" step="0.01" oninput="update()">
     </div>
     <div class="slider-group">
-      <div class="slider-header"><span class="slider-label tooltip-wrap">Adoption Lag<span class="tooltip left"><strong>Adoption Lag</strong><br>Years before AI automation effects begin feeding through to employment and fiscal data.<br><br>0 = immediate impact. 1–2 years = realistic near-term (hiring freezes already visible in knowledge work). 3 years = slower enterprise adoption cycle.<br><br>Equity markets have already priced AI productivity gains. Bond markets are still pricing current fiscal reality. This lag represents the window before bond markets connect the dots — the gap where SPICE positions.<br><br><em>Hiring data is already softening. The fiscal impact follows with a 2-3 year delay.</em></span></span><span class="slider-value" id="v-lag">1 yr</span></div>
+      <div class="slider-header"><span class="slider-label tooltip-wrap">Adoption Lag<span class="tooltip left"><strong>Adoption Lag</strong><br>Years before AI automation effects begin feeding through to employment and fiscal data.<br><br>0 = immediate impact. 1–2 years = realistic near-term (hiring freezes already visible in knowledge work). 3 years = slower enterprise adoption cycle.<br><br>Equity markets have already priced AI productivity gains. Bond markets are still pricing current fiscal reality. This lag represents the window before bond markets connect the dots — the gap where AXION positions.<br><br><em>Hiring data is already softening. The fiscal impact follows with a 2-3 year delay.</em></span></span><span class="slider-value" id="v-lag">1 yr</span></div>
       <div class="slider-desc">Years before automation hits employment &amp; fiscal data</div>
       <input type="range" id="sl-lag" min="0" max="3" value="1" step="0.5" oninput="update()">
     </div>
@@ -688,7 +688,7 @@
     </div>
 
     <div class="spice-bar">
-      <div class="spice-logo-sm">SPICE<br>[ZPC]</div>
+      <div class="spice-logo-sm">AXION<br>[ZPC]</div>
       <div class="spice-div"></div>
       <div class="spice-metrics">
         <div><div class="spice-metric-label">Portfolio Return</div><div class="spice-metric-value" id="sp-ret">+8%</div></div>
@@ -716,7 +716,7 @@
     </div>
 
     <div class="footnote">
-      Model based on: Acemoglu-Restrepo task framework (2018–2024) · Korinek-Suh AGI transition model (2024) · Oxford Economics robotics study (2024) · Blanchard r-g sovereign debt framework · SPICE macro thesis v2 ·
+      Model based on: Acemoglu-Restrepo task framework (2018–2024) · Korinek-Suh AGI transition model (2024) · Oxford Economics robotics study (2024) · Blanchard r-g sovereign debt framework · AXION macro thesis v2 ·
       Simplified scenario planning tool — not a financial forecast. All parameters approximate empirical ranges. Crisis events represent historical precedents mapped to model thresholds.
     </div>
 
@@ -795,7 +795,7 @@
         <div class="narrative-text">
           <strong>The model sliders</strong> are structural parameters — your beliefs about underlying forces (automation rate, recursion). You cannot observe them directly; you infer them from outcomes. They are your macro thesis assumptions.<br><br>
           <strong>The Apocalypse Indicators</strong> are real-time observable outputs that appear in market data as those structural forces manifest. They are the symptoms. The model generates the disease mechanism; the indicators tell you the patient is deteriorating in real time.<br><br>
-          <strong>The relationship:</strong> Sliders → model predicts trajectory → indicators measure actual arrival → SPICE portfolio rebalances. The model calibrates <em>when</em> indicators should breach thresholds under your assumptions. The indicators confirm it is <em>actually happening</em>.
+          <strong>The relationship:</strong> Sliders → model predicts trajectory → indicators measure actual arrival → AXION portfolio rebalances. The model calibrates <em>when</em> indicators should breach thresholds under your assumptions. The indicators confirm it is <em>actually happening</em>.
         </div>
       </div>
     </div>
@@ -1237,42 +1237,42 @@ function getCrisisEvents(s) {
       name: 'Wage Income Share Falls Below 55%',
       category: 'labour',
       detail: 'Wages fall as share of GDP. Corporate profits surge. Tax revenues begin softening. First signs of widening inequality visible in data.',
-      spiceResponse: 'Indicators: Gold/SP500 ratio rising, MOVE index elevated. SPICE: Reduce AI infra, begin JGB short entry.',
+      spiceResponse: 'Indicators: Gold/SP500 ratio rising, MOVE index elevated. AXION: Reduce AI infra, begin JGB short entry.',
       triggerFn: (y) => s.ls[y] < 55,
     },
     {
       name: 'Structural Unemployment Exceeds 10%',
       category: 'labour',
       detail: 'Displacement exceeds new job creation at scale. Political pressure for government response mounts. Welfare spending begins rising rapidly.',
-      spiceResponse: 'Indicators: Consumer confidence crash, KRE bank stress. SPICE: Increase commodity basket, sovereign bond vol positions.',
+      spiceResponse: 'Indicators: Consumer confidence crash, KRE bank stress. AXION: Increase commodity basket, sovereign bond vol positions.',
       triggerFn: (y) => s.u[y] > 10,
     },
     {
       name: 'Consumer Deflation Begins',
       category: 'price',
       detail: 'Demand destruction exceeds supply efficiency gains. Prices fall not from abundance but from absence of buyers. Corporate revenues contract despite output growth.',
-      spiceResponse: 'Indicators: CPI below 0%, 5Y5Y breakeven collapsing. SPICE: Silver position initiated. Short Gilt/BTP at full size.',
+      spiceResponse: 'Indicators: CPI below 0%, 5Y5Y breakeven collapsing. AXION: Silver position initiated. Short Gilt/BTP at full size.',
       triggerFn: (y) => y > 0 && s.cons[y] < s.cons[y-1],
     },
     {
       name: 'Asset/Consumer Price Divergence Extreme',
       category: 'price',
       detail: 'Asset prices 50%+ above baseline while consumer prices flat or falling. The two-economy split is now unmistakable. Political instability rising.',
-      spiceResponse: 'Indicators: Gold/SP500 at 20-yr high, BTP-Bund spread >350bp. SPICE: Orange alert. Maximum defensive positioning.',
+      spiceResponse: 'Indicators: Gold/SP500 at 20-yr high, BTP-Bund spread >350bp. AXION: Orange alert. Maximum defensive positioning.',
       triggerFn: (y) => s.asset[y] > 150 && s.cons[y] < 110,
     },
     {
       name: 'Debt/GDP Exceeds 130%',
       category: 'fiscal',
       detail: 'Debt service costs crowding out government spending. Primary surplus mathematically impossible without severe austerity. Bond markets begin pricing risk premium.',
-      spiceResponse: 'Indicators: US CDS >50bp, MOVE >160. SPICE: US 30yr short initiated. Rates volatility maximum.',
+      spiceResponse: 'Indicators: US CDS >50bp, MOVE >160. AXION: US 30yr short initiated. Rates volatility maximum.',
       triggerFn: (y) => s.debt[y] > 130,
     },
     {
       name: 'Bond Market Stress Event',
       category: 'fiscal',
       detail: 'Sovereign bond yields spike as markets lose confidence in debt sustainability. Central bank forced into emergency bond-buying. Currency under pressure.',
-      spiceResponse: 'CRITICAL — Indicators: CDS >100bp, BTP-Bund >400bp, MOVE >200. SPICE: Red alert. IRON-to-SPICE trigger evaluation begins.',
+      spiceResponse: 'CRITICAL — Indicators: CDS >100bp, BTP-Bund >400bp, MOVE >200. AXION: Red alert. IRON-to-AXION trigger evaluation begins.',
       triggerFn: (y) => s.debt[y] > 160,
       isCritical: true,
     },
@@ -1280,7 +1280,7 @@ function getCrisisEvents(s) {
       name: 'Debt/GDP Exceeds 200% — Restructuring Inevitable',
       category: 'fiscal',
       detail: 'Arithmetic is terminal. Government cannot grow, inflate, or tax its way out. Restructuring, maturity extension, or forced domestic bank purchases of bonds becomes the only path. Historical precedent: Greece 2012, Argentina 2001.',
-      spiceResponse: 'ENDGAME — Gold and silver at multiples of baseline. SPICE fully crystallised. IRON-to-SPICE complete. All shorts at maximum profit.',
+      spiceResponse: 'ENDGAME — Gold and silver at multiples of baseline. AXION fully crystallised. IRON-to-AXION complete. All shorts at maximum profit.',
       triggerFn: (y) => s.debt[y] > 200,
       isCritical: true,
     },
@@ -1288,7 +1288,7 @@ function getCrisisEvents(s) {
       name: 'AI Task Coverage Exceeds 50%',
       category: 'automation',
       detail: 'More than half of all economic tasks are now performed by machines. The wage economy is structurally diminished. No historical precedent — this is the category break.',
-      spiceResponse: 'Crypto adoption accelerates as fiat credibility questioned. BTC/M2 ratio rising. SPICE crypto-native structure increasingly valuable.',
+      spiceResponse: 'Crypto adoption accelerates as fiat credibility questioned. BTC/M2 ratio rising. AXION crypto-native structure increasingly valuable.',
       triggerFn: (y) => s.ai[y] > 50,
     },
   ];
@@ -1680,14 +1680,14 @@ function updateYear() {
     document.getElementById('crisis-body').textContent=msgs.join(' · ');
   } else alertEl.classList.remove('visible');
 
-  // SPICE bar
+  // AXION bar
   const alertL=cs<15?'🟢 GREEN':cs<30?'🔵 BLUE':cs<50?'🟡 YELLOW':cs<70?'🟠 ORANGE':'🔴 RED';
   const pos=cs<15?'70% PAXG':cs<30?'60% PAXG / 10% Shorts':cs<50?'50% PAXG / 20% Shorts':cs<70?'40% PAXG / 30% Shorts':'45% PAXG / 30% Shorts';
   document.getElementById('sp-ret').textContent='+'+spice.toFixed(0)+'%';
   document.getElementById('sp-bench').textContent='+'+(Math.max(spice-7,0)).toFixed(0)+'%';
   document.getElementById('sp-alert').textContent=alertL;
   document.getElementById('sp-pos').textContent=pos.split('/')[0].trim();
-  const cmnt=cs<15?'Monitoring. Hard asset base accumulating. Thesis developing.':cs<30?'Early signals. Short positions initiated cheaply. AI infra earning.':cs<50?'Scissor visible. Short book generating alpha. Sovereign vol rising.':cs<70?'Crisis active. Maximum short exposure. IRON-to-SPICE conditions building.':'SYSTEM STRESS. Trigger conditions met. Gold and silver surging.';
+  const cmnt=cs<15?'Monitoring. Hard asset base accumulating. Thesis developing.':cs<30?'Early signals. Short positions initiated cheaply. AI infra earning.':cs<50?'Scissor visible. Short book generating alpha. Sovereign vol rising.':cs<70?'Crisis active. Maximum short exposure. IRON-to-AXION conditions building.':'SYSTEM STRESS. Trigger conditions met. Gold and silver surging.';
   document.getElementById('sp-comment').textContent=cmnt;
 
   // Narrative
@@ -1775,7 +1775,7 @@ const INDICATORS = [
     source:'ICE BofA / FRED: BAMLMOVE — Daily',
     current:'~95',
     desc:'Treasury market implied volatility. The VIX of bond markets. Spikes when sovereign debt itself is questioned.',
-    relationship:'Model link: This is the SPICE-specific volatility index. It rises when the model\'s debt/GDP hits critical levels and bond markets start repricing risk. The model\'s crisis events correlate with MOVE >160.',
+    relationship:'Model link: This is the AXION-specific volatility index. It rises when the model\'s debt/GDP hits critical levels and bond markets start repricing risk. The model\'s crisis events correlate with MOVE >160.',
     thresholds:[{l:'Green',v:'<100',c:'g'},{l:'Blue',v:'100-130',c:'b'},{l:'Yellow',v:'130-160',c:'y'},{l:'Orange',v:'160-200',c:'o'},{l:'Red',v:'200+',c:'r'}],
     currentLevel:'green'
   },
@@ -1838,7 +1838,7 @@ const INDICATORS = [
     source:'CoinGecko API — Real-time, free',
     current:'BTC dom ~55%, stables ~15%',
     desc:'Capital flowing into crypto as system alternative to fiat. BTC + stablecoins rising together = crisis adoption, not speculation.',
-    relationship:'Model link: This is the indicator unique to the SPICE thesis. As the model\'s wage economy collapses and government credibility deteriorates, watch for the public exercising the crypto opt-out. Rising BTC dominance + stablecoin share = validation of the fiat exit wildcard.',
+    relationship:'Model link: This is the indicator unique to the AXION thesis. As the model\'s wage economy collapses and government credibility deteriorates, watch for the public exercising the crypto opt-out. Rising BTC dominance + stablecoin share = validation of the fiat exit wildcard.',
     thresholds:[{l:'Green',v:'BTC <55%, stable <15%',c:'g'},{l:'Blue',v:'BTC >55%, stable >15%',c:'b'},{l:'Yellow',v:'BTC >60%, stable >20%',c:'y'},{l:'Orange',v:'BTC >65%, stable >25%',c:'o'},{l:'Red',v:'BTC >70%, stable >30%',c:'r'}],
     currentLevel:'blue'
   },
@@ -1972,27 +1972,27 @@ function updateNarrative(yr,year,ls,wg,gp,dt,un,asset,cons,ai,cs,welfare,dem) {
 
   } else if(cs<12) {
     // Structurally deteriorating but not yet visible in headline numbers
-    txt=`<strong>${year} — Pre-crisis drift.</strong> The divergence is underway but headline data still looks manageable. GDP +<strong>${gdpChg}%</strong> but that's the asset economy. Wages <strong>${wageChg>0?'+':''}${wageChg}%</strong>, wage income share <strong>${ls.toFixed(1)}%</strong>. Debt/GDP <strong>${dt.toFixed(1)}%</strong> — rising, but slowly enough that bond markets aren't alarmed yet. Consumer prices <strong>${consChg>0?'+':''}${consChg}%</strong> vs. assets <strong>+${assetChg}%</strong>. <em>This is where conventional analysis misses it.</em> <span class="hl">SPICE: accumulating hard assets while the thesis is still cheap to express.</span>`;
+    txt=`<strong>${year} — Pre-crisis drift.</strong> The divergence is underway but headline data still looks manageable. GDP +<strong>${gdpChg}%</strong> but that's the asset economy. Wages <strong>${wageChg>0?'+':''}${wageChg}%</strong>, wage income share <strong>${ls.toFixed(1)}%</strong>. Debt/GDP <strong>${dt.toFixed(1)}%</strong> — rising, but slowly enough that bond markets aren't alarmed yet. Consumer prices <strong>${consChg>0?'+':''}${consChg}%</strong> vs. assets <strong>+${assetChg}%</strong>. <em>This is where conventional analysis misses it.</em> <span class="hl">AXION: accumulating hard assets while the thesis is still cheap to express.</span>`;
 
   } else if(cs<28) {
     // Structural damage visible, fiscal slippage beginning
-    txt=`<strong>${year} — Emerging fiscal stress.</strong> The scissor is opening and the numbers are starting to show it. GDP +<strong>${gdpChg}%</strong> (asset economy) but wages <strong>${wageChg}%</strong>. Wage income share <strong>${ls.toFixed(1)}%</strong> — the government's tax base is structurally eroding. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare bill rising. Debt/GDP <strong>${dt.toFixed(1)}%</strong>. Comparable to where Italy was in 2009–2010: <em>the numbers look manageable until they don't.</em> Bond markets are watching. <span class="hl">SPICE: short positions initiated. Indicators turning amber.</span>`;
+    txt=`<strong>${year} — Emerging fiscal stress.</strong> The scissor is opening and the numbers are starting to show it. GDP +<strong>${gdpChg}%</strong> (asset economy) but wages <strong>${wageChg}%</strong>. Wage income share <strong>${ls.toFixed(1)}%</strong> — the government's tax base is structurally eroding. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare bill rising. Debt/GDP <strong>${dt.toFixed(1)}%</strong>. Comparable to where Italy was in 2009–2010: <em>the numbers look manageable until they don't.</em> Bond markets are watching. <span class="hl">AXION: short positions initiated. Indicators turning amber.</span>`;
 
   } else if(cs<45) {
     // This IS a crisis — Italy 2011 / UK gilt territory
-    txt=`<span class="danger">⚠ FISCAL CRISIS — ${year}.</span> Debt/GDP at <strong>${dt.toFixed(1)}%</strong> with this trajectory is not "stress" — it is a crisis. Italy triggered bond market panic at 120%; Greece at 130%. We are in that zone. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Wage income share <strong>${ls.toFixed(1)}%</strong> — the tax base the government needs to service this debt is shrinking. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare costs compounding deficits. Capital economy still booming: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong>. Consumer prices <strong>${consChg}%</strong> — deflation suppressing the inflation escape route. <em>Governments at this point face the central bank choice: defend currency or defend bond market. Not both.</em> <span class="hl">SPICE: significant short book alpha. Bond volatility structures live.</span>`;
+    txt=`<span class="danger">⚠ FISCAL CRISIS — ${year}.</span> Debt/GDP at <strong>${dt.toFixed(1)}%</strong> with this trajectory is not "stress" — it is a crisis. Italy triggered bond market panic at 120%; Greece at 130%. We are in that zone. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Wage income share <strong>${ls.toFixed(1)}%</strong> — the tax base the government needs to service this debt is shrinking. Unemployment <strong>${un.toFixed(1)}%</strong>, welfare costs compounding deficits. Capital economy still booming: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong>. Consumer prices <strong>${consChg}%</strong> — deflation suppressing the inflation escape route. <em>Governments at this point face the central bank choice: defend currency or defend bond market. Not both.</em> <span class="hl">AXION: significant short book alpha. Bond volatility structures live.</span>`;
 
   } else if(cs<62) {
     // Acute — sovereign solvency in question
-    txt=`<span class="danger">🔴 ACUTE SOVEREIGN CRISIS — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong> — beyond any level a major economy has stabilised without restructuring, YCC, or capital controls. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. The bond market is not pricing risk. It is pricing exit. Labour economy hollowed: wages <strong>${wageChg}%</strong> from baseline, unemployment <strong>${un.toFixed(1)}%</strong>, wage income share <strong>${ls.toFixed(1)}%</strong>. Capital economy: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong> — the divergence is now extreme. Political legitimacy crisis. Governments under pressure to print, which further erodes fiat credibility and accelerates crypto adoption. <em>This is not a model artefact. Argentina looked like this in 2001. Greece in 2011.</em> <span class="hl">SPICE: maximum short exposure. IRON-to-SPICE trigger conditions met.</span>`;
+    txt=`<span class="danger">🔴 ACUTE SOVEREIGN CRISIS — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong> — beyond any level a major economy has stabilised without restructuring, YCC, or capital controls. Bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. The bond market is not pricing risk. It is pricing exit. Labour economy hollowed: wages <strong>${wageChg}%</strong> from baseline, unemployment <strong>${un.toFixed(1)}%</strong>, wage income share <strong>${ls.toFixed(1)}%</strong>. Capital economy: GDP +<strong>${gdpChg}%</strong>, assets +<strong>${assetChg}%</strong> — the divergence is now extreme. Political legitimacy crisis. Governments under pressure to print, which further erodes fiat credibility and accelerates crypto adoption. <em>This is not a model artefact. Argentina looked like this in 2001. Greece in 2011.</em> <span class="hl">AXION: maximum short exposure. IRON-to-AXION trigger conditions met.</span>`;
 
   } else if(cs<80) {
     // Systemic — contagion risk, IMF territory
-    txt=`<span class="danger">🚨 SYSTEMIC BREAKDOWN — ${year}.</span> <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--purple);">[ IF US: global collateral system repricing in real-time ]</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. This is not a fiscal problem anymore — it is a political economy problem. No democratic government has managed debt at this level without either defaulting or debasing. Wage income share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. The wage economy has effectively ceased to function as a tax base. GDP index <strong>${gp.toFixed(0)}</strong> — measuring capital output, invisible to workers. Asset prices +<strong>${assetChg}%</strong> while consumer prices <strong>${consChg}%</strong>: the inflation the government needs to erode debt is going to the wrong place. IMF, capital controls, and restructuring are the only remaining options. <span class="hl">SPICE: all positions crystallised. Protocol in hard asset phase. Gold and BTC at multiples of baseline.</span>`;
+    txt=`<span class="danger">🚨 SYSTEMIC BREAKDOWN — ${year}.</span> <span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--purple);">[ IF US: global collateral system repricing in real-time ]</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, bond yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. This is not a fiscal problem anymore — it is a political economy problem. No democratic government has managed debt at this level without either defaulting or debasing. Wage income share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. The wage economy has effectively ceased to function as a tax base. GDP index <strong>${gp.toFixed(0)}</strong> — measuring capital output, invisible to workers. Asset prices +<strong>${assetChg}%</strong> while consumer prices <strong>${consChg}%</strong>: the inflation the government needs to erode debt is going to the wrong place. IMF, capital controls, and restructuring are the only remaining options. <span class="hl">AXION: all positions crystallised. Protocol in hard asset phase. Gold and BTC at multiples of baseline.</span>`;
 
   } else {
     // Terminal — debt restructuring/default is the only mathematical outcome
-    txt=`<span class="danger">💀 TERMINAL — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Restructuring is not a policy option — it is a mathematical certainty. At these levels the interest bill alone exceeds plausible primary surplus capacity. This is the end state the Blanchard r&gt;g equation always produces when left unaddressed. Wage income share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. GDP index <strong>${gp.toFixed(0)}</strong> — a number that belongs to capital, not to people. <em>History's record at this level: Argentina 2001 (52% haircut, currency collapse), Greece 2012 (53% haircut), Weimar-era Germany (hyperinflation instead of restructuring).</em> The question is no longer whether restructuring occurs. It is who bears the losses. <span class="hl">SPICE: this is exactly the scenario SPICE was designed for. Hard assets, synthetic shorts, and crypto holdings at maximum value.</span>`;
+    txt=`<span class="danger">💀 TERMINAL — ${year}.</span> Debt/GDP <strong>${dt.toFixed(1)}%</strong>, yield <strong>${simData.marketYield[yr].toFixed(1)}%</strong>. Restructuring is not a policy option — it is a mathematical certainty. At these levels the interest bill alone exceeds plausible primary surplus capacity. This is the end state the Blanchard r&gt;g equation always produces when left unaddressed. Wage income share <strong>${ls.toFixed(1)}%</strong>, unemployment <strong>${un.toFixed(1)}%</strong>. GDP index <strong>${gp.toFixed(0)}</strong> — a number that belongs to capital, not to people. <em>History's record at this level: Argentina 2001 (52% haircut, currency collapse), Greece 2012 (53% haircut), Weimar-era Germany (hyperinflation instead of restructuring).</em> The question is no longer whether restructuring occurs. It is who bears the losses. <span class="hl">AXION: this is exactly the scenario AXION was designed for. Hard assets, synthetic shorts, and crypto holdings at maximum value.</span>`;
   }
 
   // Append active regime context to narrative
@@ -2166,13 +2166,13 @@ function saveBaseCase() {
   };
   try { localStorage.setItem('spice_base_case', JSON.stringify(savedParams)); } catch(e){}
   const btn = document.getElementById('save-btn');
-  btn.textContent = '✓ SPICE Base Case Saved';
+  btn.textContent = '✓ AXION Base Case Saved';
   btn.classList.add('saved');
   document.getElementById('load-btn').classList.add('visible');
   document.getElementById('saved-label').classList.add('visible');
   document.getElementById('saved-label').textContent =
     `Saved: auto=${savedParams.auto}%, reinstate=${savedParams.reinstate}%, prod=${savedParams.prod}×, domcap=${savedParams.domcap}%`;
-  setTimeout(()=>{ btn.textContent='⊕ Save as SPICE Base Case'; btn.classList.remove('saved'); }, 2500);
+  setTimeout(()=>{ btn.textContent='⊕ Save as AXION Base Case'; btn.classList.remove('saved'); }, 2500);
 }
 
 function loadBaseCase() {

@@ -22,18 +22,18 @@ const ORG  = "#f97316"
 // ── S supply model ────────────────────────────────────────────────────────────
 //
 // Bellefontaine calibration: 10,900 adults
-// UBI basket: 5 S/day = 150 S/month per adult
-// Monthly UBI mint: 10,900 × 150 × 1.2 = 1,962,000 S (incl. 20% company float)
+// UBI basket: 5 MOND/day = 150 MOND/month per adult
+// Monthly UBI mint: 10,900 × 150 × 1.2 = 1,962,000 MOND (incl. 20% company float)
 // Purchase scheme: dollar buyers convert at prevailing rate, Fisc buys BTC
-//   Modelled as: 500,000 S month 1, growing 25%/month as dollar weakens
-// House threshold: $200,000 house at $0.75/S = 266,667 S (purchase-scheme funded)
+//   Modelled as: 500,000 MOND month 1, growing 25%/month as dollar weakens
+// House threshold: $200,000 house at $0.75/MOND = 266,667 MOND (purchase-scheme funded)
 
 const ADULTS        = 10900
-const UBI_PER_ADULT = 150          // S/month
+const UBI_PER_ADULT = 150          // MOND/month
 const FLOAT         = 0.20         // 20% company working capital overage
 const MONTHLY_UBI   = Math.round(ADULTS * UBI_PER_ADULT * (1 + FLOAT))  // 1,962,000
 
-const HOUSE_S       = Math.round(200000 / 0.75)   // 266,667 S — first house threshold
+const HOUSE_S       = Math.round(200000 / 0.75)   // 266,667 MOND — first house threshold
 
 function buildSupplyData() {
   const rows = []
@@ -150,7 +150,7 @@ export default function Abundance() {
       <section style={{ background: BG1, borderBottom: BD, padding: '60px 40px' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ fontFamily: F, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: T3, marginBottom: 20, borderBottom: BD, paddingBottom: 10 }}>
-            SPICE Protocol · Monetary Model · The Post-Collision Economy
+            AXION Protocol · Monetary Model · The Post-Collision Economy
           </div>
           <h1 style={{ fontFamily: F, fontSize: 28, fontWeight: 700, color: T1, margin: '0 0 20px 0', lineHeight: 1.2 }}>
             The Abundance Model
@@ -162,8 +162,8 @@ export default function Abundance() {
             no welfare → no wages. The loop terminates.
           </p>
           <p style={{ fontFamily: F, fontSize: 13, color: T2, lineHeight: 1.9, margin: 0, maxWidth: 700 }}>
-            The SPICE response is not a patch on the existing system. It is a replacement:
-            a new monetary circuit built from the automation dividend, issued as S-tokens,
+            The AXION response is not a patch on the existing system. It is a replacement:
+            a new monetary circuit built from the automation dividend, issued as MOND,
             anchored to the bread basket, and backed — where needed — by hard assets.
           </p>
         </div>
@@ -205,10 +205,10 @@ export default function Abundance() {
       {/* ── The reset ── */}
       <Section alt>
         <SectionLabel>The solution · Citizens print the money</SectionLabel>
-        <SectionTitle>S-tokens: sovereign money issued as UBI</SectionTitle>
+        <SectionTitle>MOND: sovereign money issued as UBI</SectionTitle>
         <p style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8, margin: '0 0 24px 0' }}>
           If wages cannot fund the economy, the colony mints the medium of exchange directly.
-          S-tokens are issued monthly as universal basic income — not as debt, not as a loan,
+          MOND are issued monthly as universal basic income — not as debt, not as a loan,
           not backed by a promise to repay. They are sovereign money: created by the colony's
           monetary authority (the MCC) and distributed by the Fisc.
         </p>
@@ -218,7 +218,7 @@ export default function Abundance() {
             {
               label: 'Monthly mint formula',
               eq: 'S_mint = N × basket_S × 1.20',
-              note: `For ${ADULTS.toLocaleString()} adults: ${MONTHLY_UBI.toLocaleString()} S/month. Each adult receives 150 S (5 S/day). The 20% overage is working capital for companies to buy inputs — flour, materials, energy — keeping the supply chain moving.`,
+              note: `For ${ADULTS.toLocaleString()} adults: ${MONTHLY_UBI.toLocaleString()} MOND/month. Each adult receives 150 MOND (5 MOND/day). The 20% overage is working capital for companies to buy inputs — flour, materials, energy — keeping the supply chain moving.`,
             },
             {
               label: 'Why 20% overage',
@@ -233,7 +233,7 @@ export default function Abundance() {
             {
               label: 'Basket anchor',
               eq: 'r(t) = basket_USD(t) / 5',
-              note: 'The Fisc rate ($/S) is set so the daily bread basket always costs 5 S. As automation drives goods prices down, the Fisc rate falls — but the basket stays at 5 S. Citizens experience stability, not deflation.',
+              note: 'The Fisc rate ($/S) is set so the daily bread basket always costs 5 MOND. As automation drives goods prices down, the Fisc rate falls — but the basket stays at 5 MOND. Citizens experience stability, not deflation.',
             },
           ].map(({ label, eq, note }) => (
             <div key={label} style={{ background: BG2, border: BD, padding: '18px 20px' }}>
@@ -251,7 +251,7 @@ export default function Abundance() {
           {' '}The monthly mint grows the S supply, creating predictable mild inflation.
           This discourages hoarding — holding S means gradual dilution, so citizens spend.
           Bitcoin's fixed supply creates the opposite: rational actors hoard, velocity
-          collapses, and it becomes a store of value rather than a currency. SPICE avoids
+          collapses, and it becomes a store of value rather than a currency. AXION avoids
           this by design. The inflation rate is public, fixed by formula, and falls over
           time as the denominator grows.
         </Note>
@@ -262,7 +262,7 @@ export default function Abundance() {
         <SectionLabel>Two kinds of S · M1 and M2 without a policy decision</SectionLabel>
         <SectionTitle>UBI-minted S vs purchase-minted S</SectionTitle>
         <p style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8, margin: '0 0 24px 0' }}>
-          S tokens from two sources circulate in the same economy but serve different functions —
+          MOND from two sources circulate in the same economy but serve different functions —
           not by rule, but because of who creates them and why.
         </p>
 
@@ -275,7 +275,7 @@ export default function Abundance() {
                 ['Origin',       'Minted ex nihilo by MCC'],
                 ['Backing',      'None — sovereign money'],
                 ['Inflation',    'Yes — the only source of S inflation'],
-                ['Typical size', 'Grocery-scale (150 S/month per adult)'],
+                ['Typical size', 'Grocery-scale (150 MOND/month per adult)'],
                 ['Velocity',     'High — spent quickly on daily needs'],
                 ['Use',          'Food, services, local transactions'],
               ],
@@ -287,7 +287,7 @@ export default function Abundance() {
                 ['Origin',       'Minted when dollars are brought to the Fisc'],
                 ['Backing',      'BTC / gold — fully backed, held in reserve'],
                 ['Inflation',    'None — each S issued has a hard asset behind it'],
-                ['Typical size', 'Asset-scale ($200K house = 266,667 S)'],
+                ['Typical size', 'Asset-scale ($200K house = 266,667 MOND)'],
                 ['Velocity',     'Low — used for one-off asset transactions'],
                 ['Use',          'Property, businesses, large commercial deals'],
               ],
@@ -351,7 +351,7 @@ export default function Abundance() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
           {[
             { step: '→', text: 'Citizen brings $200,000 to the Fisc', color: T2 },
-            { step: '→', text: 'Fisc mints 266,667 S at current rate ($0.75/S)', color: BLU },
+            { step: '→', text: 'Fisc mints 266,667 MOND at current rate ($0.75/MOND)', color: BLU },
             { step: '→', text: 'Fisc immediately purchases $200,000 of BTC', color: GOLD },
             { step: '→', text: 'As dollar collapses, BTC reserve appreciates in dollar terms', color: GRN },
             { step: '→', text: 'Fisc rate adjusts — the reserve buys more baskets as dollar weakens', color: GRN },
@@ -363,7 +363,7 @@ export default function Abundance() {
           ))}
         </div>
         <Note color={GOLD}>
-          This is the original SPICE thesis — BTC as a hedge against dollar debasement —
+          This is the original AXION thesis — BTC as a hedge against dollar debasement —
           now living inside the colony as the Fisc reserve rather than as an external
           investment fund. The pre-Collision hedge becomes the post-Collision foundation.
           Citizens who held BTC before the Collision find they are already holding the
@@ -502,7 +502,7 @@ export default function Abundance() {
               label: 'Post-flip',
               color: GRN,
               rows: [
-                ['Unit of account',   'S-token'],
+                ['Unit of account',   'MOND'],
                 ['Dollar value',      'Irrelevant or unavailable'],
                 ['Price discovery',   'S markets inside the colony'],
                 ['Fisc role',         'Monetary authority (rate is internal)'],

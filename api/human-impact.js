@@ -70,7 +70,7 @@ function getCollisionContext(d) {
   const hasMaterialAI   = (d.displaced || 0) > 0.15;
   const hasSignifCrypto = (d.cryptoFlight || 0) > 20;
   if (hasMaterialAI || hasSignifCrypto) {
-    return `THE COLLISION: This is the SPICE thesis — NOT a conventional crisis.
+    return `THE COLLISION: This is the AXION thesis — NOT a conventional crisis.
 AI displacement ${Math.round((d.displaced || 0) * 100)}%, crypto flight ${d.cryptoFlight}%.
 Unlike historical crises, the Fed cannot inflate away this debt (AI deflation constraint) and cannot trap capital (crypto flight). No historical playbook applies.
 Emphasise the structural novelty; this is not a cyclical recession.`;

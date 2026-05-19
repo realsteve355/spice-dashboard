@@ -41,8 +41,11 @@ export default function TopBar({ navItems = [], cta }) {
   return (
     <header style={S.bar}>
       <NavLink to="/" style={S.brand}>
-        <BrandGlyph />
-        <span style={S.brandName}>SPICE</span>
+        <img
+          src="/brand/axion-wordmark-light.png"
+          alt="AXION"
+          style={{ height: 18, width: "auto", display: "block" }}
+        />
         <span style={S.brandSep}>/</span>
         <span style={S.brandTag}>mission control</span>
       </NavLink>
@@ -79,15 +82,3 @@ export default function TopBar({ navItems = [], cta }) {
   );
 }
 
-function BrandGlyph({ size = 18, color = C.txt }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
-      <line x1="2"  y1="2"  x2="9" y2="9"  stroke={color} strokeWidth="1" />
-      <line x1="16" y1="2"  x2="9" y2="9"  stroke={color} strokeWidth="1" />
-      <line x1="9"  y1="9"  x2="9" y2="16" stroke={color} strokeWidth="1" />
-      <circle cx="9" cy="9" r="1.8" fill={color} />
-    </svg>
-  );
-}
-
-export { BrandGlyph };

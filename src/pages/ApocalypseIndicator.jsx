@@ -24,7 +24,7 @@ const COMPOSITE_DESC = [
   "Early warning signals active. Thesis beginning to develop. Monitor closely.",
   "Active alert. Multiple indicators breached. Defensive positioning warranted.",
   "Crisis mode. Systemic stress visible across sovereign, monetary and hard asset domains.",
-  "Structural fracture. IRON-to-SPICE switchover trigger under active evaluation.",
+  "Structural fracture. IRON-to-AXION switchover trigger under active evaluation.",
 ];
 
 // ─── Composite scoring ─────────────────────────────────────────────────────────
@@ -211,7 +211,7 @@ const INDICATORS = [
     name: "US Federal Debt / GDP",
     abbr: "Sovereign debt sustainability",
     description:
-      "Total US public debt as a percentage of GDP. The base vulnerability metric for the entire SPICE thesis. Already in Orange territory. Above 140% is the Reinhart-Rogoff historical danger zone.",
+      "Total US public debt as a percentage of GDP. The base vulnerability metric for the entire AXION thesis. Already in Orange territory. Above 140% is the Reinhart-Rogoff historical danger zone.",
     source: "FRED · GFDEGDQ188S",
     freq: "quarterly",
     thresholds: [
@@ -405,7 +405,7 @@ const INDICATORS = [
     name: "US Unemployment Rate",
     abbr: "Civilian unemployment",
     description:
-      "The share of the labour force without work. In the SPICE thesis, rising unemployment signals AI displacement is materialising — compressing the tax base, expanding social spending, and compounding the fiscal deficit.",
+      "The share of the labour force without work. In the AXION thesis, rising unemployment signals AI displacement is materialising — compressing the tax base, expanding social spending, and compounding the fiscal deficit.",
     source: "FRED · UNRATE",
     freq: "monthly",
     thresholds: [
@@ -463,7 +463,7 @@ const INDICATORS = [
     name: "US CPI Inflation",
     abbr: "Year-on-year consumer prices",
     description:
-      "Annual change in US consumer prices. Scored two-tailed: both hyperinflation (government monetising debt) and deflation (AI structural price collapse → Fisher debt-deflation spiral) are crisis signals for the SPICE thesis.",
+      "Annual change in US consumer prices. Scored two-tailed: both hyperinflation (government monetising debt) and deflation (AI structural price collapse → Fisher debt-deflation spiral) are crisis signals for the AXION thesis.",
     source: "FRED · CPIAUCSL",
     freq: "monthly",
     thresholds: [
@@ -668,7 +668,7 @@ export default function ApocalypseIndicator() {
     <div style={S.page}>
       {/* Page header */}
       <div style={S.pageHeader}>
-        <div style={S.eyebrow}>SPICE PROTOCOL · MACRO INTELLIGENCE</div>
+        <div style={S.eyebrow}>AXION PROTOCOL · MACRO INTELLIGENCE</div>
         <h1 style={S.title}>Indicators</h1>
         <p style={S.subtitle}>
           Twelve publicly-observable signals across sovereign debt stress, monetary debasement, hard asset

@@ -26,7 +26,7 @@ const ORG  = "#f97316"
 //   Total business revenue: $350M (retail chains + full manufacturing sector)
 //   Adults: 10,900  Workforce: 6,700  Avg wage: $2,667/month
 //   Federal transfers today: $37M/year (Social Security + SNAP)
-//   Daily bread basket: 5 S = $3.75 at today's Fisc rate ($0.75/S)
+//   Daily bread basket: 5 MOND = $3.75 at today's Fisc rate ($0.75/MOND)
 //
 // Model assumptions:
 //   Goods price deflation: P(A) = max(0.08, 1 − A × 0.80)
@@ -48,7 +48,7 @@ const M = {
   priceFloor: 0.08,        // min price level (8% of today at full automation)
   federal:    37e6,        // $/year today
   fedDecay:   1.35,        // federal collapses faster than wages
-  basket:     3.75,        // daily basket in USD today (= 5 S at $0.75/S)
+  basket:     3.75,        // daily basket in USD today (= 5 MOND at $0.75/MOND)
   basketS:    5,           // daily basket in S (fixed anchor)
 }
 
@@ -64,12 +64,12 @@ function computeAt(A) {
   // LAT = automation windfall above 2× pre-automation baseline
   const lat      = Math.max(0, profit - 2 * baseline)
 
-  // Fisc rate ($/S): anchored so daily basket always costs 5 S
+  // Fisc rate ($/S): anchored so daily basket always costs 5 MOND
   const fiscRate = (M.basket * P) / M.basketS
 
-  // UBI: LAT flows through Fisc, distributed to all adults as S-tokens
+  // UBI: LAT flows through Fisc, distributed to all adults as MOND
   const ubiUSD   = lat / M.adults / 12         // $/adult/month
-  const ubiSday  = ubiUSD / fiscRate / 30       // S/day
+  const ubiSday  = ubiUSD / fiscRate / 30       // MOND/day
 
   // Federal transfers (collapse as income/payroll tax base shrinks)
   const fedTotal = M.federal * Math.max(0, 1 - A * M.fedDecay)
@@ -141,7 +141,7 @@ ALL.forEach(d => {
 function getStage(pct) {
   const u = UBI_UNIVERSAL || 25
   const c = CROSSING      || 77
-  if (pct < 15)  return { label: 'Today',                 color: T3,   desc: 'Wages dominant. Targeted welfare (SNAP, Social Security) intact. No SPICE mechanism yet.' }
+  if (pct < 15)  return { label: 'Today',                 color: T3,   desc: 'Wages dominant. Targeted welfare (SNAP, Social Security) intact. No AXION mechanism yet.' }
   if (pct < u)   return { label: 'Colony supplements',    color: BLU,  desc: 'Colony launches. LAT begins. UBI is a small supplement alongside existing welfare — not yet universal.' }
   if (pct < 40)  return { label: 'UBI goes universal',    color: T1,   desc: `LAT now funds $${UBI_WELFARE_FLOOR}/month per adult — matching what federal welfare paid. Means-testing phased out. All adults receive equally.` }
   if (pct < c)   return { label: 'The hard zone',         color: ORG,  desc: 'Wages falling fast. Federal transfers collapsing. UBI is universal but real purchasing power still below today\'s worker standard.' }
@@ -336,15 +336,15 @@ export default function PathwayToUBI() {
       <section style={{ background: BG1, borderBottom: BD, padding: '60px 40px' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ fontFamily: F, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: T3, marginBottom: 20, borderBottom: BD, paddingBottom: 10 }}>
-            SPICE Protocol · Economic Model · Bellefontaine calibration
+            AXION Protocol · Economic Model · Bellefontaine calibration
           </div>
           <h1 style={{ fontFamily: F, fontSize: 28, fontWeight: 700, color: T1, margin: '0 0 20px 0', lineHeight: 1.2 }}>
             The Pathway to UBI
           </h1>
           <p style={{ fontFamily: F, fontSize: 13, color: T2, lineHeight: 1.9, margin: '0 0 16px 0', maxWidth: 700 }}>
             Automation drives goods prices toward zero. The welfare state — funded by income
-            and payroll taxes on wages — collapses as those wages disappear. SPICE replaces it:
-            LAT taxes the automation windfall, the Fisc distributes it as S-token UBI,
+            and payroll taxes on wages — collapses as those wages disappear. AXION replaces it:
+            LAT taxes the automation windfall, the Fisc distributes it as MOND UBI,
             and the S/USD exchange rate stabilises real purchasing power as prices fall.
           </p>
           <p style={{ fontFamily: F, fontSize: 13, color: T2, lineHeight: 1.9, margin: '0 0 16px 0', maxWidth: 700 }}>
@@ -427,20 +427,20 @@ export default function PathwayToUBI() {
                 snap.ubiUSD <= 0 ? 'LAT not yet above 2× baseline' :
                 automation < (UBI_UNIVERSAL ?? 25)
                   ? `Avg per adult — displaced workers each receive ~$${snap.ubiPerDisplaced.toLocaleString()}`
-                  : `${snap.ubiSday} S/day · all ${M.adults.toLocaleString()} adults equally`
+                  : `${snap.ubiSday} MOND/day · all ${M.adults.toLocaleString()} adults equally`
               }
               color={snap.ubiUSD > 0 ? GRN : T3}
             />
             <KpiCard
               label="Daily basket cost"
               value={`$${snap.basketUSD}`}
-              sub={`${snap.priceLevel}% of today · always 5 S`}
+              sub={`${snap.priceLevel}% of today · always 5 MOND`}
               color={GOLD}
             />
             <KpiCard
               label="Fisc rate"
               value={`$${snap.fiscRate}/S`}
-              sub="Falls as goods get cheaper. Bread basket stays fixed at 5 S."
+              sub="Falls as goods get cheaper. Bread basket stays fixed at 5 MOND."
               color={T1}
             />
             <KpiCard
@@ -553,7 +553,7 @@ export default function PathwayToUBI() {
               {' '}two effects compound. LAT revenue grows as automation profits expand.
               Simultaneously, the price of goods falls — so the same UBI buys more baskets each year.
               Real purchasing power rises faster than automation level in a self-reinforcing dynamic.
-              This is the mathematical basis for the SPICE claim: citizens will be materially
+              This is the mathematical basis for the AXION claim: citizens will be materially
               better off than any previous generation.
             </div>
           </div>
@@ -590,9 +590,9 @@ export default function PathwayToUBI() {
                 {[
                   { k: 'Fisc rate',      v: `$${data.fiscRate}/S` },
                   { k: 'Basket (USD)',   v: `$${data.basketUSD}/day` },
-                  { k: 'Basket (S)',     v: `5 S/day (fixed)` },
+                  { k: 'Basket (S)',     v: `5 MOND/day (fixed)` },
                   { k: 'Monthly UBI',   v: data.ubiUSD > 0 ? `$${data.ubiUSD.toLocaleString()}` : '—' },
-                  { k: 'UBI in S/day',  v: data.ubiSday > 0 ? `${data.ubiSday} S` : '—' },
+                  { k: 'UBI in MOND/day',  v: data.ubiSday > 0 ? `${data.ubiSday} MOND` : '—' },
                   { k: 'Price level',   v: `${data.priceLevel}% of today` },
                 ].map(({ k, v }) => (
                   <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -606,10 +606,10 @@ export default function PathwayToUBI() {
 
           <div style={{ marginTop: 20, background: BG3, border: BD, padding: '16px 20px' }}>
             <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.9 }}>
-              The Fisc rate falls as goods get cheaper. A citizen holding S tokens sees their
+              The Fisc rate falls as goods get cheaper. A citizen holding MOND sees their
               purchasing power rise even though the nominal exchange rate declines — because
               the basket costs less in USD. Citizens do not need to track exchange rates:
-              the bread basket always costs 5 S, regardless of what is happening to the dollar.
+              the bread basket always costs 5 MOND, regardless of what is happening to the dollar.
               The colony is insulated from dollar debasement and deflation simultaneously.
             </div>
           </div>
@@ -643,12 +643,12 @@ export default function PathwayToUBI() {
               {
                 title: 'Fisc rate (S/USD)',
                 eq: 'r(A) = B₀ · P(A) / 5',
-                note: 'Anchored so the daily basket always costs 5 S. Falls as goods get cheaper. Citizens are insulated from dollar debasement — they think in S, not dollars.',
+                note: 'Anchored so the daily basket always costs 5 MOND. Falls as goods get cheaper. Citizens are insulated from dollar debasement — they think in S, not dollars.',
               },
               {
                 title: 'UBI per adult',
                 eq: 'UBI(A) = LAT(A) / (N_adults · 12)',
-                note: 'Monthly USD equivalent, distributed by the Fisc as S-tokens at the current rate. All adults receive equally — no means test, no taper.',
+                note: 'Monthly USD equivalent, distributed by the Fisc as MOND at the current rate. All adults receive equally — no means test, no taper.',
               },
               {
                 title: 'Real purchasing power',
@@ -680,7 +680,7 @@ export default function PathwayToUBI() {
               the Bellefontaine calibration. Beyond this point, a citizen with no wage and
               no government benefit lives better in real purchasing-power terms than today's
               employed worker — solely from the automation dividend distributed as UBI.
-              This is the mathematical destination of the SPICE model.
+              This is the mathematical destination of the AXION model.
             </div>
           </div>
         </div>
@@ -690,14 +690,14 @@ export default function PathwayToUBI() {
       <section style={{ borderBottom: BD, padding: '48px 40px' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ fontFamily: F, fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: T3, marginBottom: 20, borderBottom: BD, paddingBottom: 10 }}>
-            Context · SPICE is the evolved welfare state
+            Context · AXION is the evolved welfare state
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
             {[
               { label: 'Today: corporation tax', arrow: 'LAT', desc: 'Today\'s corporation tax is flat on all profit. LAT taxes only the automation windfall — the productivity gain above baseline. Human employment is implicitly exempt.' },
               { label: 'Today: targeted welfare', arrow: 'Universal UBI', desc: 'Today\'s welfare is means-tested, tapered, and stigmatised. UBI is universal — no means test, no taper, no poverty trap. Work always pays because UBI is not withdrawn.' },
-              { label: 'Today: fiat currency', arrow: 'S-token', desc: 'The dollar is being debased to manage sovereign debt. S is anchored to the bread basket — it cannot be inflated away. Citizens hold a store of value the government cannot debase.' },
-              { label: 'Today: national redistribution', arrow: 'Local colony', desc: 'National welfare systems cannot respond to local automation patterns. A colony with 70% automation needs more redistribution than one with 20%. SPICE calibrates locally.' },
+              { label: 'Today: fiat currency', arrow: 'MOND', desc: 'The dollar is being debased to manage sovereign debt. S is anchored to the bread basket — it cannot be inflated away. Citizens hold a store of value the government cannot debase.' },
+              { label: 'Today: national redistribution', arrow: 'Local colony', desc: 'National welfare systems cannot respond to local automation patterns. A colony with 70% automation needs more redistribution than one with 20%. AXION calibrates locally.' },
             ].map(({ label, arrow, desc }) => (
               <div key={label} style={{ background: BG2, border: BD, padding: '18px 20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>

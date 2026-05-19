@@ -106,7 +106,7 @@ export default function MarsHealth() {
       verdict: bill_pct == null ? 'amber' : v3(bill_pct <= 25, bill_pct <= 35),
       status:  bill_pct == null ? 'No data' : bill_pct <= 25 ? 'Adequate' : bill_pct <= 35 ? 'Drifting' : 'Unaffordable',
       metric:  bill_pct != null ? `Avg MCC bill: ${bill_pct.toFixed(1)}% of UBI` : 'No billing data',
-      interp:  `Target is ~20% of UBI (200 S-tokens). ${bill_pct<=25?'Citizens retain meaningful discretionary income.':'Bills are high relative to UBI.'}`,
+      interp:  `Target is ~20% of UBI (200 MOND). ${bill_pct<=25?'Citizens retain meaningful discretionary income.':'Bills are high relative to UBI.'}`,
       spark:   avg_bills, sparkMax: UBI,
     },
     {

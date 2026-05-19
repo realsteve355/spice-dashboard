@@ -609,7 +609,7 @@ const CRISIS_TYPES = [
     classicBar: 100,
     aiBar: 55,
     classicLabel: "9–15 years",
-    aiLabel: "4–7 years (SPICE base case)",
+    aiLabel: "4–7 years (AXION base case)",
     aiMods: [
       "AI unemployment reaches 12–20% — historical precedent: this triggers regime change within a decade, not patience",
       "Ghost GDP (productivity gains that don't appear in wages) destroys political legitimacy faster than visible GDP decline",
@@ -843,7 +843,7 @@ export default function CrisisScenarios() {
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <div style={{ maxWidth: 800, marginBottom: hasParams ? 32 : 40 }}>
         <div style={{ fontSize: 9, color: "#767676", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: 8 }}>
-          SPICE Research — Government Response Paths &amp; Personal Impact
+          AXION Research — Government Response Paths &amp; Personal Impact
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 12px", fontFamily: F, lineHeight: 1.2 }}>
           Crisis <span style={{ color: "#c8a96e" }}>Scenarios</span>
@@ -1287,10 +1287,10 @@ export default function CrisisScenarios() {
           </div>
         ))}
 
-        {/* SPICE Position */}
+        {/* AXION Position */}
         <div style={{ border: "2px solid #B8860B", background: "rgba(200,169,110,0.06)", padding: "20px 22px", marginBottom: 24 }}>
           <div style={{ fontSize: 9, color: "#c8a96e", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>
-            The SPICE Position — Agnostic on Endgame
+            The AXION Position — Agnostic on Endgame
           </div>
           <p style={{ fontSize: 11, color: "#c8d0e0", lineHeight: 1.8, margin: "0 0 10px" }}>We don't know which scenario prevails. What we do know:</p>
           {[
@@ -1304,7 +1304,7 @@ export default function CrisisScenarios() {
             </div>
           ))}
           <div style={{ borderTop: "1px solid rgba(200,169,110,0.3)", marginTop: 14, paddingTop: 12, fontSize: 12, fontWeight: 700, color: "#e8e8e8", lineHeight: 1.6 }}>
-            SPICE hedges the transition, not the endpoint. We're not betting on the new world order — we're betting against the current one.
+            AXION hedges the transition, not the endpoint. We're not betting on the new world order — we're betting against the current one.
           </div>
         </div>
 
@@ -1313,7 +1313,7 @@ export default function CrisisScenarios() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: F, fontSize: 10 }}>
             <thead>
               <tr style={{ background: "#141c2e" }}>
-                {["Scenario", "Outcome", "SPICE Performance"].map(h => (
+                {["Scenario", "Outcome", "AXION Performance"].map(h => (
                   <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: 8, color: "#a4a4a4", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", border: "1px solid #e2e2e2" }}>{h}</th>
                 ))}
               </tr>
@@ -1353,7 +1353,7 @@ export default function CrisisScenarios() {
         <div style={{ textAlign: "center", padding: "24px 0 8px" }}>
           <div style={{ fontSize: 10, color: "#767676", marginBottom: 10 }}>Ready to hedge the transition?</div>
           <Link to="/coin" style={{ display: "inline-block", background: "#c8a96e", color: "#fff", padding: "10px 24px", fontFamily: F, fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: "0.08em" }}>
-            Explore the SPICE Vault →
+            Explore the AXION Vault →
           </Link>
         </div>
       </div>

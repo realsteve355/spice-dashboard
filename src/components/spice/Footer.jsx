@@ -34,7 +34,7 @@ export default function Footer({
       <div style={S.cluster}>
         <span>{network}</span>
         <span style={S.sep}>|</span>
-        <span>SPICE / SPICE</span>
+        <span>AXION / MOND</span>
         <span style={S.sep}>|</span>
         <span>{version}</span>
       </div>

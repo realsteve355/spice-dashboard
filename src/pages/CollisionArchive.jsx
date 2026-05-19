@@ -123,7 +123,7 @@ function ModelTab({ simData, data10, allData, selLabel, yr, year, crisis }) {
     { name: 'Consumer Deflation',       triggered: simData.cons.some((v,i) => i > 0 && v < simData.cons[i-1]) },
     { name: 'Debt/GDP Exceeds 130%',    triggered: simData.debt.some(v => v > 130) },
     { name: 'Bond Yield Above 7.5%',    triggered: simData.marketYield.some(v => v > 7.5) },
-    { name: 'SPICE Activated (≥ 35)',   triggered: simData.crisisYear !== null },
+    { name: 'AXION Activated (≥ 35)',   triggered: simData.crisisYear !== null },
   ];
 
   return (
@@ -135,7 +135,7 @@ function ModelTab({ simData, data10, allData, selLabel, yr, year, crisis }) {
         <div style={{ fontSize:12, color:'#333', lineHeight:1.75 }}>{narrative}</div>
         {simData.crisisYear && (
           <div style={{ marginTop:10, fontSize:11, color:'#B8860B', fontWeight:700 }}>
-            ◈ SPICE ACTIVATED: {simData.crisisYear} — crisis score crossed 35
+            ◈ AXION ACTIVATED: {simData.crisisYear} — crisis score crossed 35
           </div>
         )}
       </div>
@@ -312,7 +312,7 @@ function IndicatorsTab({ simData, yr }) {
     {
       name: 'Crisis Score', value: `${d.score[yr]}/100`,
       level: d.score[yr] < 12 ? 'green' : d.score[yr] < 28 ? 'blue' : d.score[yr] < 45 ? 'yellow' : d.score[yr] < 62 ? 'orange' : 'red',
-      desc: 'Composite score across debt, yields, wage share and unemployment. SPICE activates when score first crosses 35.',
+      desc: 'Composite score across debt, yields, wage share and unemployment. AXION activates when score first crosses 35.',
       thresholds: ['0-11','12-27','28-44','45-61','62+'],
     },
     {
@@ -328,7 +328,7 @@ function IndicatorsTab({ simData, yr }) {
       thresholds: ['<120','120-150','150-200','200-300','>300'],
     },
     {
-      name: 'SPICE Return', value: `${d.spice[yr]}%`,
+      name: 'AXION Return', value: `${d.spice[yr]}%`,
       level: d.spice[yr] < 10 ? 'green' : d.spice[yr] < 20 ? 'blue' : d.spice[yr] < 35 ? 'yellow' : d.spice[yr] < 50 ? 'orange' : 'red',
       desc: 'Modelled portfolio return. Rises with crisis score and asset inflation — the hedge activating as the thesis plays out.',
       thresholds: ['<10%','10-20%','20-35%','35-50%','>50%'],
@@ -391,7 +391,7 @@ const INDICATORS = [
     source: 'ICE BofA / FRED: BAMLMOVE — Daily',
     current: '~95',
     desc: "Treasury market implied volatility. The VIX of bond markets. Spikes when sovereign debt itself is questioned.",
-    relationship: "SPICE-specific volatility index. Rises when the model's debt/GDP hits critical levels and bond markets start repricing risk. Crisis events correlate with MOVE >160.",
+    relationship: "AXION-specific volatility index. Rises when the model's debt/GDP hits critical levels and bond markets start repricing risk. Crisis events correlate with MOVE >160.",
     thresholds: ['<100', '100-130', '130-160', '160-200', '200+'],
     currentLevel: 'green',
   },
@@ -454,7 +454,7 @@ const INDICATORS = [
     source: 'CoinGecko API — Real-time, free',
     current: 'BTC dom ~55%, stables ~15%',
     desc: 'Capital flowing into crypto as system alternative to fiat. BTC + stablecoins rising together = crisis adoption, not speculation.',
-    relationship: "The indicator unique to the SPICE thesis. As the model's wage economy collapses and government credibility deteriorates, watch for the public exercising the crypto opt-out.",
+    relationship: "The indicator unique to the AXION thesis. As the model's wage economy collapses and government credibility deteriorates, watch for the public exercising the crypto opt-out.",
     thresholds: ['BTC <55%, stable <15%', 'BTC >55%, stable >15%', 'BTC >60%, stable >20%', 'BTC >65%, stable >25%', 'BTC >70%, stable >30%'],
     currentLevel: 'blue',
   },
@@ -631,7 +631,7 @@ export default function Collision() {
       {/* Header */}
       <div style={S.header}>
         <div>
-          <div style={S.eyebrow}>SPICE [ZPC] — Macro Simulation Engine v2.0</div>
+          <div style={S.eyebrow}>AXION [ZPC] — Macro Simulation Engine v2.0</div>
           <div style={S.title}>THE <span style={{ color:'#B8860B' }}>COLLISION</span> MODEL</div>
         </div>
         <div style={S.headerRight}>
@@ -733,7 +733,7 @@ export default function Collision() {
               { label:'Unemployment', val:`${simData.u[yr]}%`,           danger: simData.u[yr] > 10 },
               { label:'Wage Share',   val:`${simData.ls[yr]}%`,          danger: simData.ls[yr] < 55 },
               { label:'Crisis Score', val:`${simData.score[yr]}/100`,    accent: true, danger: simData.score[yr] >= 35 },
-              { label:'SPICE Return', val:`${simData.spice[yr]}%`,       accent: true },
+              { label:'AXION Return', val:`${simData.spice[yr]}%`,       accent: true },
             ].map(k => (
               <div key={k.label} style={S.kpi}>
                 <span style={S.kpiLabel}>{k.label}</span>

@@ -282,7 +282,7 @@ export default function Dashboard() {
         {activeTab === "lookup" && (
           <div style={S.narrowCard}>
             <h3 style={S.cardTitle}>Wallet Lookup</h3>
-            <p style={S.muted}>View any wallet's SPICE position without connecting.</p>
+            <p style={S.muted}>View any wallet's AXION position without connecting.</p>
             <InputGroup label="Wallet Address" value={lookupAddr} onChange={setLookupAddr} unit="" hint="" mono />
             <button style={S.actionBtn} onClick={doLookup}>Look Up Position</button>
             {lookupResult && !lookupResult.error && (

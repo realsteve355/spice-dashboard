@@ -60,7 +60,7 @@ export default function Portfolio() {
       {activeAlloc && (
         <div style={{ ...S.statusBanner, background: activeAlloc.bg, borderColor: activeAlloc.color }}>
           <div style={S.statusLeft}>
-            <div style={S.statusEyebrow}>CURRENT SPICE SYSTEM STATUS</div>
+            <div style={S.statusEyebrow}>CURRENT AXION SYSTEM STATUS</div>
             <div style={{ ...S.statusLevel, color: activeAlloc.color }}>{activeAlloc.label}</div>
             <div style={S.statusContext}>{activeAlloc.context}</div>
           </div>
@@ -111,10 +111,10 @@ export default function Portfolio() {
 
       {/* ── Page header ───────────────────────────────────────────────── */}
       <div style={S.pageHeader}>
-        <div style={S.eyebrow}>SPICE PROTOCOL · INVESTABLE UNIVERSE</div>
+        <div style={S.eyebrow}>AXION PROTOCOL · INVESTABLE UNIVERSE</div>
         <h1 style={S.title}>Portfolio</h1>
         <p style={S.subtitle}>
-          The SPICE portfolio shifts composition as the system alert level escalates.
+          The AXION portfolio shifts composition as the system alert level escalates.
           Each level is calibrated for a distinct crisis phase — from baseline
           preservation through to maximum crisis positioning.
         </p>

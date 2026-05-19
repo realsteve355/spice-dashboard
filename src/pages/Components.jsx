@@ -27,7 +27,7 @@ const SAMPLE_TICKER = [
   { k: "10Y",         v: "4.10%",        d: "±0.00",   dir: "flat" },
   { k: "CPI",         v: "3.40%",        d: "+0.10pp", dir: "down" },
   { k: "Debt/GDP",    v: "123%",         d: "+1.4yr",  dir: "down" },
-  { k: "SPICE Lvl",   v: "7.20",         d: "+0.12",   dir: "up" },
+  { k: "AXION Lvl",   v: "7.20",         d: "+0.12",   dir: "up" },
 ];
 
 const SAMPLE_NAV = [
@@ -41,7 +41,7 @@ export default function Components() {
     <div style={S.page}>
       <div style={S.inner}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: C.headline, letterSpacing: "-0.01em", marginBottom: 8 }}>
-          SPICE component showroom
+          AXION component showroom
         </h1>
         <p style={{ fontSize: 13, color: C.txt2, marginBottom: 40 }}>
           Every chrome component from the mission-control library. See <code style={{ color: C.dim }}>docs/redesign.md</code> §3 for the full spec.
@@ -98,7 +98,7 @@ export default function Components() {
           <TelemetryGrid
             columns={4}
             cells={[
-              { label: "SPICE Level",   value: "7.20 / 10",  delta: "+0.12 wk", dir: "up", progress: 0.72 },
+              { label: "AXION Level",   value: "7.20 / 10",  delta: "+0.12 wk", dir: "up", progress: 0.72 },
               { label: "US Debt / GDP", value: "123 %",      delta: "+1.4 yr",  dir: "down", status: "crit", progress: 0.70 },
               { label: "10Y Yield",     value: "4.10 %",     delta: "±0.00",    dir: "flat" },
               { label: "Real Rate",     value: "1.80 %",     delta: "+0.08",    dir: "up" },
@@ -119,7 +119,7 @@ export default function Components() {
               rows={[
                 { k: "Active colonies",   v: "1" },
                 { k: "Citizens enrolled", v: "5" },
-                { k: "S-token supply",    v: "12,440" },
+                { k: "MOND supply",    v: "12,440" },
                 { k: "V-token supply",    v: "3,820" },
                 { k: "Current epoch",     v: "13" },
                 { k: "Network",           v: "Base Sepolia" },
@@ -139,7 +139,7 @@ export default function Components() {
                 { time: "14:18", level: "INFO", msg: "Rebalance check · within band" },
                 { time: "13:42", level: "WARN", msg: "CPI YoY rising · monitor" },
                 { time: "12:05", level: "INFO", msg: "Deposit · 0.50 ₿ · 0xA1…2c" },
-                { time: "09:51", level: "WARN", msg: "SPICE level → 7.20 (+0.12)" },
+                { time: "09:51", level: "WARN", msg: "AXION level → 7.20 (+0.12)" },
                 { time: "08:30", level: "INFO", msg: "Treasury auction · 4.11% stop" },
               ]}
             />

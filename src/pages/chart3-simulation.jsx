@@ -53,7 +53,7 @@ function SimpleTip({ active, payload, label, color, unit, rows, fogYear }) {
   );
 }
 
-// ─── (InfoTooltip / BREAK_TOOLTIP / GHOST_TOOLTIP removed — replaced by SPICE level badges) ───
+// ─── (InfoTooltip / BREAK_TOOLTIP / GHOST_TOOLTIP removed — replaced by AXION level badges) ───
 
 // ─── CHART COMPONENTS ──────────────────────────────────────────────────────
 
@@ -582,7 +582,7 @@ export default function Chart3Simulation() {
             ₿ {cryptoPolicy==="ban" ? "Ban" : cryptoPolicy==="tax" ? "Tax" : "Ignore"}
           </div>
 
-          {/* SPICE crisis level onset badges */}
+          {/* AXION crisis level onset badges */}
           {SIM_LEVELS.map((lm, i) => {
             const yr = firstYear[i];
             return (

@@ -10,7 +10,7 @@
  *   - Services   (sticky — labour-driven, tracks wages)
  *
  * The Fisc's job is NOT to peg S to USD. It's to keep the TOTAL basket
- * costing a constant 28 S, even when individual components diverge.
+ * costing a constant 28 MOND, even when individual components diverge.
  * Citizens never see S becoming worth more or less in real terms — the
  * volatility is absorbed entirely by the floating $/S rate.
  *
@@ -40,7 +40,7 @@ const ORG  = "#f59e0b"
 const CH   = 200
 
 // ── Basket composition ──────────────────────────────────────────────────────
-// Initial USD prices sum to $28 (= 28 S at initial rate $1/S).
+// Initial USD prices sum to $28 (= 28 MOND at initial rate $1/MOND).
 // Each category has its own USD inflation rate — the citizen-facing demo.
 const BASKET_INITIAL = {
   energy:   { label: 'Energy',     usd: 8.0, colour: ORG },  // gas, electricity
@@ -86,7 +86,7 @@ const COLONY_DEFAULTS = {
 }
 
 // Plausible 2026-onwards trajectories per category, in line with the
-// SPICE macro thesis: USD-debasement-via-policy hitting energy + services,
+// AXION macro thesis: USD-debasement-via-policy hitting energy + services,
 // AI-driven deflation in goods + parts of food.
 const INFLATION_PRESETS = {
   baseline_2026: {
@@ -291,14 +291,14 @@ export default function ColonyEconomy() {
     <div style={{ minHeight: '100vh', background: BG0, color: T1, fontFamily: F, paddingBottom: 40 }}>
       <div style={{ borderBottom: BD, padding: '20px 24px', background: BG1 }}>
         <div style={{ fontSize: 11, color: GOLD, letterSpacing: '0.3em', marginBottom: 8 }}>
-          SPICE COLONY · BASKET STABILITY UNDER USD VOLATILITY
+          AXION COLONY · BASKET STABILITY UNDER USD VOLATILITY
         </div>
         <div style={{ fontSize: 13, color: T2, lineHeight: 1.6, maxWidth: 900 }}>
           A single merged colony — <strong style={{ color: T1 }}>MaryFontaine</strong>{' '}
           (Marysville + Bellefontaine, OH, scaled). The basket of goods has four
           categories — energy, food, hard goods, services — each with its own
           USD inflation rate. The Fisc's job is to keep the TOTAL basket
-          costing a constant 28 S regardless of how individual goods diverge.
+          costing a constant 28 MOND regardless of how individual goods diverge.
           Citizens experience S as stable in real terms even when energy is
           rocketing and electronics are crashing.
         </div>
@@ -338,7 +338,7 @@ export default function ColonyEconomy() {
                 display={`$${(imports_/1_000_000).toFixed(0)}M`}
                 onChange={v => startTransition(() => setImports(v))} />
               <Slider label="UBI per citizen / month" value={ubi}
-                min={0} max={1000} step={10} display={`${ubi} S`}
+                min={0} max={1000} step={10} display={`${ubi} MOND`}
                 onChange={v => startTransition(() => setUbi(v))} />
               <Slider label="Initial USDC reserve" value={reserve_}
                 min={1_000_000} max={500_000_000} step={1_000_000}
@@ -364,8 +364,8 @@ export default function ColonyEconomy() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 14 }}>
               <Kpi label="End basket cost"
-                   value={`${summary.endBasketInS.toFixed(1)} S`}
-                   sub={`target ${TARGET_BASKET_S} S`}
+                   value={`${summary.endBasketInS.toFixed(1)} MOND`}
+                   sub={`target ${TARGET_BASKET_S} MOND`}
                    colour={summary.endBasketInS <= TARGET_BASKET_S * 1.02 ? GRN
                          : summary.endBasketInS <= TARGET_BASKET_S * 1.10 ? GOLD : RED} />
               <Kpi label="End rate ($/S)"
@@ -393,8 +393,8 @@ export default function ColonyEconomy() {
                     <CartesianGrid stroke="#232831" strokeDasharray="3 3" />
                     <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
                     <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831" domain={[20, 'auto']} />
-                    <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" label={{ value: 'target 28 S', fill: GRN, fontSize: 9, position: 'right' }} />
-                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
+                    <ReferenceLine y={TARGET_BASKET_S} stroke={GRN} strokeDasharray="3 3" label={{ value: 'target 28 MOND', fill: GRN, fontSize: 9, position: 'right' }} />
+                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} MOND`} />
                     <Line type="monotone" dataKey="basketInS" stroke={GOLD} strokeWidth={2.5} dot={false} isAnimationActive={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -440,7 +440,7 @@ export default function ColonyEconomy() {
                     <XAxis dataKey="month" tick={{ fill: T3, fontSize: 10 }} stroke="#232831" />
                     <YAxis tick={{ fill: T3, fontSize: 10 }} stroke="#232831"
                       tickFormatter={v => `${v.toFixed(0)}S`} />
-                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} S`} />
+                    <Tooltip contentStyle={tipStyle} formatter={v => `${Number(v).toFixed(1)} MOND`} />
                     <Legend wrapperStyle={{ fontSize: 10, color: T2 }} />
                     <Line type="monotone" dataKey="energyS"   name="Energy"     stroke={ORG} strokeWidth={1.5} dot={false} isAnimationActive={false} />
                     <Line type="monotone" dataKey="foodS"     name="Food"       stroke={GRN} strokeWidth={1.5} dot={false} isAnimationActive={false} />
@@ -458,7 +458,7 @@ export default function ColonyEconomy() {
                 <>
                   <strong style={{ color: RED }}>Peg breaks at month {summary.pegBreakMonth}.</strong>{' '}
                   Despite the basket-anchoring mechanism, the colony's reserve couldn't keep up
-                  with the redemption demand. By month 24 the basket costs {summary.endBasketInS.toFixed(1)} S
+                  with the redemption demand. By month 24 the basket costs {summary.endBasketInS.toFixed(1)} MOND
                   ({((summary.endBasketInS / TARGET_BASKET_S - 1) * 100).toFixed(0)}% real loss to V holders).
                 </>
               ) : Math.abs(usdBasketGrowth) > 5 ? (
@@ -467,13 +467,13 @@ export default function ColonyEconomy() {
                   Over 24 months the basket {usdBasketGrowth > 0 ? 'inflated' : 'deflated'}{' '}
                   <strong style={{ color: T1 }}>{Math.abs(usdBasketGrowth).toFixed(0)}%</strong>{' '}
                   in USD terms — and individual components diverged sharply. Yet citizens
-                  consistently paid <strong style={{ color: GOLD }}>{summary.endBasketInS.toFixed(1)} S</strong>{' '}
+                  consistently paid <strong style={{ color: GOLD }}>{summary.endBasketInS.toFixed(1)} MOND</strong>{' '}
                   for the basket the entire way. That is the Fisc earning its keep: USD volatility
                   visible only on the rate line, never in citizens' pockets.
                 </>
               ) : (
                 <>
-                  <strong style={{ color: GRN }}>Basket holds at {summary.endBasketInS.toFixed(1)} S.</strong>{' '}
+                  <strong style={{ color: GRN }}>Basket holds at {summary.endBasketInS.toFixed(1)} MOND.</strong>{' '}
                   Mild USD environment over these 24 months. The Fisc has light work; rate barely moves.
                   Try the "Collision-era" or "USD hyperinflation" presets to see the mechanism stress-tested.
                 </>

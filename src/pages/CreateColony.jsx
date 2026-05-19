@@ -264,8 +264,8 @@ export default function CreateColony() {
                 FIXED COLONY PARAMETERS
               </div>
               {[
-                ["UBI per citizen",       "1,000 S-tokens / epoch"],
-                ["Max savings",           "200 S → V per epoch"],
+                ["UBI per citizen",       "1,000 MOND / epoch"],
+                ["Max savings",           "200 MOND → V per epoch"],
                 ["Stewardship fee",       "0.5% declared value / epoch"],
                 ["Constitutional change", "80% referendum required"],
                 ["MCC recall trigger",    "Bill +20% above 12m avg"],

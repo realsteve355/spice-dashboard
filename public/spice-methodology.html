@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SPICE Protocol — Model Methodology</title>
+<title>AXION Protocol — Model Methodology</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,600;1,300;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -558,7 +558,7 @@
 
 <!-- ═══════════════════════════════════════ SIDEBAR NAV ═══════════════════ -->
 <nav class="sidebar">
-  <div class="sidebar-logo">SPICE</div>
+  <div class="sidebar-logo">AXION</div>
   <div class="sidebar-subtitle">Model Methodology</div>
 
   <div class="nav-section">Overview</div>
@@ -595,7 +595,7 @@
   <a class="nav-link sub" href="#ch5-shares">Income Shares</a>
   <a class="nav-link sub" href="#ch5-policy">Policy Effects</a>
 
-  <div class="nav-section">Part VI — SPICE</div>
+  <div class="nav-section">Part VI — AXION</div>
   <a class="nav-link" href="#ch6">6. Gold &amp; Crypto Hedge</a>
   <a class="nav-link sub" href="#ch6-monetary-stress">Monetary Stress Index</a>
   <a class="nav-link sub" href="#ch6-rationale">Hedge Rationale</a>
@@ -618,9 +618,9 @@
 
 <!-- ── DOCUMENT HEADER ── -->
 <header class="doc-header">
-  <div class="doc-eyebrow">SPICE Protocol — Technical Documentation</div>
+  <div class="doc-eyebrow">AXION Protocol — Technical Documentation</div>
   <h1 class="doc-title">Debt Collision Simulation:<br>Model Methodology &amp; Citations</h1>
-  <p class="doc-subtitle">A detailed account of the assumptions, formulae, data sources, and causal logic underpinning the SPICE thesis interactive simulation. Written for sceptical readers who want to interrogate the model.</p>
+  <p class="doc-subtitle">A detailed account of the assumptions, formulae, data sources, and causal logic underpinning the AXION thesis interactive simulation. Written for sceptical readers who want to interrogate the model.</p>
   <div class="doc-meta">
     <div>Version <span>1.0 — March 2026</span></div>
     <div>Simulation <span>Chart 3 / zpc.finance</span></div>
@@ -633,14 +633,14 @@
   <div class="chapter-num">Overview</div>
   <h2 class="chapter-title">The Core Thesis</h2>
 
-  <p>The SPICE thesis rests on a single structural observation: <strong>governments with unsustainable debt loads have historically relied on inflation to reduce their real debt burden</strong>, because inflation raises nominal GDP faster than the debt stock, gradually eroding the debt-to-GDP ratio. This mechanism — sometimes called "financial repression" — was the primary tool used by the US, UK, and most developed economies to escape the debt burdens accumulated in World War II.<sup class="ref">[1,2]</sup></p>
+  <p>The AXION thesis rests on a single structural observation: <strong>governments with unsustainable debt loads have historically relied on inflation to reduce their real debt burden</strong>, because inflation raises nominal GDP faster than the debt stock, gradually eroding the debt-to-GDP ratio. This mechanism — sometimes called "financial repression" — was the primary tool used by the US, UK, and most developed economies to escape the debt burdens accumulated in World War II.<sup class="ref">[1,2]</sup></p>
 
   <p>What is different today is the emergence of a powerful countervailing force. <strong>Artificial intelligence and automation are structurally deflationary.</strong> When a software agent replaces a knowledge worker, the cost of that output collapses toward zero. Across millions of tasks, this creates persistent downward pressure on prices — precisely when governments need upward pressure.</p>
 
   <div class="callout gold">
     <div class="callout-label">The Collision</div>
-    <p>The SPICE thesis is that these two forces — the inflationary imperative of governments managing unsustainable debt, and the deflationary pressure of AI-driven productivity — are on a collision course. The resolution of this collision will define the macroeconomic environment of the late 2020s and 2030s.</p>
-    <p>SPICE is designed as a hedge against the most likely resolution: <strong>governments win</strong>, deploying monetary tools (QE, yield curve control, financial repression) to suppress yields and generate inflation, at the cost of currency debasement and a transfer of wealth from labour to capital and from savers to asset holders.</p>
+    <p>The AXION thesis is that these two forces — the inflationary imperative of governments managing unsustainable debt, and the deflationary pressure of AI-driven productivity — are on a collision course. The resolution of this collision will define the macroeconomic environment of the late 2020s and 2030s.</p>
+    <p>AXION is designed as a hedge against the most likely resolution: <strong>governments win</strong>, deploying monetary tools (QE, yield curve control, financial repression) to suppress yields and generate inflation, at the cost of currency debasement and a transfer of wealth from labour to capital and from savers to asset holders.</p>
   </div>
 
   <p>The simulation on Chart 3 allows you to explore the parameter space of this collision: how fast AI displaces workers, which policy tools governments choose, and what the resulting trajectory looks like across six key variables through 2035.</p>
@@ -757,7 +757,7 @@
       Stable if: <span class="var">r(t)</span> <span class="op">&lt;</span> <span class="var">g(t)</span> <span class="op">+</span> <span class="var">π(t)</span> <span class="cmt">← nominal GDP growth exceeds interest rate</span><br>
       Unstable if: <span class="var">r(t)</span> <span class="op">&gt;</span> <span class="var">g(t)</span> <span class="op">+</span> <span class="var">π(t)</span> <span class="cmt">← debt compounds without bound</span>
     </div>
-    <div class="formula-note">The CBO projects the average interest rate on US debt to exceed economic growth (r > g) by 2045 under current law. Under the SPICE scenario, AI-driven deflation (negative π) accelerates this to the late 2020s.</div>
+    <div class="formula-note">The CBO projects the average interest rate on US debt to exceed economic growth (r > g) by 2045 under current law. Under the AXION scenario, AI-driven deflation (negative π) accelerates this to the late 2020s.</div>
   </div>
 
   <p>In the model, <strong>r is endogenous</strong> — it rises as the debt ratio increases, reflecting the empirical finding of Reinhart and Rogoff that markets begin demanding a premium on sovereign debt once debt-to-GDP exceeds approximately 90%.<sup class="ref">[1]</sup> Specifically:</p>
@@ -820,11 +820,11 @@
     <div class="scenario-cell"><div class="scenario-source">Significant structural disruption requiring policy response</div></div>
 
     <div class="scenario-cell">
-      <div class="scenario-name">SPICE</div>
+      <div class="scenario-name">AXION</div>
     </div>
     <div class="scenario-cell"><div class="scenario-pct" style="color:var(--gold)">40%</div></div>
     <div class="scenario-cell"><div style="font-family:var(--mono);font-size:11px;">~8%/yr</div></div>
-    <div class="scenario-cell"><div class="scenario-source">SPICE base case — agentic AI systems (2026–2028) capable of end-to-end white-collar task completion; adoption accelerates sharply</div></div>
+    <div class="scenario-cell"><div class="scenario-source">AXION base case — agentic AI systems (2026–2028) capable of end-to-end white-collar task completion; adoption accelerates sharply</div></div>
     <div class="scenario-cell"><div class="scenario-source">Major fiscal crisis without decisive policy response</div></div>
 
     <div class="scenario-cell">
@@ -1023,7 +1023,7 @@
   <div class="policy-grid">
     <div class="policy-card monetary">
       <div class="policy-label">QE / Money Printing</div>
-      <p>Central bank purchases government bonds, suppressing yields and monetising deficit. Historical precedents: US/UK 2009–2021, Japan ongoing. Primary mechanism for SPICE hedge thesis.</p>
+      <p>Central bank purchases government bonds, suppressing yields and monetising deficit. Historical precedents: US/UK 2009–2021, Japan ongoing. Primary mechanism for AXION hedge thesis.</p>
       <div class="policy-effects">
         Yield mult: 0.70 (suppresses yields 30%)<br>
         Inflation add: +3.5% (monetary expansion is inflationary)<br>
@@ -1159,7 +1159,7 @@
   <div class="callout red">
     <div class="callout-label">Key Insight</div>
     <p>The policy responses most likely to be deployed (QE, YCC, financial repression) are precisely those that <strong>widen</strong> the K-shape the most. This is not a coincidence — these policies are attractive to governments partly because they distribute pain silently (via inflation and financial repression) rather than visibly (via tax increases or austerity). The political economy strongly favours monetary over fiscal adjustment.</p>
-    <p>This is why SPICE invests in assets that benefit from the monetary responses: gold and crypto are direct beneficiaries of exactly the policies that governments are most likely to choose.</p>
+    <p>This is why AXION invests in assets that benefit from the monetary responses: gold and crypto are direct beneficiaries of exactly the policies that governments are most likely to choose.</p>
   </div>
 </section>
 
@@ -1168,7 +1168,7 @@
   <div class="chapter-num">Chapter 6</div>
   <h2 class="chapter-title">Gold &amp; Crypto as Hedge</h2>
 
-  <p>The Gold/Crypto index in the simulation represents the combined performance of hard monetary assets — gold and Bitcoin/crypto — as a function of monetary stress. This is the channel through which SPICE captures returns.</p>
+  <p>The Gold/Crypto index in the simulation represents the combined performance of hard monetary assets — gold and Bitcoin/crypto — as a function of monetary stress. This is the channel through which AXION captures returns.</p>
 
   <h3 id="ch6-monetary-stress">Monetary Stress Index</h3>
 
@@ -1222,7 +1222,7 @@
 
   <div class="callout gold">
     <div class="callout-label">Why Both Gold and Crypto?</div>
-    <p>Gold and Bitcoin are complementary hedges with different risk profiles. Gold has 5,000 years of monetary history, is held by central banks, and performs well in <em>deflation</em> as well as inflation — because its value is not a claim on any cash flow, it cannot be impaired by deflation the way equities or bonds can. Bitcoin is a newer, more volatile asset with a hard supply cap and network effects; it is more sensitive to institutional adoption and regulatory risk, but offers higher upside in a monetary reset scenario. The SPICE index weights both, capturing the institutional-grade safety of gold with the optionality of crypto in a genuine paradigm-shift scenario.</p>
+    <p>Gold and Bitcoin are complementary hedges with different risk profiles. Gold has 5,000 years of monetary history, is held by central banks, and performs well in <em>deflation</em> as well as inflation — because its value is not a claim on any cash flow, it cannot be impaired by deflation the way equities or bonds can. Bitcoin is a newer, more volatile asset with a hard supply cap and network effects; it is more sensitive to institutional adoption and regulatory risk, but offers higher upside in a monetary reset scenario. The AXION index weights both, capturing the institutional-grade safety of gold with the optionality of crypto in a genuine paradigm-shift scenario.</p>
   </div>
 </section>
 
@@ -1233,7 +1233,7 @@
 
   <p>When fiscal credibility erodes and fiat currency is debased, a portion of private capital exits the traditional financial system entirely — moving into non-sovereign monetary assets beyond the reach of capital controls, financial repression, or inflation. In earlier historical episodes this flight went primarily into gold, foreign currencies, or offshore accounts. The simulation models a structurally new version of this dynamic: capital flight into Bitcoin and crypto assets, enabled by bearer digital instruments that are borderless, self-custodied, and censorship-resistant.</p>
 
-  <p>This is not a fringe scenario. Chainalysis ranked Venezuela, Ukraine, Russia, and Argentina among the highest per-capita crypto adoption nations globally — every one of them experiencing acute fiat stress at the time of their adoption surge.<sup class="ref">[21]</sup> The simulation models the macro-level consequences of this dynamic if it manifests at scale in an advanced economy under the SPICE collision scenario.</p>
+  <p>This is not a fringe scenario. Chainalysis ranked Venezuela, Ukraine, Russia, and Argentina among the highest per-capita crypto adoption nations globally — every one of them experiencing acute fiat stress at the time of their adoption surge.<sup class="ref">[21]</sup> The simulation models the macro-level consequences of this dynamic if it manifests at scale in an advanced economy under the AXION collision scenario.</p>
 
   <h3 id="ch7-mechanism">The Flight Mechanism</h3>
 
@@ -1397,7 +1397,7 @@
 
   <div class="callout gold">
     <div class="callout-label">A Note on Bitcoin Divisibility and Accessibility</div>
-    <p>A common misconception is that Bitcoin price appreciation impairs accessibility — that a high BTC price means ordinary people cannot participate. This is incorrect. Bitcoin is divisible to 8 decimal places; the smallest unit (one "satoshi") equals 0.00000001 BTC. At a price of $1,000,000 per coin, one satoshi is worth $0.01 — one US cent. A holder of $100 of Bitcoin at current prices holds approximately 117,600 satoshis; that holding appreciates proportionally regardless of how large the nominal per-coin price becomes. Price appreciation does not impair access; it increases the value of any position, however small. This is structurally different from, say, owning a fractional share of a single asset — each satoshi is a fully fungible, independently transferable unit. The SPICE model's Bitcoin price path therefore represents a macro stress signal and return vehicle equally available to large and small holders.</p>
+    <p>A common misconception is that Bitcoin price appreciation impairs accessibility — that a high BTC price means ordinary people cannot participate. This is incorrect. Bitcoin is divisible to 8 decimal places; the smallest unit (one "satoshi") equals 0.00000001 BTC. At a price of $1,000,000 per coin, one satoshi is worth $0.01 — one US cent. A holder of $100 of Bitcoin at current prices holds approximately 117,600 satoshis; that holding appreciates proportionally regardless of how large the nominal per-coin price becomes. Price appreciation does not impair access; it increases the value of any position, however small. This is structurally different from, say, owning a fractional share of a single asset — each satoshi is a fully fungible, independently transferable unit. The AXION model's Bitcoin price path therefore represents a macro stress signal and return vehicle equally available to large and small holders.</p>
   </div>
 
   <p>Bitcoin starting price in the simulation is $85,000 (early March 2026 market level). The model ceiling is $5,000,000. The Y-axis auto-scales to the simulated path, with dollar reference lines at $170k (2×), $425k (5×), and $850k (10×) from the starting level for orientation.</p>
@@ -1436,7 +1436,7 @@
   <div class="chapter-num">Appendix B</div>
   <h2 class="chapter-title">Sensitivity Analysis</h2>
 
-  <p>The model's outputs are most sensitive to three parameters. The following table shows how the 2035 Debt/GDP changes under variations in each, holding all others at SPICE base case (40% displacement, no policy response):</p>
+  <p>The model's outputs are most sensitive to three parameters. The following table shows how the 2035 Debt/GDP changes under variations in each, holding all others at AXION base case (40% displacement, no policy response):</p>
 
   <table class="data-table">
     <thead>
@@ -1446,7 +1446,7 @@
       <tr>
         <td>AI displacement rate</td>
         <td>5% (CBO)</td>
-        <td>40% (SPICE)</td>
+        <td>40% (AXION)</td>
         <td>60% (Tsunami)</td>
         <td>~135% → ~220% → &gt;280%</td>
       </tr>
@@ -1580,7 +1580,7 @@
 
 <!-- ── FOOTER ── -->
 <footer class="doc-footer">
-  <div>SPICE Protocol — zpc.finance — Model v1.1 — March 2026</div>
+  <div>AXION Protocol — zpc.finance — Model v1.1 — March 2026</div>
   <div>Comments &amp; peer review welcome</div>
 </footer>
 

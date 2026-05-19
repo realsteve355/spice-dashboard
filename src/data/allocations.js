@@ -1,4 +1,4 @@
-// SPICE Protocol — portfolio allocations by alert level.
+// AXION Protocol — portfolio allocations by alert level.
 // Edit this file to adjust compositions. Changes take effect on next deploy.
 // The Config page (/config) displays these values.
 
@@ -72,7 +72,7 @@ export const ALLOCATIONS = [
       "Maximum alpha generation from short book. Hard asset base protecting capital. " +
       "Volatility structures crystallising. Exit AI equity — equities under broad pressure.",
     context:
-      "SPICE base case conditions met. Sovereign, monetary and market stress aligned. " +
+      "AXION base case conditions met. Sovereign, monetary and market stress aligned. " +
       "Collision likely within 3–7 years without significant policy intervention.",
     assets: [
       { name: "Bitcoin",           pct: 35, color: "#f97316", note: "Dominant position — fiat exit signal" },
@@ -91,7 +91,7 @@ export const ALLOCATIONS = [
     bg: "rgba(220,38,38,0.12)",
     objective:
       "Maximum exit from fiat exposure. Begin orderly exit from short positions " +
-      "as maximum profits captured. Evaluate IRON-to-SPICE switchover.",
+      "as maximum profits captured. Evaluate IRON-to-AXION switchover.",
     context:
       "Structural fracture. At least one G7 sovereign under genuine stress. " +
       "Gold up 100%+ from inception NAV. Crypto adoption accelerating as fiat alternative.",

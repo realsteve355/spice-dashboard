@@ -5,7 +5,7 @@ export const ANCHORS = [
   { pct:0.05, label:"CBO",      desc:"CBO 2025 baseline. Gradual adoption, minimal disruption." },
   { pct:0.10, label:"IMF/GS",   desc:"IMF + Goldman Sachs central estimate. Manageable disruption." },
   { pct:0.25, label:"McKinsey", desc:"McKinsey high-end. 25% of tasks automatable by 2030." },
-  { pct:0.40, label:"SPICE",    desc:"SPICE thesis. Rapid displacement from agentic AI 2026–28." },
+  { pct:0.40, label:"AXION",    desc:"AXION thesis. Rapid displacement from agentic AI 2026–28." },
   { pct:0.60, label:"Collision",desc:"AGI-equivalent transition compressed into 3–4 years." },
 ];
 
@@ -21,7 +21,7 @@ export const FISCAL_POLICIES = [
 export const MONETARY_POLICIES = [
   { id:"none",       label:"None",               desc:"No monetary intervention.",
     e:{ yM:1.00, iA:0,     gM:1.00, lD: 0,    cD: 0    }},
-  { id:"qe",         label:"QE / Money Printing", desc:"Monetises deficits. Inflates asset prices. SPICE core hedge.",
+  { id:"qe",         label:"QE / Money Printing", desc:"Monetises deficits. Inflates asset prices. AXION core hedge.",
     e:{ yM:0.70, iA:0.035, gM:1.55, lD:-0.05, cD:+0.07 }},
   { id:"ycc",        label:"Yield Curve Control", desc:"Hard cap on long-end yields. Japan 2016–23 playbook.",
     e:{ yM:0.58, iA:0.045, gM:1.70, lD:-0.06, cD:+0.08 }},
@@ -172,7 +172,7 @@ export function runSim(displaced, fiscalId, monetaryId, cryptoAdoption, cryptoPo
 // ─── COLLISION DETECTION ───────────────────────────────────────────────────
 
 /**
- * Determine if a crisis year is "The Collision" (SPICE thesis) or conventional.
+ * Determine if a crisis year is "The Collision" (AXION thesis) or conventional.
  * row.cryptoFlight is a percentage (e.g. 38.0), displaced is a decimal (e.g. 0.40).
  * Returns 'NO_CRISIS' | 'CONVENTIONAL' | 'COLLISION'
  */

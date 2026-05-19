@@ -69,7 +69,7 @@ export default function MarsMCC() {
         </div>
 
         <div className="md-panel">
-          <div className="md-panel-title">MCC Revenue · 200 years (S-tokens)</div>
+          <div className="md-panel-title">MCC Revenue · 200 years (MOND)</div>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={annual} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="#232831" strokeDasharray="2 4" />

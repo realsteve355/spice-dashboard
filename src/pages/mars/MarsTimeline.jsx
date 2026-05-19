@@ -41,7 +41,7 @@ export default function MarsTimeline() {
       keys: [{ key: 'population', color: '#e8a020', name: 'Population' }],
     },
     {
-      title: 'Annual GDP (S-tokens)',
+      title: 'Annual GDP (MOND)',
       keys: [{ key: 'annual_gdp', color: '#9966ff', name: 'Annual GDP' }],
     },
     {
@@ -61,7 +61,7 @@ export default function MarsTimeline() {
       keys: [{ key: 'dividends', color: '#c8a96e', name: 'Dividends' }],
     },
     {
-      title: 'Average MCC Bill (S-tokens)',
+      title: 'Average MCC Bill (MOND)',
       keys: [{ key: 'avg_bill', color: '#ff4d6a', name: 'Avg bill' }],
     },
     {

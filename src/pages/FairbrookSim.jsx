@@ -26,8 +26,8 @@ const B = {
   workforce:             6700,
   avgWageMonthly:        2667,    // $32K/year ÷ 12
   baselineAnnualProfits: 8.41e6,  // all local businesses today
-  spiceProfitAtFullRev:  52e6,    // all businesses in SPICE world at full revenue
-  // Derivation: $200M total revenue × ~26% SPICE margin after automation savings
+  spiceProfitAtFullRev:  52e6,    // all businesses in AXION world at full revenue
+  // Derivation: $200M total revenue × ~26% AXION margin after automation savings
   // Source: Fairbrook LAT model (docs/fairbrook-lat-model.md)
 }
 
@@ -53,8 +53,8 @@ function revMult(ubiMonthly, displacement) {
 /**
  * Annual LAT revenue given UBI level and policy settings.
  *
- * LAT = SPICE profit before LAT − (retainMult × today's baseline profit)
- * SPICE profit scales with revenue, which scales with spending power.
+ * LAT = AXION profit before LAT − (retainMult × today's baseline profit)
+ * AXION profit scales with revenue, which scales with spending power.
  */
 function annualLAT(ubiMonthly, displacement, retainMult) {
   const rm             = revMult(ubiMonthly, displacement)
@@ -405,7 +405,7 @@ export default function FairbrookSim() {
                 format={v => `${Math.round(v * 100)}% (${Math.round(B.workforce * v).toLocaleString()} workers)`}
               />
               <div style={{ fontFamily: F, fontSize: 10, color: T3, lineHeight: 1.7, marginTop: -8 }}>
-                McKinsey base: 25% · SPICE estimate: 40% · AGI scenario: 60%
+                McKinsey base: 25% · AXION estimate: 40% · AGI scenario: 60%
               </div>
             </div>
             <div>
@@ -566,7 +566,7 @@ export default function FairbrookSim() {
             </div>
             <div style={{ fontFamily: F, fontSize: 11, color: T2, lineHeight: 1.8 }}>
               The $296/month UBI target requires displacement below approximately 10% to be
-              self-funded by LAT alone (at 2× retain). At the SPICE base case of 40%
+              self-funded by LAT alone (at 2× retain). At the AXION base case of 40%
               displacement, the stable self-funding UBI is ~${Math.round(equilibriumUBI(0.40, retainMult) || 0)}/month.
               The gap between that and the $296 target is the "bootstrap gap" — which
               requires either external seed capital, a more aggressive LAT rate, or
@@ -682,7 +682,7 @@ export default function FairbrookSim() {
               </div>
               {[
                 'S vs USDC split — UBI is S-denominated, but material goods need USDC. Fisc reserve dynamics not shown.',
-                'Cheaper automated goods — $1 of UBI in SPICE world buys more than $1 today. Real purchasing power is understated.',
+                'Cheaper automated goods — $1 of UBI in AXION world buys more than $1 today. Real purchasing power is understated.',
                 'External income (remote workers like Graham) — USDC inflows that supplement the local S economy.',
                 'Year-on-year automation growth — LAT revenue should increase as more functions automate each year.',
                 'Wage compression — remaining workers may earn less if UBI supplements their income, reducing business labour costs further.',
