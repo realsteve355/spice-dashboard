@@ -551,9 +551,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: 10, color: C.faint, marginBottom: 14 }}>
-            <LegendDot color={C.red}   label={`${spentOnMcc} MOND MCC`}    />
-            <LegendDot color={C.green} label={`${savedToV} MOND saved`}    />
-            <LegendDot color={C.text}  label={`${remaining} MOND remaining`} />
+            <LegendDot color={C.red}   label={<><MondSymbol size={10} /> {spentOnMcc} MCC</>}    />
+            <LegendDot color={C.green} label={<><MondSymbol size={10} /> {savedToV} saved</>}    />
+            <LegendDot color={C.text}  label={<><MondSymbol size={10} /> {remaining} remaining</>} />
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

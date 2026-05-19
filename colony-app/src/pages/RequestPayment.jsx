@@ -112,7 +112,7 @@ export default function RequestPayment() {
 
         {/* Amount */}
         <div style={fieldGroup}>
-          <label style={fieldLabel}>AMOUNT (S-TOKENS)</label>
+          <label style={fieldLabel}>AMOUNT (<MondSymbol size={9} />)</label>
           <div style={{ position: 'relative' }}>
             <input
               style={{ ...inputStyle, paddingRight: 28 }}

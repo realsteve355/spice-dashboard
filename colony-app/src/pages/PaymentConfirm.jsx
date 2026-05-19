@@ -41,7 +41,7 @@ export default function PaymentConfirm() {
       logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} MOND`, meta: { to, note } })
       await tx.wait()
       logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} MOND confirmed` })
-      refresh()   // update S balance in wallet context
+      refresh()   // update MOND balance in wallet context
 
       // Notify recipient (fire-and-forget — don't block UI on failure)
       const fromShort = `${signer.address.slice(0, 6)}…${signer.address.slice(-4)}`
@@ -128,7 +128,7 @@ export default function PaymentConfirm() {
             borderRadius: 0, padding: '10px 14px', marginBottom: 16,
             display: 'flex', justifyContent: 'space-between', fontSize: 12,
           }}>
-            <span style={{ color: C.sub }}>Your S balance</span>
+            <span style={{ color: C.sub }}>Your MOND balance</span>
             <span style={{ color: sufficient ? C.green : C.red, fontWeight: 500 }}>
               <MondSymbol size={12} /> {sBalance} {sufficient ? '✓' : '— insufficient'}
             </span>

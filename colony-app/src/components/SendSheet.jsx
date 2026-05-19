@@ -3,7 +3,7 @@ import { fetchCitizens } from '../utils/fetchCitizens'
 import { shortAddr } from '../utils/addrLabel'
 import { C } from '../theme'
 
-import MondSymbol from '../components/MondSymbol'
+import MondSymbol from './MondSymbol'
 /**
  * SendSheet — inline payment form
  *
@@ -154,10 +154,10 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {/* ── Amount ────────────────────────────────────────────────────── */}
       <Field
-        label={`Amount (max ${maxAmount} MOND)`}
+        label={<>Amount (max <MondSymbol size={10} /> {maxAmount})</>}
         value={amount}
         onChange={setAmount}
-        placeholder="MOND to send"
+        placeholder="amount to send"
         type="number"
       />
 
@@ -171,7 +171,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {amt > maxAmount && (
         <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>
-          Exceeds available balance (${maxAmount} MOND).
+          Exceeds available balance (<MondSymbol size={10} /> {maxAmount}).
         </div>
       )}
 
@@ -194,8 +194,8 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 function Field({ label, value, onChange, placeholder, type }) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4 }}>
-        {label.toUpperCase()}
+      <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 4, textTransform: 'uppercase' }}>
+        {label}
       </div>
       <input
         style={{

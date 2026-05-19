@@ -133,7 +133,7 @@ export default function Basket() {
               }}>
                 <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em' }}>ITEM</div>
                 <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', textAlign: 'right' }}>USD</div>
-                <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', textAlign: 'right' }}>S-TOKENS</div>
+                <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', textAlign: 'right' }}>MOND</div>
               </div>
 
               {items.map(item => (
