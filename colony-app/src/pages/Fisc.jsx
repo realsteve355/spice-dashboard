@@ -190,7 +190,7 @@ export default function Fisc() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               {[
-                { label: 'UBI',       value: totalS ? `${totalS} S` : '—',                sub: 'per month'                              },
+                { label: 'UBI',       value: totalS ? `${totalS} MOND` : '—',                sub: 'per month'                              },
                 { label: 'FISC RATE', value: displayRate ? `$${displayRate.toFixed(3)}/S` : '—', sub: fs ? 'on-chain · live' : 'budget implied' },
                 { label: 'UBI VALUE', value: ubiUSD ? `$${Math.round(ubiUSD)}/mo` : '—', sub: 'external ref'                           },
               ].map(item => (

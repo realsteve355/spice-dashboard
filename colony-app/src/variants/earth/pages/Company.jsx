@@ -751,7 +751,7 @@ export default function Company() {
     try {
       const tx = await co.buybackShares(BigInt(assetId), BigInt(bps), ethers.parseEther(String(price)))
       await tx.wait()
-      setActDone(`Bought back ${bps} bps for ${price} S — shares cancelled`)
+      setActDone(`Bought back ${bps} bps for ${price} MOND — shares cancelled`)
       setBuybackForId(null); setBuybackBps(''); setBuybackPriceS('')
       refresh(); setReloadKey(k => k + 1)
     } catch (e) {
@@ -1156,7 +1156,7 @@ export default function Company() {
                     {a.label || `Asset #${a.id}`}
                     <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{a.id}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: C.text }}>{a.value} S</div>
+                  <div style={{ fontSize: 12, color: C.text }}>{a.value} MOND</div>
                 </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
                   {a.weightKg > 0 && <>{a.weightKg} kg · </>}
@@ -1232,7 +1232,7 @@ export default function Company() {
                   type="number" min="1" placeholder="0"
                   value={payAmt} onChange={e => setPayAmt(e.target.value)}
                 />
-                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>S</span>
+                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>MOND</span>
               </div>
               <input
                 style={{ ...inlineInput, flex: 1 }}
@@ -1498,7 +1498,7 @@ export default function Company() {
                             disabled={actionPending || !buybackBps || !buybackPriceS}
                             style={{ ...actionBtn(C.text), width: '100%', fontSize: 11, opacity: (actionPending || !buybackBps || !buybackPriceS) ? 0.4 : 1 }}
                           >
-                            {actionPending ? 'Buying back…' : `Pay ${buybackPriceS || '0'} S → cancel ${buybackBps || '0'} bps`}
+                            {actionPending ? 'Buying back…' : `Pay ${buybackPriceS || '0'} MOND → cancel ${buybackBps || '0'} bps`}
                           </button>
                         </div>
                       )}
@@ -1888,7 +1888,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                 <div style={{ fontSize: 11, color: C.faint }}>
                   {isSeller ? `Buyer: ${contract.buyer_name}` : `Supplier: ${contract.seller_name}`}
                   {' · '}{contract.schedule}
-                  {contract.price_per_delivery > 0 && ` · ${contract.price_per_delivery} S/delivery`}
+                  {contract.price_per_delivery > 0 && ` · ${contract.price_per_delivery} MOND/delivery`}
                   {contract.ends_at && ` · ends ${fmtDate(contract.ends_at)}`}
                 </div>
               </div>
@@ -1917,7 +1917,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                         <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.created_at)}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{inv.amount} S</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{inv.amount} MOND</div>
                         {isBuyer && isSecretary && (
                           <button
                             onClick={() => handlePay(inv)}
@@ -1941,7 +1941,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
             {paid.length > 0 && (
               <div style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
-                  DELIVERY HISTORY · {paid.reduce((s, i) => s + i.amount, 0)} S paid
+                  DELIVERY HISTORY · {paid.reduce((s, i) => s + i.amount, 0)} MOND paid
                 </div>
                 {paid.map(inv => (
                   <div key={inv.id} style={{
@@ -1956,7 +1956,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                       <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.paid_at || inv.created_at)}</div>
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 500, color: C.green, flexShrink: 0, marginLeft: 12 }}>
-                      +{inv.amount} S
+                      +{inv.amount} MOND
                     </div>
                   </div>
                 ))}
@@ -1981,7 +1981,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} type="number" placeholder="Amount"
                       value={invAmt} onChange={e => setInvAmt(e.target.value)} />
-                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>S</span>
+                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>MOND</span>
                   </div>
                 </div>
                 {invError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{invError}</div>}
@@ -2018,7 +2018,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                       {contract.seller_name} → {contract.buyer_name}
                     </div>
                   </div>
-                  {total > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: C.faint, flexShrink: 0, marginLeft: 12 }}>{total} S</div>}
+                  {total > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: C.faint, flexShrink: 0, marginLeft: 12 }}>{total} MOND</div>}
                 </div>
               </div>
             )

@@ -335,7 +335,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                       </span>
                     </div>
                     <span style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>
-                      {catTotal} S
+                      {catTotal} MOND
                     </span>
                   </div>
 
@@ -394,7 +394,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                                   onChange={e => updateLine(line.id, 'sTokenAmount', Math.max(0, Math.min(999, parseInt(e.target.value) || 0)))}
                                   style={{ ...numInput, width: 60, textAlign: 'right' }}
                                 />
-                                <span style={{ fontSize: 11, color: C.faint }}>S</span>
+                                <span style={{ fontSize: 11, color: C.faint }}>MOND</span>
                               </div>
                             ) : (
                               <span style={{ fontSize: 13, color: isInactive ? C.faint : C.text, fontWeight: 500 }}>
@@ -442,9 +442,9 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                     marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`,
                     fontSize: 10, color: C.faint,
                   }}>
-                    Published total: {pubD.totalUBI} S · Draft: {d.totalUBI} S ·{' '}
+                    Published total: {pubD.totalUBI} MOND · Draft: {d.totalUBI} MOND ·{' '}
                     <span style={{ color: d.totalUBI > pubD.totalUBI ? C.red : C.green }}>
-                      {d.totalUBI > pubD.totalUBI ? '+' : ''}{d.totalUBI - pubD.totalUBI} S
+                      {d.totalUBI > pubD.totalUBI ? '+' : ''}{d.totalUBI - pubD.totalUBI} MOND
                     </span>
                     {spikePct !== null && (
                       <span style={{ marginLeft: 6, color: isSpiking ? C.red : C.faint }}>
@@ -526,7 +526,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 11, color: C.sub }}>{ver.total_s} S</span>
+                        <span style={{ fontSize: 11, color: C.sub }}>{ver.total_s} MOND</span>
                         {ver.change_from_prior !== null && (
                           <span style={{
                             fontSize: 10,

@@ -463,9 +463,9 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{a.currentValue} S</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{a.currentValue} MOND</div>
                 {a.currentValue !== a.value && (
-                  <div style={{ fontSize: 10, color: C.faint }}>reg. {a.value} S</div>
+                  <div style={{ fontSize: 10, color: C.faint }}>reg. {a.value} MOND</div>
                 )}
               </div>
             </div>
@@ -486,7 +486,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                     <div style={{ position: 'relative', flex: 1 }}>
                       <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} placeholder="Price"
                         type="number" value={tPrice} onChange={e => setTPrice(e.target.value)} />
-                      <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>S</span>
+                      <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>MOND</span>
                     </div>
                   </div>
                   {tError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{tError}</div>}
@@ -850,7 +850,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
     ? assets.find(a => a.id === ob.collateralId)
     : null
   const collateralLabel = collateralAsset
-    ? `${collateralAsset.name || `asset #${ob.collateralId}`} · ${collateralAsset.currentValue} S (locked)`
+    ? `${collateralAsset.name || `asset #${ob.collateralId}`} · ${collateralAsset.currentValue} MOND (locked)`
     : ob.collateralId && ob.collateralId !== '0'
       ? `asset #${ob.collateralId} (locked)`
       : 'unsecured'
@@ -928,7 +928,7 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                   {isMine && <span style={{ fontSize: 10, color: C.text, marginLeft: 6 }}>· yours</span>}
                 </div>
                 <div style={{ fontSize: 12, color: C.text }}>
-                  {a.currentValue} S
+                  {a.currentValue} MOND
                 </div>
               </div>
               <div style={{ fontSize: 10, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>
@@ -936,7 +936,7 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                 {a.weightKg > 0 && <> · {a.weightKg} kg</>}
                 {a.hasAI && <> · autonomous AI</>}
                 {a.value !== a.currentValue && (
-                  <> · was {a.value} S</>
+                  <> · was {a.value} MOND</>
                 )}
               </div>
               {a.escrowedFor !== '0' && (

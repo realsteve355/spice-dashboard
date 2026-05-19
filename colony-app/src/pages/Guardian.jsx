@@ -178,7 +178,7 @@ export default function Guardian() {
             {/* Token balances */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div style={{ ...card, textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>S BALANCE</div>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>MOND BALANCE</div>
                 <div style={{ fontSize: 26, fontWeight: 500, color: C.text }}>{child.sBalance}</div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>resets end of month</div>
               </div>
@@ -193,12 +193,12 @@ export default function Guardian() {
             <div style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: child.mccBill.breakdown.length > 0 ? 10 : 0 }}>
                 <span style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC BILL MTD</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: C.red }}>{child.mccBill.total} S</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: C.red }}>{child.mccBill.total} MOND</span>
               </div>
               {child.mccBill.breakdown.map((b, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.sub }}>
                   <span>{b.service}</span>
-                  <span style={{ color: C.red }}>{b.amount} S</span>
+                  <span style={{ color: C.red }}>{b.amount} MOND</span>
                 </div>
               ))}
             </div>
@@ -225,7 +225,7 @@ export default function Guardian() {
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input
                       style={{ ...inlineInput, flex: 1 }}
-                      placeholder={`max ${child.vMaxMonthly - child.vSavedThisMonth} S`}
+                      placeholder={`max ${child.vMaxMonthly - child.vSavedThisMonth} MOND`}
                       value={saveAmt}
                       onChange={e => setSaveAmt(e.target.value)}
                       type="number"
@@ -276,7 +276,7 @@ export default function Guardian() {
                       <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{tx.date}</div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: tx.amount > 0 ? C.green : C.red }}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount} S
+                      {tx.amount > 0 ? '+' : ''}{tx.amount} MOND
                     </div>
                   </div>
                 ))

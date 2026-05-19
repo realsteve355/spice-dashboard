@@ -99,7 +99,7 @@ export default function Basket() {
               <div>
                 <div style={{ fontSize: 9, color: C.faint, letterSpacing: '0.1em', marginBottom: 4 }}>FISC RATE</div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: C.text }}>
-                  {fiscRate ? `$${fiscRate.toFixed(3)} / S` : '—'}
+                  {fiscRate ? `$${fiscRate.toFixed(3)} / MOND` : '—'}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -109,7 +109,7 @@ export default function Basket() {
                 </div>
                 {fiscRate && (
                   <div style={{ fontSize: 11, color: C.sub }}>
-                    {toS(totalUSD)} S
+                    {toS(totalUSD)} MOND
                   </div>
                 )}
               </div>
@@ -198,9 +198,9 @@ export default function Basket() {
                 HOW THE RATE IS ANCHORED
               </div>
               <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.8 }}>
-                The Fisc targets a fixed basket price in S. When external prices rise, the F9
+                The Fisc targets a fixed basket price in MOND. When external prices rise, the F9
                 algorithm adjusts the exchange rate upward so the basket stays affordable to
-                S-holders. When the colony has a strong reserve surplus (abundance), downward
+                MOND-holders. When the colony has a strong reserve surplus (abundance), downward
                 pressure is applied instead.
               </div>
               <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

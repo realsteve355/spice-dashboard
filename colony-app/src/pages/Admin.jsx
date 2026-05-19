@@ -152,7 +152,7 @@ export default function Admin() {
               date, type: 'UBI', typeColor: C.text,
               description: `UBI — ${namedAddr(String(a[0]), nm)}`,
               debit: 'UBI Expense', credit: namedAddr(String(a[0]), nm),
-              amount: S(a[1]), unit: 'S', blockNumber: log.blockNumber,
+              amount: S(a[1]), unit: 'MOND', blockNumber: log.blockNumber,
             }
             case 'CitizenJoined': return {
               date, type: 'Join', typeColor: C.text,
@@ -164,13 +164,13 @@ export default function Admin() {
               date, type: 'Payment', typeColor: C.green,
               description: a[3] || `${namedAddr(String(a[0]), nm)} → ${namedAddr(String(a[1]), nm)}`,
               debit: namedAddr(String(a[0]), nm), credit: namedAddr(String(a[1]), nm),
-              amount: S(a[2]), unit: 'S', blockNumber: log.blockNumber,
+              amount: S(a[2]), unit: 'MOND', blockNumber: log.blockNumber,
             }
             case 'ObligationSettled': return {
               date, type: 'Obligation', typeColor: '#3b82f6',
               description: `${namedAddr(String(a[1]), nm)} → ${namedAddr(String(a[2]), nm)}`,
               debit: namedAddr(String(a[1]), nm), credit: namedAddr(String(a[2]), nm),
-              amount: S(a[3]), unit: 'S', blockNumber: log.blockNumber,
+              amount: S(a[3]), unit: 'MOND', blockNumber: log.blockNumber,
             }
             case 'ObligationDefaulted': return {
               date, type: 'Default', typeColor: '#ef4444',
@@ -182,7 +182,7 @@ export default function Admin() {
               date, type: 'Asset', typeColor: C.text,
               description: `Asset registered — ${namedAddr(String(a[1]), nm)}`,
               debit: 'Asset Registry', credit: namedAddr(String(a[1]), nm),
-              amount: S(a[2]), unit: 'S', blockNumber: log.blockNumber,
+              amount: S(a[2]), unit: 'MOND', blockNumber: log.blockNumber,
             }
             case 'VDividendPaid': return {
               date, type: 'V Div', typeColor: '#8b5cf6',
@@ -547,8 +547,8 @@ export default function Admin() {
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <StatCard label="Citizens"       value={displayCount}   unit="" color={C.text} />
-              <StatCard label="Revenue MTD"    value={displayRevenue} unit=" S" color={C.green} />
-              <StatCard label="Monthly supply" value={(displayCount * 1000).toLocaleString()} unit=" S" color={C.faint} />
+              <StatCard label="Revenue MTD"    value={displayRevenue} unit=" MOND" color={C.green} />
+              <StatCard label="Monthly supply" value={(displayCount * 1000).toLocaleString()} unit=" MOND" color={C.faint} />
               <StatCard label="MCC billing"    value={mccBillingAddr ? 'Live' : 'Not set up'} unit="" color={mccBillingAddr ? C.green : C.red} />
             </div>
 
@@ -719,14 +719,14 @@ export default function Admin() {
                   <div style={{ ...card, flex: 1, marginBottom: 0 }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REVENUE MTD</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.green, marginTop: 4 }}>
-                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
+                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>MOND</span>
                     </div>
                     <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>confirmed payments</div>
                   </div>
                   <div style={{ ...card, flex: 1, marginBottom: 0, borderColor: mccTreasuryAddr ? C.border : C.faint }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC TREASURY</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.text, marginTop: 4 }}>
-                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}>S</span>
+                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}>MOND</span>
                     </div>
                     <div style={{ fontSize: 9, color: mccTreasuryAddr ? C.green : C.faint, marginTop: 4 }}>
                       {mccTreasuryAddr ? 'on-chain treasury' : 'not deployed'}

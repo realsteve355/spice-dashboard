@@ -401,7 +401,7 @@ export default function Dashboard() {
     try {
       const tx = await contract.send(recipient, ethers.parseEther(String(amt)), note)
       await tx.wait()
-      logInfo('tx.confirmed', { colony: slug, address, txHash: tx.hash, message: `send ${amt} S`, meta: { to: recipient, note } })
+      logInfo('tx.confirmed', { colony: slug, address, txHash: tx.hash, message: `send ${amt} MOND`, meta: { to: recipient, note } })
       refresh()
 
       // Notify recipient
@@ -414,7 +414,7 @@ export default function Dashboard() {
           colony: slug,
           address: recipient,
           type: 'payment_received',
-          title: `${amt} S received`,
+          title: `${amt} MOND received`,
           body: note ? `"${note}" from ${fromLabel}` : `From ${fromLabel}`,
           link: `/colony/${slug}/dashboard`,
         }),
@@ -551,9 +551,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 16, fontSize: 10, color: C.faint, marginBottom: 14 }}>
-            <LegendDot color={C.red}   label={`${spentOnMcc} S MCC`}    />
-            <LegendDot color={C.green} label={`${savedToV} S saved`}    />
-            <LegendDot color={C.text}  label={`${remaining} S remaining`} />
+            <LegendDot color={C.red}   label={`${spentOnMcc} MOND MCC`}    />
+            <LegendDot color={C.green} label={`${savedToV} MOND saved`}    />
+            <LegendDot color={C.text}  label={`${remaining} MOND remaining`} />
           </div>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -631,7 +631,7 @@ export default function Dashboard() {
               onClick={() => setRedeem(v => !v)}
               style={{ ...smallBtn(C.sub, '#fff', C.border), flex: 1 }}
             >
-              Redeem V → S
+              Redeem V → MOND
             </button>
           </div>
 
@@ -640,7 +640,7 @@ export default function Dashboard() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   style={{ ...inlineInput, flex: 1 }}
-                  placeholder={`max ${data.vMaxMonthly - data.vSavedThisMonth} S this month`}
+                  placeholder={`max ${data.vMaxMonthly - data.vSavedThisMonth} MOND this month`}
                   value={saveAmt}
                   onChange={e => setSaveAmt(e.target.value)}
                   type="number"
@@ -684,7 +684,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC BILL — {CURRENT_MONTH}</div>
             <div style={{ fontSize: 14, fontWeight: 500, color: C.red }}>
-              {onChainBill !== null ? onChainBill : data.mccBill.total} S
+              {onChainBill !== null ? onChainBill : data.mccBill.total} MOND
               {onChainBill !== null && <span style={{ fontSize: 9, color: C.green, marginLeft: 6 }}>live</span>}
             </div>
           </div>
@@ -696,7 +696,7 @@ export default function Dashboard() {
                 marginBottom:  i < data.mccBill.breakdown.length - 1 ? 8 : 0,
                 borderBottom:  i < data.mccBill.breakdown.length - 1 ? `1px solid ${C.border}` : 'none',
               }}>
-                <span>{b.service}</span><span style={{ color: C.red }}>{b.amount} S</span>
+                <span>{b.service}</span><span style={{ color: C.red }}>{b.amount} MOND</span>
               </div>
             ))
           )}
@@ -720,7 +720,7 @@ export default function Dashboard() {
                       padding: '8px 10px', background: `${C.red}10`, border: `1px solid ${C.red}30`,
                       borderRadius: 0, lineHeight: 1.5,
                     }}>
-                      Balance is {balance} S — short by {shortBy} S to cover this bill.
+                      Balance is {balance} MOND — short by {shortBy} MOND to cover this bill.
                       Convert V→S or wait for next UBI to top up.
                     </div>
                   )
@@ -733,7 +733,7 @@ export default function Dashboard() {
                 disabled={billPending || billDone}
                 style={{ ...smallBtn(billDone ? C.green : C.red), width: '100%', opacity: billPending ? 0.5 : 1 }}
               >
-                {billPending ? '...' : billDone ? '✓ Bill paid' : `Pay ${onChainBill ?? data.mccBill.total} S to MCC →`}
+                {billPending ? '...' : billDone ? '✓ Bill paid' : `Pay ${onChainBill ?? data.mccBill.total} MOND to MCC →`}
               </button>
             </div>
           )}

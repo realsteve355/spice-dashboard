@@ -473,8 +473,8 @@ export default function Mcc() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
                 {[
-                  ['Current',         `${risk.current} S`],
-                  ['12-mo avg',       `${Math.round(risk.avg)} S`],
+                  ['Current',         `${risk.current} MOND`],
+                  ['12-mo avg',       `${Math.round(risk.avg)} MOND`],
                   ['Ratio',           `${(risk.ratio * 100).toFixed(0)}%`],
                 ].map(([k, v]) => (
                   <div key={k}>
