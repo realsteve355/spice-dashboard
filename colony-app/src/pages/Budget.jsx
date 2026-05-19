@@ -6,27 +6,14 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 import { OHIO_BREAD_REF, computeDerived } from '../utils/budgetMath'
 
-const DEFAULT_LINES = [
-  // MCC — auto-deducted
-  { id: 'elec',     category: 'MCC',           name: 'Electricity',           description: 'Grid power supply and maintenance',        sTokenAmount: 90,  dollarRef: 120, spiceDiscount: 25, autoDeducted: true,  isOptional: false, active: true },
-  { id: 'water',    category: 'MCC',           name: 'Water & Sewage',        description: 'Mains water and waste water processing',   sTokenAmount: 50,  dollarRef: 65,  spiceDiscount: 20, autoDeducted: true,  isOptional: false, active: true },
-  { id: 'waste',    category: 'MCC',           name: 'Waste & Recycling',     description: 'Kerbside collection and processing',       sTokenAmount: 25,  dollarRef: 30,  spiceDiscount: 15, autoDeducted: true,  isOptional: false, active: true },
-  { id: 'broad',    category: 'MCC',           name: 'Broadband',             description: 'Colony fibre network access',              sTokenAmount: 45,  dollarRef: 60,  spiceDiscount: 20, autoDeducted: true,  isOptional: false, active: true },
-  { id: 'ems',      category: 'MCC',           name: 'Roads / Fire / EMS',    description: 'Emergency services and road maintenance',  sTokenAmount: 40,  dollarRef: 55,  spiceDiscount: 30, autoDeducted: true,  isOptional: false, active: true },
-  { id: 'housing',  category: 'MCC',           name: 'Colony Housing',        description: 'MCC-provided accommodation (if applicable)', sTokenAmount: 100, dollarRef: 750, spiceDiscount: 87, autoDeducted: true,  isOptional: true,  active: true },
-  // Essential
-  { id: 'grocery',  category: 'Essential',     name: 'Groceries & Household', description: 'Food, household supplies, pharmacy basics', sTokenAmount: 280, dollarRef: 420, spiceDiscount: 30, autoDeducted: false, isOptional: false, active: true },
-  { id: 'care',     category: 'Essential',     name: 'Personal Care',         description: 'Hair, toiletries, personal basics',        sTokenAmount: 60,  dollarRef: 75,  spiceDiscount: 15, autoDeducted: false, isOptional: false, active: true },
-  { id: 'health',   category: 'Essential',     name: 'Healthcare Co-pay',     description: 'Supplementary healthcare above MCC cover', sTokenAmount: 90,  dollarRef: 120, spiceDiscount: 20, autoDeducted: false, isOptional: false, active: true },
-  { id: 'transport',category: 'Essential',     name: 'Local Transport',       description: 'Bus, bike share, local journeys',          sTokenAmount: 40,  dollarRef: 65,  spiceDiscount: 35, autoDeducted: false, isOptional: false, active: true },
-  { id: 'edu',      category: 'Essential',     name: 'Education / Childcare', description: 'Shared facilities; staff on UBI baseline', sTokenAmount: 65,  dollarRef: 90,  spiceDiscount: 25, autoDeducted: false, isOptional: true,  active: true },
-  // Discretionary
-  { id: 'dining',   category: 'Discretionary', name: 'Local Dining & Cafes',  description: 'Restaurants, cafes, takeaway',             sTokenAmount: 100, dollarRef: 160, spiceDiscount: 35, autoDeducted: false, isOptional: false, active: true },
-  { id: 'entertain',category: 'Discretionary', name: 'Entertainment & Social',description: 'Cinema, events, sports, clubs',            sTokenAmount: 60,  dollarRef: 80,  spiceDiscount: 20, autoDeducted: false, isOptional: false, active: true },
-  { id: 'nones',    category: 'Discretionary', name: 'Non-essential Goods',   description: 'Clothing, gifts, hobbies',                 sTokenAmount: 80,  dollarRef: 100, spiceDiscount: 10, autoDeducted: false, isOptional: false, active: true },
-  // Savings
-  { id: 'savings',  category: 'Savings',       name: 'S → V Conversion',      description: 'Target savings: convert S to permanent V before period burn', sTokenAmount: 110, dollarRef: 0, spiceDiscount: 0, autoDeducted: false, isOptional: false, active: true },
-]
+// Default budget line list is supplied by the colony variant (see
+// variants/{name}/pages/Budget.jsx). The Mars variant provides lines that
+// include the "S → V Conversion" savings line; Earth omits it because
+// Earth colonies don't run V-tokens.
+//
+// If Budget is mounted directly (without a variant wrapper), it falls back
+// to an empty list — the CEO would then start a draft from scratch.
+const FALLBACK_LINES = []
 
 const CATEGORIES = ['MCC', 'Essential', 'Discretionary', 'Savings']
 const CAT_COLORS  = { MCC: C.blue, Essential: C.green, Discretionary: '#f97316', Savings: C.purple }
@@ -37,7 +24,7 @@ const RPC     = 'https://sepolia.base.org'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function Budget() {
+export default function Budget({ defaultLines = FALLBACK_LINES }) {
   const { slug }   = useParams()
   const navigate   = useNavigate()
   const { contracts, address } = useWallet()
@@ -53,7 +40,7 @@ export default function Budget() {
   const [editMode,    setEditMode]    = useState(false)
 
   // Draft edit state
-  const [draftLines,    setDraftLines]    = useState(DEFAULT_LINES)
+  const [draftLines,    setDraftLines]    = useState(defaultLines)
   const [breadPriceS,   setBreadPriceS]   = useState(4)
   const [labourDisc,    setLabourDisc]    = useState(28)
   const [savingDraft,   setSavingDraft]   = useState(false)
@@ -98,12 +85,12 @@ export default function Budget() {
       .then(d => {
         if (d.draft) {
           setDraft(d.draft)
-          setDraftLines(d.draft.lines || DEFAULT_LINES)
+          setDraftLines(d.draft.lines || defaultLines)
           setBreadPriceS(d.draft.bread_price_s || 4)
           setLabourDisc(d.draft.spice_labour_discount || 28)
         } else if (published) {
           // Seed draft from published
-          setDraftLines(published.lines || DEFAULT_LINES)
+          setDraftLines(published.lines || defaultLines)
           setBreadPriceS(published.bread_price_s || 4)
           setLabourDisc(published.spice_labour_discount || 28)
         }
@@ -112,7 +99,7 @@ export default function Budget() {
   }, [isCEO, colonyAddr, published])
 
   // ── Derived numbers ───────────────────────────────────────────────────────
-  const viewLines = editMode ? draftLines : (published?.lines || DEFAULT_LINES)
+  const viewLines = editMode ? draftLines : (published?.lines || defaultLines)
   const viewBread = editMode ? breadPriceS : (published?.bread_price_s || 4)
   const viewDisc  = editMode ? labourDisc  : (published?.spice_labour_discount || 28)
   const d = computeDerived(viewLines, viewBread, viewDisc)
