@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 import SendSheet from '../components/SendSheet'
 import { useWallet } from '../App'
 import { resolveNames, namedAddr } from '../utils/addrLabel'
+import MondSymbol from '../components/MondSymbol'
 
 // Compute epoch display values from current date
 function getEpochDisplay() {
@@ -513,7 +514,7 @@ export default function Dashboard() {
         {/* MOND balance */}
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>S-TOKEN BALANCE</div>
+            <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MOND BALANCE</div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
               <button
                 onClick={() => refresh(0)}
@@ -525,7 +526,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
               {contracts?.colonies?.[slug]?.sToken && (
                 <button
-                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, chain?.sSymbol || 'S-AXION', 18)}
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, chain?.sSymbol || 'MOND', 18)}
                   style={mmBtn}
                   title="Add MOND to MetaMask"
                 >
@@ -535,8 +536,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div style={{ fontSize: 40, fontWeight: 500, color: C.text, marginBottom: 2, letterSpacing: '-0.02em' }}>
-            {remaining.toLocaleString()} <span style={{ fontSize: 18, color: C.faint }}>S</span>
+          <div style={{ fontSize: 40, fontWeight: 500, color: C.text, marginBottom: 2, letterSpacing: '-0.02em', display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
+            <MondSymbol size={28} />
+            {remaining.toLocaleString()}
           </div>
           <div style={{ fontSize: 11, color: C.faint, marginBottom: 14 }}>{CURRENT_MONTH}</div>
 
