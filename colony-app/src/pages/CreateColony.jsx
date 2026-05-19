@@ -16,21 +16,22 @@ const REGISTRY_ABI = [
 
 const FIXED_PARAMS_COMMON = [
   { label: 'UBI per citizen',        value: '1,000 MOND / month' },
-  { label: 'Max monthly savings',    value: '200 MOND → V'       },
   { label: 'Adulthood',              value: '18 years'               },
   { label: 'MCC recall trigger',     value: 'Bill +20% above 12m avg'},
   { label: 'Constitutional change',  value: '80% referendum required'},
-  { label: 'V-token expiry',         value: '100 years from mint'    },
 ]
 const FIXED_PARAMS_MARS = [
   ...FIXED_PARAMS_COMMON,
+  { label: 'Max monthly savings',    value: '200 MOND → V'              },
+  { label: 'V-token expiry',         value: '100 years from mint'       },
   { label: 'Economy',                value: 'Closed — no external USDC' },
   { label: 'Harberger land fee',     value: '0.5% declared value/mo'    },
 ]
 const FIXED_PARAMS_EARTH = [
   ...FIXED_PARAMS_COMMON,
-  { label: 'Economy',                value: 'Open — USDC reserve + Fisc rate' },
-  { label: 'External trade',         value: 'V → USDC via Fisc boundary'      },
+  { label: 'Savings',                value: 'External — bank / broker / wallet' },
+  { label: 'Economy',                value: 'Open — USDC reserve + Fisc rate'  },
+  { label: 'External trade',         value: 'MOND ↔ USDC via Fisc boundary'   },
   { label: 'Robot tax (LRT)',        value: 'On local net profit, USDC'        },
 ]
 
@@ -417,16 +418,16 @@ export default function CreateColony() {
                 label: 'Mars Colony',
                 badge: 'CLOSED ECONOMY',
                 badgeColor: C.purple,
-                description: 'MOND have value only within the colony. No external currency. No USDC reserve. Harberger land rules apply. The simplest and most self-contained colony model.',
-                params: ['Closed S/V economy', 'Harberger land (0.5%/mo)', 'No external trade'],
+                description: 'MOND have value only within the colony. V-tokens accumulate as long-term savings. No external currency. No USDC reserve. Harberger land rules apply. The simplest and most self-contained colony model.',
+                params: ['Closed MOND/V economy', 'Harberger land (0.5%/mo)', 'No external trade'],
               },
               {
                 type: 'earth',
                 label: 'Earth Colony',
                 badge: 'OPEN ECONOMY',
                 badgeColor: C.text,
-                description: 'MOND connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Citizens can buy externally using V-tokens.',
-                params: ['USDC reserve + Fisc rate', 'V → USDC boundary flows', 'Local Robot Tax (LRT)'],
+                description: 'MOND connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Long-term savings happen outside the colony (bank / broker / external wallet).',
+                params: ['USDC reserve + Fisc rate', 'MOND ↔ USDC boundary flows', 'Local Robot Tax (LRT)'],
               },
             ].map(opt => {
               const selected = colonyType === opt.type

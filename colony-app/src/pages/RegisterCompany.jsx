@@ -274,11 +274,10 @@ export default function RegisterCompany() {
           borderRadius: 0, padding: 14, marginBottom: 20,
           fontSize: 11, color: C.sub, lineHeight: 1.7,
         }}>
-          <div style={{ color: C.text, marginBottom: 4, letterSpacing: '0.06em' }}>HOW COMPANY TOKENS WORK</div>
+          <div style={{ color: C.text, marginBottom: 4, letterSpacing: '0.06em' }}>HOW A COMPANY WORKS</div>
           During the month your company earns MOND from customers and pays suppliers in MOND.
-          At month end the Fisc converts all net MOND to V-tokens automatically.
-          You then distribute V-tokens as dividends to equity holders at any time.
-          Shares may not be pledged as collateral.
+          The company secretary manages the wallet, issues equity stakes, and distributes
+          profits to equity holders. Shares may not be pledged as collateral.
         </div>
 
         <button
