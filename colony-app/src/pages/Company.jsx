@@ -6,6 +6,7 @@ import SendSheet from '../components/SendSheet'
 import EntityImage from '../components/EntityImage'
 import { useWallet } from '../App'
 import { resolveNames, namedAddr, shortAddr } from '../utils/addrLabel'
+import MondSymbol from '../components/MondSymbol'
 
 import { fetchCitizens as fetchColonyCitizens } from '../utils/fetchCitizens'
 
@@ -1015,8 +1016,11 @@ export default function Company() {
             {/* Balance row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div style={{ ...card, textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>S BALANCE</div>
-                <div style={{ fontSize: 26, fontWeight: 500, color: C.text }}>{company.sBalance}</div>
+                <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>MOND BALANCE</div>
+                <div style={{ fontSize: 26, fontWeight: 500, color: C.text, display: 'inline-flex', alignItems: 'baseline', gap: 6, justifyContent: 'center' }}>
+                  <MondSymbol size={20} />
+                  {company.sBalance}
+                </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>current</div>
               </div>
               <div style={{ ...card, textAlign: 'center' }}>
