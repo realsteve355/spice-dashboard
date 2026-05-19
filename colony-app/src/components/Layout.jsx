@@ -3,10 +3,17 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '../App'
 import { C } from '../theme'
 import { useNotifications } from '../utils/useNotifications'
+import { useColonyVariant } from '../hooks/useColonyVariant'
+import { HELP as HELP_EARTH } from '../variants/earth/help'
+import { HELP as HELP_MARS } from '../variants/mars/help'
 
-// Context-sensitive help content keyed by page type.
-// Key is derived from the current URL path in getHelpKey().
-const HELP = {
+const HELP_BY_VARIANT = { earth: HELP_EARTH, mars: HELP_MARS }
+
+// LEGACY_HELP is the pre-variant content. Retained only as a no-variant
+// fallback for the few pages where Layout is rendered outside a colony
+// context (e.g. CreateColony's pre-deploy steps). Picks up Mars-style
+// language because Mars is the legacy default.
+const LEGACY_HELP = {
   mall: {
     title: 'The Colony Mall',
     sections: [
@@ -160,6 +167,8 @@ export default function Layout({ children, title, back, colonySlug }) {
 
   // Help content for current page
   const helpKey     = getHelpKey(path)
+  const variant = useColonyVariant(colonySlug)
+  const HELP = HELP_BY_VARIANT[variant] || LEGACY_HELP
   const helpContent = HELP[helpKey] || HELP.default
 
   return (
