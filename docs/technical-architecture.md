@@ -1,4 +1,4 @@
-# SPICE Colony — Technical Architecture
+# AXION Colony — Technical Architecture
 
 *app.zpc.finance · Base Sepolia testnet · April 2026 · v12*
 
@@ -6,7 +6,7 @@
 
 ## 1. System Overview
 
-The SPICE Colony app is a decentralised community economic system. Citizens hold
+The AXION Colony app is a decentralised community economic system. Citizens hold
 tokens, spend with companies, save in V-tokens, and govern the MCC — all on-chain.
 The frontend is a React SPA. All financial state lives on-chain. Off-chain infrastructure
 is limited to Vercel hosting and a Supabase activity log.
@@ -29,7 +29,7 @@ Browser (React SPA — app.zpc.finance)
 ## 2. Repository Structure
 
 ```
-spice-dashboard/                  # Root — main SPICE research site (zpc.finance)
+spice-dashboard/                  # Root — main AXION research site (zpc.finance)
 │   src/                          # React pages: Home, Collision, Simulation, etc.
 │   public/                       # Static assets, spice-methodology.html
 │   api/                          # Vercel serverless functions for main site
@@ -61,7 +61,7 @@ spice-dashboard/                  # Root — main SPICE research site (zpc.finan
 │   │   │   └── CreateColony.jsx     # Deploy new colony — 18-step guided flow + Mars/Earth type choice (see §8)
 │   │   ├── components/
 │   │   │   ├── Layout.jsx        # Shell: header, back button, nav
-│   │   │   └── SendSheet.jsx     # Reusable send S-tokens inline form
+│   │   │   └── SendSheet.jsx     # Reusable send MOND inline form
 │   │   ├── utils/
 │   │   │   ├── logger.js           # Fire-and-forget activity logger → /api/log
 │   │   │   ├── addrLabel.js        # Address display helpers: shortAddr, namedAddr, resolveNames
@@ -135,7 +135,7 @@ Deployed on **Base Sepolia** (chain ID 84532).
 |----------|---------|---------|
 | ColonyRegistry | `0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68` | Global directory — ERC-721 C-token registry; all deployed colonies register here |
 
-> ERC-721 collection: "SPICE Colony" / "COLONY". Each `register()` mints a soulbound C-token to the Colony
+> ERC-721 collection: "AXION Colony" / "COLONY". Each `register()` mints a soulbound C-token to the Colony
 > contract address. `deregister()` burns it; `reregister()` remints with the same token ID. `tokenURI()` returns
 > on-chain JSON metadata (name, slug, address, founder, registration date). `ownerOf(tokenId)` == Colony contract —
 > not the founder's EOA — so the colony cannot be orphaned by key loss.
@@ -175,7 +175,7 @@ join(string name, uint256 dob)
     → citizenName[msg.sender] = name
     → dateOfBirth[msg.sender] = dob
     → gToken.mint(msg.sender)         // soulbound G-token
-    → sToken.issueUbi(msg.sender)     // 1000 S immediately
+    → sToken.issueUbi(msg.sender)     // 1000 MOND immediately
     emits CitizenJoined, UbiClaimed
 
 claimUbi()                            // once per epoch (monthly)
@@ -223,7 +223,7 @@ advanceEpoch()                        // founder only, monthly
     //        AToken.settleObligationEpoch(liabilityTokenId)
     //        → deducts from obligor, transfers to creditor, or seizes collateral on default
     //   2. Issue UBI to all citizens (existing behaviour)
-    //   3. Destroy all unspent S-tokens (existing behaviour via SToken.advanceEpoch)
+    //   3. Destroy all unspent MOND (existing behaviour via SToken.advanceEpoch)
     //   4. Unlock vesting tranches for all equity A-tokens whose vestingEpoch == currentEpoch
     //      (pull-based — holders call AToken.claimVestedTranche(); epoch advance just emits signal)
     emits EpochAdvanced
@@ -347,7 +347,7 @@ removeOfficer(string role)                     // secretary only
 
 **Deployed April 2026.** Address: `0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2` (Dave's Colony, Base Sepolia).
 
-AToken inherits OZ v5 `ERC721("SPICE A-Token", "ATOKE")` — A-tokens are real NFTs visible in MetaMask and on Basescan. All three forms (unilateral asset, paired equity, paired fixed-obligation) are deployed and functional.
+AToken inherits OZ v5 `ERC721("AXION A-Token", "ATOKE")` — A-tokens are real NFTs visible in MetaMask and on Basescan. All three forms (unilateral asset, paired equity, paired fixed-obligation) are deployed and functional.
 
 **ERC-721 restrictions:** Public `transferFrom`, `safeTransferFrom`, `approve`, and `setApprovalForAll` revert with "use Colony". All legitimate transfers go through Colony (which calls `super._transfer` internally). `tokenURI(id)` returns a `data:application/json;base64` URI with on-chain JSON metadata including form-specific attributes. Token IDs start at 1.
 
@@ -357,7 +357,7 @@ Colony.sol is the sole caller for all state-changing functions — citizens and 
 // ── Form 1: Unilateral asset ─────────────────────────────────────────────────
 // A physical object owned outright — robot, vehicle, land parcel.
 // No counterparty. Yield is zero. Value = last transfer price.
-// Registration threshold: value > 500 S, weight > 50 kg, or autonomous AI.
+// Registration threshold: value > 500 MOND, weight > 50 kg, or autonomous AI.
 
 registerAsset(
     address holder,
@@ -414,14 +414,14 @@ getVestingStake(uint256 assetId) → (uint256 totalStakeBps, uint256 vestedBps, 
 issueObligation(
     address creditor,
     address obligor,
-    uint256 monthlyAmountS,         // S-tokens per epoch (18 dec)
+    uint256 monthlyAmountS,         // MOND per epoch (18 dec)
     uint256 totalEpochs,
     uint256 collateralId,           // 0 = unsecured; > 0 = pledged asset token ID
     uint256 maxMonthlyS             // UBI cap in S (0 = no cap, for company obligors)
 ) → (uint256 assetId, uint256 liabilityId)
 
 markObligationPaid(uint256 liabilityId) → bool completed
-    // Colony calls after performing the S-token transfer; returns true if fully settled
+    // Colony calls after performing the MOND transfer; returns true if fully settled
 
 markObligationDefaulted(uint256 liabilityId, address creditor)
     // secured obligations only; transfers collateral to creditor; burns both tokens
@@ -456,7 +456,7 @@ collateralFor(uint256 liabilityId) → uint256   // collateralId (0 if unsecured
 > **UBI cap enforcement (unsecured obligations):** At `issueObligation()` time, AToken.sol reads
 > the obligor's total existing monthly unsecured obligation and reverts if
 > `existing + monthlyAmountS > maxMonthlyS`. Pass `maxMonthlyS = 0` for company obligors (no UBI).
-> Citizens cannot accumulate unsecured obligations beyond their guaranteed UBI (1,000 S/month).
+> Citizens cannot accumulate unsecured obligations beyond their guaranteed UBI (1,000 MOND/month).
 
 > **Colony.sol v1 limitation:** `advanceEpoch()` does not yet call `markObligationPaid()` on
 > outstanding obligation liability tokens. Obligation settlement at epoch advance requires
@@ -777,7 +777,7 @@ No backend required for payments. Transaction details travel in the URL.
 "Flipped model" — the till writes the tag; the citizen reads it. No HCE required (Apple blocks third-party HCE).
 
 ```
-Till (Android tablet, Chrome)            Citizen (iPhone with SPICE Colony app)
+Till (Android tablet, Chrome)            Citizen (iPhone with AXION Colony app)
 ─────────────────────────────            ──────────────────────────────────────
 1. Open app.zpc.finance/till.html
 2. Enter amount + note
@@ -797,7 +797,7 @@ Till (Android tablet, Chrome)            Citizen (iPhone with SPICE Colony app)
 
                                          Path B — OS deep link (app closed):
                                          4b. iOS reads tag at OS level
-                                         5b. OS opens SPICE Colony app via
+                                         5b. OS opens AXION Colony app via
                                              spice:// scheme
                                          6b. React Navigation linking config
                                              routes to Pay screen with params
@@ -851,14 +851,14 @@ Till (Android tablet, Chrome)            Citizen (iPhone with SPICE Colony app)
 
 | Token | Standard | Decimals | Mechanism |
 |-------|----------|----------|-----------|
-| S-token | ERC-20 | 18 | Minted by Colony on UBI claim |
+| MOND | ERC-20 | 18 | Minted by Colony on UBI claim |
 | V-token | ERC-20 | 18 | Minted by Colony on saveToV() |
 | G-token | ERC-721 | — | Soulbound, one per citizen |
 | O-token | ERC-721 | — | Soulbound to org contract address, one per organisation |
-| A-token | ERC-721 (OZ v5) | — | Fisc-registered economic claims — see §3.5. Name: "SPICE A-Token", symbol: "ATOKE". Public transfers blocked; Colony-mediated only. On-chain tokenURI. |
-| C-token | ERC-721 (OZ v5) | — | Colony identity token. Name: "SPICE Colony", symbol: "COLONY". Minted to Colony contract address by ColonyRegistry on register(). Soulbound. Burned on deregister(), reminted on reregister(). ownerOf(id) == Colony contract — cannot be orphaned by key loss. On-chain tokenURI with name/slug/address/founder/date. |
+| A-token | ERC-721 (OZ v5) | — | Fisc-registered economic claims — see §3.5. Name: "AXION A-Token", symbol: "ATOKE". Public transfers blocked; Colony-mediated only. On-chain tokenURI. |
+| C-token | ERC-721 (OZ v5) | — | Colony identity token. Name: "AXION Colony", symbol: "COLONY". Minted to Colony contract address by ColonyRegistry on register(). Soulbound. Burned on deregister(), reminted on reregister(). ownerOf(id) == Colony contract — cannot be orphaned by key loss. On-chain tokenURI with name/slug/address/founder/date. |
 
-**UBI:** 1,000 S per citizen per epoch. First tranche on join().
+**UBI:** 1,000 MOND per citizen per epoch. First tranche on join().
 **Savings cap:** 200 S→V per epoch for citizens. No cap for companies.
 **V dividend:** FD or secretary calls `declareDividend(uint256 vAmount)` → distributes declared amount pro-rata to all equity holders (vested and unvested). Remainder stays in V reserve. Current deployed v1 distributes the entire V balance (see §3.4). V dividend events (`VDividendPaid`) appear in the citizen dashboard transaction history.
 **Equity:** Company shares are A-token pairs (§3.5). Participant equity vests over 1–12 monthly tranches; month-N tranche is larger (commitment bonus). Unvested shares receive dividends, cannot be transferred. Vested shares are permanently transferable. AToken.sol is deployed (April 2026) — equity A-tokens are visible as NFTs. CompanyImplementation v1 still stores founding equity as internal arrays; v2 (beacon upgrade) needed to issue A-token equity for new participants.
@@ -1019,14 +1019,14 @@ Earth Fisc features.
 
 ### Fisc Rate Calculation
 
-The Fisc rate links the S-token to an external dollar reference via a bread-basket anchor:
+The Fisc rate links the MOND to an external dollar reference via a bread-basket anchor:
 
 ```
-fiscRate ($/S) = (OHIO_BREAD_REF × (1 − labourDiscount%)) / breadPriceS
+fiscRate ($/MOND) = (OHIO_BREAD_REF × (1 − labourDiscount%)) / breadPriceS
 
 OHIO_BREAD_REF = $2.80   (Ohio reference loaf price)
-labourDiscount = 28%      (default — SPICE labour discount)
-breadPriceS    = 4        (default — S-tokens per loaf, set by MCC CEO)
+labourDiscount = 28%      (default — AXION labour discount)
+breadPriceS    = 4        (default — MOND per loaf, set by MCC CEO)
 
 → default fiscRate = (2.80 × 0.72) / 4 = $0.504/S
 → UBI value = totalS × fiscRate
@@ -1039,7 +1039,7 @@ Consistency bands enforced in `Budget.jsx`:
 ### Standard Citizen Budget
 
 The published budget is the MCC CEO's declaration of what a standard month of citizen life costs in
-S-tokens. It calibrates the UBI amount and makes the Fisc rate derivable.
+MOND. It calibrates the UBI amount and makes the Fisc rate derivable.
 
 **15 default line items across 4 categories:**
 
@@ -1103,7 +1103,7 @@ returns 201 with empty body when `prefer: return=minimal`, causing `r.json()` to
 ## 11. Native Mobile App
 
 Native iOS/Android app in `colony-app-native/`. Expo managed workflow + EAS Build.
-The key demo scenario: citizen pays S-tokens at a physical merchant (cafeteria) with a phone tap.
+The key demo scenario: citizen pays MOND at a physical merchant (cafeteria) with a phone tap.
 
 ### 11.1 Stack
 
@@ -1201,7 +1201,7 @@ Test layer added April 2026. Three-tier strategy: seed scripts → unit tests �
 Bot wallets are real registered citizens — they persist between test runs.
 
 ```bash
-npm run seed              # register bots + 10 S-token transactions
+npm run seed              # register bots + 10 MOND transactions
 npm run seed:reset        # clear Supabase seed data first, then re-seed
 npm run seed:election     # + open a CEO election and nominate candidates
 npm run seed:dry          # preview plan without sending transactions
@@ -1308,13 +1308,13 @@ Recommended: push-based for Phase 1 (small colonies, testnet). Pull-based model 
 
 ---
 
-*SPICE Colony · Technical Architecture · v12*
+*AXION Colony · Technical Architecture · v12*
 *Last updated: 24 April 2026*
 *v12 updates (24 April 2026): §11 Native Mobile App added — Expo SDK 54, react-native-nfc-manager, NFC tap-to-pay (§11.4), deep-link config spice://pay (§11.3), wallet security model (§11.5), build steps 1–4 done (§11.6). colony-app-native/ added to §2 repo structure. §5.2 NFC Tap-to-Pay flow diagram added (in-app scan + OS deep-link paths). till.html noted in §8 (app.zpc.finance/till.html, Web NFC write + QR + getLogs poll, excluded from SPA rewrite). §12 Test Infrastructure (was §11), §13 Known Limitations (was §12), §14 Future Architecture (was §13). React Native marked in-progress in §14.*
 *v4 changes: ColonyRegistry deployed (§3.1); spice-admin/ repo structure (§2); 18-step deploy flow + pre-flight checks (§8); three-project Vercel setup with ignoreCommand (§8); deployArtifacts.js noted (§2, §3); "No ColonyRegistry" removed from Known Limitations (§9); ColonyRegistry removed from Future Architecture (§10).*
 *v5 changes: AToken.sol planned contract spec added (§3.5) — three forms (unilateral asset, paired equity, paired fixed-obligation), escrow sub-registry, UBI cap enforcement, vesting schedule. CompanyImplementation updated (§3.4) — v1 current interface vs v2 target interface with vesting, declareDividend, office-term equity. Colony.sol advanceEpoch target behaviour documented (obligation settlement before UBI). Section numbers updated (§3.5 AToken, §3.6 OToken, §3.7 GToken, §3.8 SToken/VToken). Token economics table updated (§7) — A-token and v17 dividend model. Known Limitations updated (§9) — intra-month contracts superseded, v1/v2 delta items added, AToken and Colony v2 gaps listed. Future Architecture expanded (§10) — core v2 contracts, gas model decision.*
 *v6 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5 rewritten) — address 0xD0983C309f87Aa50e164a9876EAa64bA43Ac0Cd2, OZ v5 ERC721 inheritance, Colony-controlled transfers, on-chain tokenURI. Dave's Colony redeployed with new addresses (slug: daves-colony). Assets.jsx added — route /colony/:slug/assets for citizen asset and obligation management (§4.3 route map). Token economics table updated — A-token is ERC-721. Known Limitations updated — AToken not deployed removed; Colony.sol v1 obligation settlement gap noted; debug console.log cleanup noted. Future Architecture updated — AToken.sol marked deployed.*
-*v7 changes (19 April 2026): ColonyRegistry redeployed as ERC-721 (§3.1 rewritten) — address 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68. Each register() mints a soulbound C-token ("SPICE Colony"/"COLONY") to the Colony contract address; deregister() burns it; reregister() remints same token ID; tokenURI() returns on-chain JSON. C-token design rationale: ownerOf == Colony contract (not founder EOA), so colony cannot be orphaned by key loss. Directory.jsx updated to read registry exclusively — contracts.json and localStorage no longer colony sources. Token table updated — C-token added. Repository structure comments updated. Future Architecture: ColonyRegistry v2 marked deployed.*
+*v7 changes (19 April 2026): ColonyRegistry redeployed as ERC-721 (§3.1 rewritten) — address 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68. Each register() mints a soulbound C-token ("AXION Colony"/"COLONY") to the Colony contract address; deregister() burns it; reregister() remints same token ID; tokenURI() returns on-chain JSON. C-token design rationale: ownerOf == Colony contract (not founder EOA), so colony cannot be orphaned by key loss. Directory.jsx updated to read registry exclusively — contracts.json and localStorage no longer colony sources. Token table updated — C-token added. Repository structure comments updated. Future Architecture: ColonyRegistry v2 marked deployed.*
 *v8 changes (19 April 2026): Governance.sol deployed and wired (§3.9 new section). Dave's Colony redeployed — all contract addresses updated (§3.1). Colony.sol join() updated: accepts birth year (not Unix timestamp) + setGovernance() + issueObligationGov() + CEO active check in advanceEpoch() (§3.2). addrLabel.js added to repo structure (§2) — shortAddr, namedAddr, resolveNames batch helpers. Deploy steps updated to 18+Governance (§8). Known Limitations: "Governance not in deploy script" replaced with "Votes.jsx elections UI incomplete" (§9). MCC Ledger tab added to Admin.jsx — double-entry events view for all colony financial activity.*
 *v10 changes (21 April 2026): Notifications + Announcements system (§9 new) — Supabase-backed per-wallet inbox, bell button in Layout.jsx, useNotifications hook, /api/notifications + /api/announcements serverless functions. Payment notifications fire on Colony.send() confirm with sender name. Election notifications broadcast to all citizens on openElection. Mcc.jsx (§4.3) — MCC overview page: board roles, token supply, live elections (nextId+loop pattern), announcements board. SendSheet rewritten — citizen picker (fetchCitizens) instead of free-text address. getLogs: RPC switched to sepolia.base.org; 15 chunks (§4.4). Test infrastructure (§10) — Vitest unit tests, Playwright E2E with mockWallet fixture, seed scripts with bot wallets. Repository structure updated (§2). Route map updated (§4.3) — /mcc, /mall, /mall/:addr.*
 *v9 changes (20 April 2026): Governance.sol redesigned to multi-candidate plurality elections (§3.9 rewritten) — openElection / nominateCandidate / vote(candidate) / finaliseElection / executeElection / resign(). New Election struct with nominationEndsAt, votingEndsAt, timelockEndsAt, winner, executed, cancelled. New Governance address 0x7D885120a8766A6B6ce951f3fbf342046c485240. Dave's Colony redeployed — all contract addresses updated (§3.1). citizens.js serverless function added (§2) — enumerates citizens via GToken.nextTokenId() + ownerOf() + citizenName() loop; more reliable than getLogs. fetchCitizens.js utility added (§2). System overview diagram updated (§1). Known Limitations: "Votes.jsx UI incomplete" replaced with testnet timing constants + citizen enumeration scale note (§9).*

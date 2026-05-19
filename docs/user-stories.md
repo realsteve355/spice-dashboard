@@ -1,4 +1,4 @@
-# SPICE Colony — User Stories & Requirements Spec
+# AXION Colony — User Stories & Requirements Spec
 
 *Working spec for app.zpc.finance. Stories organised by role, then priority.*
 
@@ -14,7 +14,7 @@
 
 ## Role 1 — Citizen
 
-A registered member of a colony. Holds one G-token, receives 1,000 S-tokens monthly,
+A registered member of a colony. Holds one G-token, receives 1,000 MOND monthly,
 may save into V-tokens, spend with companies, hold equity, and vote on MCC governance.
 
 ### Registration & Identity
@@ -39,24 +39,24 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 *C-04/C-04a: DOB stored on-chain as a birth year (e.g. 1985), not a Unix timestamp. Pre-1970 birth years would produce negative Unix timestamps and revert (uint256 underflow). Colony.join() validates 1900 ≤ year ≤ 2100. Frontend passes `new Date(dob).getFullYear()`. Governance age check uses `1970 + block.timestamp / 365 days >= birthYear + 18`.*
 *C-06–C-08: Profile page shows on-chain identity (name, G-token, balances). Inheritance designation form replaced with a stub — on-chain implementation pending.*
 
-### S-Token (Spending)
+### MOND (Spending)
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| C-10 | As a citizen, I want to see my current S-token balance prominently | P1 | ✓ |
+| C-10 | As a citizen, I want to see my current MOND balance prominently | P1 | ✓ |
 | C-11 | As a citizen, I want to see how many days remain until the monthly reset | P1 | ✓ |
 | C-12 | As a citizen, I want to see a breakdown of my spending this month | P1 | ✓ |
-| C-13 | As a citizen, I want to send S-tokens to any address with an optional note | P1 | ✓ |
+| C-13 | As a citizen, I want to send MOND to any address with an optional note | P1 | ✓ |
 | C-13a | As a citizen (payer), I want to scan a merchant's QR code — which opens MetaMask directly — and confirm payment in one tap | P1 | ✓ |
 | C-13b | As a citizen, I want to pay my MCC services bill on-chain from the dashboard, with payment going to the MCC treasury (not the founder's personal wallet) | P1 | ✓ |
 | C-13c | As a citizen using the native app, I want to tap my phone to an NFC tag at a merchant till, confirm the pre-filled amount with Face ID, and have the payment broadcast automatically | P1 | ✓ |
 | C-14 | As a citizen, I want to see my full on-chain transaction history (payments sent/received, UBI, savings, redeems, V dividends received) with dates and labels | P1 | ✓ |
 | C-15 | As a citizen, I want to see my projected MCC bill for the current month | P1 | ~ |
-| C-16 | As a citizen, I want a warning if my S-token balance will not cover my projected MCC bill | P2 | ✓ |
-| C-32 | As a citizen, I want to browse the colony Mall — all companies and their products — and pay for a listed item in S-tokens directly | P1 | ✓ |
+| C-16 | As a citizen, I want a warning if my MOND balance will not cover my projected MCC bill | P2 | ✓ |
+| C-32 | As a citizen, I want to browse the colony Mall — all companies and their products — and pay for a listed item in MOND directly | P1 | ✓ |
 
 *C-13a: QR encodes a MetaMask deep link (metamask.app.link). Scanning with iPhone camera opens MetaMask app automatically. No separate scanner or app switching required.*
-*C-13c: Implemented April 2026. NFC flow: till writes spice://pay?to=...&amount=...&note=... to NDEF tag (Chrome Android Web NFC). Citizen opens SPICE Colony app → Tap to Pay → holds phone to tag → Pay screen pre-filled → FaceID → txSend. OR: app closed → OS reads tag → opens spice:// deep link → Pay screen. Till polls Base Sepolia getLogs for Sent event confirmation. QR fallback if NFC unavailable.*
+*C-13c: Implemented April 2026. NFC flow: till writes spice://pay?to=...&amount=...&note=... to NDEF tag (Chrome Android Web NFC). Citizen opens AXION Colony app → Tap to Pay → holds phone to tag → Pay screen pre-filled → FaceID → txSend. OR: app closed → OS reads tag → opens spice:// deep link → Pay screen. Till polls Base Sepolia getLogs for Sent event confirmation. QR fallback if NFC unavailable.*
 *C-14: Queries Sent, UbiClaimed, Saved, Redeemed events from Colony contract. Uses deployBlock as fromBlock to comply with RPC 10,000-block limit.*
 *C-15: Shows month-to-date actual MCC bill, not a forward projection.*
 
@@ -64,10 +64,10 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| C-17 | As a citizen, I want to convert S-tokens to V-tokens (max 200 per month) on-chain | P1 | ✓ |
+| C-17 | As a citizen, I want to convert MOND to V-tokens (max 200 per month) on-chain | P1 | ✓ |
 | C-18 | As a citizen, I want to see how much of my monthly savings allowance I have used | P1 | ✓ |
 | C-19 | As a citizen, I want to see my total V-token balance | P1 | ✓ |
-| C-20 | As a citizen, I want to redeem V-tokens back to S-tokens at 1:1 at any time | P1 | ✓ |
+| C-20 | As a citizen, I want to redeem V-tokens back to MOND at 1:1 at any time | P1 | ✓ |
 | C-21 | As a citizen, I want to see the mint date of my V-token batches to track the 100-year expiry | P2 | ~ |
 | C-22 | As a citizen, I want a notification if a V-token batch is approaching its 100-year expiry | P3 | — |
 
@@ -91,7 +91,7 @@ may save into V-tokens, spend with companies, hold equity, and vote on MCC gover
 
 ## Role 2 — Company Founder / Owner
 
-Any citizen may register a company. The company earns S-tokens, converts net earnings
+Any citizen may register a company. The company earns MOND, converts net earnings
 to V-tokens at month end, and distributes dividends to equity holders.
 
 ### Company Registration
@@ -107,14 +107,14 @@ to V-tokens at month end, and distributes dividends to equity holders.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-05 | As a company owner, I want to see my company's current S-token balance | P1 | ✓ |
+| F-05 | As a company owner, I want to see my company's current MOND balance | P1 | ✓ |
 | F-06 | As a company owner, I want to see my company's V-token reserve | P1 | ✓ |
-| F-07 | As a company owner, I want to see all inbound and outbound S-token transactions | P1 | ✓ |
+| F-07 | As a company owner, I want to see all inbound and outbound MOND transactions | P1 | ✓ |
 | F-07a | As a company owner, I want on-chain payment history from Colony contract events | P1 | ✓ |
 | F-07b | As a company owner (merchant), I want to generate a QR code that opens MetaMask on the customer's phone so they can pay immediately | P1 | ✓ |
-| F-08 | As a company owner, I want the Fisc to automatically convert all net S-tokens to V-tokens at epoch advance so no earnings are destroyed by the monthly reset | P1 | ~ |
-| F-09 | As a company owner, I want to redeem V-tokens → S-tokens to fund operations | P1 | ✓ |
-| F-10 | As a company owner, I want to pay another company or citizen in S-tokens | P1 | ✓ |
+| F-08 | As a company owner, I want the Fisc to automatically convert all net MOND to V-tokens at epoch advance so no earnings are destroyed by the monthly reset | P1 | ~ |
+| F-09 | As a company owner, I want to redeem V-tokens → MOND to fund operations | P1 | ✓ |
+| F-10 | As a company owner, I want to pay another company or citizen in MOND | P1 | ✓ |
 | F-11 | As the company CFO, I want to declare a specific V-token dividend amount each month so that the Fisc distributes that amount pro-rata to all shareholders (vested and unvested) while the remainder stays in the company's V reserve | P1 | ✓ |
 | F-11a | As a shareholder, I want to see the declared dividend amount and my expected share before the Fisc distributes | P2 | — |
 | F-12 | As a company owner, I want to see projected month-end V-token conversion | P2 | ~ |
@@ -127,7 +127,7 @@ to V-tokens at month end, and distributes dividends to equity holders.
 | F-14 | As a company secretary, I want to issue vesting shares to a participant — specifying total stake and number of monthly tranches (1–12) — so they earn equity progressively | P2 | ✓ |
 | F-14a | As a company secretary, I want to issue open shares (no vesting) to an investor so they hold equity immediately | P2 | ✓ |
 | F-15 | As a shareholder, I want to transfer vested shares to another wallet atomically; unvested shares may not be transferred | P2 | ~ |
-| F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in S-tokens, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | ✓ |
+| F-15a | As a company secretary, I want to buy back shares from a holder at current NAV in MOND, with the bought-back shares cancelled (increasing NAV for remaining holders) | P2 | ✓ |
 | F-16 | As a company owner, I want to see the full history of share issuances, vesting events, transfers, buybacks, and forfeitures | P2 | ✓ |
 
 ### Vesting Lifecycle
@@ -145,9 +145,9 @@ to V-tokens at month end, and distributes dividends to equity holders.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| F-17 | ~~As a company owner, I want to create a forward purchase contract with escrowed S-tokens~~ | ~~P2~~ | Superseded |
+| F-17 | ~~As a company owner, I want to create a forward purchase contract with escrowed MOND~~ | ~~P2~~ | Superseded |
 | F-18 | ~~As a company owner, I want to create an escrowed payment released on delivery confirmation~~ | ~~P2~~ | Superseded |
-| F-19 | ~~As a company owner, I want a revenue-sharing agreement routing a % of inbound S-tokens to a partner~~ | ~~P2~~ | Superseded |
+| F-19 | ~~As a company owner, I want a revenue-sharing agreement routing a % of inbound MOND to a partner~~ | ~~P2~~ | Superseded |
 | F-20 | ~~As a company owner, I want to see all active intra-month contracts~~ | ~~P2~~ | Superseded |
 | F-21 | ~~As a company owner, I want to confirm delivery to release escrowed tokens~~ | ~~P2~~ | Superseded |
 
@@ -209,11 +209,11 @@ operations on behalf of the organisation.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| OS-06 | As an organisation secretary, I want to see the company wallet's S-token balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | ✓ |
-| OS-07 | As an organisation secretary, I want to convert the company's net S-token earnings to V-tokens in a single on-chain transaction | P1 | ✓ |
+| OS-06 | As an organisation secretary, I want to see the company wallet's MOND balance, V-token reserve, and list of registered A-tokens and L-tokens in one dashboard view | P1 | ✓ |
+| OS-07 | As an organisation secretary, I want to convert the company's net MOND earnings to V-tokens in a single on-chain transaction | P1 | ✓ |
 | OS-08 | As an organisation secretary, I want to distribute V-token dividends to all equity holders in one transaction — amounts calculated automatically from the equity register in basis points | P1 | ✓ |
 | OS-09 | As an organisation secretary, I want to see a dividend history showing each distribution: date, total V-tokens distributed, and the per-holder breakdown | P2 | ~ |
-| OS-10 | As an organisation secretary, I want to pay a supplier (citizen or company) in S-tokens from the company wallet with a note recorded on-chain | P1 | ✓ |
+| OS-10 | As an organisation secretary, I want to pay a supplier (citizen or company) in MOND from the company wallet with a note recorded on-chain | P1 | ✓ |
 
 ### Asset Management
 
@@ -235,7 +235,7 @@ Any citizen holding equity in one or more colony companies.
 |---|-------|----------|--------|
 | S-01 | As a shareholder, I want to see all my equity positions (company, %, V-token value) | P1 | ✓ |
 | S-02 | As a shareholder, I want to see my dividend history | P1 | ~ |
-| S-03 | As a shareholder, I want to buy shares by paying S-tokens (atomic on-chain swap) | P2 | — |
+| S-03 | As a shareholder, I want to buy shares by paying MOND (atomic on-chain swap) | P2 | — |
 | S-04 | As a shareholder, I want to sell shares to another citizen | P2 | ~ |
 | S-05 | As a shareholder, I want to see a company's revenue and V-token reserve before buying | P2 | ✓ |
 | S-06 | As a shareholder, I want to transfer shares as a gift | P2 | ✓ |
@@ -298,22 +298,22 @@ Elected annually by G-token holders. Runs essential services infrastructure and 
 
 ### Fisc Engine
 
-The Fisc Engine translates the colony's published budget into a single monetary rate ($/S). The MCC CEO
+The Fisc Engine translates the colony's published budget into a single monetary rate ($/MOND). The MCC CEO
 publishes the Standard Citizen Budget; all other Fisc numbers derive from it. Earth colonies have
 additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run a closed economy.
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| FI-01 | As any citizen, I want to see the Fisc engine landing page showing the current UBI (S/month), Fisc rate ($/S), and implied UBI value ($/month) at a glance | P1 | ✓ |
+| FI-01 | As any citizen, I want to see the Fisc engine landing page showing the current UBI (S/month), Fisc rate ($/MOND), and implied UBI value ($/month) at a glance | P1 | ✓ |
 | FI-02 | As any citizen, I want to see whether my colony is an Earth or Mars colony, with a clear badge, so I know which Fisc features apply | P1 | ✓ |
 | FI-03 | As any citizen, I want to navigate from the Fisc page directly to the Standard Citizen Budget | P1 | ✓ |
-| FI-04 | As any citizen, I want to see the Standard Citizen Budget — all 15 line items across MCC, Essential, Discretionary, and Savings categories — with S-token amounts and descriptions | P1 | ✓ |
+| FI-04 | As any citizen, I want to see the Standard Citizen Budget — all 15 line items across MCC, Essential, Discretionary, and Savings categories — with MOND amounts and descriptions | P1 | ✓ |
 | FI-05 | As any citizen, I want to see a split bar showing the percentage allocation to each budget category vs the target (MCC 25 / Essential 35 / Discretionary 20 / Savings 20) | P1 | ✓ |
-| FI-06 | As any citizen, I want to see the bread-basket anchor values (S-price per loaf, SPICE labour discount, Ohio reference price) so I understand how the Fisc rate is derived | P1 | ✓ |
+| FI-06 | As any citizen, I want to see the bread-basket anchor values (S-price per loaf, AXION labour discount, Ohio reference price) so I understand how the Fisc rate is derived | P1 | ✓ |
 | FI-07 | As any citizen, I want to see the budget version, effective-from date, and the publishing MCC CEO address | P1 | ✓ |
-| FI-08 | As the MCC CEO, I want to enter draft mode and edit S-token amounts for each budget line item | P2 | ✓ |
+| FI-08 | As the MCC CEO, I want to enter draft mode and edit MOND amounts for each budget line item | P2 | ✓ |
 | FI-09 | As the MCC CEO, I want to toggle optional line items off (and core services cannot be toggled off) | P2 | ✓ |
-| FI-10 | As the MCC CEO, I want to adjust the bread price (S/loaf) and SPICE labour discount to explore their effect on the Fisc rate in real time | P2 | ✓ |
+| FI-10 | As the MCC CEO, I want to adjust the bread price (S/loaf) and AXION labour discount to explore their effect on the Fisc rate in real time | P2 | ✓ |
 | FI-11 | As the MCC CEO, I want a consistency panel showing whether the Fisc rate ($0.30–$1.20) and UBI value ($300–$1,500/mo) are in range, and whether Savings is approximately 20% of total | P2 | ✓ |
 | FI-12 | As the MCC CEO, I want to save a draft budget (not yet published to citizens) | P2 | ✓ |
 | FI-13 | As the MCC CEO, I want a confirmation modal showing the new total and effective date before I publish, so I don't accidentally go live | P2 | ✓ |
@@ -332,7 +332,7 @@ additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run 
 
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
-| N-12 | As a citizen, I want to receive an in-app notification when I receive an S-token payment, showing the sender's name and any note | P2 | ✓ |
+| N-12 | As a citizen, I want to receive an in-app notification when I receive an MOND payment, showing the sender's name and any note | P2 | ✓ |
 | N-13 | As a citizen, I want to see unread notification count as a badge on a bell icon in the header | P2 | ✓ |
 | N-14 | As a citizen, I want to open a notification inbox and mark all as seen | P2 | ✓ |
 
@@ -347,7 +347,7 @@ additional Fisc features (USDC reserve, LRT, boundary flows); Mars colonies run 
 | M-14 | As a colony founder, I want the MCC to have its own on-chain treasury wallet, separate from my personal wallet, so that colony funds and personal funds are never mixed | P1 | ✓ |
 | M-15 | As MCC CEO, I want to grant the CFO role to another wallet address so that treasury operations can be delegated without giving away founder access | P1 | ✓ |
 | M-16 | As MCC CEO, I want to revoke an MCC role from any address at any time | P1 | ✓ |
-| M-17 | As MCC CFO or CEO, I want to withdraw S-tokens from the treasury to a specified address with a reason recorded on-chain | P1 | ✓ |
+| M-17 | As MCC CFO or CEO, I want to withdraw MOND from the treasury to a specified address with a reason recorded on-chain | P1 | ✓ |
 | M-18 | As MCC CEO, I want to see all current MCC board role-holders in one panel | P1 | ✓ |
 | M-19 | As MCC CEO, I want the founder to retain emergency CEO powers even if no explicit role is granted, so the colony cannot be locked out | P1 | ✓ |
 | M-20 | As MCC CEO, I want to replace the MCC CEO role via a G-token governance election so the founder is not permanent | P2 | ✓ |
@@ -387,10 +387,10 @@ An adult citizen managing a child citizen's wallet.
 | # | Story | Priority | Status |
 |---|-------|----------|--------|
 | G-01 | As a guardian, I want to register a child with the Fisc and link them to my wallet | P2 | ~ |
-| G-02 | As a guardian, I want to see the child's S-token balance and MCC bill | P2 | ~ |
-| G-03 | As a guardian, I want to convert up to 200 of the child's S-tokens to V-tokens each month | P2 | ~ |
+| G-02 | As a guardian, I want to see the child's MOND balance and MCC bill | P2 | ~ |
+| G-03 | As a guardian, I want to convert up to 200 of the child's MOND to V-tokens each month | P2 | ~ |
 | G-04 | As a guardian, I want to see the child's accumulated V-token balance | P2 | ~ |
-| G-05 | As a guardian, I want to pay the child's MCC bill from their S-token allocation | P2 | ~ |
+| G-05 | As a guardian, I want to pay the child's MCC bill from their MOND allocation | P2 | ~ |
 | G-06 | As a guardian, I want the wallet to automatically transfer to the child at age 18 | P2 | ~ |
 | G-07 | As a guardian, I want to designate a backup guardian | P3 | — |
 
@@ -433,9 +433,9 @@ A citizen deploying a new colony.
 
 ---
 
-## Role 6b — Protocol (SPICE Infrastructure)
+## Role 6b — Protocol (AXION Infrastructure)
 
-The SPICE Protocol is the deployer of the ColonyRegistry contract and recipient
+The AXION Protocol is the deployer of the ColonyRegistry contract and recipient
 of infrastructure fees from all colonies. Fees are denominated in ETH, accumulate
 per colony, and are settled monthly by each MCC Fisc — appearing as a line item
 on the colony's monthly infrastructure bill rather than a visible per-transaction skim.
@@ -477,7 +477,7 @@ on the colony's monthly infrastructure bill rather than a visible per-transactio
 | P-09 | As the protocol, I want fee settlements to be recorded as on-chain events (ProtocolFeeSettled) for auditability | P1 | ✓ |
 | P-10 | As the protocol, I want colonies deployed before the registry existed (no registry address) to skip fee accrual gracefully | P1 | ✓ |
 
-*P-01–P-04, P-01a: ColonyRegistry.sol redeployed as ERC-721 at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 (19 April 2026). Each register() call mints a soulbound C-token ("SPICE Colony" / "COLONY") to the Colony contract address. Deregister burns it; reregister remints with the same token ID. tokenURI() returns on-chain JSON metadata. ownerOf(tokenId) == Colony contract (not founder EOA) — the colony cannot be orphaned by key loss.*
+*P-01–P-04, P-01a: ColonyRegistry.sol redeployed as ERC-721 at 0x584248ab12c3CBEe35B1E2145B3f208Ea521eF68 (19 April 2026). Each register() call mints a soulbound C-token ("AXION Colony" / "COLONY") to the Colony contract address. Deregister burns it; reregister remints with the same token ID. tokenURI() returns on-chain JSON metadata. ownerOf(tokenId) == Colony contract (not founder EOA) — the colony cannot be orphaned by key loss.*
 *P-05–P-10: Colony.send() increments pendingProtocolFee += registry.getFeeForColony(address(this)) (default 0.000001 ETH). settleProtocol() is payable; caller sends exact ETH amount. registry == address(0) → fee silently skipped.*
 *P-11–P-20: spice.zpc.finance — standalone HTML, no build step, ethers.js CDN. Separate Vercel project at spice-admin/. Stats load read-only on page open; owner actions require wallet connect. Colony list sorted by pending fee descending. Treasury address set only via scripts/setTreasury.js (not web UI). Per-colony fee override and deregister/reregister in colony detail drawer.*
 *Fee model rationale: ETH-denominated (real-world value), monthly billing via MCC (not per-tx skim), MCC is accountable for payment — citizens see it as an infrastructure bill, not a tax on every send.*
@@ -492,7 +492,7 @@ in AToken.sol. The separate L-token type was retired in v15; land parcels are un
 whose founding constitution specifies Harberger rules (applies on Mars, not on Earth colonies with
 pre-existing private land).
 
-Registration threshold: declared value > 500 S-token equivalent, weight > 50 kg, or autonomous
+Registration threshold: declared value > 500 MOND equivalent, weight > 50 kg, or autonomous
 AI capability. Below threshold, possession implies ownership with no on-chain record needed.
 
 ### Physical Assets
@@ -545,7 +545,7 @@ Harberger rules enforced by the Fisc: declared value, force-purchase right, and 
 
 ## Role 8 — Mobile App User
 
-A citizen using the native SPICE Colony iOS/Android app (`colony-app-native/`).
+A citizen using the native AXION Colony iOS/Android app (`colony-app-native/`).
 App is self-custodial with an embedded wallet — no MetaMask required.
 
 ### Wallet Setup
@@ -567,7 +567,7 @@ App is self-custodial with an embedded wallet — no MetaMask required.
 |---|-------|----------|--------|
 | MB-07 | As a mobile citizen, I want to see my S and V balances on the home screen | P1 | ✓ |
 | MB-08 | As a mobile citizen, I want to see my recent transaction history with labels (sent/received/UBI/saved/redeemed) | P1 | ✓ |
-| MB-09 | As a mobile citizen, I want to send S-tokens by selecting a citizen from a list or entering an address, with Face ID confirmation | P1 | ✓ |
+| MB-09 | As a mobile citizen, I want to send MOND by selecting a citizen from a list or entering an address, with Face ID confirmation | P1 | ✓ |
 | MB-10 | As a mobile citizen, I want to claim my monthly UBI with one tap and Face ID confirmation | P1 | ✓ |
 | MB-11 | As a mobile citizen, I want to convert S to V savings with Face ID confirmation | P1 | ✓ |
 
@@ -605,7 +605,7 @@ or one of their companies.
 | MB-23 | As a mobile merchant, I want a "Receive payment →" button that opens a sale flow: enter amount + note OR tap products from the company's Mall catalogue | P1 | ✓ |
 | MB-24 | As a mobile merchant tapping products, I want a tappable grid with photos, qty badges that increment per tap, long-press to remove, and a live cart total | P1 | ✓ |
 | MB-25 | As a mobile merchant, I want a big QR code on screen encoding the recipient (company contract address), total, and cart items so the customer can scan and pay in one motion | P1 | ✓ |
-| MB-26 | As a mobile merchant on iPhone, I want to write the same payment URL to a re-writable NFC sticker on the till so any customer phone tapping the sticker opens their SPICE app pre-filled | P1 | ~ |
+| MB-26 | As a mobile merchant on iPhone, I want to write the same payment URL to a re-writable NFC sticker on the till so any customer phone tapping the sticker opens their AXION app pre-filled | P1 | ~ |
 | MB-27 | As a mobile merchant, I want the QR/wait screen to poll the chain and flip to "PAID ✓" automatically when the customer's transaction is mined — no manual confirmation step | P1 | ✓ |
 | MB-28 | As a mobile merchant, I want the PAID screen to show the sender, amount, tx hash, and refresh the company balance so "Back to dashboard" already shows the new total | P1 | ✓ |
 | MB-29 | As a mobile merchant on iPad, I want the same app — supportsTablet:true — accepting the architectural compromise that NFC tag write isn't available on iPad (Core NFC is iPhone-only) so QR is the only presentation mode | P1 | ✓ |
@@ -660,12 +660,12 @@ or one of their companies.
 | Create colony (zpc.finance) | ContractFactory.deploy() on zpc.finance | ✓ Live |
 | Join colony + citizen name | Colony.join(string) | ✓ Live |
 | G-token issuance (soulbound NFT, on-chain SVG) | GToken.mint() | ✓ Live |
-| S-token UBI issuance | SToken.issueUbi() | ✓ Live |
-| S-token balance | SToken.balanceOf() | ✓ Live |
+| MOND UBI issuance | SToken.issueUbi() | ✓ Live |
+| MOND balance | SToken.balanceOf() | ✓ Live |
 | V-token balance | VToken.balanceOf() | ✓ Live |
-| S → V conversion | Colony.saveToV() | ✓ Live |
+| MOND → V conversion | Colony.saveToV() | ✓ Live |
 | V → S redemption | Colony.redeemV() | ✓ Live |
-| Send S-tokens (with note) | Colony.send() | ✓ Live |
+| Send MOND (with note) | Colony.send() | ✓ Live |
 | Pay MCC bill | Colony.send() to MCCTreasury | ✓ Live |
 | QR payment request (MetaMask deep link) | — (URL params) | ✓ Live |
 | Transaction history | Event log queries | ✓ Live |
@@ -742,7 +742,7 @@ added; redeploy or beacon-upgrade unlocks them there too.
 
 ---
 
-*SPICE Colony · User Stories & Requirements Spec · v24*
+*AXION Colony · User Stories & Requirements Spec · v24*
 *Last updated: 28 April 2026*
 *v14 changes (18 April 2026): AToken.sol deployed as full ERC-721 (§3.5). Dave's Colony redeployed (slug: daves-colony). Assets.jsx built — citizen asset registration, transfer, obligation creation, and A-token portfolio view at /colony/:slug/assets. On-chain table updated: asset registration, asset transfer, obligation creation, citizen portfolio, V dividend tx history all live. A-01/A-02/A-04/A-12/A-13 updated to ~ partial. C-31 updated to ~. F-22 updated to ~. C-14 updated to include V dividends. v2 blockers section rewritten: AToken.sol removed as blocker; CompanyImpl v2 and Colony.sol v2 are the remaining blockers with specific story mapping.*
 *v15 changes (19 April 2026): Governance.sol deployed and wired. Dave's Colony redeployed — all addresses updated. Colony.join() updated: birth year DOB (not Unix timestamp) — C-04 note added. Obligation mutual-consent flow: A-12 footnote updated to describe Governance.proposeObligation/signObligation path; direct issueObligation() retired. On-chain table updated: obligation creation row updated for Governance flow; colony directory corrected to getActive(). M-20 updated to ~ partial (Governance.sol live; Votes.jsx UI pending). M-27/M-28 added — MCC double-entry ledger in Admin.jsx (live). C-24/C-25/C-27/C-29 governance footnote updated with Governance contract address and remaining UI gap. addrLabel.js utility (shortAddr, namedAddr, resolveNames) added — names shown next to addresses in Dashboard.jsx, Company.jsx, Assets.jsx. Status summary not recounted (minor net change).*

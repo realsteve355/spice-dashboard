@@ -1,13 +1,35 @@
-# CLAUDE.md — SPICE Protocol Project Context
+# CLAUDE.md — AXION Protocol Project Context
 
 This file is read automatically by Claude Code at the start of every session.
 It contains everything needed to work on this project without prior context.
 
 ---
 
+## Brand (renamed 19 May 2026)
+
+- **Corporation / protocol:** AXION (formerly SPICE)
+- **Currency:** MOND (formerly S-token, SPICE coin, ZPC). Currency symbol: Ɱ.
+- Brand spec: `docs/AXION BRAND SPEC.md` + `docs/MOND SYMBOL ADDENDUM.md`
+- Assets: `public/brand/` (research site), `colony-app/public/brand/`,
+  `docs/economy-model/simple_trace/static/brand/`. Includes wordmark PNGs
+  (dark + light variants for AXION and MOND) and `mond-symbol.svg`.
+- React component: `src/components/MondSymbol.jsx` and
+  `colony-app/src/components/MondSymbol.jsx` — currency glyph for inline use.
+
+**What stays on the old names:** smart contract identifiers
+(`SPICEVault`, `IRONToken`, `MockWBTC`) are immutable on-chain. Folder
+names (`spice-dashboard`, `spice-admin`, `colony-app/contracts/spice/`),
+`zpc.finance` / `app.zpc.finance` / `spice.zpc.finance` domains, code
+identifiers like `SPICE_PARAMS`, route `/spice-system`, and storage keys
+like `spice_user_colonies` all stay until a future domain-migration pass.
+This is per `docs/AXION BRAND SPEC.md` §7. Native app
+(`colony-app-native/`) and `spice-admin/` were not in the 19 May sweep.
+
+---
+
 ## What This Project Is
 
-**SPICE Protocol** (`zpc.finance`) is a post-collapse community economic system,
+**AXION Protocol** (`zpc.finance`) is a post-collapse community economic system,
 not a hedge fund or investment vehicle. The concept has two distinct phases:
 
 ### Phase 1 — The Collision (precursor context)
@@ -17,28 +39,30 @@ unemployment, and governments will deploy monetary tools (QE, YCC, financial
 repression) that debase fiat currency. This collision between debt, deflation
 and capital flight to crypto leads to fiat breakdown.
 
-### Phase 2 — The SPICE Colony Economy (the actual product)
+### Phase 2 — The AXION Colony Economy (the actual product)
 After the Collision — fiat breakdown, AI unemployment, civil reorganisation —
-communities self-organise into **colonies**. Each colony runs the SPICE system:
+communities self-organise into **colonies**. Each colony runs the AXION system:
 
-- **S-token (= SPICE coin = ZPC)** — the colony's everyday currency. Issued by
-  the MCC as basic income (UBI). Used for all internal transactions. Not backed
-  by fiat.
+- **MOND** — the colony's everyday currency (formerly the S-token / SPICE coin
+  / ZPC). Issued by the MCC as basic income (UBI). Used for all internal
+  transactions. Not backed by fiat.
 - **V-token** — long-term savings instrument. Accrues yield from colony economic
-  activity and S-tax receipts. Not freely spent.
+  activity and MOND tax receipts. Not freely spent.
 - **MCC (Monetary Control Committee)** — the colony's monetary authority. Issues
-  S, backs V, distributes yield.
-- **Fiscal citizens** — colony members. Receive S as UBI, spend S, may hold V.
-- **Companies** — colony enterprises. Pay/receive S, hold V, pay S-tax to MCC.
+  MOND, backs V, distributes yield.
+- **Fiscal citizens** — colony members. Receive MOND as UBI, spend MOND, may
+  hold V.
+- **Companies** — colony enterprises. Pay/receive MOND, hold V, pay MOND tax
+  to MCC.
 - **External settlement** — inter-colony trade uses BTC, ETH, or SOL. Not part
-  of the internal SPICE system.
+  of the internal AXION system.
 
-### What SPICE is NOT
+### What AXION is NOT
 - Not a hedge fund or crypto investment vehicle
 - Not backed by BTC/gold/bond shorts
 - The old "IRON/SPICE two-token hedge fund" concept is **retired**
 - A separate portfolio suggestion page may exist for pre-collapse investment
-  ideas, but this is entirely separate from the SPICE system itself
+  ideas, but this is entirely separate from the AXION system itself
 
 The site serves:
 1. **Potential co-founders / researchers** — interrogate the economic model
@@ -148,7 +172,7 @@ Capped at 3.0 (300% GDP) — above this, crisis/restructuring is assumed.
 | CBO      | 5%                | CBO 2025 baseline       |
 | IMF/GS   | 10%               | IMF WP/2025/076         |
 | McKinsey | 25%               | McKinsey MGI 2023       |
-| SPICE    | 40%               | SPICE base case         |
+| AXION    | 40%               | AXION base case         |
 | Tsunami  | 60%               | AGI-equivalent scenario |
 
 ### Fiscal policies
@@ -244,7 +268,7 @@ times when it shared rendering logic.
 |-------------------------------|----------------|--------------------------------------|
 | `chart3-simulation.jsx`       | `src/pages/`   | Interactive simulation — Chart 3     |
 | `spice-methodology.html`      | `public/`      | Full methodology doc, all citations  |
-| `SPICE-MODEL-NOTES.md`        | `docs/`        | Developer notes, all parameters      |
+| `AXION-MODEL-NOTES.md`        | `docs/`        | Developer notes, all parameters      |
 | `CLAUDE.md`                   | `/` (root)     | This file                            |
 
 ---
@@ -360,7 +384,7 @@ are paid via the Mall, not by entering addresses manually.
   window.ethereum without MetaMask. Bypasses eth_estimateGas, eth_gasPrice, eth_feeHistory to
   prevent RPC hangs on write-path tests. Requires seed to have been run first.
   - `dashboard.spec.js` — 6 read-only smoke tests (name, address, citizen, balance, nav, tx history)
-  - `citizen-actions.spec.js` — claim UBI (skip if already claimed this epoch), send S-tokens
+  - `citizen-actions.spec.js` — claim UBI (skip if already claimed this epoch), send MOND
   - `non-citizen.spec.js` — no wallet state, stranger address (not a citizen)
 - See `colony-app/.env.seed.example` for required env vars.
 
@@ -369,7 +393,7 @@ are paid via the Mall, not by entering addresses manually.
 Scaffolded 23 April 2026. Steps 1–4 complete (commit `683a2bf`).
 
 **Goal:** Genuine iOS/Android app (App Store distributed) with embedded wallet and NFC tap-to-pay.
-The key demo scenario is a citizen paying S-tokens at a physical merchant (e.g. university cafeteria).
+The key demo scenario is a citizen paying MOND at a physical merchant (e.g. university cafeteria).
 
 **Stack:** Expo SDK 54, React Native 0.81.5, ethers.js v6, expo-secure-store, expo-local-authentication, react-native-nfc-manager.
 
@@ -430,13 +454,13 @@ Pre-launch research project. Key next steps:
 
 - [x] **Native mobile app** — wallet, dashboard, send, NFC tap-to-pay; till.html live at app.zpc.finance/till.html
 - [x] **Mission-control redesign** — rolled out 30 Apr 2026 across all 4 projects (zpc.finance, app.zpc.finance, spice.zpc.finance, native). Canonical: `docs/redesign.md`.
-- [ ] **Agent-based simulation** — Mars first (closed economy), Earth second (full external actors). The credibility centrepiece — answers "does this whole thing work?" for any economically-literate viewer. See `docs/economy-model/` for current deterministic sim and `docs/SPICE-Economy.md` Part 5 §5.7 for the gap analysis. Strategic memo in agent memory: `project_simulation_direction.md`.
+- [ ] **Agent-based simulation** — Mars first (closed economy), Earth second (full external actors). The credibility centrepiece — answers "does this whole thing work?" for any economically-literate viewer. See `docs/economy-model/` for current deterministic sim and `docs/AXION-Economy.md` Part 5 §5.7 for the gap analysis. Strategic memo in agent memory: `project_simulation_direction.md`.
 - [ ] **Home + /invest copy** — dispatch cards (Act I/II/III) + intro video YouTube embed + /invest sections (revenue, contributor paths, Wefunder)
 - [ ] **Mars/Earth chapter pages** — full redesign-aligned rebuild per §4.6 (token-migrated + B&W hero treatment landed; structural rebuild deferred)
-- [ ] Chart 5 — SPICE protocol mechanics page
+- [ ] Chart 5 — AXION protocol mechanics page
 - [ ] Mobile layout for /simulation
 - [ ] Feedback / comment mechanism on methodology page
 - [ ] Technical co-founder (DeFi-experienced, token allocation)
 - [ ] IRONVAULT (ticker: IRON) — whitepaper
 
-*Last updated: 30 April 2026*
+*Last updated: 19 May 2026 — AXION/MOND rebrand sweep.*

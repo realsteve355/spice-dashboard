@@ -1,4 +1,4 @@
-# SPICE Economy
+# AXION Economy
 ## Unified specification — Mars and Earth colony models
 
 *Version 2 — April 2026. Working document. Gaps are named explicitly.*
@@ -37,7 +37,7 @@ Four classes of natural person, four company officer roles, four institutions.
 
 ### 1.1 The Two Monetary Tokens
 
-| | S-token | V-token |
+| | MOND | V-token |
 |---|---|---|
 | **Role** | Day-to-day spending. The current account. | Wealth, savings, dividends, asset values. The savings account. |
 | **Issued by** | Fisc — monthly, to every citizen | Fisc — via S→V conversion, $→V import, company dividends |
@@ -70,9 +70,9 @@ Four classes of natural person, four company officer roles, four institutions.
 2. **Paired equity** — a company share. Fisc creates two simultaneously: asset A-token to the shareholder (records stake, receives dividends); liability A-token to the company (records aggregate distribution obligation). Fisc settles dividends automatically at month end.
 3. **Paired fixed-obligation** — a bilateral payment agreement (loan, hire-purchase, instalment sale). Asset A-token to the creditor records the entitlement to receive payments; liability A-token to the obligor records the obligation to pay. Two variants: **unsecured** (subject to UBI cap) and **secured** (collateralised by a unilateral A-token escrowed for the term). Fisc settles each epoch automatically. Structural default is impossible for unsecured obligations — see §1.2a.
 
-**Net worth:** V-tokens + S-tokens + Σ(positive A-token values) − Σ(liability A-token values).
+**Net worth:** V-tokens + MOND + Σ(positive A-token values) − Σ(liability A-token values).
 
-**Registration threshold:** A-tokens required for assets above 500 S-equivalent in value, above 50 kg, or with autonomous AI capability. Below threshold, possession implies ownership.
+**Registration threshold:** A-tokens required for assets above 500 MOND-equivalent in value, above 50 kg, or with autonomous AI capability. Below threshold, possession implies ownership.
 
 ---
 
@@ -107,8 +107,8 @@ Proposals breaching the cap are rejected at the consent stage. Companies and sec
 The Fisc is the colony's fully automated blockchain institution. Not a company. Not part of the MCC. A constitutional utility — created by the founding charter, governed by code not people.
 
 **What the Fisc does:**
-- Mints S-tokens on the 1st of each month — one fixed amount per registered citizen
-- Destroys all unspent S-tokens at month end
+- Mints MOND on the 1st of each month — one fixed amount per registered citizen
+- Destroys all unspent MOND at month end
 - Processes S→V conversions (subject to colony cap rules)
 - Processes V→S redemptions — uncapped, 1:1
 - Settles all liability A-token obligations before crediting monthly UBI
@@ -128,7 +128,7 @@ The Fisc is the colony's fully automated blockchain institution. Not a company. 
 
 The MCC (colony's essential services provider — named Mars Colony Company on Mars, may have any name on Earth) provides the services every citizen depends on that cannot safely be left to market competition.
 
-- Provides essential shared services and bills in S-tokens
+- Provides essential shared services and bills in MOND
 - The board comprises a CEO, CFO, and COO — commercial shareholders who own MCC during their term and receive profits as dividends
 - Citizens hold G-tokens — governance rights only, not commercial ownership
 - Board serves one-year terms, elected annually by G-token holders
@@ -202,11 +202,11 @@ Mars is a closed economy. S and V have no value outside the colony. There is no 
 
 ---
 
-### 2.1 S-Token — Mars
+### 2.1 MOND — Mars
 
 | Property | Value |
 |---|---|
-| Monthly UBI amount | 1,000 S per adult citizen — fixed |
+| Monthly UBI amount | 1,000 MOND per adult citizen — fixed |
 | Expiry | All unspent S destroyed at month end |
 | External value | None |
 | Fractional reserve | Prohibited |
@@ -220,7 +220,7 @@ Mars is a closed economy. S and V have no value outside the colony. There is no 
 
 | Property | Value |
 |---|---|
-| Monthly citizen conversion cap | 200 S → V per citizen per month |
+| Monthly citizen conversion cap | 200 MOND → V per citizen per month |
 | Company conversion | All net monthly S earnings → V (uncapped) |
 | Expiry | 100 years from mint date (prevents dynastic accumulation across generations) |
 | External value | None |
@@ -268,7 +268,7 @@ Everything in Parts 1 and 2 applies to Earth with the following extensions and d
 
 ---
 
-### 3.1 S-Token — Earth
+### 3.1 MOND — Earth
 
 Same as Mars. UBI amount set at colony founding. Expires monthly. Internal only. No change.
 
@@ -278,7 +278,7 @@ Same as Mars. UBI amount set at colony founding. Expires monthly. Internal only.
 
 | Property | Mars | Earth |
 |---|---|---|
-| Citizen conversion cap | 200 S/month | **None — uncapped** |
+| Citizen conversion cap | 200 MOND/month | **None — uncapped** |
 | Dollar imports | Not applicable | **$ → V at Fisc rate** |
 | External conversion | None | **V ↔ $ at Fisc rate (two-way)** |
 | Asset valuation | V | V (same) |
@@ -314,7 +314,7 @@ The Fisc rate ($/V) is set so the colony's reference basket always costs a fixed
 
 ### 3.4 The Fisc Reserve
 
-The Fisc reserve is the colony's hard-asset backing for all V-tokens issued via dollar import. It does not back UBI-minted V (which is ex nihilo, like the S-token mint).
+The Fisc reserve is the colony's hard-asset backing for all V-tokens issued via dollar import. It does not back UBI-minted V (which is ex nihilo, like the MOND mint).
 
 | Reserve property | Detail |
 |---|---|
@@ -346,12 +346,12 @@ The Fisc offers on-chain denomination of any asset or liability in V-tokens.
 
 ---
 
-### 3.6 Corporate SPICE Supporters
+### 3.6 Corporate AXION Supporters
 
-External companies — national chains, regional employers — may voluntarily register as SPICE supporters. The agreement:
-- Accept S-tokens as payment within the colony boundary
+External companies — national chains, regional employers — may voluntarily register as AXION supporters. The agreement:
+- Accept MOND as payment within the colony boundary
 - Optionally: pay a voluntary LAT (Local Automation Tax) on declared automation profits, distributed as additional UBI via the Fisc
-- In return: recognised as colony participants, listed on-chain, access to the S-token customer base
+- In return: recognised as colony participants, listed on-chain, access to the MOND customer base
 
 **LAT is opt-in.** The colony has no legislative authority for compulsory taxation. Companies sign because their customer base has UBI; participation is a commercial decision, not charity.
 
@@ -410,7 +410,7 @@ The flip is not decreed — it happens when enough liquidity sits in V that buye
 | Transition period LAT | During partial automation, LAT on windfall is conceptually valid but operationally complex. Left open. |
 | Earth Lite | A middle-ground model between campus (fully closed, institution as Fisc) and full Earth (open, BTC reserve, Collision-ready) is referenced but not yet specified. |
 | Inter-colony trade | Same as Mars — Phase 2. BTC settlement between colonies not yet designed. |
-| Regulatory environment | S-tokens and V-tokens are not legally recognised currencies. No legal framework for the Fisc valuation service. Tax treatment of V gains unclear. All open. |
+| Regulatory environment | MOND and V-tokens are not legally recognised currencies. No legal framework for the Fisc valuation service. Tax treatment of V gains unclear. All open. |
 | Dollar collapse timing | The Earth model is designed for a Collision that may or may not occur on any given timeline. The colony must be viable without the Collision as well as with it. |
 
 ---
@@ -422,7 +422,7 @@ The flip is not decreed — it happens when enough liquidity sits in V that buye
 | Economy type | Closed | Open — $ boundary |
 | S UBI amount | Fixed (e.g. 1,000/month) | Fixed (set at founding) |
 | S expiry | Monthly | Monthly |
-| V citizen cap | 200 S/month | None |
+| V citizen cap | 200 MOND/month | None |
 | V external value | None | Two-way V↔$ at Fisc rate |
 | Dollar imports | Not applicable | $ → V, Fisc buys BTC |
 | Asset valuation | V | V (same) |
@@ -451,7 +451,7 @@ Each month the model executes, in order:
 2. **Citizens spend** — 85% of held S, distributed across companies and P2P
 3. **Companies pay wages** — 50% of revenue back to citizens
 4. **Companies pay MCC bills** — 5% of revenue
-5. **S → V conversions** — 10% of company revenue, 5% of citizen S, locked into V-reserve
+5. **MOND → V conversions** — 10% of company revenue, 5% of citizen S, locked into V-reserve
 6. **Citizen cashouts** — a fraction of citizens convert V → USDC at the current Fisc rate
 7. **Exports** — large companies' USD revenue is deposited at Fisc; new S minted at the prevailing rate
 8. **LAT** — voluntary contribution from participating exporters into the reserve
@@ -487,9 +487,9 @@ which the read-out flags as an "import shortfall".
 | End S supply | 1,179,509 | 992,207 | 859,635 |
 | End V supply | 1,409,697 | 1,188,477 | 936,817 |
 | End USDC reserve | $832,954 | $340,190 | **$15** |
-| End Fisc rate ($/S) | 1.00 | 0.95 | **0.01** |
+| End Fisc rate ($/MOND) | 1.00 | 0.95 | **0.01** |
 | End cover ratio | 0.591 | 0.286 | **0.000** |
-| Total UBI minted (24mo) | 2,280,000 S | 2,280,000 S | 2,280,000 S |
+| Total UBI minted (24mo) | 2,280,000 MOND | 2,280,000 MOND | 2,280,000 MOND |
 | Total exports (24mo) | $960,000 | $600,000 | $36,000 |
 | Total imports (24mo) | $192,000 | $288,000 | **(capped at reserve)** |
 | Total cashouts (24mo) | $23,446 | $39,810 | $1,761 |
@@ -594,26 +594,26 @@ sliders and the framing.
 
 ### 5.2 Methodological shift — basket-anchored, not $-pegged
 
-Part 4 treats the Fisc rate as $/S and treats "peg holds" as "rate stays
+Part 4 treats the Fisc rate as $/MOND and treats "peg holds" as "rate stays
 near 1.00". This conflates two questions: (a) is S stable in real terms,
 (b) does USD trade at par with S? Under a USD experiencing real
 inflation, those answers diverge — S can be perfectly stable in real
-terms while $/S drifts upward with USD debasement.
+terms while $/MOND drifts upward with USD debasement.
 
 The interactive pages adopt the basket-anchored framing:
 
-- **Reference quantity:** a fixed basket of goods that costs **28 S**.
+- **Reference quantity:** a fixed basket of goods that costs **28 MOND**.
 - **What's stable:** the basket's price in S (citizens never see their
   weekly shop costing more in S over time).
-- **What floats:** the $/S Fisc rate. As USD inflates, the target rate
+- **What floats:** the $/MOND Fisc rate. As USD inflates, the target rate
   rises proportionally (a basket that costs $28 today costs $30.94 next
   year at 5% USD inflation, so the target rate moves from $1.00 to $1.10
-  to keep the basket at 28 S).
+  to keep the basket at 28 MOND).
 - **What "peg breaks" means:** the *actual* rate falls below the *target*
   rate because reserve cover is insufficient. The basket-cost-in-S then
   rises above 28 — citizens take a real-terms loss.
 
-This is the right framing. SPICE's design promise is real-terms
+This is the right framing. AXION's design promise is real-terms
 stability for citizens, not nominal-USD stability for outsiders. Part 4's
 results are unchanged because they assume zero USD inflation; the
 basket-anchored framing is a strict generalisation.
@@ -629,7 +629,7 @@ its own annualised USD inflation rate:
 | Food | $9 | Volatile — automation deflation vs climate inflation |
 | Hard goods | $5 | Electronics, clothing — typically deflating under automation |
 | Services | $6 | Sticky-up — labour-driven, tracks wages |
-| **Total** | **$28** | **= 28 S at initial rate $1/S** |
+| **Total** | **$28** | **= 28 MOND at initial rate $1/S** |
 
 The Fisc's job is *not* to track any one category. It tracks the basket
 total. The page's headline chart is total basket cost in S — flat at 28
@@ -722,7 +722,7 @@ This is the next major extension to the model.
 
 ---
 
-*SPICE Economy · Unified Specification · v3.2 · April 2026*
+*AXION Economy · Unified Specification · v3.2 · April 2026*
 *v3.2 changes (30 April 2026): Added Part 5 — Interactive Exploration. Documents the two web pages (`/balance-of-payments`, `/colony-economy`), the basket-anchored framing (the methodological shift), the multi-good basket, real-magnitude US town presets, the abandoned twinning iteration, and the pending inflation model.*
 *v3.1 changes (29 April 2026, later): Added imports to the model — companies sell S → USD to pay external suppliers, USD leaves the reserve. Materially changes the balanced and net-importer scenario outcomes. Net importer now insolvent by month 3; balanced wobbles late. Both Python (`model.py`) and JS (`/colony-economy` interactive page) updated. Trade balance is now the headline finding.*
 *v3 changes (29 April 2026): Added Part 4 — Model Results. 24-month deterministic simulation across three scenarios. Model code at docs/economy-model/model.py.*

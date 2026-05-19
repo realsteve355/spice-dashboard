@@ -1,4 +1,4 @@
-# SPICE Visual Redesign
+# AXION Visual Redesign
 
 > **For Claude Code.** Read this document at the start of any session that involves UI, layout, copy, or visual identity work. The existing `CLAUDE.md` remains authoritative for project context, smart contracts, simulation logic, and recharts rules. **This document supersedes the "Design System" section of `CLAUDE.md` only.** Update `CLAUDE.md` to reference this file when implementation lands.
 >
@@ -27,7 +27,7 @@
 
 ## 1. Summary
 
-SPICE moves from "research paper" identity (white background, gold accent, IBM Plex Mono throughout) to **mission-control terminal** identity (near-black background, monochrome warm-white, mono throughout, semantic status colours).
+AXION moves from "research paper" identity (white background, gold accent, IBM Plex Mono throughout) to **mission-control terminal** identity (near-black background, monochrome warm-white, mono throughout, semantic status colours).
 
 Driven by three things: the current light scheme reads dated; the gold accent fights the seriousness of the thesis; and the new aesthetic ties the macro-hedge product (Act I) and the Mars colony economy (Act II) into one visual world via shared "telemetry" / "field reports" language.
 
@@ -136,7 +136,7 @@ Build each as a separate file in `src/components/spice/`. Use inline-styles via 
 
 Four-column grid: `auto 1fr auto auto`. Background `C.panel`, 1px bottom border `C.line`, 13px vertical padding.
 
-- **Brand**: SVG glyph (3-line collision mark, 18×18) + "SPICE" 600 weight 12px tracked uppercase + " / mission control" in `C.dim`
+- **Brand**: SVG glyph (3-line collision mark, 18×18) + "AXION" 600 weight 12px tracked uppercase + " / mission control" in `C.dim`
 - **Navigation**: 11px uppercase, `C.dim`, with `›` prefix on active item (active item in `C.txt`)
 - **System status**: green pulse dot + "Sys Online" + pipe separator in `C.faint` + "14:32 UTC"
 - **Wallet button**: own column on far right, 11px uppercase, 1px white border, transparent background, inverts on hover
@@ -155,7 +155,7 @@ Marquee strip directly below TopBar. Continuous left-scroll (60s linear infinite
 
 Border 1px around grid, 1px between cells. No rounded corners. Background `C.panel`.
 
-Cells must be data-bound, not hand-coded. Eight default metrics: SPICE Level, US Debt/GDP, 10Y Yield, Real Rate, CPI YoY, DXY, BTC, Crisis Window.
+Cells must be data-bound, not hand-coded. Eight default metrics: AXION Level, US Debt/GDP, 10Y Yield, Real Rate, CPI YoY, DXY, BTC, Crisis Window.
 
 ### 3.4 `<ThreatVector />`
 
@@ -288,7 +288,7 @@ Static HTML page. Migrate chrome (background, type, link colours) but preserve l
 Different register. Terminal aesthetic for chrome, navigation, footer — but body is more narrative. Layout:
 - Hero: full-width image of colony, **graded full-colour** treatment (see §5.2 Treatment 3), headline overlaid
 - Headline: **"Capitalist UBI. No tax. No welfare. Every citizen a shareholder."** (See §6.2.)
-- Body: alternating prose blocks and data panels — citizen count, dividend rate, S-token mechanics, V-token mechanics, MCC structure
+- Body: alternating prose blocks and data panels — citizen count, dividend rate, MOND mechanics, V-token mechanics, MCC structure
 - Embed: link or iframe the existing Mars React dashboard (`MarsLayout`, `MarsOverview`, etc.)
 - Footer matches site footer
 
@@ -335,15 +335,15 @@ Two-colour gradient map from `#06070a` to `#ede5d4`. SVG filters or pre-process.
 filter: contrast(0.95) saturate(0.85) brightness(0.92) sepia(0.05);
 ```
 
-### 5.3 SPICE wordmark and glyph
+### 5.3 AXION wordmark and glyph
 
 Glyph: three lines colliding at a circle.
 - **Monochrome variant** (default): all lines and circle in `C.txt`
 - **Functional variant** (legacy data-viz): two lines in `C.txt`, one in a status colour, circle in status colour. Reserved for places where the glyph is acting as a data marker, not as a brand.
 
-Wordmark: "SPICE" in IBM Plex Mono 600, `0.24em` tracking, uppercase.
+Wordmark: "AXION" in IBM Plex Mono 600, `0.24em` tracking, uppercase.
 
-**Ticker: `SPICE`.** Not `SPC`, not `ZPC`. Ticker and brand are the same string. ZPC is retired.
+**Ticker: `AXION`.** Not `SPC`, not `ZPC`. Ticker and brand are the same string. ZPC is retired.
 
 ---
 
@@ -495,7 +495,7 @@ Read-only. Mirror what `/dashboard` shows on web: NAV, TVL, holdings, telemetry,
 - Top nav order: **Home · Thesis · Telemetry · Mars · Earth · Methodology**. (`Telemetry` is the new label for `/simulation`; `Thesis` replaces `The Collision` for brevity.)
 
 ### Retired
-- ZPC as a ticker. Ticker is now SPICE.
+- ZPC as a ticker. Ticker is now AXION.
 - Gold accent `#B8860B` as brand colour. (Survives only inside chart panels where it's an existing data colour.)
 - White page backgrounds.
 - Sans-serif anywhere on protocol pages.
