@@ -5,6 +5,64 @@ It contains everything needed to work on this project without prior context.
 
 ---
 
+## Colony variants architecture (19 May 2026)
+
+The colony-app is now split per **variant** (Earth / Mars / future jurisdictions).
+Each variant owns its own pages; the router picks based on the colony's type.
+This is the "no conditionals" architecture — pages below the router are
+variant-pure.
+
+```
+colony-app/src/
+├── variants/
+│   ├── earth/                ← Earth-colony pages (no V, MOND-only, no Harberger)
+│   │   ├── pages/{Dashboard,Company,Profile,Guardian,Assets,Budget}.jsx
+│   │   ├── help.js           ← variant-specific HELP drawer content
+│   │   └── index.js          ← page registry
+│   └── mars/                 ← Mars-colony pages (V-tokens, Harberger, closed economy)
+│       ├── pages/...
+│       ├── help.js
+│       └── index.js
+├── features/
+│   └── VTokens/              ← Mars-only feature module (only Mars variant imports)
+├── hooks/
+│   └── useColonyVariant.js   ← reads colonyType (localStorage today; chain planned)
+├── router/
+│   └── VariantRoute.jsx      ← the ONLY place the app asks "which variant?"
+└── pages/                    ← jurisdiction-agnostic pages (Mall, Mcc, Fisc, Votes,
+                                Directory, CreateColony, RegisterCompany, etc.)
+```
+
+**Rule:** `VariantRoute` is the single decision point. Variant-affected
+routes (`/colony/:slug/dashboard`, `/company/:companyId`, `/profile`,
+`/guardian`, `/assets`, `/budget`) go through it. Pages below are
+variant-pure — they never check `colonyType` themselves.
+
+**Adding a new jurisdiction (e.g. US pilot):** create `variants/us_pilot/`,
+copy from Earth, change what differs, register entry in
+`router/VariantRoute.jsx`. Zero impact on existing variants.
+
+**Variant source of truth:**
+- Today: `localStorage['spice_user_colonies'][slug].colonyType`
+- Planned: `Colony.variant()` view on-chain (Phase D — contract redeploy
+  needed; defer until next colony deploy).
+
+**What differs between Earth and Mars:**
+
+| Feature | Earth | Mars |
+|---|---|---|
+| V-tokens | none | full (save/redeem/dividend) |
+| Long-term savings | external (bank / broker / wallet) | in-colony V-tokens |
+| Harberger land | no | yes (self-declared value, stewardship fee) |
+| Asset registration | yes | yes |
+| USDC reserve / Fisc boundary | yes | no (closed economy) |
+| Local Robot Tax (LRT) | yes | n/a |
+| Dependants (V-pool for minors) | placeholder | full Guardian flow |
+| Budget savings line | no | "MOND → V Conversion" |
+| MetaMask token symbol | MOND only | MOND + V-AXION |
+
+---
+
 ## Brand (renamed 19 May 2026)
 
 - **Corporation / protocol:** AXION (formerly SPICE)
