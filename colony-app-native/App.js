@@ -1,5 +1,5 @@
 /**
- * SPICE Colony — Native App
+ * AXION Colony — Native App
  *
  * Navigation structure:
  *   Onboarding  — shown when no wallet is set up on this device
@@ -95,7 +95,7 @@ function Navigator() {
               name="Dashboard"
               component={Dashboard}
               options={{
-                title:       'SPICE',
+                title:       'AXION',
                 headerRight: () => <HeaderSettingsBtn />,
               }}
             />

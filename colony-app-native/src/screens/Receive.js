@@ -11,6 +11,7 @@
  */
 import React, { useState, useEffect, useRef } from 'react'
 import {
+import MondSymbol from '../components/MondSymbol'
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Alert, SafeAreaView, Animated, Image,
 } from 'react-native'
@@ -233,7 +234,7 @@ export default function Receive() {
                       >
                         <ProductThumb productId={p.id} name={p.name} />
                         <Text style={S.productName} numberOfLines={2}>{p.name}</Text>
-                        <Text style={S.productPrice}>{p.price} S</Text>
+                        <Text style={S.productPrice}><MondSymbol size={12} /> {p.price}</Text>
                         {qty > 0 && (
                           <View style={S.qtyBadge}>
                             <Text style={S.qtyBadgeText}>{qty}</Text>
@@ -257,12 +258,12 @@ export default function Receive() {
               {cartItems.map(i => (
                 <View key={i.id} style={S.cartRow}>
                   <Text style={S.cartLine}>{i.qty}× {i.name}</Text>
-                  <Text style={S.cartLineTotal}>{i.lineTotal} S</Text>
+                  <Text style={S.cartLineTotal}><MondSymbol size={12} /> {i.lineTotal}</Text>
                 </View>
               ))}
               <View style={S.cartTotalRow}>
                 <Text style={S.cartTotalLabel}>TOTAL</Text>
-                <Text style={S.cartTotalValue}>{cartTotal} S</Text>
+                <Text style={S.cartTotalValue}><MondSymbol size={12} /> {cartTotal}</Text>
               </View>
               <TouchableOpacity onPress={clearCart} style={S.clearCartBtn}>
                 <Text style={S.clearCartText}>Clear cart</Text>
@@ -304,12 +305,12 @@ export default function Receive() {
             disabled={!canShowQr}
           >
             <Text style={S.btnGoldText}>
-              {amount > 0 ? `Show QR · ${amount} S →` : 'Show payment QR →'}
+              {amount > 0 ? `Show QR · ${amount} MOND →` : 'Show payment QR →'}
             </Text>
           </TouchableOpacity>
 
           <Text style={S.hint}>
-            Customer scans the QR with their SPICE app{nfcAvail ? ' or taps the till NFC sticker' : ''}.
+            Customer scans the QR with their AXION app{nfcAvail ? ' or taps the till NFC sticker' : ''}.
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -328,7 +329,7 @@ export default function Receive() {
           </View>
 
           <Text style={S.heading}>Awaiting payment</Text>
-          <Text style={S.bigAmount}>{amount} S</Text>
+          <Text style={S.bigAmount}><MondSymbol size={12} /> {amount}</Text>
           {note ? <Text style={S.bigNote}>{note}</Text> : null}
 
           <View style={S.qrWrap}>
@@ -342,7 +343,7 @@ export default function Receive() {
                 />
               ) : null}
             </View>
-            <Text style={S.qrCaption}>Scan with SPICE app</Text>
+            <Text style={S.qrCaption}>Scan with AXION app</Text>
           </View>
 
           {nfcAvail && (
@@ -379,7 +380,7 @@ export default function Receive() {
         </Animated.View>
 
         <Text style={S.paidTitle}>Paid</Text>
-        <Text style={S.paidAmount}>{payment?.amount} S</Text>
+        <Text style={S.paidAmount}><MondSymbol size={12} /> {payment?.amount}</Text>
         <Text style={S.paidFrom}>from {shortAddr(payment?.from)}</Text>
         {payment?.note ? <Text style={S.paidNote}>"{payment.note}"</Text> : null}
         {payment?.txHash ? (

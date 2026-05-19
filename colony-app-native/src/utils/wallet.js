@@ -82,7 +82,7 @@ export async function importWallet(phrase, accountIndex = 0) {
 export async function loadWallet() {
   const phrase = await SecureStore.getItemAsync(MNEMONIC_KEY, {
     requireAuthentication: true,
-    authenticationPrompt: 'Authenticate to access your SPICE wallet',
+    authenticationPrompt: 'Authenticate to access your AXION wallet',
   })
   if (!phrase) throw new Error('No wallet found')
   const idxStr = await SecureStore.getItemAsync(ACCOUNT_INDEX_KEY)
@@ -121,6 +121,6 @@ async function _saveWallet(phrase, address, accountIndex) {
   // Mnemonic stored with biometric requirement
   await SecureStore.setItemAsync(MNEMONIC_KEY, phrase, {
     requireAuthentication: true,
-    authenticationPrompt: 'Authenticate to save your SPICE wallet',
+    authenticationPrompt: 'Authenticate to save your AXION wallet',
   })
 }

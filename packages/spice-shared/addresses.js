@@ -1,5 +1,5 @@
 /**
- * Single source of truth for SPICE colony addresses on Base Sepolia.
+ * Single source of truth for AXION colony addresses on Base Sepolia.
  * Imported by both colony-app and colony-app-native via relative path
  * (no workspace setup required — works with Vite, Metro, and node).
  *

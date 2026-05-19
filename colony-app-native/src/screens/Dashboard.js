@@ -6,6 +6,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react'
 import {
+import MondSymbol from '../components/MondSymbol'
   View, Text, ScrollView, TouchableOpacity, RefreshControl,
   StyleSheet, ActivityIndicator, SafeAreaView, Alert,
 } from 'react-native'
@@ -123,7 +124,7 @@ export default function Dashboard() {
     if (!colonyState?.sBalance) return
     Alert.prompt(
       'Save to V',
-      `Convert S → V (permanent savings). Max 200 S this epoch.\nBalance: ${colonyState.sBalance} S`,
+      `Convert MOND → V (permanent savings). Max 200 MOND this epoch.\nBalance: ${colonyState.sBalance} MOND`,
       async (input) => {
         const amount = parseInt(input)
         if (!amount || amount <= 0) return
@@ -135,7 +136,7 @@ export default function Dashboard() {
           // Wait for RPC replicas to converge before re-reading balances
           await new Promise(r => setTimeout(r, 1500))
           await onRefresh()
-          Alert.alert('Saved', `${amount} S converted to V.`)
+          Alert.alert('Saved', `${amount} MOND converted to V.`)
         } catch (e) {
           Alert.alert('Save failed', friendlyTxError(e))
         } finally {
@@ -214,7 +215,7 @@ export default function Dashboard() {
                   <View style={S.takingsCard}>
                     <Text style={S.takingsLabel}>TODAY'S TAKINGS</Text>
                     <View style={S.takingsRow}>
-                      <Text style={S.takingsValue}>{takings.total} S</Text>
+                      <Text style={S.takingsValue}><MondSymbol size={12} /> {takings.total}</Text>
                       <Text style={S.takingsCount}>· {takings.count} sale{takings.count === 1 ? '' : 's'}</Text>
                     </View>
                   </View>

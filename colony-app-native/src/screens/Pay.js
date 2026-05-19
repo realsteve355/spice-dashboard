@@ -9,6 +9,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import {
+import MondSymbol from '../components/MondSymbol'
   View, Text, TouchableOpacity, ScrollView, StyleSheet,
   Alert, ActivityIndicator, SafeAreaView, Image,
 } from 'react-native'
@@ -61,7 +62,7 @@ export default function Pay() {
       return
     }
     if (colonyState && parsedAmount > colonyState.sBalance) {
-      Alert.alert('Insufficient balance', `You only have ${colonyState.sBalance} S.`)
+      Alert.alert('Insufficient balance', `You only have ${colonyState.sBalance} MOND.`)
       return
     }
 
@@ -94,7 +95,7 @@ export default function Pay() {
             <Text style={S.successIcon}>✓</Text>
           </View>
           <Text style={S.successTitle}>Payment sent</Text>
-          <Text style={S.successAmount}>{parsedAmount} S</Text>
+          <Text style={S.successAmount}><MondSymbol size={12} /> {parsedAmount}</Text>
           <Text style={S.successTo}>to {displayName}</Text>
           {txHash ? (
             <Text style={S.txHash} numberOfLines={1}>
@@ -142,9 +143,9 @@ export default function Pay() {
                 <PayThumb productId={it.id} name={it.name} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={S.lineName} numberOfLines={2}>{it.name}</Text>
-                  <Text style={S.lineMeta}>{it.qty} × {it.price} S</Text>
+                  <Text style={S.lineMeta}>{it.qty} × {it.price} <MondSymbol size={10} /></Text>
                 </View>
-                <Text style={S.lineTotal}>{it.qty * it.price} S</Text>
+                <Text style={S.lineTotal}><MondSymbol size={12} /> {it.qty * it.price}</Text>
               </View>
             ))}
           </View>

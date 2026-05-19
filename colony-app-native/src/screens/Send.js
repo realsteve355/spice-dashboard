@@ -1,5 +1,5 @@
 /**
- * Send screen — send S-tokens to a citizen or address
+ * Send screen — send MOND to a citizen or address
  *
  * Flow:
  *   1. Enter recipient address (or pick from citizen list)
@@ -11,6 +11,7 @@
  */
 import React, { useState, useEffect } from 'react'
 import {
+import MondSymbol from '../components/MondSymbol'
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Alert, SafeAreaView, FlatList,
 } from 'react-native'
@@ -52,7 +53,7 @@ export default function Send() {
       return
     }
     if (colonyState && amt > colonyState.sBalance) {
-      Alert.alert('Insufficient balance', `You only have ${colonyState.sBalance} S.`)
+      Alert.alert('Insufficient balance', `You only have ${colonyState.sBalance} MOND.`)
       return
     }
 
@@ -67,7 +68,7 @@ export default function Send() {
     try {
       await txSend(w, to, amt, note.trim())
       await refreshState()
-      Alert.alert('Sent', `${amt} S sent.`, [
+      Alert.alert('Sent', `${amt} MOND sent.`, [
         { text: 'OK', onPress: () => navigation.goBack() }
       ])
     } catch (e) {
@@ -87,11 +88,11 @@ export default function Send() {
             <Text style={S.back}>← Dashboard</Text>
           </TouchableOpacity>
           <Text style={S.balance}>
-            {colonyState ? `${colonyState.sBalance} S available` : ''}
+            {colonyState ? `${colonyState.sBalance} MOND available` : ''}
           </Text>
         </View>
 
-        <Text style={S.heading}>Send S-tokens</Text>
+        <Text style={S.heading}>Send MOND</Text>
 
         {/* Recipient */}
         <View style={card}>
@@ -158,7 +159,7 @@ export default function Send() {
           <View style={[card, { borderColor: C.text }]}>
             <Text style={[label, { marginBottom: 8 }]}>PREVIEW</Text>
             <Text style={S.preview}>
-              Send <Text style={{ color: C.text, fontWeight: '600' }}>{amount} S</Text>
+              Send <Text style={{ color: C.text, fontWeight: '600' }}><MondSymbol size={12} /> {amount}</Text>
               {' '}to <Text style={{ color: C.text }}>{shortAddr(to)}</Text>
               {note ? `\n"${note}"` : ''}
             </Text>

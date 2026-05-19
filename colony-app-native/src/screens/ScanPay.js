@@ -1,5 +1,5 @@
 /**
- * ScanPay — open the camera, decode a SPICE payment QR, navigate to Pay.
+ * ScanPay — open the camera, decode an AXION payment QR, navigate to Pay.
  *
  * The expo-camera CameraView fires onBarcodeScanned for every detected code.
  * We accept only QR codes containing a valid spice://pay?... URL.
@@ -23,7 +23,7 @@ export default function ScanPay() {
     if (handled.current) return
     const parsed = parsePayUrl(data)
     if (!parsed) {
-      setError('That QR is not a SPICE payment code.')
+      setError('That QR is not an AXION payment code.')
       return
     }
     handled.current = true
@@ -45,7 +45,7 @@ export default function ScanPay() {
         <View style={S.center}>
           <Text style={S.heading}>Camera permission</Text>
           <Text style={S.body}>
-            SPICE needs camera access to scan payment QR codes at merchants.
+            AXION needs camera access to scan payment QR codes at merchants.
             We don't take photos or store images.
           </Text>
           <TouchableOpacity style={S.btnGold} onPress={requestPermission}>
@@ -74,7 +74,7 @@ export default function ScanPay() {
         <View pointerEvents="none" style={S.overlay}>
           <View style={S.reticle} />
           <Text style={S.reticleHint}>
-            Point at the SPICE payment QR
+            Point at the AXION payment QR
           </Text>
           {error ? <Text style={S.error}>{error}</Text> : null}
         </View>

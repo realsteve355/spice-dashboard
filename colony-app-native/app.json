@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SPICE Colony",
+    "name": "AXION Colony",
     "slug": "spice-colony",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -17,9 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "finance.zpc.colony",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Face ID is used to authenticate access to your SPICE wallet and sign transactions.",
+        "NSFaceIDUsageDescription": "Face ID is used to authenticate access to your AXION wallet and sign transactions.",
         "NFCReaderUsageDescription": "NFC is used to read payment tags for tap-to-pay at colony merchants.",
-        "NSCameraUsageDescription": "The camera is used to scan SPICE payment QR codes at merchants.",
+        "NSCameraUsageDescription": "The camera is used to scan AXION payment QR codes at merchants.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -44,7 +44,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "The camera is used to scan SPICE payment QR codes at merchants."
+          "cameraPermission": "The camera is used to scan AXION payment QR codes at merchants."
         }
       ]
     ],

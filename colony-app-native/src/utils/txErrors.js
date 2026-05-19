@@ -10,7 +10,7 @@ const FRIENDLY_REVERTS = {
   'not citizen':          'This wallet is not a citizen of this colony.',
   'recipient must be':    'Recipient is not a citizen of this colony.',
   'InsufficientBalance':  'Insufficient S balance for this operation.',
-  'EpochCapExceeded':     'Epoch save cap exceeded — max 200 S can be saved per epoch.',
+  'EpochCapExceeded':     'Epoch save cap exceeded — max 200 MOND can be saved per epoch.',
   'Paused':               'The contract is paused.',
   'insufficient funds':   'Not enough ETH for gas. Top up the wallet at a Base Sepolia faucet.',
 }

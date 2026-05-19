@@ -1,5 +1,5 @@
 /**
- * payurl.test.js — pure URL building / parsing for SPICE pay links.
+ * payurl.test.js — pure URL building / parsing for AXION pay links.
  *
  * Covers the contract that everything else depends on:
  *   buildPayUrl  — merchant generates spice://pay?... URLs for QR / NDEF

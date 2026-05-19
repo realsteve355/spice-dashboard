@@ -1,9 +1,9 @@
 /**
- * SPICE economic + protocol constants shared across all clients.
+ * AXION economic + protocol constants shared across all clients.
  * Single source of truth — change here, both apps follow.
  */
 
-/** Monthly UBI per citizen (Mars: fixed 1,000 S). */
+/** Monthly UBI per citizen (Mars: fixed 1,000 MOND). */
 export const UBI_AMOUNT_S = 1000
 
 /** Citizen S→V conversion cap per epoch (Mars only — Earth uncapped). */

@@ -135,7 +135,7 @@ export default function Settings() {
           <Text style={[label, { marginBottom: 8 }]}>MERCHANT MODE</Text>
           <Text style={S.merchantBlurb}>
             Adds a "Receive →" button on the dashboard to take payments from
-            customers via QR code (any device) or by writing a SPICE payment
+            customers via QR code (any device) or by writing an AXION payment
             URL to a till NFC sticker (iPhone only).
           </Text>
           <TouchableOpacity

@@ -24,7 +24,7 @@ export function decodeItems(str) {
 }
 
 /**
- * Build a SPICE pay URL. Returns a string suitable for QR / NDEF.
+ * Build a AXION pay URL. Returns a string suitable for QR / NDEF.
  *
  * `items` is an optional array of { id, qty } — encoded as `items=id1x2,id2x1`
  * so the customer's Pay screen can look up product names + photos.
@@ -51,7 +51,7 @@ export function buildPayUrl({ to, amount, note = '', merchantName = '', items = 
 
 /**
  * Parse "spice://pay?to=0x…&amount=5&note=Lunch&name=Steve's%20Bakery".
- * Returns null if the URL is not a valid SPICE pay URL.
+ * Returns null if the URL is not a valid AXION pay URL.
  */
 export function parsePayUrl(urlStr) {
   try {

@@ -8,7 +8,7 @@
 import React, { useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, ActivityIndicator, Alert, SafeAreaView,
+  StyleSheet, ActivityIndicator, Alert, SafeAreaView, Image,
 } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useWallet } from '../context/WalletContext'
@@ -61,7 +61,10 @@ export default function Onboarding() {
     return (
       <SafeAreaView style={S.safe}>
         <ScrollView contentContainerStyle={S.center}>
-          <Text style={S.logo}>SPICE</Text>
+          <Image
+            source={require('../../assets/brand/axion-wordmark-light.png')}
+            style={{ height: 56, width: 220, resizeMode: 'contain', marginBottom: 8 }}
+          />
           <Text style={S.tagline}>Colony Wallet</Text>
           <Text style={S.sub}>Base Sepolia · {'\n'}Earth colony economy</Text>
 

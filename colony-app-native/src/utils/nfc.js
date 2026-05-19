@@ -10,7 +10,7 @@
  *   1. Merchant enters amount + note → writeNdefPayUrl(url)
  *   2. Merchant holds phone near a blank/rewritable NTAG sticker on the till
  *   3. Tag is overwritten with the new payment URL
- *   4. Customer phone taps the same sticker → reads URL → opens SPICE app
+ *   4. Customer phone taps the same sticker → reads URL → opens AXION app
  *
  * react-native-nfc-manager is not in Expo Go.
  * Use: npx eas build --profile development for NFC testing.
@@ -56,7 +56,7 @@ export async function scanPayTag() {
 
     const params = parsePayUrl(uri)
     if (!params) {
-      throw new Error('NFC tag does not contain a valid SPICE payment URL.')
+      throw new Error('NFC tag does not contain a valid AXION payment URL.')
     }
     return params
   } finally {
@@ -65,7 +65,7 @@ export async function scanPayTag() {
 }
 
 /**
- * Write a SPICE payment URL to a writable NDEF tag.
+ * Write an AXION payment URL to a writable NDEF tag.
  * iPhone-only (iPad has no app-accessible NFC writer).
  *
  * The user must hold their phone near the tag while this promise is pending.
