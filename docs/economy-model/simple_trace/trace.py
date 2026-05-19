@@ -1,5 +1,5 @@
 """
-Single-month hand-traceable SPICE simulator.
+Single-month hand-traceable AXION simulator.
 
 Two citizens, three external suppliers, one month, five commerce transactions.
 Prints a verbose step-by-step ledger so every flow is visible.
@@ -85,7 +85,7 @@ julia = Wallet("Julia")
 daves_co = Wallet("Dave's Co")     # holds S; pays Fisc each month for Dave's salary
 fisc_reserve = Wallet("Fisc Reserve")  # holds USDC, the colony's USD backing
 gas_pool = Wallet("Gas Pool")       # holds S, paid to chain validators
-protocol_treasury = Wallet("Protocol Treasury")  # holds S, for SPICE founders
+protocol_treasury = Wallet("Protocol Treasury")  # holds S, for AXION founders
 
 # External suppliers (hold USDC only, since they're outside the colony)
 law_firm = Wallet("Law Firm")

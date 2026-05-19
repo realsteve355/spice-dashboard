@@ -1,5 +1,5 @@
 """
-Simple SPICE colony trace — callable form.
+Simple AXION colony trace — callable form.
 
 Importable as `sim.run(config)` returning structured results dict suitable
 for JSON serialisation. The same logic prints to stdout when invoked via
@@ -140,7 +140,7 @@ class Family:
         return self.adults_working + self.adults_retired + self.adults_workless + self.children
 
     def monthly_ubi(self, ubi_usd):
-        # UBI is unconditional in SPICE. Every citizen gets the same amount.
+        # UBI is unconditional in AXION. Every citizen gets the same amount.
         # No taper, no means-testing — work pays in full as upside above UBI.
         return self.total_members * ubi_usd
 

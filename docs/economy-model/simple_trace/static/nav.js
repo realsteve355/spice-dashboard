@@ -26,6 +26,19 @@
       font-size: 11px;
       letter-spacing: 0.08em;
     }
+    .site-nav .brand {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-right: 8px;
+    }
+    .site-nav .brand img {
+      height: 14px; width: auto; display: block;
+    }
+    .site-nav .brand .tag {
+      color: var(--dim);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
     .site-nav .group-label {
       color: var(--dim);
       text-transform: uppercase;
@@ -60,8 +73,15 @@
   styleEl.textContent = navStyle;
   document.head.appendChild(styleEl);
 
-  // Build nav HTML
-  const navHtml = groups.map((g, i) => `
+  // Build nav HTML — brand on the left, then nav groups
+  const brandHtml = `
+    <a class="brand" href="/">
+      <img src="/static/brand/axion-wordmark-light.png" alt="AXION">
+      <span class="tag">/ economy model</span>
+    </a>
+    <span class="separator">|</span>
+  `;
+  const navHtml = brandHtml + groups.map((g, i) => `
     <div class="group">
       <span class="group-label">${g.label}</span>
       <span class="group-items">

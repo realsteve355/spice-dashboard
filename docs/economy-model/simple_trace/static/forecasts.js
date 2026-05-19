@@ -12,7 +12,7 @@ runPage(d => [
   renderHenryFordCallout(d.profitability),
 ].join('\n'));
 
-// MS1 working backwards — build window for SPICE.
+// MS1 working backwards — build window for AXION.
 function renderBuildUrgency(syn) {
   const ms1 = syn.milestone_1_year;
   if (!ms1) return '';
@@ -29,8 +29,8 @@ function renderBuildUrgency(syn) {
   <div class="card" style="margin-bottom:14px; border-left: 3px solid var(--${urgencyClass});">
     <h3>Build urgency — working back from MS1: Welfare</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">
-      MS1 is the year SPICE must be operational and absorbing displaced citizens.
-      Working back: SPICE needs to be at scale 1 year before, in pilot 3 years before,
+      MS1 is the year AXION must be operational and absorbing displaced citizens.
+      Working back: AXION needs to be at scale 1 year before, in pilot 3 years before,
       and MVP-ready 5 years before. <strong style="color:var(--${urgencyClass});">${yrsLabel}.</strong>
     </div>
     <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
@@ -69,7 +69,7 @@ function renderHenryFordCallout(prof) {
   <div class="card" style="margin-top:14px; border-left: 3px solid var(--ok);">
     <h3>${pe.title}</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:10px;">
-      The synthesis above shows that SPICE math closes only under capital-heavy
+      The synthesis above shows that AXION math closes only under capital-heavy
       profit capture (margins expand, levy grows). Capital owners will fight to
       retain those margins — but the deeper logic actually <em>aligns</em> them
       with the levy.
@@ -85,43 +85,43 @@ function renderHenryFordCallout(prof) {
 }
 
 function renderNavCards(d) {
-  // Show SPICE projection numbers — that's what the synthesis below uses
-  const spiceBasket = d.spice_basket_trajectory[d.spice_basket_trajectory.length - 1];
-  const spiceUnemp = d.unemployment.scenarios.find(s => s.name.startsWith("SPICE"));
+  // Show AXION projection numbers — that's what the synthesis below uses
+  const axionBasket = d.axion_basket_trajectory[d.axion_basket_trajectory.length - 1];
+  const spiceUnemp = d.unemployment.scenarios.find(s => s.name.startsWith("AXION"));
   const spiceUnempFinal = spiceUnemp.checkpoints[spiceUnemp.checkpoints.length - 1];
-  const spiceProfit = d.profitability.scenarios.find(s => s.name.startsWith("SPICE"));
+  const spiceProfit = d.profitability.scenarios.find(s => s.name.startsWith("AXION"));
   return `
   <div class="card" style="margin-bottom:14px;">
-    <h3>Three drivers · SPICE projection · click for detail</h3>
+    <h3>Three drivers · AXION projection · click for detail</h3>
     <div class="cat-grid" style="grid-template-columns: repeat(3, 1fr);">
       <a href="/cost-deflation" style="text-decoration:none;">
         <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Cost deflation →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">10 categories + basket aggregate + SPICE planning curve.</div>
-          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceBasket.cost_index.toFixed(0)}%</div>
-          <div style="font-size:10px; color:var(--faint);">SPICE basket cost in ${spiceBasket.year} (vs 100% today)</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">10 categories + basket aggregate + AXION planning curve.</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${axionBasket.cost_index.toFixed(0)}%</div>
+          <div style="font-size:10px; color:var(--faint);">AXION basket cost in ${axionBasket.year} (vs 100% today)</div>
         </div>
       </a>
       <a href="/unemployment" style="text-decoration:none;">
         <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Unemployment →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Four scenarios: mainstream, bull, SPICE, sceptic + workforce breakdown.</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Four scenarios: mainstream, bull, AXION, sceptic + workforce breakdown.</div>
           <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceUnempFinal.unemployment_pct}%</div>
-          <div style="font-size:10px; color:var(--faint);">SPICE projection for ${spiceUnempFinal.year}</div>
+          <div style="font-size:10px; color:var(--faint);">AXION projection for ${spiceUnempFinal.year}</div>
         </div>
       </a>
       <a href="/profitability" style="text-decoration:none;">
         <div class="cat-card crit" style="cursor:pointer; height:100%;">
           <div class="cat-name" style="margin-bottom:6px;">Profitability →</div>
-          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Acemoglu-Restrepo split + SPICE insulation + Henry Ford.</div>
+          <div style="font-size:11px; color:var(--dim); margin-bottom:8px;">Acemoglu-Restrepo split + AXION insulation + Henry Ford.</div>
           <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${spiceProfit.capital_pct}%</div>
-          <div style="font-size:10px; color:var(--faint);">SPICE: capital share of AI gains</div>
+          <div style="font-size:10px; color:var(--faint);">AXION: capital share of AI gains</div>
         </div>
       </a>
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:10px;">
-      The synthesis below uses the <strong style="color:var(--crit);">SPICE projection</strong>
-      consistently across all three drivers. This is the design case for SPICE colony architecture —
+      The synthesis below uses the <strong style="color:var(--crit);">AXION projection</strong>
+      consistently across all three drivers. This is the design case for AXION colony architecture —
       more aggressive than the public bull voices.
     </div>
   </div>`;
@@ -219,7 +219,7 @@ function renderSynthesisExplanation(syn) {
     <h3>How the math works</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       <p>
-        SPICE funds <strong>welfare</strong> (MS1) and eventually <strong>universal UBI</strong> (MS2)
+        AXION funds <strong>welfare</strong> (MS1) and eventually <strong>universal UBI</strong> (MS2)
         by levying transactions in the colony's commerce. Three driver inputs:
       </p>
       <ul style="padding-left: 20px;">

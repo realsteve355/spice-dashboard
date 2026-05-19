@@ -262,7 +262,7 @@ UNEMPLOYMENT_FORECASTS = {
             "interpretation": "Rapid displacement; new tasks don't keep pace. UBI structurally necessary.",
         },
         {
-            "name": "SPICE projection (planning assumption)",
+            "name": "AXION projection (planning assumption)",
             "color_class": "crit",
             "checkpoints": [
                 {"year": 2026, "unemployment_pct":  4.0, "anchor": "Current baseline"},
@@ -271,7 +271,7 @@ UNEMPLOYMENT_FORECASTS = {
                 {"year": 2040, "unemployment_pct": 85.0, "anchor": "Management thinning begins; long-tail roles fade"},
                 {"year": 2045, "unemployment_pct": 88.0, "anchor": "Of today's jobs ~12% remain (human-touch/craft); new emergent categories absorb some displaced"},
             ],
-            "interpretation": "Faster than the public bull voices. SPICE colonies plan for this case: ~85% of today's jobs gone by 2035, compressed timeline from sequential waves (digital → services + manual → management long tail). This is the design case for SPICE architecture.",
+            "interpretation": "Faster than the public bull voices. AXION colonies plan for this case: ~85% of today's jobs gone by 2035, compressed timeline from sequential waves (digital → services + manual → management long tail). This is the design case for AXION architecture.",
         },
         {
             "name": "Skeptic (Acemoglu)",
@@ -297,7 +297,7 @@ UNEMPLOYMENT_FORECASTS = {
          "url": "https://www.anthropic.com/research/labor-market-impacts"},
     ],
     "workforce_composition": {
-        "title": "Today's jobs displaced by 2035 — the SPICE trajectory",
+        "title": "Today's jobs displaced by 2035 — the AXION trajectory",
         "intro": (
             "Past automation waves (steam, electricity, computing) hit physical "
             "labour first while knowledge work expanded. AI inverts the order: "
@@ -354,7 +354,7 @@ UNEMPLOYMENT_FORECASTS = {
             "displaced workers will find new work in emergent categories that "
             "don't yet exist — AI supervision, premium human-touch service, "
             "novel craft, community and relational roles, AI-curated experience "
-            "design. (60% of 2025 jobs didn't exist in 1940.) SPICE's role is "
+            "design. (60% of 2025 jobs didn't exist in 1940.) AXION's role is "
             "to handle the TRANSITION GAP — supporting people during the period "
             "between losing their old role and finding the new one — and "
             "provide UBI as a permanent floor for those for whom no replacement "
@@ -430,12 +430,12 @@ UNEMPLOYMENT_FORECASTS = {
             "larger and broader than these rigorous numbers suggest — may well be right, "
             "but the table doesn't claim numbers it can't back."
         ),
-        "spice_implication": (
+        "axion_implication": (
             "Even at the conservative measured ratios shown above, capital-share-of-AI-"
             "gains is heavily skewed: Anthropic captures ~$90/user/month, customers "
             "capture ~50× that in displaced wage cost. Multiplied across millions of "
             "users, the founder-class capture is real and growing. It is the levy base "
-            "that the SPICE synthesis depends on."
+            "that the AXION synthesis depends on."
         ),
     },
 }
@@ -448,18 +448,18 @@ PROFITABILITY_FORECASTS = {
         "Acemoglu-Restrepo task-based model: AI productivity gains are distributed "
         "across three claimants — capital (margins expand), consumer (prices fall), "
         "or labour (new tasks emerge at higher wages). The three scenarios below "
-        "describe how the EXTERNAL economy may evolve. See the SPICE insulation "
+        "describe how the EXTERNAL economy may evolve. See the AXION insulation "
         "panel below — internally, the colony's pegged basket means citizens "
         "experience price stability regardless of which scenario plays out."
     ),
     "scenarios": [
         {
-            "name": "SPICE projection (capital-extreme, planning case)",
+            "name": "AXION projection (capital-extreme, planning case)",
             "capital_pct": 75,
             "consumer_pct": 20,
             "labor_pct": 5,
-            "anchor": "Most aggressive capital capture. Automation winners take outsize share; labour share collapses near-zero; consumers benefit through cheaper goods but slowly. This is what SPICE colonies plan for.",
-            "spice_implication": "Largest levy pool. Margins expand toward 50%+. Founder-class capture concentrated. SPICE math closes earliest under this scenario — MS1 around 2032, MS2 by 2038.",
+            "anchor": "Most aggressive capital capture. Automation winners take outsize share; labour share collapses near-zero; consumers benefit through cheaper goods but slowly. This is what AXION colonies plan for.",
+            "axion_implication": "Largest levy pool. Margins expand toward 50%+. Founder-class capture concentrated. AXION math closes earliest under this scenario — MS1 around 2032, MS2 by 2038.",
             "color_class": "crit",
         },
         {
@@ -468,7 +468,7 @@ PROFITABILITY_FORECASTS = {
             "consumer_pct": 25,
             "labor_pct": 15,
             "anchor": "Restrepo (Yale): half of labor share decline since 1980s from automation. McKinsey: $2.6-4.4T/yr to corporate profits.",
-            "spice_implication": "Profit pool grows substantially. Levy capacity high. UBI obligation stays high (prices fall slowly). Both scale up together.",
+            "axion_implication": "Profit pool grows substantially. Levy capacity high. UBI obligation stays high (prices fall slowly). Both scale up together.",
             "color_class": "warn",
         },
         {
@@ -477,7 +477,7 @@ PROFITABILITY_FORECASTS = {
             "consumer_pct": 65,
             "labor_pct": 15,
             "anchor": "Bull thesis: prices crash 85% by 2045 means consumer captures most gains. Profit pool grows modestly in $. Margins flat-to-slightly-up.",
-            "spice_implication": "Levy pool small in $. But UBI obligation also collapses (basket falls 85%). Both small together. Math closes IF trajectories align.",
+            "axion_implication": "Levy pool small in $. But UBI obligation also collapses (basket falls 85%). Both small together. Math closes IF trajectories align.",
             "color_class": "ok",
         },
         {
@@ -486,7 +486,7 @@ PROFITABILITY_FORECASTS = {
             "consumer_pct": 30,
             "labor_pct": 40,
             "anchor": "Acemoglu's 'new task creation' channel; historical pattern (60% of 2025 jobs didn't exist in 1940).",
-            "spice_implication": "Wages grow with AI. UBI less urgent — most citizens still employed at higher real wages. Levy from corporate profit modest but adequate for residual welfare.",
+            "axion_implication": "Wages grow with AI. UBI less urgent — most citizens still employed at higher real wages. Levy from corporate profit modest but adequate for residual welfare.",
             "color_class": "blue",
         },
     ],
@@ -510,21 +510,21 @@ PROFITABILITY_FORECASTS = {
         {"label": "Economy.ac — Corporate Profits Surge While Labor's Share Shrinks",
          "url": "https://economy.ac/news/2026/02/202602287973"},
     ],
-    "spice_insulation": {
-        "title": "Why this debate is insulated from SPICE — the basket peg",
+    "axion_insulation": {
+        "title": "Why this debate is insulated from AXION — the basket peg",
         "summary": (
             "The capital-vs-consumer-vs-labour debate is about who captures AI "
-            "productivity gains in the EXTERNAL fiat economy. SPICE is a parallel "
-            "economy whose internal currency (S-tokens) is pegged to the basket. "
-            "Citizens pay the same number of S-tokens for the same goods, year after "
+            "productivity gains in the EXTERNAL fiat economy. AXION is a parallel "
+            "economy whose internal currency (MOND) is pegged to the basket. "
+            "Citizens pay the same number of MOND for the same goods, year after "
             "year, regardless of external profit-share dynamics."
         ),
         "mechanism": [
             ("Basket definition", "A fixed composition of essential goods and services (food, energy, transport, structure-rent, etc.). Composition is set; quantities are pegged."),
-            ("S-token peg", "1 basket-unit = 1 S-token. The peg is maintained by Fisc reserves, not market arbitrage. Citizens experience stable prices in S regardless of USD volatility."),
-            ("USD pass-through", "When external prices fall (consumer-capture scenario), the USD value of an S-token rises. When external prices rise (capital-capture), S-token's USD value falls. The colony absorbs the FX volatility; the citizen does not."),
-            ("Levy in S-tokens", "Levy is collected on internal S-denominated transactions. Levy revenue in S is a function of internal commerce, not external macro split."),
-            ("UBI in S-tokens", "UBI obligation in S is fixed by basket × multiplier × citizens. Stable internally regardless of which external scenario plays out."),
+            ("MOND peg", "1 basket-unit = 1 MOND. The peg is maintained by Fisc reserves, not market arbitrage. Citizens experience stable prices in S regardless of USD volatility."),
+            ("USD pass-through", "When external prices fall (consumer-capture scenario), the USD value of an MOND rises. When external prices rise (capital-capture), MOND's USD value falls. The colony absorbs the FX volatility; the citizen does not."),
+            ("Levy in MOND", "Levy is collected on internal S-denominated transactions. Levy revenue in S is a function of internal commerce, not external macro split."),
+            ("UBI in MOND", "UBI obligation in S is fixed by basket × multiplier × citizens. Stable internally regardless of which external scenario plays out."),
         ],
         "implication": (
             "The three scenarios above tell us what to expect in the OUTSIDE world "
@@ -538,7 +538,7 @@ PROFITABILITY_FORECASTS = {
         "title": "Why capital pays the levy — the Henry Ford insight",
         "tension": (
             "Capital owners will fight to retain margins. They'll lobby against tax, "
-            "relocate operations, optimise for evasion. The naïve view of the SPICE "
+            "relocate operations, optimise for evasion. The naïve view of the AXION "
             "levy treats it as adversarial — capital vs colony, zero-sum."
         ),
         "alignment": (
@@ -551,12 +551,12 @@ PROFITABILITY_FORECASTS = {
         "precedent": (
             "Henry Ford, 1914: paid $5/day (double prevailing wage) so his own workers "
             "could afford the cars he was producing. Not philanthropy — pure capital "
-            "preservation. The SPICE levy is the same idea at societal scale: capital "
+            "preservation. The AXION levy is the same idea at societal scale: capital "
             "funds the income that funds its own revenues."
         ),
         "design_implication": (
-            "SPICE's cost-neutral MS1 design lowers the political cost of switch-on — "
-            "the State loses nothing because SPICE just takes over existing welfare "
+            "AXION's cost-neutral MS1 design lowers the political cost of switch-on — "
+            "the State loses nothing because AXION just takes over existing welfare "
             "obligations. Once that channel is open, scaling toward MS2 becomes a "
             "growth conversation, not a tax conversation. Capital prefers a managed "
             "levy over: civil unrest, mass policy intervention, or revolution."
@@ -565,8 +565,8 @@ PROFITABILITY_FORECASTS = {
             "text": "It is not the employer who pays the wages. Employers only handle the money. It is the customer who pays the wages.",
             "author": "Henry Ford, 1922",
         },
-        "spice_principle": (
-            "The SPICE levy is not a tax ON capital — it is a service fee FOR ACCESS "
+        "axion_principle": (
+            "The AXION levy is not a tax ON capital — it is a service fee FOR ACCESS "
             "to consumers whose income capital itself ultimately funds. Reframed this "
             "way, capital's rational stance is to support the levy, not resist it."
         ),
@@ -631,29 +631,29 @@ FORECASTS["unemployment"] = UNEMPLOYMENT_FORECASTS
 FORECASTS["profitability"] = PROFITABILITY_FORECASTS
 
 
-# --- SPICE projection (more aggressive than bull) ---------------------------
+# --- AXION projection (more aggressive than bull) ---------------------------
 # Compressed timeline: 95% deflation by 2045 vs ~85% under research-aggregate.
-# Reflects the SPICE planning assumption — design case for colony architecture.
-SPICE_BASKET_TRAJECTORY = [
+# Reflects the AXION planning assumption — design case for colony architecture.
+AXION_BASKET_TRAJECTORY = [
     {"year": 2026, "cost_index": 100.0},
     {"year": 2030, "cost_index":  35.0},
     {"year": 2035, "cost_index":  15.0},
     {"year": 2040, "cost_index":   8.0},
     {"year": 2045, "cost_index":   5.0},
 ]
-FORECASTS["spice_basket_trajectory"] = SPICE_BASKET_TRAJECTORY
+FORECASTS["axion_basket_trajectory"] = AXION_BASKET_TRAJECTORY
 
 
 # --- Synthesis: when do MS1 and MS2 land under these forecasts? -----------------
 # Takes the basket trajectory + an unemployment scenario + a profitability
-# scenario and computes the year SPICE becomes welfare-capable (MS1) and full-
+# scenario and computes the year AXION becomes welfare-capable (MS1) and full-
 # UBI-capable (MS2). The math is deliberately closed-form here — the trajectory
 # simulator does the detailed per-supplier version; this is the synthesis page's
 # back-of-envelope view that ties the three drivers together.
 def compute_synthesis(
     basket_traj: list,
-    unemployment_scenario_idx: int = 2,  # 0=mainstream, 1=bull, 2=SPICE, 3=skeptic
-    profitability_scenario_idx: int = 0, # 0=SPICE-extreme, 1=capital-heavy, 2=consumer-heavy, 3=labor-rebalanced
+    unemployment_scenario_idx: int = 2,  # 0=mainstream, 1=bull, 2=AXION, 3=skeptic
+    profitability_scenario_idx: int = 0, # 0=AXION-extreme, 1=capital-heavy, 2=consumer-heavy, 3=labor-rebalanced
     n_citizens: int = 40,
     n_working_adults_today: int = 13,    # from family-types model
     avg_salary_monthly_today: float = 4_000,  # $/mo per working adult today
@@ -716,7 +716,7 @@ def compute_synthesis(
 
         # FOUNDER CHANNEL — capital owners who captured AI gains. Their personal
         # spending in the colony IS the levy base, especially as wages collapse.
-        # This is the actual SPICE funding mechanism that the salary-only model
+        # This is the actual AXION funding mechanism that the salary-only model
         # missed. Grows fast under bull automation; depends on capital share.
         # Reasoning: under bull-displacement, the value formerly going to wages
         # now flows to capital owners. Their consumption is what's left to levy.
@@ -786,12 +786,12 @@ def compute_synthesis(
 
 
 # Compute the default synthesis at module load.
-# Defaults now SPICE projection across all three drivers — the planning case
-# for SPICE colony architecture (most aggressive than bull where applicable):
-#   - SPICE basket trajectory (95% deflation by 2045)
-#   - SPICE unemployment scenario (80% by 2035)
-#   - SPICE capital-extreme profitability split (75/20/5)
-FORECASTS["synthesis"] = compute_synthesis(SPICE_BASKET_TRAJECTORY)
+# Defaults now AXION projection across all three drivers — the planning case
+# for AXION colony architecture (most aggressive than bull where applicable):
+#   - AXION basket trajectory (95% deflation by 2045)
+#   - AXION unemployment scenario (80% by 2035)
+#   - AXION capital-extreme profitability split (75/20/5)
+FORECASTS["synthesis"] = compute_synthesis(AXION_BASKET_TRAJECTORY)
 
 
 def get_forecasts() -> dict:

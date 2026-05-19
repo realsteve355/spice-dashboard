@@ -175,7 +175,7 @@ function renderLogChart(opts) {
   </div>`;
 }
 
-function renderCategoryChart(categories, basketTrajectory, spiceBasketTrajectory) {
+function renderCategoryChart(categories, basketTrajectory, axionBasketTrajectory) {
   const series = categories.map(cat => ({
     label: cat.name,
     color: colorVar(cat.color_class),
@@ -186,8 +186,8 @@ function renderCategoryChart(categories, basketTrajectory, spiceBasketTrajectory
   if (basketTrajectory) {
     series.push({ label: "BASKET (research aggregate)", color: "var(--headline)", points: basketTrajectory, strokeWidth: 3, dashed: true, emphasised: true });
   }
-  if (spiceBasketTrajectory) {
-    series.push({ label: "SPICE BASKET (planning)", color: "var(--crit)", points: spiceBasketTrajectory, strokeWidth: 3.5, dashed: true, emphasised: true });
+  if (axionBasketTrajectory) {
+    series.push({ label: "AXION BASKET (planning)", color: "var(--crit)", points: axionBasketTrajectory, strokeWidth: 3.5, dashed: true, emphasised: true });
   }
   return renderLogChart({
     title: "Cost trajectory by category · 2026 = 100%",
@@ -195,7 +195,7 @@ function renderCategoryChart(categories, basketTrajectory, spiceBasketTrajectory
     height: 540,
     footer: `Y-axis logarithmic — each gridline ≈ 2× change.
              <strong style="color: var(--headline);">BASKET</strong> (dashed white) = research-anchored aggregate.
-             <strong style="color: var(--crit);">SPICE BASKET</strong> (dashed red) = the more aggressive planning assumption used for SPICE colony architecture.
+             <strong style="color: var(--crit);">AXION BASKET</strong> (dashed red) = the more aggressive planning assumption used for AXION colony architecture.
              <strong style="color: var(--crit);">LAND</strong> rises (Altman) and is excluded from both baskets.`,
   });
 }
@@ -368,8 +368,8 @@ function renderUnemploymentScenarios(unemp) {
       <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.macro_summary}</div>
     </div>
     <div style="background:var(--panel2); border-left: 2px solid var(--ok); padding:14px 18px; margin-top:10px;">
-      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">SPICE implication</div>
-      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.spice_implication}</div>
+      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">AXION implication</div>
+      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.axion_implication}</div>
     </div>
   </div>`;
 
@@ -415,12 +415,12 @@ function renderProfitability(prof) {
         <div style="flex:${s.consumer_pct}; background: var(--ok); padding:4px 6px; font-size:10px; color:var(--bg); text-align:center;">CONSUMER ${s.consumer_pct}%</div>
         <div style="flex:${s.labor_pct}; background: var(--blue); padding:4px 6px; font-size:10px; color:var(--bg); text-align:center;">LABOR ${s.labor_pct}%</div>
       </div>
-      <div style="font-size:11px; color:var(--txt); line-height:1.5;"><strong style="color:var(--headline);">SPICE implication:</strong> ${s.spice_implication}</div>
+      <div style="font-size:11px; color:var(--txt); line-height:1.5;"><strong style="color:var(--headline);">AXION implication:</strong> ${s.axion_implication}</div>
     </div>
   `).join('');
 
-  // SPICE insulation panel — the basket peg makes the external split less consequential internally
-  const ins = prof.spice_insulation;
+  // AXION insulation panel — the basket peg makes the external split less consequential internally
+  const ins = prof.axion_insulation;
   const insulationCard = !ins ? '' : `
   <div class="card" style="margin-top:14px; border-left: 3px solid var(--blue);">
     <h3>${ins.title}</h3>
@@ -438,7 +438,7 @@ function renderProfitability(prof) {
       </tbody>
     </table>
     <div style="background:var(--panel2); border-left: 2px solid var(--blue); padding:14px 18px; margin-top:14px;">
-      <div style="font-size:10px; color:var(--blue); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Implication for SPICE</div>
+      <div style="font-size:10px; color:var(--blue); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Implication for AXION</div>
       <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ins.implication}</div>
     </div>
   </div>`;
@@ -466,11 +466,11 @@ function renderProfitability(prof) {
       <strong style="color:var(--headline);">Historical precedent:</strong> ${pe.precedent}
     </div>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:10px;">
-      <strong style="color:var(--headline);">SPICE design implication:</strong> ${pe.design_implication}
+      <strong style="color:var(--headline);">AXION design implication:</strong> ${pe.design_implication}
     </div>
     <div style="background:var(--panel2); border:1px solid var(--ok); padding:14px 18px; margin-top:14px;">
-      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">SPICE principle</div>
-      <div style="font-size:14px; color:var(--headline); line-height:1.5;">${pe.spice_principle}</div>
+      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">AXION principle</div>
+      <div style="font-size:14px; color:var(--headline); line-height:1.5;">${pe.axion_principle}</div>
     </div>
   </div>`;
 

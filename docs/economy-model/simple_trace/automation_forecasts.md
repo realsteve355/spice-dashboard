@@ -94,13 +94,13 @@ What does the consensus of bulls predict, mapped to year:
 
 ---
 
-## What this means for the SPICE narrative
+## What this means for the AXION narrative
 
 The Bull thesis (held by people who are *building* the technology) is consistent
-with the SPICE founding observation: by ~2045, almost everything except land
+with the AXION founding observation: by ~2045, almost everything except land
 and a few luxury goods is free.
 
-The question for SPICE is not *whether* it gets there — six independent
+The question for AXION is not *whether* it gets there — six independent
 voices say it does — but *how the colony bridges the transition*.
 
 The transition lasts 15–25 years. During it:
@@ -109,7 +109,7 @@ The transition lasts 15–25 years. During it:
 - Some resist (services, healthcare initially)
 - One INFLATES (land, deferred to a separate model)
 
-The SPICE colony's job during the transition is to:
+The AXION colony's job during the transition is to:
 1. Levy automation at a level that funds welfare for displaced citizens
 2. Build the company-equity infrastructure that lets citizens accumulate wealth (path to land ownership)
 3. Reach welfare-capable (MS1) and full UBI-capable (MS2) milestones on a defensible timeline

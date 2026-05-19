@@ -9,7 +9,7 @@ LAND IS DEFERRED TO A SEPARATE MODEL.
 =====================================
 Land is structurally different from everything else: fixed supply, scarcity
 that intensifies under abundance, only acquirable via equity not income.
-The path to land ownership runs through SPICE company ownership and dividends,
+The path to land ownership runs through AXION company ownership and dividends,
 not through the UBI basket. That mechanism is its own future model.
 
 This basket therefore represents "everything a citizen needs to live OTHER

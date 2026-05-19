@@ -4,7 +4,7 @@ while automation progresses.
 
 Three-phase model:
   - Implementation (no payouts): reserves accumulate, building infrastructure
-  - Welfare (MS1 onward): SPICE replaces State welfare for colony residents,
+  - Welfare (MS1 onward): AXION replaces State welfare for colony residents,
                          cost-neutral to the State, means-tested as today
   - Full UBI (MS2 onward): universal payment to every citizen at target level
 
@@ -32,7 +32,7 @@ from basket_model import (
 
 
 # Existing-State welfare cost per family per month (rough US 2026 baseline).
-# This is what the State currently pays for these residents — SPICE takes over
+# This is what the State currently pays for these residents — AXION takes over
 # at Milestone 1 and pays the SAME amounts cost-neutral to the State.
 #   - single workless:  SSI ($700) + SNAP ($200) ≈ $900
 #   - single retired:   small SNAP supplement on top of pension ≈ $200

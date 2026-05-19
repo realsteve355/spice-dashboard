@@ -10,7 +10,7 @@ Two design changes from the 2-citizen trace per Steve's clarification:
      (after Fisc converts USDC to S).
 
 Macro context per `project_macro_context.md`: AI has collapsed the wider US
-economy to ~70% unemployment; SPICE colonies are essential customer bases.
+economy to ~70% unemployment; AXION colonies are essential customer bases.
 Levy rates that look high in 2024 terms are the price of access to one of
 the few solvent markets in this future.
 

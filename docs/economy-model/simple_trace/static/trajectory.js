@@ -116,7 +116,7 @@ function renderBasketBreakdown(d) {
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       <strong>LAND is out of scope</strong> — deferred to a separate model where
-      land acquisition flows through SPICE company ownership and dividends,
+      land acquisition flows through AXION company ownership and dividends,
       not the UBI basket. The 10 categories here represent everything else a
       citizen needs to live. Rates sourced from <code>basket_model.py</code>
       (research-derived in <code>basket_research.md</code>).
@@ -263,7 +263,7 @@ function renderChart(d) {
       ${legend}
     </svg>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      MS1 = first year levy ≥ welfare obligation (SPICE replaces State welfare cost-neutrally).
+      MS1 = first year levy ≥ welfare obligation (AXION replaces State welfare cost-neutrally).
       MS2 = first year levy ≥ full UBI obligation (universal payment becomes affordable).
       Three phases: implementation (no payouts) · welfare (means-tested) · full UBI (universal).
     </div>

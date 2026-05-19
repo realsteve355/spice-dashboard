@@ -35,3 +35,7 @@ spice-claude-code-v2.zip
 
 # Sensitive local files
 pwd.txt
+
+# Python
+__pycache__/
+*.pyc

@@ -12,7 +12,7 @@ Underpinning data for replacing the trajectory sim's single
 | McKinsey MGI (2023) | $2.6–4.4T/yr in global corp profits | 75% concentrated in customer ops, marketing/sales, software eng, R&D |
 | McKinsey MGI (2023) | 60–70% of work activities theoretically automatable | Theoretical ceiling, not realised |
 
-Implication: there's a wide range. Acemoglu floor (0.05%/yr) vs McKinsey ceiling (3.9 ppt/yr). The truth is probably non-uniform across sectors and SPICE colonies will land somewhere in between — but the right move is sector-specific deflation rates rather than a single number.
+Implication: there's a wide range. Acemoglu floor (0.05%/yr) vs McKinsey ceiling (3.9 ppt/yr). The truth is probably non-uniform across sectors and AXION colonies will land somewhere in between — but the right move is sector-specific deflation rates rather than a single number.
 
 ## Wright's Law / experience curves (price decline per doubling of cumulative production)
 
@@ -46,7 +46,7 @@ Pattern: anything with strong technology content has been deflating for decades 
 * Strong rise post-1950
 * **80% of the post-WWII house-price boom is LAND value, not construction cost**
 
-Implication for SPICE: confirms Steve's thesis. Land is the structural inflationary force. Structures (the building on the land) follow a deflation trajectory similar to manufactured goods. Land is anti-deflationary because supply is fixed.
+Implication for AXION: confirms Steve's thesis. Land is the structural inflationary force. Structures (the building on the land) follow a deflation trajectory similar to manufactured goods. Land is anti-deflationary because supply is fixed.
 
 ## AI in healthcare specifically
 
@@ -115,4 +115,4 @@ The UBI obligation falls but slower than the simplistic 8%/yr basket decline. Ar
 
 ### What this exposes
 
-The land cost trajectory makes the company-equity story essential. By 2046, a UBI-only citizen pays ~50% of their basket toward land rent. The colony's job is providing routes (companies, S-token equity, Harberger land for those who can buy in) that compound faster than land does. Without those routes, the colony delivers UBI but hands citizens to a permanent landlord class.
+The land cost trajectory makes the company-equity story essential. By 2046, a UBI-only citizen pays ~50% of their basket toward land rent. The colony's job is providing routes (companies, MOND equity, Harberger land for those who can buy in) that compound faster than land does. Without those routes, the colony delivers UBI but hands citizens to a permanent landlord class.
