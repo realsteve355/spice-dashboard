@@ -178,7 +178,7 @@ export default function Guardian() {
               <div style={{ ...card, textAlign: 'center' }}>
                 <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>MOND BALANCE</div>
                 <div style={{ fontSize: 26, fontWeight: 500, color: C.text, display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
-                  <MondSymbol size={18} />
+                  <MondSymbol size={12} />
                   {child.sBalance}
                 </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>resets end of month</div>

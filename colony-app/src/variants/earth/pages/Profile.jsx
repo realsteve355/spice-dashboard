@@ -142,7 +142,7 @@ export default function Profile() {
               label="Colony balance"
               value={chain ? (
                 <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
-                  <MondSymbol size={14} />
+                  <MondSymbol size={10} />
                   {chain.sBalance.toLocaleString()}
                 </span>
               ) : '—'}

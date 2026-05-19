@@ -12,7 +12,10 @@
 // Returns one of: 'earth' | 'mars'. Defaults to 'mars' for any colony that
 // pre-dates the variant field (legacy colonies created before 23 Apr 2026).
 
-const LEGACY_DEFAULT = 'mars'
+// Earth is now the default product. Any colony without an explicit
+// colonyType (legacy colonies that pre-date the type picker) renders as
+// Earth. Mars must be explicitly chosen at colony creation.
+const LEGACY_DEFAULT = 'earth'
 const KNOWN_VARIANTS = new Set(['earth', 'mars'])
 
 export function useColonyVariant(slug) {

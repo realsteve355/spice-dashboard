@@ -949,7 +949,7 @@ export default function Company() {
             <div style={{ ...card, textAlign: 'center', marginBottom: 10 }}>
               <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>MOND BALANCE</div>
               <div style={{ fontSize: 26, fontWeight: 500, color: C.text, display: 'inline-flex', alignItems: 'baseline', gap: 6, justifyContent: 'center' }}>
-                <MondSymbol size={20} />
+                <MondSymbol size={14} />
                 {company.sBalance}
               </div>
               <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>current</div>

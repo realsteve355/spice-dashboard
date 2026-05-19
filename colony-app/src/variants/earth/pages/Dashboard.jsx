@@ -461,7 +461,7 @@ export default function Dashboard() {
           </div>
 
           <div style={{ fontSize: 40, fontWeight: 500, color: C.text, marginBottom: 2, letterSpacing: '-0.02em', display: 'inline-flex', alignItems: 'baseline', gap: 8 }}>
-            <MondSymbol size={28} />
+            <MondSymbol size={19} />
             {remaining.toLocaleString()}
           </div>
           <div style={{ fontSize: 11, color: C.faint, marginBottom: 14 }}>{CURRENT_MONTH}</div>
