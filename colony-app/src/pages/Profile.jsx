@@ -141,7 +141,7 @@ export default function Profile() {
         {isSelf && (
           <div style={card}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>BALANCES</div>
-            <Row label="MOND balance" value={chain ? `${chain.sBalance.toLocaleString()} MOND` : '—'} color={C.text} />
+            <Row label="MOND balance" value={chain ? `Ɱ ${chain.sBalance.toLocaleString()}` : '—'} color={C.text} />
             <Div />
             <Row label="V balance" value={chain ? `${chain.vBalance.toLocaleString()} V` : '—'} color={C.green} />
           </div>

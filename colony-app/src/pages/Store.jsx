@@ -377,7 +377,7 @@ export default function Store() {
             </div>
           </div>
           <div style={{ fontSize: 28, fontWeight: 500, color: C.text, marginBottom: 16, textAlign: 'center' }}>
-            {buyProduct.price} MOND
+            Ɱ {buyProduct.price}
           </div>
           <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
             DELIVERY NOTES (optional)
@@ -400,7 +400,7 @@ export default function Store() {
               disabled={!address || !isCitizen}
               style={{ ...solidBtn(C.text), flex: 2, opacity: (!address || !isCitizen) ? 0.4 : 1 }}
             >
-              {!address ? 'Connect wallet to buy' : `Pay ${buyProduct.price} MOND →`}
+              {!address ? 'Connect wallet to buy' : `Pay Ɱ {buyProduct.price} →`}
             </button>
           </div>
         </BottomSheet>
@@ -465,7 +465,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
         {/* Price + buy */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 6 }}>
           <span style={{ fontSize: 15, fontWeight: 500, color: C.text }}>
-            {product.price} <span style={{ fontSize: 11 }}>MOND</span>
+            {product.price} <span style={{ fontSize: 11 }}>Ɱ</span>
           </span>
           {!isSecretary && onBuy && (
             <button

@@ -463,9 +463,9 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                 </div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>{a.currentValue} MOND</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: C.text }}>Ɱ {a.currentValue}</div>
                 {a.currentValue !== a.value && (
-                  <div style={{ fontSize: 10, color: C.faint }}>reg. {a.value} MOND</div>
+                  <div style={{ fontSize: 10, color: C.faint }}>reg. Ɱ {a.value}</div>
                 )}
               </div>
             </div>
@@ -486,7 +486,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
                     <div style={{ position: 'relative', flex: 1 }}>
                       <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} placeholder="Price"
                         type="number" value={tPrice} onChange={e => setTPrice(e.target.value)} />
-                      <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>MOND</span>
+                      <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>Ɱ</span>
                     </div>
                   </div>
                   {tError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{tError}</div>}
@@ -523,12 +523,12 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
         {registering && (
           <div>
             <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
-              Threshold: declared value &gt; 500 MOND, weight &gt; 50 kg, or autonomous AI capability.
+              Threshold: declared value &gt; Ɱ 500, weight &gt; 50 kg, or autonomous AI capability.
             </div>
 
             <Field label="Name (optional, stored locally)" value={rName} onChange={setRName} placeholder="e.g. Delivery van, Workshop lathe" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-              <Field label="Declared value (S)" value={rValue} onChange={setRValue} placeholder="e.g. 2000" type="number" />
+              <Field label="Declared value (Ɱ)" value={rValue} onChange={setRValue} placeholder="e.g. 2000" type="number" />
               <Field label="Weight (kg)" value={rWt} onChange={setRWt} placeholder="e.g. 80" type="number" />
             </div>
             <Field label="Depreciation (bps/epoch, 0 = none)" value={rDep} onChange={setRDep} placeholder="0" type="number" />
@@ -552,7 +552,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
 
             {!meetsThreshold && (rValue || rWt) && (
               <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>
-                Does not meet registration threshold (value &gt; 500 MOND, weight &gt; 50 kg, or AI required).
+                Does not meet registration threshold (value &gt; Ɱ 500, weight &gt; 50 kg, or AI required).
               </div>
             )}
 
@@ -699,7 +699,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: C.text }}>
-                    {p.monthly} MOND/month × {p.totalEpochs} months
+                    Ɱ {p.monthly}/month × {p.totalEpochs} months
                     {p.collateralId !== '0' && ` · secured`}
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
@@ -732,7 +732,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>I OWE</div>
           {totalOwed > 0 && (
-            <div style={{ fontSize: 12, color: C.red, fontWeight: 500 }}>{totalOwed} MOND/month total</div>
+            <div style={{ fontSize: 12, color: C.red, fontWeight: 500 }}>Ɱ {totalOwed}/month total</div>
           )}
         </div>
         {owed.length === 0 ? (
@@ -747,7 +747,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>OWED TO ME</div>
           {totalLent > 0 && (
-            <div style={{ fontSize: 12, color: C.green, fontWeight: 500 }}>{totalLent} MOND/month total</div>
+            <div style={{ fontSize: 12, color: C.green, fontWeight: 500 }}>Ɱ {totalLent}/month total</div>
           )}
         </div>
         {lent.length === 0 ? (
@@ -817,7 +817,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
               )}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-              <Field label="Monthly amount (S)" value={monthly} onChange={setMonthly} placeholder="e.g. 100" type="number" />
+              <Field label="Monthly amount (Ɱ)" value={monthly} onChange={setMonthly} placeholder="e.g. 100" type="number" />
               <Field label="Duration (months)" value={epochs}  onChange={setEpochs}  placeholder="e.g. 12"  type="number" />
             </div>
             <Field
@@ -850,7 +850,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
     ? assets.find(a => a.id === ob.collateralId)
     : null
   const collateralLabel = collateralAsset
-    ? `${collateralAsset.name || `asset #${ob.collateralId}`} · ${collateralAsset.currentValue} MOND (locked)`
+    ? `${collateralAsset.name || `asset #${ob.collateralId}`} · Ɱ {collateralAsset.currentValue} (locked)`
     : ob.collateralId && ob.collateralId !== '0'
       ? `asset #${ob.collateralId} (locked)`
       : 'unsecured'
@@ -871,7 +871,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: perspective === 'creditor' ? C.green : C.red }}>
-            {perspective === 'creditor' ? '+' : '−'}{ob.monthly} MOND/mo
+            {perspective === 'creditor' ? '+' : '−'}Ɱ {ob.monthly}/mo
           </div>
           <div style={{ fontSize: 10, color: statusColor, marginTop: 2 }}>
             {ob.defaulted ? 'defaulted' : ob.epochsPaid >= ob.totalEpochs ? 'complete' : `${ob.epochsPaid}/${ob.totalEpochs} paid`}
@@ -928,7 +928,7 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                   {isMine && <span style={{ fontSize: 10, color: C.text, marginLeft: 6 }}>· yours</span>}
                 </div>
                 <div style={{ fontSize: 12, color: C.text }}>
-                  {a.currentValue} MOND
+                  Ɱ {a.currentValue}
                 </div>
               </div>
               <div style={{ fontSize: 10, color: C.faint, marginTop: 4, lineHeight: 1.5 }}>
@@ -936,7 +936,7 @@ function PublicRegistryTab({ assets, loading, nameMap, myAddress }) {
                 {a.weightKg > 0 && <> · {a.weightKg} kg</>}
                 {a.hasAI && <> · autonomous AI</>}
                 {a.value !== a.currentValue && (
-                  <> · was {a.value} MOND</>
+                  <> · was Ɱ {a.value}</>
                 )}
               </div>
               {a.escrowedFor !== '0' && (

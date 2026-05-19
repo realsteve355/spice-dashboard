@@ -268,7 +268,7 @@ export default function Company() {
           if (p.name === 'SharesBoughtBack') {
             return {
               kind: 'buyback', date, blockNumber: log.blockNumber,
-              text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for ${Number(ethers.formatEther(p.args[2]))} MOND`,
+              text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for Ɱ ${Number(ethers.formatEther(p.args[2]))}`,
               color: C.text,
             }
           }
@@ -659,7 +659,7 @@ export default function Company() {
     const v = Number(assetValue)
     const w = Number(assetWeight) || 0
     if (!assetLabel.trim() || (!(v > 500) && !(w > 50) && !assetHasAI)) {
-      setActError('Asset must be > 500 MOND OR > 50 kg OR have autonomous AI')
+      setActError('Asset must be > Ɱ 500 OR > 50 kg OR have autonomous AI')
       return
     }
     setActPending(true); setActError(null); setActDone(null)
@@ -751,7 +751,7 @@ export default function Company() {
     try {
       const tx = await co.buybackShares(BigInt(assetId), BigInt(bps), ethers.parseEther(String(price)))
       await tx.wait()
-      setActDone(`Bought back ${bps} bps for ${price} MOND — shares cancelled`)
+      setActDone(`Bought back ${bps} bps for Ɱ {price} — shares cancelled`)
       setBuybackForId(null); setBuybackBps(''); setBuybackPriceS('')
       refresh(); setReloadKey(k => k + 1)
     } catch (e) {
@@ -1041,7 +1041,7 @@ export default function Company() {
                 {registeringAsset && (
                   <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 12, marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
-                      Register a physical asset on-chain to the company wallet. Threshold: value &gt; 500 MOND, weight &gt; 50 kg, or autonomous AI.
+                      Register a physical asset on-chain to the company wallet. Threshold: value &gt; Ɱ 500, weight &gt; 50 kg, or autonomous AI.
                     </div>
                     <CField label="Label (e.g. 'Truck VIN-1234')" value={assetLabel} onChange={setAssetLabel} placeholder="describe the asset" />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1156,7 +1156,7 @@ export default function Company() {
                     {a.label || `Asset #${a.id}`}
                     <span style={{ fontSize: 10, color: C.faint, marginLeft: 6 }}>#{a.id}</span>
                   </div>
-                  <div style={{ fontSize: 12, color: C.text }}>{a.value} MOND</div>
+                  <div style={{ fontSize: 12, color: C.text }}>Ɱ {a.value}</div>
                 </div>
                 <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
                   {a.weightKg > 0 && <>{a.weightKg} kg · </>}
@@ -1232,7 +1232,7 @@ export default function Company() {
                   type="number" min="1" placeholder="0"
                   value={payAmt} onChange={e => setPayAmt(e.target.value)}
                 />
-                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>MOND</span>
+                <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: C.faint }}>Ɱ</span>
               </div>
               <input
                 style={{ ...inlineInput, flex: 1 }}
@@ -1498,7 +1498,7 @@ export default function Company() {
                             disabled={actionPending || !buybackBps || !buybackPriceS}
                             style={{ ...actionBtn(C.text), width: '100%', fontSize: 11, opacity: (actionPending || !buybackBps || !buybackPriceS) ? 0.4 : 1 }}
                           >
-                            {actionPending ? 'Buying back…' : `Pay ${buybackPriceS || '0'} MOND → cancel ${buybackBps || '0'} bps`}
+                            {actionPending ? 'Buying back…' : `Pay Ɱ {buybackPriceS || '0'} → cancel ${buybackBps || '0'} bps`}
                           </button>
                         </div>
                       )}
@@ -1593,11 +1593,11 @@ export default function Company() {
               return (
                 <div style={card}>
                   <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>P&amp;L SUMMARY</div>
-                  <Row label="Revenue (S in)"     value={`+${revenue} MOND`}   color={C.green} />
+                  <Row label="Revenue (S in)"     value={`+Ɱ ${revenue}`}   color={C.green} />
                   <Divider />
-                  <Row label="Expenses (S out)"   value={`−${expenses} MOND`}  color={C.red} />
+                  <Row label="Expenses (S out)"   value={`−Ɱ ${expenses}`}  color={C.red} />
                   <Divider />
-                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} MOND`} color={net >= 0 ? C.text : C.red} bold />
+                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}Ɱ ${net}`} color={net >= 0 ? C.text : C.red} bold />
                 </div>
               )
             })()}
@@ -1888,7 +1888,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                 <div style={{ fontSize: 11, color: C.faint }}>
                   {isSeller ? `Buyer: ${contract.buyer_name}` : `Supplier: ${contract.seller_name}`}
                   {' · '}{contract.schedule}
-                  {contract.price_per_delivery > 0 && ` · ${contract.price_per_delivery} MOND/delivery`}
+                  {contract.price_per_delivery > 0 && ` · Ɱ ${contract.price_per_delivery}/delivery`}
                   {contract.ends_at && ` · ends ${fmtDate(contract.ends_at)}`}
                 </div>
               </div>
@@ -1917,7 +1917,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                         <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.created_at)}</div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0, marginLeft: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{inv.amount} MOND</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: C.text }}>Ɱ {inv.amount}</div>
                         {isBuyer && isSecretary && (
                           <button
                             onClick={() => handlePay(inv)}
@@ -1941,7 +1941,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
             {paid.length > 0 && (
               <div style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
-                  DELIVERY HISTORY · {paid.reduce((s, i) => s + i.amount, 0)} MOND paid
+                  DELIVERY HISTORY · Ɱ {paid.reduce((s, i) => s + i.amount, 0)} paid
                 </div>
                 {paid.map(inv => (
                   <div key={inv.id} style={{
@@ -1956,7 +1956,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                       <div style={{ fontSize: 10, color: C.faint }}>{fmtDate(inv.paid_at || inv.created_at)}</div>
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 500, color: C.green, flexShrink: 0, marginLeft: 12 }}>
-                      +{inv.amount} MOND
+                      +Ɱ {inv.amount}
                     </div>
                   </div>
                 ))}
@@ -1981,7 +1981,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                   <div style={{ position: 'relative', flex: 1 }}>
                     <input style={{ ...inlineInput, width: '100%', paddingRight: 18 }} type="number" placeholder="Amount"
                       value={invAmt} onChange={e => setInvAmt(e.target.value)} />
-                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>MOND</span>
+                    <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: C.faint }}>Ɱ</span>
                   </div>
                 </div>
                 {invError && <div style={{ fontSize: 11, color: C.red, marginBottom: 6 }}>{invError}</div>}
@@ -2018,7 +2018,7 @@ function ContractsTab({ companyId, companyName, isSecretary, slug, signer, addre
                       {contract.seller_name} → {contract.buyer_name}
                     </div>
                   </div>
-                  {total > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: C.faint, flexShrink: 0, marginLeft: 12 }}>{total} MOND</div>}
+                  {total > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: C.faint, flexShrink: 0, marginLeft: 12 }}>Ɱ {total}</div>}
                 </div>
               </div>
             )

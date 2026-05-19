@@ -57,7 +57,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
   if (sent) return (
     <div style={{ ...sheet, background: `${C.green}18`, borderColor: C.green }}>
       <div style={{ fontSize: 13, color: C.green, fontWeight: 500, marginBottom: 4 }}>
-        ✓ {amt} MOND sent
+        ✓ Ɱ {amt} sent
       </div>
       <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
         To: {selected?.name || selected?.address}
@@ -153,7 +153,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {/* ── Amount ────────────────────────────────────────────────────── */}
       <Field
-        label={`Amount (max ${maxAmount} MOND)`}
+        label={`Amount (max Ɱ {maxAmount})`}
         value={amount}
         onChange={setAmount}
         placeholder="MOND to send"
@@ -170,7 +170,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {amt > maxAmount && (
         <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>
-          Exceeds available balance ({maxAmount} MOND).
+          Exceeds available balance (Ɱ {maxAmount}).
         </div>
       )}
 
