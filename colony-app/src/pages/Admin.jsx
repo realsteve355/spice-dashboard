@@ -720,14 +720,14 @@ export default function Admin() {
                   <div style={{ ...card, flex: 1, marginBottom: 0 }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REVENUE MTD</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.green, marginTop: 4 }}>
-                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span>
+                      <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span> {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'}
                     </div>
                     <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>confirmed payments</div>
                   </div>
                   <div style={{ ...card, flex: 1, marginBottom: 0, borderColor: mccTreasuryAddr ? C.border : C.faint }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC TREASURY</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.text, marginTop: 4 }}>
-                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span>
+                      <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span> {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'}
                     </div>
                     <div style={{ fontSize: 9, color: mccTreasuryAddr ? C.green : C.faint, marginTop: 4 }}>
                       {mccTreasuryAddr ? 'on-chain treasury' : 'not deployed'}

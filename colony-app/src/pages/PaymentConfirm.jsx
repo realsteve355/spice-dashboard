@@ -40,7 +40,7 @@ export default function PaymentConfirm() {
       const tx = await colony.send(to, ethers.parseEther(String(amount)), note)
       logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} MOND`, meta: { to, note } })
       await tx.wait()
-      logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay <MondSymbol size={12} /> {amount} confirmed` })
+      logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} MOND confirmed` })
       refresh()   // update S balance in wallet context
 
       // Notify recipient (fire-and-forget — don't block UI on failure)
@@ -110,7 +110,7 @@ export default function PaymentConfirm() {
         }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>YOU ARE PAYING</div>
           <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            {amount} <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span>
+            <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span> {amount}
           </div>
           {note && (
             <div style={{ fontSize: 13, color: C.sub, marginBottom: 12 }}>{note}</div>
@@ -147,7 +147,7 @@ export default function PaymentConfirm() {
             disabled={pending || !sufficient}
             style={{ ...primaryBtn, opacity: pending || !sufficient ? 0.4 : 1 }}
           >
-            {pending ? 'Confirming...' : `Pay <MondSymbol size={12} /> {amount} →`}
+            {pending ? 'Confirming...' : <><MondSymbol size={12} /> Pay {amount} →</>}
           </button>
         )}
 

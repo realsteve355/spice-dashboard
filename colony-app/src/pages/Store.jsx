@@ -227,7 +227,7 @@ export default function Store() {
             <Field label="Product name" value={pName} onChange={setPName} placeholder="e.g. Sourdough loaf" />
             <Field label="Description (optional)" value={pDesc} onChange={setPDesc} placeholder="Brief description" />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <Field label="Price (S)" value={pPrice} onChange={setPPrice} placeholder="0" type="number" />
+              <Field label="Price (MOND)" value={pPrice} onChange={setPPrice} placeholder="0" type="number" />
               <Field label="Category" value={pCategory} onChange={setPCategory} placeholder="e.g. Food" />
             </div>
             {pError && <div style={{ fontSize: 11, color: C.red, marginTop: 6 }}>{pError}</div>}
@@ -338,7 +338,7 @@ export default function Store() {
             </div>
           </div>
           <Field label="Description" value={eDesc} onChange={setEDesc} placeholder="Optional description" />
-          <Field label="Price (S)" value={ePrice} onChange={setEPrice} placeholder="0" type="number" />
+          <Field label="Price (MOND)" value={ePrice} onChange={setEPrice} placeholder="0" type="number" />
           {eError && <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>{eError}</div>}
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             <button onClick={() => setEditProduct(null)} style={{ ...outlineBtn, flex: 1 }}>Cancel</button>
@@ -401,7 +401,7 @@ export default function Store() {
               disabled={!address || !isCitizen}
               style={{ ...solidBtn(C.text), flex: 2, opacity: (!address || !isCitizen) ? 0.4 : 1 }}
             >
-              {!address ? 'Connect wallet to buy' : `Pay <MondSymbol size={12} /> {buyProduct.price} →`}
+              {!address ? 'Connect wallet to buy' : <><MondSymbol size={12} /> Pay {buyProduct.price} →</>}
             </button>
           </div>
         </BottomSheet>
@@ -466,7 +466,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
         {/* Price + buy */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 6 }}>
           <span style={{ fontSize: 15, fontWeight: 500, color: C.text }}>
-            {product.price} <span style={{ fontSize: 11 }}><MondSymbol size={10} /></span>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}><MondSymbol size={10} /> {product.price}</span>
           </span>
           {!isSecretary && onBuy && (
             <button

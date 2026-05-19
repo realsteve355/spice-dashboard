@@ -51,7 +51,7 @@ export default function RequestPayment() {
         {/* Amount display */}
         <div style={{ marginBottom: 4, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>AMOUNT DUE</div>
         <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
-          {amount} <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span>
+          <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span> {amount}
         </div>
         {note && (
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 20, textAlign: 'center' }}>{note}</div>
