@@ -7,14 +7,14 @@ import { C } from '../theme'
  * SendSheet — inline payment form
  *
  * Props:
- *   maxAmount      number        — max sendable S-tokens
+ *   maxAmount      number        — max sendable MOND
  *   label          string        — sheet heading
  *   colonyAddr     string        — colony contract address; enables citizen picker
  *   senderAddress  string        — filters sender out of citizen list
  *   onClose        () => void
  *   onConfirm      (amount, recipient, note) => void
  */
-export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose, onConfirm, colonyAddr, senderAddress }) {
+export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onConfirm, colonyAddr, senderAddress }) {
   const [citizens, setCitizens] = useState([])
   const [loading,  setLoading]  = useState(false)
   const [search,   setSearch]   = useState('')
@@ -156,7 +156,7 @@ export default function SendSheet({ maxAmount, label = 'Send S-tokens', onClose,
         label={`Amount (max ${maxAmount} S)`}
         value={amount}
         onChange={setAmount}
-        placeholder="S-tokens to send"
+        placeholder="MOND to send"
         type="number"
       />
 

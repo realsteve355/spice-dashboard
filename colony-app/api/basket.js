@@ -4,9 +4,9 @@
  * Returns current dollar prices for each basket item, sourced from FRED
  * actual price series where available, static reference otherwise.
  * Also returns the implied Fisc rate needed to keep the basket at a
- * target S-token price.
+ * target MOND price.
  *
- * Basket composition (SPICE spec):
+ * Basket composition (AXION spec):
  *   1. White bread       — 1 standard loaf (1.5 lb)
  *   2. Whole milk        — 1 litre (0.264 US gallons)
  *   3. Electricity       — 10 kWh

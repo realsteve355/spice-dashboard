@@ -16,7 +16,7 @@ const HELP = {
       },
       {
         heading: 'Buying',
-        body: 'Select a product and tap "Buy". You can optionally add a delivery note — a date, time, or collection preference. The payment is made directly from your S-token balance to the company wallet.',
+        body: 'Select a product and tap "Buy". You can optionally add a delivery note — a date, time, or collection preference. The payment is made directly from your MOND balance to the company wallet.',
       },
       {
         heading: 'Opening a store',
@@ -29,7 +29,7 @@ const HELP = {
     sections: [
       {
         heading: 'Buying a product',
-        body: 'Tap "Buy" on any product. You can optionally add delivery notes (e.g. a date, time, or address). You\'ll then confirm the S-token payment on the next screen.',
+        body: 'Tap "Buy" on any product. You can optionally add delivery notes (e.g. a date, time, or address). You\'ll then confirm the MOND payment on the next screen.',
       },
       {
         heading: 'Managing your store',
@@ -37,7 +37,7 @@ const HELP = {
       },
       {
         heading: 'Pricing',
-        body: 'Prices are set in S-tokens — the colony\'s everyday currency. Citizens receive S as basic income from the MCC, so prices should reflect what the colony economy can support.',
+        body: 'Prices are set in MOND — the colony\'s everyday currency. Citizens receive MOND as basic income from the MCC, so prices should reflect what the colony economy can support.',
       },
     ],
   },
@@ -62,16 +62,16 @@ const HELP = {
     title: 'Colony Dashboard',
     sections: [
       {
-        heading: 'S-tokens',
-        body: 'S-tokens are your everyday colony currency. Use them to pay local businesses, send to other citizens, or buy products in the Mall. The MCC issues S as basic income — claim yours daily with the UBI button.',
+        heading: 'MOND',
+        body: 'MOND are your everyday colony currency. Use them to pay local businesses, send to other citizens, or buy products in the Mall. The MCC issues MOND as basic income — claim yours daily with the UBI button.',
       },
       {
         heading: 'V-tokens',
-        body: 'V-tokens are long-term savings. Convert S → V to lock earnings; V-tokens accrue yield from colony economic activity. V cannot be spent directly — redeem back to S when you need liquidity.',
+        body: 'V-tokens are long-term savings. Convert MOND → V to lock earnings; V-tokens accrue yield from colony economic activity. V cannot be spent directly — redeem back to MOND when you need liquidity.',
       },
       {
-        heading: 'Sending S',
-        body: 'Tap "Send S" to transfer to any citizen or company address. You can add a note (e.g. "Coffee, 12 May") which appears in both wallets\' transaction history.',
+        heading: 'Sending MOND',
+        body: 'Tap "Send MOND" to transfer to any citizen or company address. You can add a note (e.g. "Coffee, 12 May") which appears in both wallets\' transaction history.',
       },
     ],
   },
@@ -84,7 +84,7 @@ const HELP = {
       },
       {
         heading: 'Secretary role',
-        body: 'The secretary controls the company wallet: send S to pay suppliers, convert S → V to lock earnings, declare V dividends to shareholders, and issue equity stakes.',
+        body: 'The secretary controls the company wallet: send MOND to pay suppliers, convert MOND → V to lock earnings, declare V dividends to shareholders, and issue equity stakes.',
       },
       {
         heading: 'Equity',
@@ -97,16 +97,16 @@ const HELP = {
     sections: [
       {
         heading: 'Token types',
-        body: 'S-tokens — spendable everyday currency (expires monthly)\nV-tokens — long-term savings (does not expire)\nG-token — citizenship and one vote (soulbound, non-transferable)\nA-tokens — assets, equity stakes, and bilateral obligations\nO-tokens — organisation identity, held by company secretary or MCC chair',
+        body: 'MOND — spendable everyday currency (expires monthly)\nV-tokens — long-term savings (does not expire)\nG-token — citizenship and one vote (soulbound, non-transferable)\nA-tokens — assets, equity stakes, and bilateral obligations\nO-tokens — organisation identity, held by company secretary or MCC chair',
       },
     ],
   },
   default: {
-    title: 'SPICE Colony',
+    title: 'AXION Colony',
     sections: [
       {
-        heading: 'What is SPICE Colony?',
-        body: 'A community economic system where citizens receive S-tokens as basic income and spend them within the colony. Companies issue equity, trade with each other, and sell products in the Mall.',
+        heading: 'What is AXION Colony?',
+        body: 'A community economic system where citizens receive MOND as basic income and spend them within the colony. Companies issue equity, trade with each other, and sell products in the Mall.',
       },
       {
         heading: 'Getting started',
@@ -183,9 +183,13 @@ export default function Layout({ children, title, back, colonySlug }) {
               ←
             </button>
           )}
-          <span style={{ fontSize: 12, fontWeight: 600, color: C.text, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono', monospace" }}>
-            {title || 'SPICE Colony'}
-          </span>
+          {title ? (
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.text, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono', monospace" }}>
+              {title}
+            </span>
+          ) : (
+            <img src="/brand/axion-wordmark-light.png" alt="AXION" style={{ height: 14, width: 'auto', display: 'block' }} />
+          )}
         </div>
 
         {isConnected ? (

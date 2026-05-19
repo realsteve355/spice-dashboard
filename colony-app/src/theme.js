@@ -1,4 +1,4 @@
-// SPICE Colony — shared mission-control theme
+// AXION Colony — shared mission-control theme
 // Mirrors src/tokens.js on the research site (see docs/redesign.md §2).
 // All pages and components import C from here.
 

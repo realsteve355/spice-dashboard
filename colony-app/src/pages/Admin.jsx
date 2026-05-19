@@ -665,7 +665,7 @@ export default function Admin() {
                 <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SERVICE</div>
                 <SvcInput placeholder="Service name" value={newSvc.name} onChange={v => setNewSvc(s => ({ ...s, name: v }))} />
                 <SvcInput placeholder="Billing basis (e.g. Per item, Flat monthly)" value={newSvc.billing} onChange={v => setNewSvc(s => ({ ...s, billing: v }))} />
-                <SvcInput placeholder="Price (e.g. 5 S, 10 S / hr)" value={newSvc.price} onChange={v => setNewSvc(s => ({ ...s, price: v }))} />
+                <SvcInput placeholder="Price (e.g. 5 MOND, 10 MOND / hr)" value={newSvc.price} onChange={v => setNewSvc(s => ({ ...s, price: v }))} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setAdding(false)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
                   <button onClick={addService} disabled={svcPending} style={{ ...smallBtn(C.text), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Add Service'}</button>
@@ -825,7 +825,7 @@ export default function Admin() {
                           {ethers.formatEther(protocolFeeWei)} <span style={{ fontSize: 11 }}>ETH</span>
                         </div>
                         <div style={{ fontSize: 9, color: C.faint, marginTop: 3 }}>
-                          accrued from send() transactions · paid monthly to SPICE Protocol
+                          accrued from send() transactions · paid monthly to AXION Protocol
                         </div>
                       </div>
                       {protocolFeeWei > 0n && (
@@ -850,8 +850,8 @@ export default function Admin() {
 
                 {/* Billing instructions */}
                 <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.7, marginBottom: 12, padding: '10px 12px', background: C.white, border: `1px solid ${C.border}`, borderRadius: 0 }}>
-                  1. Set each citizen's bill (whole S-tokens)<br />
-                  2. Citizen pays via Dashboard → "Pay MCC bill" (S-tokens go to MCC Treasury above)<br />
+                  1. Set each citizen's bill (whole MOND)<br />
+                  2. Citizen pays via Dashboard → "Pay MCC bill" (MOND go to MCC Treasury above)<br />
                   3. When Treasury balance increases, click "Paid ✓" to confirm and record revenue
                 </div>
 
@@ -868,7 +868,7 @@ export default function Admin() {
                           <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{ci.addr.slice(0, 10)}…{ci.addr.slice(-6)}</div>
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 500, color: bill > 0 ? C.text : C.faint }}>
-                          {bill > 0 ? `${bill} S` : '—'}
+                          {bill > 0 ? `${bill} MOND` : '—'}
                         </div>
                       </div>
 

@@ -20,17 +20,17 @@ export const MOCK_COLONIES = [
       board: ['0x1111...aaaa'],
     },
     services: [
-      { name: 'Atmospheric processing', billing: 'Flat monthly',  price: '120 S',      revenueMTD: 7920 },
-      { name: 'Water',                  billing: 'Per litre',     price: '0.5 S / L',  revenueMTD: 3200 },
-      { name: 'Power',                  billing: 'Per kWh',       price: '2 S / kWh',  revenueMTD: 5400 },
-      { name: 'Habitat',               billing: 'Per m²',        price: '1 S / m²',   revenueMTD: 4200 },
-      { name: 'Medical AI',            billing: 'Flat monthly',  price: '50 S',        revenueMTD: 3300 },
+      { name: 'Atmospheric processing', billing: 'Flat monthly',  price: '120 MOND',      revenueMTD: 7920 },
+      { name: 'Water',                  billing: 'Per litre',     price: '0.5 MOND / L',  revenueMTD: 3200 },
+      { name: 'Power',                  billing: 'Per kWh',       price: '2 MOND / kWh',  revenueMTD: 5400 },
+      { name: 'Habitat',               billing: 'Per m²',        price: '1 MOND / m²',   revenueMTD: 4200 },
+      { name: 'Medical AI',            billing: 'Flat monthly',  price: '50 MOND',        revenueMTD: 3300 },
     ],
   },
   {
     id: 'turing-campus',
     name: 'Turing Campus',
-    description: 'SPICE colony for the Turing Institute. Testing the system in a university setting.',
+    description: 'AXION colony for the Turing Institute. Testing the system in a university setting.',
     founded: '2026-03-10',
     citizenCount: 14,
     mcc: {
@@ -38,9 +38,9 @@ export const MOCK_COLONIES = [
       board: ['0x2222...bbbb'],
     },
     services: [
-      { name: 'Coffee & snacks',   billing: 'Per item',  price: '5–20 S',    revenueMTD: 630 },
-      { name: 'Event space hire',  billing: 'Per hour',  price: '10 S / hr', revenueMTD: 80  },
-      { name: 'Printing',          billing: 'Per page',  price: '1 S / page',revenueMTD: 168 },
+      { name: 'Coffee & snacks',   billing: 'Per item',  price: '5–20 MOND',    revenueMTD: 630 },
+      { name: 'Event space hire',  billing: 'Per hour',  price: '10 MOND / hr', revenueMTD: 80  },
+      { name: 'Printing',          billing: 'Per page',  price: '1 MOND / page',revenueMTD: 168 },
     ],
   },
 ]
@@ -214,7 +214,7 @@ export const MOCK_CONTRACTS = {
       settleDate: '15 Apr 2026',
       status: 'active',
       role: 'buyer',
-      description: 'Pre-committed 80 S for weekly milk delivery. Tokens locked in escrow until delivery confirmed.',
+      description: 'Pre-committed 80 MOND for weekly milk delivery. Tokens locked in escrow until delivery confirmed.',
     },
     {
       id: 'c-002',
@@ -226,7 +226,7 @@ export const MOCK_CONTRACTS = {
       settleDate: '20 Apr 2026',
       status: 'active',
       role: 'buyer',
-      description: '500 S in escrow. Released to Colony Tech on successful installation and sign-off.',
+      description: '500 MOND in escrow. Released to Colony Tech on successful installation and sign-off.',
     },
     {
       id: 'c-003',
@@ -239,7 +239,7 @@ export const MOCK_CONTRACTS = {
       status: 'active',
       role: 'payer',
       revenueSharedMTD: 63,
-      description: '15% of inbound S-token revenue routed to Turing Events. Covers venue partnership for April.',
+      description: '15% of inbound MOND revenue routed to Turing Events. Covers venue partnership for April.',
     },
     {
       id: 'c-004',
@@ -251,7 +251,7 @@ export const MOCK_CONTRACTS = {
       settleDate: '31 Mar 2026',
       status: 'settled',
       role: 'buyer',
-      description: '200 S escrow released on delivery. Settled successfully.',
+      description: '200 MOND escrow released on delivery. Settled successfully.',
     },
   ],
   'campus-print': [],

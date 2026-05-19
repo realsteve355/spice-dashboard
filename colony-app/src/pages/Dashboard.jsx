@@ -510,7 +510,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* S-token balance */}
+        {/* MOND balance */}
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
             <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>S-TOKEN BALANCE</div>
@@ -525,9 +525,9 @@ export default function Dashboard() {
               <div style={{ fontSize: 11, color: C.faint }}>Resets in {DAYS_TO_RESET}d</div>
               {contracts?.colonies?.[slug]?.sToken && (
                 <button
-                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, chain?.sSymbol || 'S-SPICE', 18)}
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].sToken, chain?.sSymbol || 'S-AXION', 18)}
                   style={mmBtn}
-                  title="Add S-token to MetaMask"
+                  title="Add MOND to MetaMask"
                 >
                   + MetaMask
                 </button>
@@ -568,14 +568,14 @@ export default function Dashboard() {
             onClick={() => setSending(v => !v)}
             style={{ ...smallBtn(C.text), width: '100%' }}
           >
-            Send S-tokens →
+            Send MOND →
           </button>
 
           {sending && (
             <div style={{ marginTop: 10 }}>
               <SendSheet
                 maxAmount={remaining}
-                label="Send S-tokens"
+                label="Send MOND"
                 colonyAddr={contracts?.colonies?.[slug]?.colony}
                 senderAddress={address}
                 onClose={() => setSending(false)}
@@ -606,7 +606,7 @@ export default function Dashboard() {
               <div style={{ fontSize: 11, color: C.green }}>never expires</div>
               {contracts?.colonies?.[slug]?.vToken && (
                 <button
-                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].vToken, chain?.vSymbol || 'V-SPICE', 18)}
+                  onClick={() => addToMetaMask('ERC20', contracts.colonies[slug].vToken, chain?.vSymbol || 'V-AXION', 18)}
                   style={mmBtn}
                   title="Add V-token to MetaMask"
                 >
@@ -744,7 +744,7 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {contracts?.colonies?.[slug]?.gToken && data.gTokenId > 0 && (
                 <button
-                  onClick={() => addToMetaMask('ERC721', contracts.colonies[slug].gToken, 'GSPICE', 0, data.gTokenId)}
+                  onClick={() => addToMetaMask('ERC721', contracts.colonies[slug].gToken, 'GAXION', 0, data.gTokenId)}
                   style={mmBtn}
                   title="Add G-token NFT to MetaMask"
                 >

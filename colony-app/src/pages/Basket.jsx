@@ -77,7 +77,7 @@ export default function Basket() {
             FISC BREAD BASKET
           </div>
           <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.7 }}>
-            Five goods that anchor the S-token exchange rate. Prices sourced from
+            Five goods that anchor the MOND exchange rate. Prices sourced from
             FRED (US Bureau of Labor Statistics) and adjusted to colony-standard quantities.
           </div>
         </div>
@@ -167,7 +167,7 @@ export default function Basket() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
-                      {toS(item.usdPrice) !== null ? `${toS(item.usdPrice)} S` : '—'}
+                      {toS(item.usdPrice) !== null ? `${toS(item.usdPrice)} MOND` : '—'}
                     </div>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export default function Basket() {
                   ${totalUSD?.toFixed(2)}
                 </div>
                 <div style={{ textAlign: 'right', fontSize: 13, color: C.text, fontWeight: 700 }}>
-                  {toS(totalUSD) !== null ? `${toS(totalUSD)} S` : '—'}
+                  {toS(totalUSD) !== null ? `${toS(totalUSD)} MOND` : '—'}
                 </div>
               </div>
             </div>
@@ -205,7 +205,7 @@ export default function Basket() {
               </div>
               <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { label: 'Basket price target', value: '5 S' },
+                  { label: 'Basket price target', value: '5 MOND' },
                   { label: 'Implied rate', value: fiscRate ? `$${(totalUSD / 5).toFixed(3)}/S` : '—' },
                   { label: 'Live on-chain rate', value: fiscRate ? `$${fiscRate.toFixed(3)}/S` : '—' },
                   { label: 'Rate deviation', value: fiscRate ? `${(((fiscRate - totalUSD / 5) / (totalUSD / 5)) * 100).toFixed(1)}%` : '—' },

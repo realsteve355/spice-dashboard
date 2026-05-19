@@ -275,8 +275,8 @@ export default function RegisterCompany() {
           fontSize: 11, color: C.sub, lineHeight: 1.7,
         }}>
           <div style={{ color: C.text, marginBottom: 4, letterSpacing: '0.06em' }}>HOW COMPANY TOKENS WORK</div>
-          During the month your company earns S-tokens from customers and pays suppliers in S-tokens.
-          At month end the Fisc converts all net S-tokens to V-tokens automatically.
+          During the month your company earns MOND from customers and pays suppliers in MOND.
+          At month end the Fisc converts all net MOND to V-tokens automatically.
           You then distribute V-tokens as dividends to equity holders at any time.
           Shares may not be pledged as collateral.
         </div>

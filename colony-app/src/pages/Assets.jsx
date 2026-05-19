@@ -611,7 +611,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
         {registering && (
           <div>
             <div style={{ fontSize: 11, color: C.faint, lineHeight: 1.6, marginBottom: 12 }}>
-              Threshold: declared value &gt; 500 S, weight &gt; 50 kg, or autonomous AI capability.
+              Threshold: declared value &gt; 500 MOND, weight &gt; 50 kg, or autonomous AI capability.
             </div>
 
             <Field label="Name (optional, stored locally)" value={rName} onChange={setRName} placeholder="e.g. Delivery van, Workshop lathe" />
@@ -640,7 +640,7 @@ function AssetsTab({ assets, cfg, address, signer, slug, isCitizen, citizens, na
 
             {!meetsThreshold && (rValue || rWt) && (
               <div style={{ fontSize: 11, color: C.red, marginBottom: 8 }}>
-                Does not meet registration threshold (value &gt; 500 S, weight &gt; 50 kg, or AI required).
+                Does not meet registration threshold (value &gt; 500 MOND, weight &gt; 50 kg, or AI required).
               </div>
             )}
 
@@ -787,7 +787,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
               }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: C.text }}>
-                    {p.monthly} S/month × {p.totalEpochs} months
+                    {p.monthly} MOND/month × {p.totalEpochs} months
                     {p.collateralId !== '0' && ` · secured`}
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, marginTop: 3 }}>
@@ -820,7 +820,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>I OWE</div>
           {totalOwed > 0 && (
-            <div style={{ fontSize: 12, color: C.red, fontWeight: 500 }}>{totalOwed} S/month total</div>
+            <div style={{ fontSize: 12, color: C.red, fontWeight: 500 }}>{totalOwed} MOND/month total</div>
           )}
         </div>
         {owed.length === 0 ? (
@@ -835,7 +835,7 @@ function ObligationsTab({ owed, lent, pendingProps, assets, nameMap, citizens, c
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>OWED TO ME</div>
           {totalLent > 0 && (
-            <div style={{ fontSize: 12, color: C.green, fontWeight: 500 }}>{totalLent} S/month total</div>
+            <div style={{ fontSize: 12, color: C.green, fontWeight: 500 }}>{totalLent} MOND/month total</div>
           )}
         </div>
         {lent.length === 0 ? (
@@ -959,7 +959,7 @@ function ObligRow({ ob, perspective, last, assets = [], nameMap = {} }) {
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: perspective === 'creditor' ? C.green : C.red }}>
-            {perspective === 'creditor' ? '+' : '−'}{ob.monthly} S/mo
+            {perspective === 'creditor' ? '+' : '−'}{ob.monthly} MOND/mo
           </div>
           <div style={{ fontSize: 10, color: statusColor, marginTop: 2 }}>
             {ob.defaulted ? 'defaulted' : ob.epochsPaid >= ob.totalEpochs ? 'complete' : `${ob.epochsPaid}/${ob.totalEpochs} paid`}

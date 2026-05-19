@@ -235,7 +235,7 @@ export default function Budget() {
             <div style={card}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {[
-                  { label: 'UBI',       value: `${d.totalUBI} S`,                         ok: true },
+                  { label: 'UBI',       value: `${d.totalUBI} MOND`,                         ok: true },
                   { label: 'FISC RATE', value: `$${d.fiscRate.toFixed(3)}/S`,             ok: d.rateOK },
                   { label: 'UBI VALUE', value: `$${Math.round(d.ubiUSD)}/mo`,             ok: d.ubiOK },
                 ].map(item => (
@@ -271,7 +271,7 @@ export default function Budget() {
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={fieldLabel}>SPICE labour discount (%)</div>
+                    <div style={fieldLabel}>AXION labour discount (%)</div>
                     <input
                       type="number" min={0} max={50}
                       value={labourDisc}
@@ -284,7 +284,7 @@ export default function Budget() {
 
               {!editMode && (
                 <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-                  Bread anchor: {viewBread}S/loaf · SPICE discount: {viewDisc}% · Ohio ref: ${OHIO_BREAD_REF}
+                  Bread anchor: {viewBread}S/loaf · AXION discount: {viewDisc}% · Ohio ref: ${OHIO_BREAD_REF}
                 </div>
               )}
             </div>
@@ -380,7 +380,7 @@ export default function Budget() {
                             </div>
                             {line.dollarRef > 0 && (
                               <div style={{ fontSize: 9, color: C.faint, marginTop: 2 }}>
-                                ${line.dollarRef} ref · {line.spiceDiscount}% SPICE saving
+                                ${line.dollarRef} ref · {line.spiceDiscount}% AXION saving
                               </div>
                             )}
                           </div>
@@ -411,7 +411,7 @@ export default function Budget() {
                               </div>
                             ) : (
                               <span style={{ fontSize: 13, color: isInactive ? C.faint : C.text, fontWeight: 500 }}>
-                                {isInactive ? '0 S' : `${line.sTokenAmount} S`}
+                                {isInactive ? '0 MOND' : `${line.sTokenAmount} MOND`}
                               </span>
                             )}
                           </div>
@@ -562,7 +562,7 @@ export default function Budget() {
                           }}>
                             <span>{l.name}</span>
                             <span style={{ color: l.active === false ? C.faint : C.sub }}>
-                              {l.active === false ? '0 S (off)' : `${l.sTokenAmount} S`}
+                              {l.active === false ? '0 MOND (off)' : `${l.sTokenAmount} MOND`}
                             </span>
                           </div>
                         ))}
@@ -594,8 +594,8 @@ export default function Budget() {
                 Publish budget
               </div>
               <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6, marginBottom: 16 }}>
-                Total: <strong style={{ color: C.text }}>{d.totalUBI} S/month</strong>
-                {pubD && ` · was ${pubD.totalUBI} S`}
+                Total: <strong style={{ color: C.text }}>{d.totalUBI} MOND/month</strong>
+                {pubD && ` · was ${pubD.totalUBI} MOND`}
                 <br />
                 Effective: first day of next month
               </div>

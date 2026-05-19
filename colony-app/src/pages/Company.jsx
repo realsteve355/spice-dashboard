@@ -270,7 +270,7 @@ export default function Company() {
           if (p.name === 'SharesBoughtBack') {
             return {
               kind: 'buyback', date, blockNumber: log.blockNumber,
-              text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for ${Number(ethers.formatEther(p.args[2]))} S`,
+              text: `Bought back ${Number(p.args[1])} bps from asset #${String(p.args[0])} for ${Number(ethers.formatEther(p.args[2]))} MOND`,
               color: C.text,
             }
           }
@@ -726,7 +726,7 @@ export default function Company() {
     const v = Number(assetValue)
     const w = Number(assetWeight) || 0
     if (!assetLabel.trim() || (!(v > 500) && !(w > 50) && !assetHasAI)) {
-      setActError('Asset must be > 500 S OR > 50 kg OR have autonomous AI')
+      setActError('Asset must be > 500 MOND OR > 50 kg OR have autonomous AI')
       return
     }
     setActPending(true); setActError(null); setActDone(null)
@@ -803,7 +803,7 @@ export default function Company() {
     return () => { cancelled = true }
   }, [onChain, companyId, deployedContracts, slug, reloadKey])
 
-  // F-15a: buy back vested equity from a holder at a secretary-set S-token price.
+  // F-15a: buy back vested equity from a holder at a secretary-set MOND price.
   // Cancels the bps from the holder's stake, increasing NAV for remaining shareholders.
   async function handleBuyback(assetId) {
     const co = companyContract()
@@ -811,7 +811,7 @@ export default function Company() {
     const bps   = Number(buybackBps)
     const price = Number(buybackPriceS)
     if (!(bps > 0) || !(price > 0)) {
-      setActError('Enter both bps and S-token price (each > 0)')
+      setActError('Enter both bps and MOND price (each > 0)')
       return
     }
     setActPending(true); setActError(null); setActDone(null)
@@ -1034,9 +1034,9 @@ export default function Company() {
                 {actionDone  && <div style={{ fontSize: 12, color: C.green, marginBottom: 8 }}>✓ {actionDone}</div>}
                 {actionError && <div style={{ fontSize: 12, color: C.red,   marginBottom: 8 }}>{actionError}</div>}
 
-                {/* Send S from company wallet */}
+                {/* Send MOND from company wallet */}
                 <button onClick={() => setSending(v => !v)} style={{ ...actionBtn(C.sub, '#fff'), width: '100%', marginBottom: 8, border: `1px solid ${C.border}` }}>
-                  Send S from company wallet →
+                  Send MOND from company wallet →
                 </button>
                 {sending && (
                   <div style={{ marginBottom: 8 }}>
@@ -1049,15 +1049,15 @@ export default function Company() {
                   </div>
                 )}
 
-                {/* Convert S → V */}
+                {/* Convert MOND → V */}
                 <button onClick={() => setConverting(v => !v)} style={{ ...actionBtn(C.sub), width: '100%', marginBottom: 8 }}>
-                  Convert S → V (lock earnings)
+                  Convert MOND → V (lock earnings)
                 </button>
                 {converting && (
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input
                       style={{ ...inlineInput, flex: 1 }}
-                      placeholder={`max ${company.sBalance} S`}
+                      placeholder={`max ${company.sBalance} MOND`}
                       value={convertAmt}
                       onChange={e => setConvertAmt(e.target.value)}
                       type="number"
@@ -1134,7 +1134,7 @@ export default function Company() {
                     </div>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
                       {issueType === 'open'
-                        ? 'Immediately transferable. Suitable for investors paying S-tokens upfront.'
+                        ? 'Immediately transferable. Suitable for investors paying MOND upfront.'
                         : 'Earned in monthly tranches. Unvested shares forfeit if the participant stops contributing.'}
                     </div>
                     <div style={{ marginBottom: 10 }}>
@@ -1176,7 +1176,7 @@ export default function Company() {
                 {registeringAsset && (
                   <div style={{ background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0, padding: 12, marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: C.faint, marginBottom: 10, lineHeight: 1.6 }}>
-                      Register a physical asset on-chain to the company wallet. Threshold: value &gt; 500 S, weight &gt; 50 kg, or autonomous AI.
+                      Register a physical asset on-chain to the company wallet. Threshold: value &gt; 500 MOND, weight &gt; 50 kg, or autonomous AI.
                     </div>
                     <CField label="Label (e.g. 'Truck VIN-1234')" value={assetLabel} onChange={setAssetLabel} placeholder="describe the asset" />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1610,7 +1610,7 @@ export default function Company() {
                       {buybackForId === e.assetId && (
                         <div style={{ marginTop: 8, padding: 10, background: `${C.text}08`, border: `1px solid ${C.border}`, borderRadius: 0 }}>
                           <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 8 }}>
-                            Buy back vested bps from {e.label} at an S-token price you set. Bought-back shares are cancelled, increasing NAV for remaining holders.
+                            Buy back vested bps from {e.label} at an MOND price you set. Bought-back shares are cancelled, increasing NAV for remaining holders.
                           </div>
                           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                             <input
@@ -1728,11 +1728,11 @@ export default function Company() {
               return (
                 <div style={card}>
                   <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 12 }}>P&amp;L SUMMARY</div>
-                  <Row label="Revenue (S in)"     value={`+${revenue} S`}   color={C.green} />
+                  <Row label="Revenue (S in)"     value={`+${revenue} MOND`}   color={C.green} />
                   <Divider />
-                  <Row label="Expenses (S out)"   value={`−${expenses} S`}  color={C.red} />
+                  <Row label="Expenses (S out)"   value={`−${expenses} MOND`}  color={C.red} />
                   <Divider />
-                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} S`} color={net >= 0 ? C.text : C.red} bold />
+                  <Row label="Net"                value={`${net >= 0 ? '+' : ''}${net} MOND`} color={net >= 0 ? C.text : C.red} bold />
                   {locked > 0 && <><Divider /><Row label="Locked to V"      value={`${locked} S → V`} color={C.green} /></>}
                   {divs > 0 && <><Divider /><Row label="V dividends declared" value={`${divs} V`} color='#8b5cf6' /></>}
                 </div>

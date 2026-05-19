@@ -67,19 +67,19 @@ export default function Directory() {
   const loading = colonies === null
 
   return (
-    <Layout title="SPICE Colony">
+    <Layout title="AXION Colony">
       <div style={{ padding: '20px 16px 0' }}>
 
         {/* Hero */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 6 }}>
-            SPICE Protocol
+            AXION Protocol
           </div>
           <div style={{ fontSize: 22, fontWeight: 500, color: C.text, lineHeight: 1.3, marginBottom: 8 }}>
             Active Colonies
           </div>
           <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6 }}>
-            Each colony is an independent closed-loop economy running the SPICE token system.
+            Each colony is an independent closed-loop economy running the AXION token system.
             Join one or create your own.
           </div>
         </div>

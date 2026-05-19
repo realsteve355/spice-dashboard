@@ -364,7 +364,7 @@ export default function Fisc() {
                   </div>
 
                   <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6, marginBottom: 14 }}>
-                    Rate moves to defend the bread basket price in S-tokens.
+                    Rate moves to defend the bread basket price in MOND.
                     net_pressure = external inflation − local abundance.
                     Policy stance scales down if reserve ratio falls below 4×.
                     Max daily change: {algo.maxDailyChangePct}%. Bounds: ${algo.minRate.toFixed(2)}–${algo.maxRate.toFixed(2)}/S.

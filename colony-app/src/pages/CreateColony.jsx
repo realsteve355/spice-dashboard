@@ -15,8 +15,8 @@ const REGISTRY_ABI = [
 ]
 
 const FIXED_PARAMS_COMMON = [
-  { label: 'UBI per citizen',        value: '1,000 S-tokens / month' },
-  { label: 'Max monthly savings',    value: '200 S-tokens → V'       },
+  { label: 'UBI per citizen',        value: '1,000 MOND / month' },
+  { label: 'Max monthly savings',    value: '200 MOND → V'       },
   { label: 'Adulthood',              value: '18 years'               },
   { label: 'MCC recall trigger',     value: 'Bill +20% above 12m avg'},
   { label: 'Constitutional change',  value: '80% referendum required'},
@@ -150,7 +150,7 @@ export default function CreateColony() {
         return
       }
       if (colonyBeaconAddr === ethers.ZeroAddress) {
-        setDeployError('Colony beacon not configured on the protocol registry. Contact the SPICE protocol admin at spice.zpc.finance.')
+        setDeployError('Colony beacon not configured on the protocol registry. Contact the AXION protocol admin at spice.zpc.finance.')
         setDeploying(false)
         return
       }
@@ -417,7 +417,7 @@ export default function CreateColony() {
                 label: 'Mars Colony',
                 badge: 'CLOSED ECONOMY',
                 badgeColor: C.purple,
-                description: 'S-tokens have value only within the colony. No external currency. No USDC reserve. Harberger land rules apply. The simplest and most self-contained colony model.',
+                description: 'MOND have value only within the colony. No external currency. No USDC reserve. Harberger land rules apply. The simplest and most self-contained colony model.',
                 params: ['Closed S/V economy', 'Harberger land (0.5%/mo)', 'No external trade'],
               },
               {
@@ -425,7 +425,7 @@ export default function CreateColony() {
                 label: 'Earth Colony',
                 badge: 'OPEN ECONOMY',
                 badgeColor: C.text,
-                description: 'S-tokens connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Citizens can buy externally using V-tokens.',
+                description: 'MOND connected to the external world via a published Fisc rate. USDC reserve. External businesses pay the Local Robot Tax. Citizens can buy externally using V-tokens.',
                 params: ['USDC reserve + Fisc rate', 'V → USDC boundary flows', 'Local Robot Tax (LRT)'],
               },
             ].map(opt => {
