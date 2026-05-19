@@ -6,6 +6,7 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 import { resolveNames, namedAddr } from '../utils/addrLabel'
 
+import MondSymbol from '../components/MondSymbol'
 const MCC_SERVICES_ABI = [
   "function getServices() view returns (uint256[], string[], string[], string[])",
   "function addService(string, string, string) external returns (uint256)",
@@ -665,7 +666,7 @@ export default function Admin() {
                 <div style={{ fontSize: 11, color: C.text, letterSpacing: '0.1em', marginBottom: 12 }}>NEW SERVICE</div>
                 <SvcInput placeholder="Service name" value={newSvc.name} onChange={v => setNewSvc(s => ({ ...s, name: v }))} />
                 <SvcInput placeholder="Billing basis (e.g. Per item, Flat monthly)" value={newSvc.billing} onChange={v => setNewSvc(s => ({ ...s, billing: v }))} />
-                <SvcInput placeholder="Price (e.g. Ɱ 5, Ɱ 10 / hr)" value={newSvc.price} onChange={v => setNewSvc(s => ({ ...s, price: v }))} />
+                <SvcInput placeholder="Price (e.g. 5, MOND 10 MOND / hr)" value={newSvc.price} onChange={v => setNewSvc(s => ({ ...s, price: v }))} />
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setAdding(false)} style={{ ...smallBtn(C.faint, '#fff', C.border), flex: 1 }}>Cancel</button>
                   <button onClick={addService} disabled={svcPending} style={{ ...smallBtn(C.text), flex: 2, opacity: svcPending ? 0.5 : 1 }}>{svcPending ? '...' : 'Add Service'}</button>
@@ -719,14 +720,14 @@ export default function Admin() {
                   <div style={{ ...card, flex: 1, marginBottom: 0 }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>REVENUE MTD</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.green, marginTop: 4 }}>
-                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}>Ɱ</span>
+                      {revenueMTD !== null ? revenueMTD.toLocaleString() : '...'} <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span>
                     </div>
                     <div style={{ fontSize: 9, color: C.faint, marginTop: 4 }}>confirmed payments</div>
                   </div>
                   <div style={{ ...card, flex: 1, marginBottom: 0, borderColor: mccTreasuryAddr ? C.border : C.faint }}>
                     <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC TREASURY</div>
                     <div style={{ fontSize: 22, fontWeight: 500, color: C.text, marginTop: 4 }}>
-                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}>Ɱ</span>
+                      {mccTreasuryAddr ? (treasuryBal !== null ? treasuryBal.toLocaleString() : '...') : '—'} <span style={{ fontSize: 12, color: C.faint }}><MondSymbol size={10} /></span>
                     </div>
                     <div style={{ fontSize: 9, color: mccTreasuryAddr ? C.green : C.faint, marginTop: 4 }}>
                       {mccTreasuryAddr ? 'on-chain treasury' : 'not deployed'}
@@ -868,7 +869,7 @@ export default function Admin() {
                           <div style={{ fontSize: 10, color: C.faint, fontFamily: 'monospace' }}>{ci.addr.slice(0, 10)}…{ci.addr.slice(-6)}</div>
                         </div>
                         <div style={{ fontSize: 14, fontWeight: 500, color: bill > 0 ? C.text : C.faint }}>
-                          {bill > 0 ? `Ɱ ${bill}` : '—'}
+                          {bill > 0 ? `${bill} MOND` : '—'}
                         </div>
                       </div>
 

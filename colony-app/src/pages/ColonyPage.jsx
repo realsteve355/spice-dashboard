@@ -29,7 +29,7 @@ import { C } from '../theme'
 const CONSTITUTION_TEXT = `FOUNDING CONSTITUTION OF THIS COLONY
 
 1. UBI FLOOR
-   Every registered citizen receives Ɱ 1,000 on the 1st of each month, unconditionally, for life.
+   Every registered citizen receives 1,000 MOND on the 1st of each month, unconditionally, for life.
 
 2. UBI UNIVERSALITY
    The UBI may not be conditional, means-tested, or withheld for any reason.
@@ -293,7 +293,7 @@ export default function ColonyPage() {
           }}>
             <div style={{ fontSize: 14, color: C.green, fontWeight: 500, marginBottom: 4 }}>Welcome to {colony.name}</div>
             <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
-              G-token issued. Ɱ 1,000 have been credited to your wallet.
+              G-token issued. 1,000 MOND have been credited to your wallet.
             </div>
             <button onClick={() => navigate(`/colony/${slug}/dashboard`)} style={btn(C.green)}>
               Go to Dashboard →

@@ -15,14 +15,14 @@ const REGISTRY_ABI = [
 ]
 
 const FIXED_PARAMS_COMMON = [
-  { label: 'UBI per citizen',        value: 'Ɱ 1,000 / month' },
+  { label: 'UBI per citizen',        value: '1,000 MOND / month' },
   { label: 'Adulthood',              value: '18 years'               },
   { label: 'MCC recall trigger',     value: 'Bill +20% above 12m avg'},
   { label: 'Constitutional change',  value: '80% referendum required'},
 ]
 const FIXED_PARAMS_MARS = [
   ...FIXED_PARAMS_COMMON,
-  { label: 'Max monthly savings',    value: 'Ɱ 200 → V'              },
+  { label: 'Max monthly savings',    value: '200 MOND → V'              },
   { label: 'V-token expiry',         value: '100 years from mint'       },
   { label: 'Economy',                value: 'Closed — no external USDC' },
   { label: 'Harberger land fee',     value: '0.5% declared value/mo'    },

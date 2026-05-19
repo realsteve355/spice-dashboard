@@ -5,6 +5,7 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 import { ethers } from 'ethers'
 
+import MondSymbol from '../components/MondSymbol'
 const RPC = 'https://sepolia.base.org'
 
 const FISC_ABI = [
@@ -109,7 +110,7 @@ export default function Basket() {
                 </div>
                 {fiscRate && (
                   <div style={{ fontSize: 11, color: C.sub }}>
-                    Ɱ {toS(totalUSD)}
+                    <MondSymbol size={12} /> {toS(totalUSD)}
                   </div>
                 )}
               </div>
@@ -167,7 +168,7 @@ export default function Basket() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>
-                      {toS(item.usdPrice) !== null ? `Ɱ ${toS(item.usdPrice)}` : '—'}
+                      {toS(item.usdPrice) !== null ? `${toS(item.usdPrice)} MOND` : '—'}
                     </div>
                   </div>
                 </div>
@@ -187,7 +188,7 @@ export default function Basket() {
                   ${totalUSD?.toFixed(2)}
                 </div>
                 <div style={{ textAlign: 'right', fontSize: 13, color: C.text, fontWeight: 700 }}>
-                  {toS(totalUSD) !== null ? `Ɱ ${toS(totalUSD)}` : '—'}
+                  {toS(totalUSD) !== null ? `${toS(totalUSD)} MOND` : '—'}
                 </div>
               </div>
             </div>
@@ -205,7 +206,7 @@ export default function Basket() {
               </div>
               <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 {[
-                  { label: 'Basket price target', value: 'Ɱ 5' },
+                  { label: 'Basket price target', value: '5 MOND' },
                   { label: 'Implied rate', value: fiscRate ? `$${(totalUSD / 5).toFixed(3)}/S` : '—' },
                   { label: 'Live on-chain rate', value: fiscRate ? `$${fiscRate.toFixed(3)}/S` : '—' },
                   { label: 'Rate deviation', value: fiscRate ? `${(((fiscRate - totalUSD / 5) / (totalUSD / 5)) * 100).toFixed(1)}%` : '—' },

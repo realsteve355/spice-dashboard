@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { C } from '../theme'
 
+import MondSymbol from '../components/MondSymbol'
 const COMPANY_ABI = [
   "function name() view returns (string)",
   "function secretary() view returns (address)",
@@ -377,7 +378,7 @@ export default function Store() {
             </div>
           </div>
           <div style={{ fontSize: 28, fontWeight: 500, color: C.text, marginBottom: 16, textAlign: 'center' }}>
-            Ɱ {buyProduct.price}
+            <MondSymbol size={12} /> {buyProduct.price}
           </div>
           <div style={{ fontSize: 10, color: C.faint, letterSpacing: '0.08em', marginBottom: 6 }}>
             DELIVERY NOTES (optional)
@@ -400,7 +401,7 @@ export default function Store() {
               disabled={!address || !isCitizen}
               style={{ ...solidBtn(C.text), flex: 2, opacity: (!address || !isCitizen) ? 0.4 : 1 }}
             >
-              {!address ? 'Connect wallet to buy' : `Pay Ɱ {buyProduct.price} →`}
+              {!address ? 'Connect wallet to buy' : `Pay <MondSymbol size={12} /> {buyProduct.price} →`}
             </button>
           </div>
         </BottomSheet>
@@ -465,7 +466,7 @@ function ProductCard({ product, slug, isSecretary, isCitizen, address, confirmDe
         {/* Price + buy */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 6 }}>
           <span style={{ fontSize: 15, fontWeight: 500, color: C.text }}>
-            {product.price} <span style={{ fontSize: 11 }}>Ɱ</span>
+            {product.price} <span style={{ fontSize: 11 }}><MondSymbol size={10} /></span>
           </span>
           {!isSecretary && onBuy && (
             <button

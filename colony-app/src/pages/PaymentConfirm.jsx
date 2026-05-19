@@ -5,6 +5,7 @@ import Layout from '../components/Layout'
 import { useWallet } from '../App'
 import { logInfo, logError } from '../utils/logger'
 
+import MondSymbol from '../components/MondSymbol'
 const COLONY_ABI = [
   "function send(address, uint256, string) external",
 ]
@@ -37,9 +38,9 @@ export default function PaymentConfirm() {
     try {
       const colony = new ethers.Contract(cfg.colony, COLONY_ABI, signer)
       const tx = await colony.send(to, ethers.parseEther(String(amount)), note)
-      logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay Ɱ ${amount}`, meta: { to, note } })
+      logInfo('tx.submitted', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay ${amount} MOND`, meta: { to, note } })
       await tx.wait()
-      logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay Ɱ {amount} confirmed` })
+      logInfo('tx.confirmed', { colony: slug, address: signer.address, txHash: tx.hash, message: `pay <MondSymbol size={12} /> {amount} confirmed` })
       refresh()   // update S balance in wallet context
 
       // Notify recipient (fire-and-forget — don't block UI on failure)
@@ -53,7 +54,7 @@ export default function PaymentConfirm() {
           colony: slug,
           address: to,
           type: 'payment_received',
-          title: `Ɱ {amount} received`,
+          title: `${amount} MOND received`,
           body: note ? `"${note}" from ${fromLabel}` : `From ${fromLabel}`,
           link: `/colony/${slug}/dashboard`,
         }),
@@ -83,7 +84,7 @@ export default function PaymentConfirm() {
       <div style={{ padding: '40px 16px', textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>✓</div>
         <div style={{ fontSize: 18, fontWeight: 500, color: C.green, marginBottom: 8 }}>
-          Ɱ {amount} sent
+          <MondSymbol size={12} /> {amount} sent
         </div>
         {note && (
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 24 }}>{note}</div>
@@ -109,7 +110,7 @@ export default function PaymentConfirm() {
         }}>
           <div style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em', marginBottom: 8 }}>YOU ARE PAYING</div>
           <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
-            {amount} <span style={{ fontSize: 22, color: C.faint }}>Ɱ</span>
+            {amount} <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span>
           </div>
           {note && (
             <div style={{ fontSize: 13, color: C.sub, marginBottom: 12 }}>{note}</div>
@@ -129,7 +130,7 @@ export default function PaymentConfirm() {
           }}>
             <span style={{ color: C.sub }}>Your S balance</span>
             <span style={{ color: sufficient ? C.green : C.red, fontWeight: 500 }}>
-              Ɱ {sBalance} {sufficient ? '✓' : '— insufficient'}
+              <MondSymbol size={12} /> {sBalance} {sufficient ? '✓' : '— insufficient'}
             </span>
           </div>
         )}
@@ -146,7 +147,7 @@ export default function PaymentConfirm() {
             disabled={pending || !sufficient}
             style={{ ...primaryBtn, opacity: pending || !sufficient ? 0.4 : 1 }}
           >
-            {pending ? 'Confirming...' : `Pay Ɱ {amount} →`}
+            {pending ? 'Confirming...' : `Pay <MondSymbol size={12} /> {amount} →`}
           </button>
         )}
 

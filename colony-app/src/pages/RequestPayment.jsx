@@ -6,6 +6,7 @@ import { useWallet } from '../App'
 
 import { C } from '../theme'
 
+import MondSymbol from '../components/MondSymbol'
 export default function RequestPayment() {
   const { slug }         = useParams()
   const [searchParams]   = useSearchParams()
@@ -50,7 +51,7 @@ export default function RequestPayment() {
         {/* Amount display */}
         <div style={{ marginBottom: 4, fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>AMOUNT DUE</div>
         <div style={{ fontSize: 48, fontWeight: 500, color: C.text, letterSpacing: '-0.02em', marginBottom: 4 }}>
-          {amount} <span style={{ fontSize: 22, color: C.faint }}>Ɱ</span>
+          {amount} <span style={{ fontSize: 22, color: C.faint }}><MondSymbol size={10} /></span>
         </div>
         {note && (
           <div style={{ fontSize: 13, color: C.sub, marginBottom: 20, textAlign: 'center' }}>{note}</div>
@@ -122,7 +123,7 @@ export default function RequestPayment() {
               onChange={e => setAmount(e.target.value)}
               autoFocus
             />
-            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: C.faint }}>Ɱ</span>
+            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: C.faint }}><MondSymbol size={10} /></span>
           </div>
         </div>
 

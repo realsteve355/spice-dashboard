@@ -6,6 +6,7 @@ import { useWallet } from '../App'
 import { C } from '../theme'
 import { OHIO_BREAD_REF, computeDerived } from '../utils/budgetMath'
 
+import MondSymbol from '../components/MondSymbol'
 // Default budget line list is supplied by the colony variant (see
 // variants/{name}/pages/Budget.jsx). The Mars variant provides lines that
 // include the "S → V Conversion" savings line; Earth omits it because
@@ -222,7 +223,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
             <div style={card}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
                 {[
-                  { label: 'UBI',       value: `Ɱ ${d.totalUBI}`,                         ok: true },
+                  { label: 'UBI',       value: `${d.totalUBI} MOND`,                         ok: true },
                   { label: 'FISC RATE', value: `$${d.fiscRate.toFixed(3)}/S`,             ok: d.rateOK },
                   { label: 'UBI VALUE', value: `$${Math.round(d.ubiUSD)}/mo`,             ok: d.ubiOK },
                 ].map(item => (
@@ -335,7 +336,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                       </span>
                     </div>
                     <span style={{ fontSize: 11, color: C.sub, fontWeight: 500 }}>
-                      Ɱ {catTotal}
+                      <MondSymbol size={12} /> {catTotal}
                     </span>
                   </div>
 
@@ -394,11 +395,11 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                                   onChange={e => updateLine(line.id, 'sTokenAmount', Math.max(0, Math.min(999, parseInt(e.target.value) || 0)))}
                                   style={{ ...numInput, width: 60, textAlign: 'right' }}
                                 />
-                                <span style={{ fontSize: 11, color: C.faint }}>Ɱ</span>
+                                <span style={{ fontSize: 11, color: C.faint }}><MondSymbol size={10} /></span>
                               </div>
                             ) : (
                               <span style={{ fontSize: 13, color: isInactive ? C.faint : C.text, fontWeight: 500 }}>
-                                {isInactive ? 'Ɱ 0' : `Ɱ ${line.sTokenAmount}`}
+                                {isInactive ? '0 MOND' : `${line.sTokenAmount} MOND`}
                               </span>
                             )}
                           </div>
@@ -442,9 +443,9 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                     marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}`,
                     fontSize: 10, color: C.faint,
                   }}>
-                    Published total: Ɱ {pubD.totalUBI} · Draft: Ɱ {d.totalUBI} ·{' '}
+                    Published total: <MondSymbol size={12} /> {pubD.totalUBI} · Draft: <MondSymbol size={12} /> {d.totalUBI} ·{' '}
                     <span style={{ color: d.totalUBI > pubD.totalUBI ? C.red : C.green }}>
-                      {d.totalUBI > pubD.totalUBI ? '+' : ''}Ɱ {d.totalUBI - pubD.totalUBI}
+                      {d.totalUBI > pubD.totalUBI ? '+' : ''}<MondSymbol size={12} /> {d.totalUBI - pubD.totalUBI}
                     </span>
                     {spikePct !== null && (
                       <span style={{ marginLeft: 6, color: isSpiking ? C.red : C.faint }}>
@@ -526,7 +527,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 11, color: C.sub }}>Ɱ {ver.total_s}</span>
+                        <span style={{ fontSize: 11, color: C.sub }}><MondSymbol size={12} /> {ver.total_s}</span>
                         {ver.change_from_prior !== null && (
                           <span style={{
                             fontSize: 10,
@@ -549,7 +550,7 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                           }}>
                             <span>{l.name}</span>
                             <span style={{ color: l.active === false ? C.faint : C.sub }}>
-                              {l.active === false ? 'Ɱ 0 (off)' : `Ɱ ${l.sTokenAmount}`}
+                              {l.active === false ? '0 MOND (off)' : `${l.sTokenAmount} MOND`}
                             </span>
                           </div>
                         ))}
@@ -581,8 +582,8 @@ export default function Budget({ defaultLines = FALLBACK_LINES }) {
                 Publish budget
               </div>
               <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6, marginBottom: 16 }}>
-                Total: <strong style={{ color: C.text }}>Ɱ {d.totalUBI}/month</strong>
-                {pubD && ` · was Ɱ ${pubD.totalUBI}`}
+                Total: <strong style={{ color: C.text }}>${d.totalUBI} MOND/month</strong>
+                {pubD && ` · was ${pubD.totalUBI} MOND`}
                 <br />
                 Effective: first day of next month
               </div>

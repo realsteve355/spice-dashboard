@@ -5,6 +5,7 @@ import { useWallet } from '../App'
 
 import { C } from '../theme'
 
+import MondSymbol from '../components/MondSymbol'
 function ageFrom(dob) {
   const diff = Date.now() - new Date(dob).getTime()
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))
@@ -193,12 +194,12 @@ export default function Guardian() {
             <div style={card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: child.mccBill.breakdown.length > 0 ? 10 : 0 }}>
                 <span style={{ fontSize: 11, color: C.faint, letterSpacing: '0.1em' }}>MCC BILL MTD</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: C.red }}>Ɱ {child.mccBill.total}</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: C.red }}><MondSymbol size={12} /> {child.mccBill.total}</span>
               </div>
               {child.mccBill.breakdown.map((b, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: C.sub }}>
                   <span>{b.service}</span>
-                  <span style={{ color: C.red }}>Ɱ {b.amount}</span>
+                  <span style={{ color: C.red }}><MondSymbol size={12} /> {b.amount}</span>
                 </div>
               ))}
             </div>
@@ -225,7 +226,7 @@ export default function Guardian() {
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input
                       style={{ ...inlineInput, flex: 1 }}
-                      placeholder={`max Ɱ ${child.vMaxMonthly - child.vSavedThisMonth}`}
+                      placeholder={`max ${child.vMaxMonthly - child.vSavedThisMonth} MOND`}
                       value={saveAmt}
                       onChange={e => setSaveAmt(e.target.value)}
                       type="number"
@@ -276,7 +277,7 @@ export default function Guardian() {
                       <div style={{ fontSize: 10, color: C.faint, marginTop: 2 }}>{tx.date}</div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 500, color: tx.amount > 0 ? C.green : C.red }}>
-                      {tx.amount > 0 ? '+' : ''}Ɱ {tx.amount}
+                      {tx.amount > 0 ? '+' : ''}<MondSymbol size={12} /> {tx.amount}
                     </div>
                   </div>
                 ))

@@ -229,7 +229,7 @@ export default function Guardian() {
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input
                       style={{ ...inlineInput, flex: 1 }}
-                      placeholder={`max Ɱ ${child.vMaxMonthly - child.vSavedThisMonth}`}
+                      placeholder={`max ${child.vMaxMonthly - child.vSavedThisMonth} MOND`}
                       value={saveAmt}
                       onChange={e => setSaveAmt(e.target.value)}
                       type="number"

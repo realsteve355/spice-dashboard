@@ -3,6 +3,7 @@ import { fetchCitizens } from '../utils/fetchCitizens'
 import { shortAddr } from '../utils/addrLabel'
 import { C } from '../theme'
 
+import MondSymbol from '../components/MondSymbol'
 /**
  * SendSheet — inline payment form
  *
@@ -57,7 +58,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
   if (sent) return (
     <div style={{ ...sheet, background: `${C.green}18`, borderColor: C.green }}>
       <div style={{ fontSize: 13, color: C.green, fontWeight: 500, marginBottom: 4 }}>
-        ✓ Ɱ {amt} sent
+        ✓ <MondSymbol size={12} /> {amt} sent
       </div>
       <div style={{ fontSize: 12, color: C.sub, marginBottom: 12 }}>
         To: {selected?.name || selected?.address}
@@ -153,7 +154,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {/* ── Amount ────────────────────────────────────────────────────── */}
       <Field
-        label={`Amount (max Ɱ {maxAmount})`}
+        label={`Amount (max ${maxAmount} MOND)`}
         value={amount}
         onChange={setAmount}
         placeholder="MOND to send"
@@ -170,7 +171,7 @@ export default function SendSheet({ maxAmount, label = 'Send MOND', onClose, onC
 
       {amt > maxAmount && (
         <div style={{ fontSize: 12, color: C.red, marginBottom: 10 }}>
-          Exceeds available balance (Ɱ {maxAmount}).
+          Exceeds available balance (${maxAmount} MOND).
         </div>
       )}
 
