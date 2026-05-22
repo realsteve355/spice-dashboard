@@ -1,0 +1,26 @@
+metric,value,note
+Population,"39,000",Total residents of Maryfontaine
+Households,"15,000",~2.6 people per household (US median 2.51)
+Adults (≥18),"30,000",~77% of US population is 18+; 30k is rounded
+Children + minors,"9,000",~23% of US population is under 18
+Citizens (= adults registered),"30,000",Assume all adults register; minors join at 18
+Workforce (employed),"18,000",~60% labour participation × 30k adults
+Retirees," 6,500",~17% of population — slightly above US avg of 16%
+Working-age unemployed," 4,500",Pre-AXION; includes those out of workforce
+,,
+External businesses (named),105,In external_suppliers.py — big brands sample
+External businesses (full universe est.),"~2,500","6.5 firms per 100 people × 39k → ~2,500"
+Internal colony companies,5,"Café, school, repair, clinic, Dave's Co in current model"
+,,
+Transactions/HH/month,70,55 external + 15 internal — calibrated for Amazon-era US household
+Total monthly transactions,"1,050,000",15k HH × 70 txs
+Total annual transactions,12.6M,Colony-wide
+,,
+External outflow/year (modelled),$134.6M,Sample only; 105 named firms
+External outflow/year (realistic),$750-900M,"~$4,200/HH/mo external × 15k × 12"
+Internal MOND flow/year,$125M,15k × $700/HH/mo internal × 12
+,,
+UBI per citizen per month,100 MOND,Default in maryfontaine config
+UBI obligation/year (full pop),36M MOND,100 × 30k adults × 12; children get fractional
+Fisc reserve at founding,$1.75B,Backs the peg; cover ratio target 0.30
+Fisc rate at founding,$35/MOND,"At parity, basket of $980 = 28 MOND"

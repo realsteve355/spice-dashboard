@@ -1,0 +1,16 @@
+sector,txs_per_HH_per_month,typical_$_per_tx,n_named_firms,n_long_tail_firms_est,n_total_firms_est,total_colony_txs_per_month,avg_txs_per_firm_per_month,monthly_revenue_per_firm_avg_usd
+grocery,6,150,5,25,30,90000,3000.0,450000.0
+restaurant,12,30,6,60,66,180000,2727.0,81818.0
+utility,6,60,6,2,8,90000,11250.0,675000.0
+retail_online,10,55,1,100,101,150000,1485.0,81683.0
+retail_offline,3,100,7,80,87,45000,517.0,51724.0
+transport,8,30,4,30,34,120000,3529.0,105882.0
+healthcare,2,90,6,80,86,30000,349.0,31395.0
+entertainment,4,30,3,5,8,60000,7500.0,225000.0
+professional,1,60,4,60,64,15000,234.0,14062.0
+handmade,1,60,0,30,30,15000,500.0,30000.0
+misc,5,50,0,150,150,75000,500.0,25000.0
+insurance,1,200,4,10,14,15000,1071.0,214286.0
+big_retail,2,100,9,20,29,30000,1034.0,103448.0
+financial,1,120,8,30,38,15000,395.0,47368.0
+agriculture,0,0,3,0,3,0,0.0,0.0

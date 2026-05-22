@@ -9,8 +9,10 @@ Generated 22 May 2026 from `docs/economy-model/maryfontaine/external_suppliers.p
 
 | File | Contents |
 |---|---|
+| `maryfontaine_headlines.csv` | Population, households, citizens, businesses, transactions, UBI obligation, Fisc reserve — one-page headline summary |
 | `external_companies.csv` | 105 named external firms — employees, profit-per-employee, total firm profit, annual revenue to Maryfontaine |
 | `external_by_sector.csv` | Same data rolled up by sector (~20 rows) — sum employees, sum profit, sum MF revenue, avg P/emp |
+| `transactions_per_business.csv` | Per sector: txs/HH/month, total colony monthly txs, # firms (named + long-tail estimate), avg txs and revenue per firm |
 | `mpc_calc_per_company.csv` | Per-firm MPC at flat 5% vs progressive (k=0.05, threshold $80k P/emp, exponent 1.5, capped at 25%) |
 
 ## Key numbers at default settings
@@ -39,6 +41,18 @@ but a flat MPC would draw heavily from them and could hurt local businesses.
 
 This is the central MPC design question: **flat (broad-base, includes locals)
 vs. progressive (only the most-automated firms pay)**.
+
+## A caveat on sector averages
+
+`transactions_per_business.csv` shows the **average** txs/firm/month within
+each sector. This hides huge concentration: Walmart probably handles 30,000+
+grocery transactions/month from Maryfontaine while a local independent
+grocer handles 200. Use the averages as a rough sanity-check, not as a
+basis for per-firm calculations.
+
+For the MPC calculation, what matters is the **total revenue × MPC rate**,
+not the per-firm number. The per-firm count is only useful for visualising
+the burden distribution: "Walmart pays X, the local café pays Y".
 
 ## How to extend
 
