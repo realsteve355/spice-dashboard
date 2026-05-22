@@ -43,7 +43,7 @@ The first long run before formal validation produced striking numbers:
 
 The levy cuts AI Realist PP loss roughly in half. But this is the *benign* baseline scenario, and even with the levy on, citizens lose ~40% real purchasing power. **At realistic scale, AI Realist alone is already stressful for the colony** — the previous findings document explained why (UBI is S-denominated, reserve is USD-denominated, asymmetry compounds at realistic parity).
 
-The levy is a meaningful improvement but doesn't single-handedly deliver steady ground even under the mild AI Realist conditions. This suggests the levy is necessary-but-not-sufficient — combinable with other mitigations (LAT, mortgage refi) to reach steady ground.
+The levy is a meaningful improvement but doesn't single-handedly deliver steady ground even under the mild AI Realist conditions. This suggests the levy is necessary-but-not-sufficient — combinable with other mitigations (MPC, mortgage refi) to reach steady ground.
 
 ### Test 2: Transition stress
 
@@ -86,17 +86,17 @@ Covered by Test 1's levy on/off comparison. The Y10 reserve grows substantially 
 | Configuration (Transition, 120mo, realistic scale) | Y10 basket S | Y10 PP loss |
 |---|---|---|
 | Baseline (no levy, no mitigations) | 198.92 | **85.9%** |
-| LAT 5% + both refi (no levy) | 126.17 | 77.8% |
+| MPC 5% + both refi (no levy) | 126.17 | 77.8% |
 | Levy only | 72.73 | 61.5% |
-| **LAT 5% + both refi + LEVY** | **46.80** | **40.2%** |
+| **MPC 5% + both refi + LEVY** | **46.80** | **40.2%** |
 
 **Three observations:**
 
-1. **At realistic scale, LAT + refi alone barely help** (77.8% vs 85.9% baseline — only 8pp improvement). This contradicts the previous sweep's optimistic numbers, which were at the **stylised** $28-basket scale where the cashout dynamic was hidden. At realistic scale, real-world USD outflows dominate and traditional mitigations are insufficient on their own.
+1. **At realistic scale, MPC + refi alone barely help** (77.8% vs 85.9% baseline — only 8pp improvement). This contradicts the previous sweep's optimistic numbers, which were at the **stylised** $28-basket scale where the cashout dynamic was hidden. At realistic scale, real-world USD outflows dominate and traditional mitigations are insufficient on their own.
 
-2. **The levy is the dominant mitigation.** Levy alone (61.5%) beats LAT + both refi (77.8%) by 16pp. The levy directly attacks the structural reserve-replenishment problem the previous findings exposed.
+2. **The levy is the dominant mitigation.** Levy alone (61.5%) beats MPC + both refi (77.8%) by 16pp. The levy directly attacks the structural reserve-replenishment problem the previous findings exposed.
 
-3. **Combining levy with traditional mitigations is **best** (40.2%).** The mechanisms stack additively: the levy adds reserve continuously from internal commerce while LAT taxes large companies and refinancings stop USD outflows. Together they cut PP loss by 46pp from baseline.
+3. **Combining levy with traditional mitigations is **best** (40.2%).** The mechanisms stack additively: the levy adds reserve continuously from internal commerce while MPC taxes large companies and refinancings stop USD outflows. Together they cut PP loss by 46pp from baseline.
 
 **But — even the best configuration doesn't deliver full steady ground under Transition.** 40% PP loss means citizens at Y10 buy 60% of what their Y0 UBI bought. Better than holding USD outside (52% loss → 1.72 baskets) but well below the founding parity (3.57 baskets/UBI). This places the best-mitigated configuration in **partial defence** tier per `/criteria`.
 
@@ -127,15 +127,15 @@ The validation confirms the initial result and adds nuance:
 
 1. **The levy is a load-bearing mechanism, not optional.** Without it, UBI minting structurally outpaces reserve replenishment. With it, the colony has a self-funding redistributive mechanism that materially changes the trajectory under all scenarios. *Magnitude: -36pp under AI Realist, -24pp under The Transition.*
 
-2. **The levy is the dominant single mitigation at realistic scale.** Levy alone (61.5% PP loss under Transition) outperforms LAT + both refinancings (77.8% PP loss) by 16pp. The previous findings' "best configurations" were calibrated at stylised scale; at realistic scale, traditional mitigations are insufficient on their own. The levy directly addresses the structural reserve-replenishment problem.
+2. **The levy is the dominant single mitigation at realistic scale.** Levy alone (61.5% PP loss under Transition) outperforms MPC + both refinancings (77.8% PP loss) by 16pp. The previous findings' "best configurations" were calibrated at stylised scale; at realistic scale, traditional mitigations are insufficient on their own. The levy directly addresses the structural reserve-replenishment problem.
 
-3. **Levy + mitigations stack additively.** The best tested configuration (LAT 5% + both refi + levy) achieves 40.2% PP loss under Transition — better than any individual mitigation. The mechanisms don't substitute; they complement. **This is the recommended default configuration.**
+3. **Levy + mitigations stack additively.** The best tested configuration (MPC 5% + both refi + levy) achieves 40.2% PP loss under Transition — better than any individual mitigation. The mechanisms don't substitute; they complement. **This is the recommended default configuration.**
 
 4. **The mechanism is robust to misparameterisation.** Annual k recalibration auto-corrects projection errors and absorbs nearly all variance from α and P_threshold choices (3.4pp range across 12 sweep configurations). Policy choices about progressivity are mostly **distributive** (which firms bear the load), not **quantitative** (how much total revenue is collected).
 
 5. **Even the best configuration doesn't fully solve The Transition at realistic scale.** 40% PP loss is "partial defence" per `/criteria` — better than holding USD (which loses 52% under Transition) but well below founding parity. To reach full steady ground under Transition, the colony likely needs additional mechanisms not yet tested:
    - Founding-period capital controls (cashout=0 for first N years)
-   - Higher LAT rates (15%+) combined with levy
+   - Higher MPC rates (15%+) combined with levy
    - Phased UBI ramp-up
    - Or the structural redesigns discussed in `SPICE_simulator_findings_summary.md`
 

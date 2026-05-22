@@ -36,7 +36,7 @@ results/
 Three scenarios are baked in. They share all citizen and company
 behaviour parameters; only the external trade position differs.
 
-| Scenario | Exporters | $/exporter/mo | LAT % | Cashout % |
+| Scenario | Exporters | $/exporter/mo | MPC % | Cashout % |
 |---|---|---|---|---|
 | `healthy_exporter` | 5 | $8,000 | 80% | 1% |
 | `balanced` | 5 | $5,000 | 60% | 2% |

@@ -26,9 +26,9 @@ class SimConfig:
     # ── Fisc ─────────────────────────────────────────────────────────────
     cover_target: float = 0.30                      # USDC reserve must cover this fraction of (S × rate)
 
-    # ── LAT (Local Automation Tax) ───────────────────────────────────────
-    lat_enabled: bool = False
-    lat_rate_pct: float = 0.05                      # 5% of monthly revenue, charged to all companies
+    # ── MPC (Market Participation Charge) ───────────────────────────────────────
+    mpc_enabled: bool = False
+    mpc_rate_pct: float = 0.05                      # 5% of monthly revenue, charged to all companies
                                                     # paid in S, S is destroyed at Fisc (reduces supply)
 
     # ── Mortgage refinance into S ────────────────────────────────────────

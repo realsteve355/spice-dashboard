@@ -20,7 +20,7 @@ A transaction-level simulation of the **MaryFontaine** colony — a hypothetical
 - How does the colony's basket-cost-in-S evolve under each scenario?
 - When (if ever) does the basket peg break (rate forced below target by reserve compression)?
 - What's the citizen real purchasing power trajectory over 10 years?
-- Which design levers (LAT, mortgage refinancing, UBI level, capital controls, etc.) recover welfare under stress?
+- Which design levers (MPC, mortgage refinancing, UBI level, capital controls, etc.) recover welfare under stress?
 
 **Scope of v1 (deliberately):**
 - Static workforce (no births/deaths/redundancy/founding-of-new-companies in v1)
@@ -34,7 +34,7 @@ A transaction-level simulation of the **MaryFontaine** colony — a hypothetical
 
 A 38-configuration sweep ran ~22 minutes and tested:
 - 6 baselines (one per scenario, no mitigations)
-- LAT (Local Automation Tax) rate: 2.5% → 15%
+- MPC (Market Participation Charge) rate: 2.5% → 15%
 - UBI level: 50 → 150 S/citizen/month
 - Mortgage refinance to S (toggle)
 - External rent refinance to S (toggle)
@@ -54,14 +54,14 @@ Under **The Transition** scenario at 10% scale, 120 months, default seed:
 | Configuration | Y10 basket cost in S | PP loss | Tier |
 |---|---|---|---|
 | Unmitigated baseline | 84.46 | 67% | Worse than holding USD |
-| LAT 5% + mortgage refi | 44.84 | 38% | Weak defence |
-| LAT 5% + both refinancings | 39.57 | 29% | Partial defence |
-| LAT 10% + both refi + S-tax 3% | 33.44 | 16% | Strong defence |
+| MPC 5% + mortgage refi | 44.84 | 38% | Weak defence |
+| MPC 5% + both refinancings | 39.57 | 29% | Partial defence |
+| MPC 10% + both refi + S-tax 3% | 33.44 | 16% | Strong defence |
 | **Capital controls (cashout=0)** | **28.00** | **0%** | **Full steady ground** |
-| **Retirees-only UBI + LAT 3%** | **28.00** | **0%** | **Full steady ground** |
-| **LAT 15% + both refi + S-tax 5%** | **28.00** | **0%** | **Full steady ground** |
+| **Retirees-only UBI + MPC 3%** | **28.00** | **0%** | **Full steady ground** |
+| **MPC 15% + both refi + S-tax 5%** | **28.00** | **0%** | **Full steady ground** |
 
-**Cross-scenario validation** of the LAT 5% + both refi combo:
+**Cross-scenario validation** of the MPC 5% + both refi combo:
 - AI Realist: 0% PP loss (peg holds)
 - AI Optimist: 0% PP loss (peg holds)
 - Stagflation: 0% PP loss (peg holds)
@@ -148,11 +148,11 @@ The current sim is silent on this. Phase 3 lifecycle work (births/deaths/foundin
 
 UBI 100 S × $35/S = $3,500/month at parity. US living wage is closer to $4,000-5,000+ depending on region/family size. So UBI is below realistic living wage even at colony founding, before any stress.
 
-But the sweep showed: higher UBI without reserve growth makes things WORSE (more S minted, more cover-ratio pressure). So you can't just raise UBI — you need to fund it with reserve-replenishment (LAT or equivalent).
+But the sweep showed: higher UBI without reserve growth makes things WORSE (more S minted, more cover-ratio pressure). So you can't just raise UBI — you need to fund it with reserve-replenishment (MPC or equivalent).
 
 ### 6.4 The reserve-replenishment problem
 
-UBI mints S unconditionally; the simulation has no mechanism that replenishes reserve at the rate UBI mints. LAT in current form taxes company revenue capacity (mostly Honda's spare capacity), which doesn't scale with S supply growth. A proper SPICE design probably needs LAT or equivalent that scales as a fraction of S minted — "every UBI dollar minted has a corresponding LAT dollar burned to maintain cover."
+UBI mints S unconditionally; the simulation has no mechanism that replenishes reserve at the rate UBI mints. MPC in current form taxes company revenue capacity (mostly Honda's spare capacity), which doesn't scale with S supply growth. A proper SPICE design probably needs MPC or equivalent that scales as a fraction of S minted — "every UBI dollar minted has a corresponding MPC dollar burned to maintain cover."
 
 This is the structural fix that the sweep didn't fully test.
 
@@ -183,11 +183,11 @@ These are the questions the simulator has surfaced that need design-level answer
 
 3. **UBI architecture.**
    - Is UBI a fixed amount, or does it scale with colony economic activity?
-   - Should UBI rise with the automation level (more redundant citizens = more UBI funded by LAT)?
+   - Should UBI rise with the automation level (more redundant citizens = more UBI funded by MPC)?
    - Is "universal" or "means-tested" the right model? Or both, with different floors?
 
 4. **Reserve replenishment.**
-   - Should LAT scale with S supply minted (a "monetisation tax")?
+   - Should MPC scale with S supply minted (a "monetisation tax")?
    - Should the colony issue debt to external investors to maintain reserve (sovereign borrowing analog)?
    - Should the colony auto-cut UBI when reserve coverage falls below threshold (transparent stress response)?
 
@@ -212,7 +212,7 @@ The simulator has surfaced a set of structural design questions that the paramet
 
 1. **What does the SPICE colony's social contract look like for the redundant citizen?** UBI + accumulated savings + some mechanism for displaced-worker support? The existing time-limited equity model assumes ongoing employment.
 
-2. **How should the Fisc reserve grow as the colony grows?** Specifically: should there be a mint-tied reserve mechanism (every S of UBI minted triggers some reserve growth, via LAT or equivalent), so the structural mismatch between S supply and USD reserve doesn't compound?
+2. **How should the Fisc reserve grow as the colony grows?** Specifically: should there be a mint-tied reserve mechanism (every S of UBI minted triggers some reserve growth, via MPC or equivalent), so the structural mismatch between S supply and USD reserve doesn't compound?
 
 3. **Should SPICE colonies inherit external debt?** Or do they require fresh-start onboarding (no external mortgages, no external creditors)?
 
@@ -228,13 +228,13 @@ The simulator has surfaced a set of structural design questions that the paramet
 
 Once we have a redesign direction, the simulator can test it quickly:
 - Configurable UBI rules (per-citizen amount, eligibility, scaling)
-- Configurable LAT (rate, base, can be made supply-tied with code change)
+- Configurable MPC (rate, base, can be made supply-tied with code change)
 - Configurable cashout (per-archetype rates, multiplier, can add caps)
 - Configurable mortgage/rent refinancing
 - 6 scenarios + custom (any annual rate × category × year vector)
 - Per-citizen drill-down on /families page (six representative households)
 - 38-config sweep can be re-run in 22 minutes when parameters change
-- Adding new mechanisms (severance equity vesting, supply-tied LAT, redundancy modeling) is 1-3 days each
+- Adding new mechanisms (severance equity vesting, supply-tied MPC, redundancy modeling) is 1-3 days each
 
 The simulator has already paid for itself by surfacing the design issues above. The next phase is design-level decisions, then targeted simulation testing of those decisions.
 

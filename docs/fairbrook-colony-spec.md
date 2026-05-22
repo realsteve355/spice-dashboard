@@ -2,7 +2,7 @@
 
 **Based on:** Bellefontaine, Ohio (Logan County seat, pop. ~14,000)
 **Colony name:** Fairbrook
-**Colony type:** Earth (open economy — USDC reserve, Fisc rate, LAT)
+**Colony type:** Earth (open economy — USDC reserve, Fisc rate, MPC)
 **Modelled citizens:** ~300 (representative sample of a real town)
 **Chain:** Base Sepolia testnet
 
@@ -48,14 +48,14 @@ create a parallel local economy with a guaranteed basic income.
 - **Employment:** Self-employed, employs 2 humans (no automation)
 - **Property:** Leases her shopfront from Priya (rent in S)
 - **Income:** UBI + coffee shop S revenue
-- **LAT:** Zero — no automation, human-run
+- **MPC:** Zero — no automation, human-run
 - **Spending:** Buys supplies from local market and Kromart
 - **Key flows:**
   - Receives S from customers via Colony.send()
   - Pays rent to Priya
   - Pays staff wages in S
   - Claims UBI
-  - No LAT liability
+  - No MPC liability
 - **System coverage:** Small local business. No tax burden. S circulates locally.
 
 ---
@@ -66,22 +66,22 @@ create a parallel local economy with a guaranteed basic income.
 - **Employment:** Self-employed; some colony clients (billed in S), some external clients (billed in USDC)
 - **Income:** UBI + S billings + USDC billings (converted at boundary)
 - **Savings:** Significant V holdings — uses V as long-term store of value
-- **LAT:** Modest — uses AI legal research tools (document review, case analysis)
+- **MPC:** Modest — uses AI legal research tools (document review, case analysis)
   but still employs a paralegal and receptionist
 - **Key flows:**
   - Bills colony clients in S via Colony.send()
   - Receives USDC from external clients → boundary import → S
-  - Pays LAT quarterly on AI tool usage
+  - Pays MPC quarterly on AI tool usage
   - Holds V for yield
   - Property registered in asset register (home + office) — no tax, record only
-- **System coverage:** Professional services. Boundary import. V savings. Modest LAT. Property registration.
+- **System coverage:** Professional services. Boundary import. V savings. Modest MPC. Property registration.
 
 ---
 
 #### Priya Patel — Landlord
 - **Property:** Owns 3 residential properties + 2 commercial units downtown
 - **Income:** UBI + rental income in S
-- **LAT:** Zero — purely human relationships, no automation
+- **MPC:** Zero — purely human relationships, no automation
 - **Spending:** Local businesses, some external (converted to S at boundary)
 - **Key flows:**
   - Collects rent in S from Maya (residential) and Carla (commercial)
@@ -96,7 +96,7 @@ create a parallel local economy with a guaranteed basic income.
 - **Employment:** Works remotely for ExaTech (external Silicon Valley firm), paid in USDC
 - **Residence:** Lives in Fairbrook colony
 - **Income:** UBI + USDC salary from ExaTech → boundary import → S
-- **LAT:** Zero — he is a worker, not an employer using automation
+- **MPC:** Zero — he is a worker, not an employer using automation
 - **Spending:** All local — Carla's, Kromart, rent, savings
 - **Key flows:**
   - Receives USDC from ExaTech (external, no colony presence)
@@ -111,7 +111,7 @@ create a parallel local economy with a guaranteed basic income.
 #### Father Tomas Novak — Parish Priest
 - **Role:** Runs St. Brendan's Parish, Fairbrook
 - **Income:** UBI + parish donations (in S from citizens, in USDC from external donors)
-- **LAT:** Zero
+- **MPC:** Zero
 - **Key flows:**
   - Parish receives S donations from citizens
   - Parish receives USDC donations from external supporters → boundary import
@@ -124,7 +124,7 @@ create a parallel local economy with a guaranteed basic income.
 #### Sofia Brandt — Student (Fairbrook CC)
 - **Role:** Full-time student, part-time barista at Carla's
 - **Income:** UBI + part-time wages in S from Carla
-- **LAT:** Zero
+- **MPC:** Zero
 - **Key flows:**
   - Receives UBI
   - Receives wages from Carla via Colony.send()
@@ -141,9 +141,9 @@ create a parallel local economy with a guaranteed basic income.
 - **Owner:** Carla Reyes (citizen)
 - **Staff:** 2 humans (Sofia + one other)
 - **Revenue:** S-tokens from customers
-- **LAT:** Zero
+- **MPC:** Zero
 - **Asset:** Commercial lease (not owned) — not in asset register
-- **System coverage:** Small local business, zero LAT. Shows system doesn't penalise human employment.
+- **System coverage:** Small local business, zero MPC. Shows system doesn't penalise human employment.
 
 ---
 
@@ -151,22 +151,22 @@ create a parallel local economy with a guaranteed basic income.
 - **Owner:** Dave Kowalski (citizen)
 - **Staff:** 1 paralegal, 1 receptionist (humans) + AI research tools
 - **Revenue:** S (colony clients) + USDC (external clients)
-- **LAT:** Low — AI tools assist but don't replace majority of staff
+- **MPC:** Low — AI tools assist but don't replace majority of staff
 - **Asset:** Office building owned by Dave — registered in asset register
-- **System coverage:** Mixed S/USDC revenue. Modest LAT. Property in register.
+- **System coverage:** Mixed S/USDC revenue. Modest MPC. Property in register.
 
 ---
 
 #### Fairbrook Regional Hospital
 - **Type:** Colony institution (non-profit, community-owned)
 - **Staff:** Large human workforce — nurses, doctors, admin
-- **LAT:** Low — some diagnostic AI tools, but primarily human care
+- **MPC:** Low — some diagnostic AI tools, but primarily human care
 - **Revenue:** Mix of S (colony patients), USDC (insurance, external patients)
 - **Key flows:**
   - Pays wages in S to citizen staff (Maya etc.)
   - Receives USDC from external insurance → boundary import
-  - Pays modest LAT on diagnostic AI
-- **System coverage:** Large colony employer. Boundary import (insurance). Institutional LAT.
+  - Pays modest MPC on diagnostic AI
+- **System coverage:** Large colony employer. Boundary import (insurance). Institutional MPC.
 
 ---
 
@@ -179,16 +179,16 @@ create a parallel local economy with a guaranteed basic income.
 - **Local structure:** Franchised to Marco Rossi (citizen), who owns all 3 Fairbrook outlets
 - **Staff:** ~40 humans across 3 sites + automated ordering kiosks + AI inventory system
 - **Revenue:** S-tokens from colony customers
-- **LAT:** Significant — automated kiosks replaced 8 cashier positions; AI inventory system
+- **MPC:** Significant — automated kiosks replaced 8 cashier positions; AI inventory system
   replaced 2 stock management roles
 - **Profit repatriation:** Marco takes his franchisee cut in S; BurgerMac national takes
   royalties → boundary export (S → USDC)
 - **Key flows:**
   - Receives S from customers
-  - Pays LAT quarterly to MCC (based on automation level)
+  - Pays MPC quarterly to MCC (based on automation level)
   - Marco (franchisee citizen) takes profit in S, saves some V
   - National royalty → boundary export → USDC leaves colony
-- **System coverage:** Multi-outlet national chain. Significant LAT. Boundary export. Franchisee split.
+- **System coverage:** Multi-outlet national chain. Significant MPC. Boundary export. Franchisee split.
 
 ---
 
@@ -197,14 +197,14 @@ create a parallel local economy with a guaranteed basic income.
 - **Staff:** ~60 humans + automated checkouts (12 self-serve, replaced ~8 cashiers)
   + AI supply chain / ordering system
 - **Revenue:** S-tokens from colony customers (accepts S at checkout)
-- **LAT:** High — largest automation footprint in the colony
+- **MPC:** High — largest automation footprint in the colony
 - **Profit repatriation:** All net revenue → boundary export (S → USDC) to national HQ
 - **Key flows:**
   - Receives S from customers
-  - Pays LAT quarterly — largest single LAT contributor in Fairbrook
+  - Pays MPC quarterly — largest single MPC contributor in Fairbrook
   - Converts all S profit → USDC at Fisc boundary (boundary export)
   - USDC exits colony → national supply chain
-- **System coverage:** Largest LAT payer. Pure boundary export. No citizen ownership.
+- **System coverage:** Largest MPC payer. Pure boundary export. No citizen ownership.
   Demonstrates the system captures value from external extractive businesses.
 
 ---
@@ -264,12 +264,12 @@ MCC mints S → Maya, Carla, Dave, Priya, Graham, Sofia, Father Tomas, Marco
 → spend at local businesses → S circulates → some saved to V
 ```
 
-### LAT collection (quarterly)
+### MPC collection (quarterly)
 ```
-BurgerMac assesses automation level → calculates LAT → pays S or USDC to MCC
-Kromart (highest LAT) → pays to MCC
-Hospital (low LAT) → pays to MCC
-Dave/Kowalski (minimal LAT) → pays to MCC
+BurgerMac assesses automation level → calculates MPC → pays S or USDC to MCC
+Kromart (highest MPC) → pays to MCC
+Hospital (low MPC) → pays to MCC
+Dave/Kowalski (minimal MPC) → pays to MCC
 → MCC converts to USDC → deposits to Fisc reserve
 → reserve funds future UBI backing
 ```
@@ -313,10 +313,10 @@ Federal/state grant (future) → Fisc reserve (IncomeSource.Federal)
 | S circulation (spend/send) | Carla, Maya, Sofia | ✓ |
 | V savings | Dave, Maya, Graham | ✓ |
 | Salary payment in S | Maya (hospital), Sofia (Carla) | ✓ |
-| Small business, zero LAT | Carla's Coffee | ✓ contract exists |
-| LAT — modest | Dave, Hospital | ✗ LAT sweep not built |
-| LAT — significant | BurgerMac | ✗ |
-| LAT — high | Kromart | ✗ |
+| Small business, zero MPC | Carla's Coffee | ✓ contract exists |
+| MPC — modest | Dave, Hospital | ✗ MPC sweep not built |
+| MPC — significant | BurgerMac | ✗ |
+| MPC — high | Kromart | ✗ |
 | Boundary import (USDC→S) | Graham, Dave, Hospital, Parish | ✗ Fisc.deposit() |
 | Boundary export (S→USDC) | BurgerMac, Kromart, Priya | ✗ Fisc.withdraw() |
 | Visitor conversion | Sofia's parents | ✗ |
@@ -335,8 +335,8 @@ Federal/state grant (future) → Fisc reserve (IncomeSource.Federal)
 1. **Fisc boundary flows** — `depositReserve(amount, source)` + `deposit()`/`withdraw()` for S↔USDC
    conversion. Unlocks Graham, Dave, Hospital, Kromart, BurgerMac export.
 
-2. **LAT assessment + sweep** — Company contract records automation level; quarterly
-   sweep collects LAT to MCC. Unlocks BurgerMac and Kromart's primary contribution.
+2. **MPC assessment + sweep** — Company contract records automation level; quarterly
+   sweep collects MPC to MCC. Unlocks BurgerMac and Kromart's primary contribution.
 
 3. **Asset register — property type** — Extend A-token register with PROPERTY type.
    APN reference, owner wallet, assessed value. Dave and Priya's properties.

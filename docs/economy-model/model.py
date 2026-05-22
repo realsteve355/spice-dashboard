@@ -62,8 +62,8 @@ class Params:
 
     # Exports — large companies earn USD externally, convert via Fisc
     export_usd_per_large_co_per_month: float = 5_000.0
-    lat_participation:    float = 0.60     # of large companies opting into LAT
-    lat_rate_on_revenue:  float = 0.05     # of USD revenue paid to MCC for redistribution
+    lat_participation:    float = 0.60     # of large companies opting into MPC
+    mpc_rate_on_revenue:  float = 0.05     # of USD revenue paid to MCC for redistribution
 
     # Imports — companies buy input goods from outside the colony.
     # Total monthly USD outflow; capped at available reserve.
@@ -259,11 +259,11 @@ def step(prev: State, p: Params) -> tuple[State, MonthlyFlows]:
     f.import_usd_out = actual_imports
     f.import_shortfall = wanted - actual_imports
 
-    # 9. LAT — voluntary tax on large companies' USD revenue, top-up UBI fund
-    lat_usd = export_usd * p.lat_participation * p.lat_rate_on_revenue
+    # 9. MPC — voluntary tax on large companies' USD revenue, top-up UBI fund
+    lat_usd = export_usd * p.lat_participation * p.mpc_rate_on_revenue
     f.lat_usd_in = lat_usd
     s.usdc_reserve += lat_usd  # joins reserve; in reality, MCC could deploy it
-    # In this simple model, LAT just strengthens reserve. Could also feed back
+    # In this simple model, MPC just strengthens reserve. Could also feed back
     # to UBI top-up — left for stress-test variant.
 
     # 10. Company dividends — V dividend to citizen shareholders
@@ -456,7 +456,7 @@ def summarise(states: list[State], flows: list[MonthlyFlows], p: Params) -> dict
 
 SCENARIOS = {
     "healthy_exporter": Params(
-        # Strong export base, broad LAT, low imports + low cashout pressure
+        # Strong export base, broad MPC, low imports + low cashout pressure
         export_usd_per_large_co_per_month = 8_000.0,
         lat_participation                  = 0.80,
         citizen_cashout_rate               = 0.01,

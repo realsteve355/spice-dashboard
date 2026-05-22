@@ -37,7 +37,7 @@
       <li><a href="#ubi-children">Children UBI</a></li>
       <li><a href="#retirees-only">Retirees-only UBI</a></li>
       <li><a href="#cover">Cover ratio target</a></li>
-      <li><a href="#lat">LAT rate</a></li>
+      <li><a href="#mpc">MPC rate</a></li>
       <li><a href="#mortgage-refi">Mortgage refinance</a></li>
       <li><a href="#rent-refi">External rent refinance</a></li>
       <li><a href="#s-tax">S-tax on purchases</a></li>
@@ -100,15 +100,15 @@
     <p><strong>Counter-intuitive trade-off.</strong> A lower cover target seems "looser" but actually <em>defends the peg longer</em> because the reserve doesn't need to grow as fast. A higher cover target compresses the rate sooner but leaves a fatter cushion for shocks.</p>
     <p><strong>When to use.</strong> Try lowering to 0.15 under The Transition — you'll see the peg hold longer at the cost of reduced shock-resilience. This is a parameter the design itself doesn't currently fix; the spec asserted 0.30 without derivation.</p>
 
-    <h2 id="lat">LAT rate (Local Automation Tax)</h2>
+    <h2 id="mpc">MPC rate (Market Participation Charge)</h2>
     <p><strong>Default: 0% (off). Range: 0–20%.</strong></p>
     <p><strong>What it controls.</strong> Tax on companies, charged in S, used as a reserve-defence mechanism.</p>
-    <p><strong>Mechanism.</strong> At step 7.5 of every tick (after MCC bills, before consumption), each non-MCC company pays <code>lat_rate × max_revenue_per_month_s</code> to the Fisc. The S is <strong>destroyed</strong> — taken out of supply. <em>This reduces the cover-ratio denominator (S supply × rate), so the same reserve covers more S, which lets the Fisc hold the peg longer.</em></p>
-    <p><strong>Effect on flows.</strong> Burns S monthly. At LAT 5% on MaryFontaine's ~$1.7M/month total revenue capacity, that's ~$85K of S burned per month — about 22% of monthly UBI mint. Materially offsets supply growth.</p>
+    <p><strong>Mechanism.</strong> At step 7.5 of every tick (after MCC bills, before consumption), each non-MCC company pays <code>mpc_rate × max_revenue_per_month_s</code> to the Fisc. The S is <strong>destroyed</strong> — taken out of supply. <em>This reduces the cover-ratio denominator (S supply × rate), so the same reserve covers more S, which lets the Fisc hold the peg longer.</em></p>
+    <p><strong>Effect on flows.</strong> Burns S monthly. At MPC 5% on MaryFontaine's ~$1.7M/month total revenue capacity, that's ~$85K of S burned per month — about 22% of monthly UBI mint. Materially offsets supply growth.</p>
     <div class="callout ok">
-      <strong>The single most powerful reserve-defence lever.</strong> The original spec excluded LAT from v1 to test whether the design could work without it; under The Transition, the answer was no. LAT 5% alone (no other mitigations) is enough to delay the peg break by 3-4 years.
+      <strong>The single most powerful reserve-defence lever.</strong> The original spec excluded MPC from v1 to test whether the design could work without it; under The Transition, the answer was no. MPC 5% alone (no other mitigations) is enough to delay the peg break by 3-4 years.
     </div>
-    <p><strong>Real-world interpretation.</strong> LAT taxes automated firms (high-automation = high revenue per worker = the source of the AI deflation in the first place). The colony recaptures some of the wealth being concentrated in capital, redistributes it through the Fisc, and uses it to back citizens' currency. Politically defensible if framed as "machines pay tax."</p>
+    <p><strong>Real-world interpretation.</strong> MPC taxes automated firms (high-automation = high revenue per worker = the source of the AI deflation in the first place). The colony recaptures some of the wealth being concentrated in capital, redistributes it through the Fisc, and uses it to back citizens' currency. Politically defensible if framed as "machines pay tax."</p>
 
     <h2 id="mortgage-refi">Refinance mortgages → S</h2>
     <p><strong>Default: off.</strong></p>
@@ -128,8 +128,8 @@
     <p><strong>Default: 0%. Range: 0–10%.</strong></p>
     <p><strong>What it controls.</strong> A consumption tax taken at the Fisc on every internal-purchase transaction.</p>
     <p><strong>Mechanism.</strong> At step 8 (citizen consumption), when a citizen buys from a colony company, <code>s_tax × cat_spend</code> is removed from the spend before crediting the supplier. The taxed S is <strong>burned</strong> at the Fisc, reducing supply.</p>
-    <p><strong>Effect on flows.</strong> Smaller scale than LAT (LAT taxes capacity which is bigger than actual revenue at any moment). At S-tax 5%, on ~120K S of monthly basket consumption, you burn 6K S/month — much smaller than LAT 5% which burns ~85K S/month.</p>
-    <p><strong>When to use.</strong> Combine with LAT for additional supply pressure relief. Or use as a substitute if you want the "tax incidence" to be on consumption (citizens) rather than on capital (companies).</p>
+    <p><strong>Effect on flows.</strong> Smaller scale than MPC (MPC taxes capacity which is bigger than actual revenue at any moment). At S-tax 5%, on ~120K S of monthly basket consumption, you burn 6K S/month — much smaller than MPC 5% which burns ~85K S/month.</p>
+    <p><strong>When to use.</strong> Combine with MPC for additional supply pressure relief. Or use as a substitute if you want the "tax incidence" to be on consumption (citizens) rather than on capital (companies).</p>
 
     <h2 id="cashout-mult">Cashout multiplier</h2>
     <p><strong>Default: 1.0. Range: 0–2.0.</strong></p>
@@ -144,13 +144,13 @@
     <h3>Baseline / control: Transition, all defaults</h3>
     <p>The unmitigated case. Honda Inc owns the factory but doesn't extract dividends (that's structural, not a slider any more). Peg breaks Y3; basket S reaches ~85 by Y10; citizens lose ~67% real purchasing power. Use this as the comparison floor for everything else.</p>
 
-    <h3>Reasonable mitigations: Transition + LAT 5% + mortgage refi</h3>
+    <h3>Reasonable mitigations: Transition + MPC 5% + mortgage refi</h3>
     <p>Two plausible policy choices. <em>Try this first if you want to see the lever effects in one pass.</em></p>
 
-    <h3>Maximum reserve defence: Transition + LAT 10% + mortgage refi + ext rent refi + S-tax 3%</h3>
+    <h3>Maximum reserve defence: Transition + MPC 10% + mortgage refi + ext rent refi + S-tax 3%</h3>
     <p>Stack everything plausible. Tests how close to a fully-defended peg you can get without going to extreme measures (like cutting UBI).</p>
 
-    <h3>Welfare-first: Transition + UBI 150 + LAT 8% + mortgage refi</h3>
+    <h3>Welfare-first: Transition + UBI 150 + MPC 8% + mortgage refi</h3>
     <p>What if you want to <em>raise</em> citizen welfare during the transition (boost UBI) while still using mitigations to protect the peg? Tests whether the levers are powerful enough to fund higher UBI.</p>
 
     <h3>Means-tested experiment: Transition + retirees-only UBI</h3>

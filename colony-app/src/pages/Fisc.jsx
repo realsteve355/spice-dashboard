@@ -265,7 +265,7 @@ export default function Fisc() {
                   {[
                     { label: 'RESERVE',      value: `$${fs.reserveUSDC.toLocaleString()}` },
                     { label: 'COVER RATIO',  value: `${fs.reserveRatio.toFixed(1)}×`      },
-                    { label: 'LAT RATE',     value: `${fs.latRate.toFixed(1)}%`            },
+                    { label: 'MPC RATE',     value: `${fs.latRate.toFixed(1)}%`            },
                     { label: 'BREAD BASKET', value: `${fs.breadBasketPriceS}S`             },
                   ].map(item => (
                     <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '10px 12px' }}>
@@ -282,7 +282,7 @@ export default function Fisc() {
 
               {fs && (
                 <div style={{ marginTop: 12, fontSize: 10, color: C.faint, lineHeight: 1.5 }}>
-                  Target: 4.0× · alert below 2.0×. LAT rate set to minimum sustaining reserve target.
+                  Target: 4.0× · alert below 2.0×. MPC rate set to minimum sustaining reserve target.
                 </div>
               )}
             </div>
@@ -297,7 +297,7 @@ export default function Fisc() {
                     {[
                       { label: 'CITIZENS',         value: citizenCount.toString()                                         },
                       { label: 'MONTHLY UBI COST', value: monthlyUBICostUSDC ? `$${Math.round(monthlyUBICostUSDC).toLocaleString()}` : '—' },
-                      { label: 'LAT BREAKEVEN',    value: latBreakevenProfit  ? `$${Math.round(latBreakevenProfit).toLocaleString()} profit` : '—' },
+                      { label: 'MPC BREAKEVEN',    value: latBreakevenProfit  ? `$${Math.round(latBreakevenProfit).toLocaleString()} profit` : '—' },
                       { label: 'RESERVE RUNWAY',   value: reserveRunwayMonths ? `${reserveRunwayMonths.toFixed(1)} months` : '—'               },
                     ].map(item => (
                       <div key={item.label} style={{ background: C.bg, borderRadius: 0, padding: '10px 12px' }}>
@@ -308,8 +308,8 @@ export default function Fisc() {
                   </div>
                   <div style={{ fontSize: 10, color: C.faint, lineHeight: 1.6 }}>
                     Monthly UBI cost = {citizenCount} citizens × {totalS}S × ${displayRate?.toFixed(3)}/S.
-                    LAT breakeven = local net profit needed at {fs.latRate}% to cover full UBI cost.
-                    Reserve runway = months of UBI issuance the reserve can cover without LAT income.
+                    MPC breakeven = local net profit needed at {fs.latRate}% to cover full UBI cost.
+                    Reserve runway = months of UBI issuance the reserve can cover without MPC income.
                   </div>
                 </>
               ) : (

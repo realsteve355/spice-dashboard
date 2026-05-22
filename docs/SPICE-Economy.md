@@ -350,10 +350,10 @@ The Fisc offers on-chain denomination of any asset or liability in V-tokens.
 
 External companies — national chains, regional employers — may voluntarily register as AXION supporters. The agreement:
 - Accept MOND as payment within the colony boundary
-- Optionally: pay a voluntary LAT (Local Automation Tax) on declared automation profits, distributed as additional UBI via the Fisc
+- Optionally: pay a voluntary MPC (Market Participation Charge) on declared automation profits, distributed as additional UBI via the Fisc
 - In return: recognised as colony participants, listed on-chain, access to the MOND customer base
 
-**LAT is opt-in.** The colony has no legislative authority for compulsory taxation. Companies sign because their customer base has UBI; participation is a commercial decision, not charity.
+**MPC is opt-in.** The colony has no legislative authority for compulsory taxation. Companies sign because their customer base has UBI; participation is a commercial decision, not charity.
 
 ---
 
@@ -406,8 +406,8 @@ The flip is not decreed — it happens when enough liquidity sits in V that buye
 | Reserve ratio | What minimum BTC reserve is required to honour redemptions? No floor set. |
 | Redemption gates | If redemption demand exceeds reserve, what happens? No limit or delay mechanism designed. |
 | Fisc rate mechanism | Who sets the reference basket? How is the rate updated? Frequency? Oracle? |
-| Corporate LAT auditing | Voluntary LAT requires a declared automation profit figure. Who verifies it? |
-| Transition period LAT | During partial automation, LAT on windfall is conceptually valid but operationally complex. Left open. |
+| Corporate MPC auditing | Voluntary MPC requires a declared automation profit figure. Who verifies it? |
+| Transition period MPC | During partial automation, MPC on windfall is conceptually valid but operationally complex. Left open. |
 | Earth Lite | A middle-ground model between campus (fully closed, institution as Fisc) and full Earth (open, BTC reserve, Collision-ready) is referenced but not yet specified. |
 | Inter-colony trade | Same as Mars — Phase 2. BTC settlement between colonies not yet designed. |
 | Regulatory environment | MOND and V-tokens are not legally recognised currencies. No legal framework for the Fisc valuation service. Tax treatment of V gains unclear. All open. |
@@ -427,7 +427,7 @@ The flip is not decreed — it happens when enough liquidity sits in V that buye
 | Dollar imports | Not applicable | $ → V, Fisc buys BTC |
 | Asset valuation | V | V (same) |
 | Land | Harberger stewardship | Pre-existing private property |
-| LAT | Not applicable | Voluntary opt-in only |
+| MPC | Not applicable | Voluntary opt-in only |
 | BTC reserve | Not applicable | Yes — backs V↔$ conversion |
 | Collapse dependency | No — self-contained | No — viable before and after Collision |
 
@@ -454,7 +454,7 @@ Each month the model executes, in order:
 5. **MOND → V conversions** — 10% of company revenue, 5% of citizen S, locked into V-reserve
 6. **Citizen cashouts** — a fraction of citizens convert V → USDC at the current Fisc rate
 7. **Exports** — large companies' USD revenue is deposited at Fisc; new S minted at the prevailing rate
-8. **LAT** — voluntary contribution from participating exporters into the reserve
+8. **MPC** — voluntary contribution from participating exporters into the reserve
 9. **Dividends** — V dividend declared from company V-reserve to citizen shareholders
 10. **MCC consumes** — 80% of collected S spent on services (treated as removed from supply)
 11. **Fisc rate update** — if reserve cover ratio < 30% target, rate compresses linearly toward zero
@@ -466,7 +466,7 @@ Each month the model executes, in order:
 | Large companies (exporters) | 5 | 5 | **1** |
 | Export USD per large co/month | $8,000 | $5,000 | **$1,500** |
 | **Monthly imports (USD)** | **$8,000** | **$12,000** | **$15,000** |
-| LAT participation | 80% | 60% | **20%** |
+| MPC participation | 80% | 60% | **20%** |
 | Citizen cashout rate / month | 1% | 2% | **5%** |
 | Citizen cashout fraction (of V) | 30% | 30% | **50%** |
 | Initial USDC reserve | $50,000 | $50,000 | **$30,000** |
@@ -512,7 +512,7 @@ which the read-out flags as an "import shortfall".
 **Trade balance is the dominant driver — even more than cashout pressure.**
 All three scenarios mint identical UBI ($2.28m S over 24 months) and run
 identical citizen behaviour. What separates a thriving colony from a
-failing one is the trade balance: USD inflows (exports + LAT) minus USD
+failing one is the trade balance: USD inflows (exports + MPC) minus USD
 outflows (imports + cashouts). The healthy exporter holds peg flat at $1.
 The balanced colony — which would have held peg with no imports — now
 wobbles late in the run because imports gradually erode the reserve. The
@@ -531,11 +531,11 @@ match by construction.
 the failing scenario, by month 7 the reserve has already dropped to ~25%
 of the V supply (below the 30% target), even though the rate is still
 $1.00. From there the rate compression is locked in. Earlier action — e.g.
-inviting new exporters, bumping LAT, capping citizen cashout — would
+inviting new exporters, bumping MPC, capping citizen cashout — would
 have to start before month 6 to be effective.
 
-**LAT is not a marginal sweetener; it's structurally important.** Dropping
-LAT participation from 60% (balanced) to 20% (net importer) removes
+**MPC is not a marginal sweetener; it's structurally important.** Dropping
+MPC participation from 60% (balanced) to 20% (net importer) removes
 roughly $17,640 of cumulative reserve top-up over 24 months. That's
 1.5× the entire seed reserve of the failing colony. A small voluntary
 contribution from the colony's biggest exporters has outsized effect on
@@ -545,7 +545,7 @@ the peg's durability.
 *"can the colony's exports cover both its imports and its citizen cashout
 liability?"* Imports are not optional — every business uses some inputs
 from outside. A colony of 1,000 citizens with the default behaviour
-needs **net USD inflow (exports + LAT − imports − cashouts) of roughly
+needs **net USD inflow (exports + MPC − imports − cashouts) of roughly
 $15-20/citizen/month** to defend the peg comfortably. Below that and
 the cover ratio drifts down; substantially below that and the peg breaks
 hard.
@@ -588,7 +588,7 @@ also feed back into the canonical model.
 | **Colony Economy** | `/colony-economy` | Under heterogeneous USD inflation across categories of goods, can the Fisc keep the citizen-facing basket priced flat in S? |
 
 Both run the same monthly tick as `model.py`: UBI mint → citizen spend →
-company wages → MCC bills → S→V conversion → cashout → exports → LAT →
+company wages → MCC bills → S→V conversion → cashout → exports → MPC →
 dividends → MCC consumption → Fisc rate update. The differences are the
 sliders and the framing.
 
@@ -699,7 +699,7 @@ A genuine inflation model would close that loop:
 - **Citizen response** — sustained real-terms stability should affect
   V→S→USD cashout behaviour (less defensive cashout when peg is durable).
 - **Policy levers** — the Fisc has tools beyond rate compression (UBI
-  adjustment, LAT changes, reserve target). None are exercised yet.
+  adjustment, MPC changes, reserve target). None are exercised yet.
 
 This is the next major extension to the model.
 

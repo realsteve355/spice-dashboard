@@ -310,7 +310,7 @@ Sole traders (200)                — single-citizen companies
 
 **MCC scope is deliberately narrow in v1.** The MaryFontaine Cooperative bills only for utilities (electricity, water, sewer, waste, internet — collective infrastructure with natural monopoly characteristics). Healthcare and education are operated by private colony companies that compete on quality and price like any other sector. This is a design decision, not a placeholder — Steve's view (2 May 2026) is that the colony's resilience under stress is the question, and a fat MCC blunts the test by socialising too much of the risk. If the model fails without a wider MCC, we'll know it needs one.
 
-**LAT (Local Automation Tax) is excluded from v1.** The colony operates without an automation tax to fund the Fisc; the reserve is depleted/replenished only via boundary trade and external income flows. If welfare cannot be sustained over the 10-year horizon, LAT becomes a candidate v2 mechanism. See §8.7.
+**MPC (Market Participation Charge) is excluded from v1.** The colony operates without an automation tax to fund the Fisc; the reserve is depleted/replenished only via boundary trade and external income flows. If welfare cannot be sustained over the 10-year horizon, MPC becomes a candidate v2 mechanism. See §8.7.
 
 Each company at founding has:
 - Initial S balance (working capital, ~1 month of operating costs)
@@ -951,7 +951,7 @@ Following Mars patterns (`server.py` + `dashboard.html`).
 
 ### Resolved decisions (2 May 2026)
 
-7. **LAT (Local Automation Tax) — excluded from v1.** Decision: operate the colony without an automation tax. The Fisc reserve is replenished only via boundary trade (export earnings, external income, cashout fees) and depleted by imports + cashouts + mortgage USD outflows. If welfare cannot be sustained over the 10-year horizon under realistic conditions, LAT is the leading v2 mechanism to add. We want to know whether the design works without it before assuming it needs it.
+7. **MPC (Market Participation Charge) — excluded from v1.** Decision: operate the colony without an automation tax. The Fisc reserve is replenished only via boundary trade (export earnings, external income, cashout fees) and depleted by imports + cashouts + mortgage USD outflows. If welfare cannot be sustained over the 10-year horizon under realistic conditions, MPC is the leading v2 mechanism to add. We want to know whether the design works without it before assuming it needs it.
 
 8. **MCC scope — utilities only.** Decision: the MCC bills only for utilities (electricity, water, sewer, waste, internet). Healthcare, education, and other public-good-adjacent sectors are operated by private colony companies. A fat MCC blunts the resilience test by socialising too much of the risk; a narrow MCC stresses the private sector and surfaces flaws faster. If the model fails because too much critical infrastructure is in the private sector, we'll know it needs a wider MCC.
 
@@ -1006,7 +1006,7 @@ Recorded 2 May 2026 after Steve's review of the original spec.
 - Two-product end-state acknowledged: this Earth simulator + a future Simple Colony simulator (university campus / religious community scale, Mars-style closed economy)
 
 **Scope decisions resolved**
-- §3, §8.7: **LAT (Local Automation Tax) excluded from v1.** Confirmed never to be Land Appreciation Tax; LAT means Local Automation Tax in SPICE.
+- §3, §8.7: **MPC (Market Participation Charge) excluded from v1.** Confirmed never to be Land Appreciation Tax; MPC means Market Participation Charge in SPICE.
 - §3, §8.8: **MCC scope narrowed to utilities billing only** (originally ambiguous "small MCC scope"). Healthcare and education explicitly moved to private colony companies.
 
 **Mechanisms specified that were previously stubs or hand-waves**

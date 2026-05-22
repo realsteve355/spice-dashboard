@@ -534,7 +534,7 @@ def run(config: dict | None = None) -> dict:
             "automation_collected": total_auto,
             # Funding gap = what UBI needs minus what the levy can extract.
             # This is the structural deficit the colony has to plug from
-            # somewhere else (reserves, minting, LAT, etc.).
+            # somewhere else (reserves, minting, MPC, etc.).
             "funding_gap": max(0.0, total_ubi - total_auto),
             "funding_gap_pct": (max(0.0, total_ubi - total_auto) / total_ubi * 100) if total_ubi > 0 else 0,
             # Per-supplier shortfall = sum of (intended − actual) across all txs.

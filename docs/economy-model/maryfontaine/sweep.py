@@ -103,7 +103,7 @@ def run_one(cfg_dict: Dict, base_db_template: Path | None = None) -> Dict:
         "ubi_children_pct": cfg.ubi_children_pct,
         "ubi_retirees_only": cfg.ubi_retirees_only,
         "cover_target": cfg.cover_target,
-        "lat_pct": cfg.lat_rate_pct if cfg.lat_enabled else 0,
+        "lat_pct": cfg.mpc_rate_pct if cfg.mpc_enabled else 0,
         "mortgage_refi": cfg.mortgage_refinance_to_s,
         "ext_rent_refi": cfg.external_rent_refinance,
         "s_tax_pct": cfg.s_tax_on_purchases_pct,
@@ -138,10 +138,10 @@ def build_configs() -> List[Dict]:
 
     # === Single-lever sweeps under Transition ===
 
-    # LAT rate sweep
-    for lat in [0.025, 0.05, 0.075, 0.10, 0.15]:
-        cfgs.append(make_config(f"lat_{int(lat*1000):03d}",
-                                scenario="transition", lat_enabled=True, lat_rate_pct=lat))
+    # MPC rate sweep
+    for mpc in [0.025, 0.05, 0.075, 0.10, 0.15]:
+        cfgs.append(make_config(f"lat_{int(mpc*1000):03d}",
+                                scenario="transition", mpc_enabled=True, mpc_rate_pct=mpc))
 
     # UBI level sweep
     for ubi in [50, 75, 125, 150]:
@@ -179,18 +179,18 @@ def build_configs() -> List[Dict]:
 
     cfgs.append(make_config("combo_lat5_mortrefi",
                             scenario="transition",
-                            lat_enabled=True, lat_rate_pct=0.05,
+                            mpc_enabled=True, mpc_rate_pct=0.05,
                             mortgage_refinance_to_s=True))
 
     cfgs.append(make_config("combo_lat5_both_refi",
                             scenario="transition",
-                            lat_enabled=True, lat_rate_pct=0.05,
+                            mpc_enabled=True, mpc_rate_pct=0.05,
                             mortgage_refinance_to_s=True,
                             external_rent_refinance=True))
 
     cfgs.append(make_config("combo_lat10_both_refi_stax3",
                             scenario="transition",
-                            lat_enabled=True, lat_rate_pct=0.10,
+                            mpc_enabled=True, mpc_rate_pct=0.10,
                             mortgage_refinance_to_s=True,
                             external_rent_refinance=True,
                             s_tax_on_purchases_pct=0.03))
@@ -198,23 +198,23 @@ def build_configs() -> List[Dict]:
     cfgs.append(make_config("combo_welfare_first",
                             scenario="transition",
                             ubi_s_per_citizen=150,
-                            lat_enabled=True, lat_rate_pct=0.08,
+                            mpc_enabled=True, mpc_rate_pct=0.08,
                             mortgage_refinance_to_s=True))
 
     cfgs.append(make_config("combo_meanstested",
                             scenario="transition",
                             ubi_retirees_only=True,
-                            lat_enabled=True, lat_rate_pct=0.03))
+                            mpc_enabled=True, mpc_rate_pct=0.03))
 
     cfgs.append(make_config("combo_max_defence",
                             scenario="transition",
-                            lat_enabled=True, lat_rate_pct=0.15,
+                            mpc_enabled=True, mpc_rate_pct=0.15,
                             mortgage_refinance_to_s=True,
                             external_rent_refinance=True,
                             s_tax_on_purchases_pct=0.05))
 
     # === Best combo cross-scenario ===
-    best = dict(lat_enabled=True, lat_rate_pct=0.05,
+    best = dict(mpc_enabled=True, mpc_rate_pct=0.05,
                 mortgage_refinance_to_s=True,
                 external_rent_refinance=True)
     for scen in ["ai_realist", "stagflation", "transition", "transition_honda_shock"]:

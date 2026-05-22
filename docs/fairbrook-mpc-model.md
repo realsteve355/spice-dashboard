@@ -1,21 +1,21 @@
-# Fairbrook LAT Economic Model
+# Fairbrook MPC Economic Model
 ## Work in progress — 25 April 2026
 
 ---
 
 ## 1. Design Principles Established
 
-### LAT is not a conventional tax
-LAT (Local Automation Tax) is the recovery of the **automation dividend** —
+### MPC is not a conventional tax
+MPC (Market Participation Charge) is the recovery of the **automation dividend** —
 the profit windfall created when businesses replace workers with machines.
 It is not a tax on revenue (destroys slim-margin businesses) or a flat profit
 tax (too generous in a high-automation world).
 
 ### The "2× current profit" rule
 Businesses are allowed to keep **twice their pre-automation baseline profit**
-as incentive for operating efficiently. Everything above that goes to LAT.
+as incentive for operating efficiently. Everything above that goes to MPC.
 
-> LAT = SPICE world profit − (2 × today's baseline profit)
+> MPC = SPICE world profit − (2 × today's baseline profit)
 
 This means:
 - Businesses are genuinely better off in SPICE world (2× profit guaranteed)
@@ -28,16 +28,16 @@ This means:
 The SPICE model only works as a **closed system**. The feedback loop is:
 
 ```
-LAT revenue → UBI payments → citizen spending → business revenue
-→ business profit → LAT revenue → UBI payments → ...
+MPC revenue → UBI payments → citizen spending → business revenue
+→ business profit → MPC revenue → UBI payments → ...
 ```
 
 Without UBI, displaced workers have no income → spending collapses →
-business revenue collapses → profit collapses → LAT = $0 → UBI = $0.
+business revenue collapses → profit collapses → MPC = $0 → UBI = $0.
 
 **Walmart cannot extract the automation dividend and stay in business
 unless UBI maintains the spending power of its customer base.**
-LAT is not charity — it is the price of having customers.
+MPC is not charity — it is the price of having customers.
 
 ---
 
@@ -47,9 +47,9 @@ LAT is not charity — it is the price of having customers.
 |-----------|-------|-------------|-----|
 | Cost of goods | ~75% of revenue | ~66% | Supply chain automation reduces logistics, warehousing, distribution costs |
 | Labour | ~9% of revenue | ~1.5% | 90%+ automation of cashiers, stockers, drivers |
-| Employer payroll tax | ~7.65% of wages | ~0% | Eliminated — replaced by LAT system |
+| Employer payroll tax | ~7.65% of wages | ~0% | Eliminated — replaced by MPC system |
 | Federal/state corp tax | ~25% effective | ~12% | Government costs collapse too (automated military, civil service, infrastructure) |
-| Local taxes (property, sales) | ~2% | ~0% | Replaced by LAT |
+| Local taxes (property, sales) | ~2% | ~0% | Replaced by MPC |
 
 **Key insight:** Federal and state governments also benefit from automation.
 Military becomes robotic. Civil service is AI-driven. Infrastructure is
@@ -77,7 +77,7 @@ Estimated revenue: **$50M/year** (serves ~40,000 county catchment)
 | **Net profit** | **$0.98M** |
 | **Net margin** | **~2%** |
 
-### SPICE World (before LAT)
+### SPICE World (before MPC)
 | Item | Amount | Change |
 |------|--------|--------|
 | Revenue | $50.0M | same* |
@@ -88,15 +88,15 @@ Estimated revenue: **$50M/year** (serves ~40,000 county catchment)
 | Employer payroll tax | $0M | −$0.7M |
 | Pre-tax profit | $12.75M | |
 | Federal + state tax (12%) | $1.53M | −$0.21M |
-| **Profit before LAT** | **$11.22M** | |
+| **Profit before MPC** | **$11.22M** | |
 
-### LAT Applied
+### MPC Applied
 | Item | Amount |
 |------|--------|
 | Today's baseline profit | $0.98M |
 | Allowed to keep (2×) | $1.96M |
-| SPICE profit before LAT | $11.22M |
-| **LAT to Fairbrook MCC** | **$9.26M** |
+| SPICE profit before MPC | $11.22M |
+| **MPC to Fairbrook MCC** | **$9.26M** |
 | **Net to Walmart** | **$1.96M** |
 | **Walmart profit improvement** | **+$0.98M (+100%)** |
 
@@ -104,9 +104,9 @@ Estimated revenue: **$50M/year** (serves ~40,000 county catchment)
 
 ---
 
-## 4. All Fairbrook Businesses — LAT Summary
+## 4. All Fairbrook Businesses — MPC Summary
 
-| Category | Today's profit | SPICE profit | LAT |
+| Category | Today's profit | SPICE profit | MPC |
 |----------|---------------|-------------|-----|
 | Walmart | $0.98M | $11.22M | $9.26M |
 | Kroger | $0.38M | $3.80M | $3.04M |
@@ -121,14 +121,14 @@ Estimated revenue: **$50M/year** (serves ~40,000 county catchment)
 | Other retail/services | $0.60M | $3.00M | $1.80M |
 | **TOTAL** | **$8.41M** | **~$52M** | **~$35.15M** |
 
-### UBI funding from LAT
+### UBI funding from MPC
 $35.15M / 14,100 citizens / 12 months = **$207/month**
 
 ### With additional sources
 | Source | Monthly/citizen |
 |--------|----------------|
-| LAT (all businesses) | $207 |
-| Non-displaced wage supplement recycled via LAT | $47 |
+| MPC (all businesses) | $207 |
+| Non-displaced wage supplement recycled via MPC | $47 |
 | Federal block grant | $30 |
 | Reserve yield (USDC deployed) | $12 |
 | **Total** | **~$296/month** |
@@ -151,18 +151,18 @@ But:
   replicate $2,667/month in consumer spending
 
 If Walmart's revenue drops from $50M to $35M due to collapsed spending:
-- SPICE profit before LAT falls from $11.22M to ~$7M
-- LAT from Walmart falls from $9.26M to ~$5M
-- Total LAT pool shrinks → UBI falls → spending falls further → spiral
+- SPICE profit before MPC falls from $11.22M to ~$7M
+- MPC from Walmart falls from $9.26M to ~$5M
+- Total MPC pool shrinks → UBI falls → spending falls further → spiral
 
 **The model is only stable if UBI is high enough to maintain spending,
 but UBI is only high enough if spending is maintained. This is circular.**
 
 ### Possible resolutions
 
-**Option A — Higher LAT rate**
+**Option A — Higher MPC rate**
 Allow businesses to keep 1.5× rather than 2× today's profit.
-More LAT revenue → higher UBI → spending maintained.
+More MPC revenue → higher UBI → spending maintained.
 But businesses may resist if the deal is less attractive.
 
 **Option B — External seed capital**
@@ -185,24 +185,24 @@ levels than the nominal wage comparison suggests.
 
 **Most likely: a combination of B + D**, with the model stabilising
 at a lower nominal UBI that represents similar real purchasing power
-to today's wages, funded by LAT + seed capital that diminishes
+to today's wages, funded by MPC + seed capital that diminishes
 as the flywheel matures.
 
 ### Other open questions
-- Should LAT be on pre-federal-tax or post-federal-tax profit?
+- Should MPC be on pre-federal-tax or post-federal-tax profit?
 - How is "today's baseline profit" established and audited for new businesses?
-- What happens to businesses with losses today? (baseline = $0, so LAT = SPICE profit − $0)
-- How does LAT scale as automation increases year-on-year?
-- What is the transition path — LAT during partial automation, not full?
+- What happens to businesses with losses today? (baseline = $0, so MPC = SPICE profit − $0)
+- How does MPC scale as automation increases year-on-year?
+- What is the transition path — MPC during partial automation, not full?
 
 ---
 
 ## 6. What Is Definitely Right
 
-1. **LAT on windfall profit** (not revenue, not flat profit) is the correct base
+1. **MPC on windfall profit** (not revenue, not flat profit) is the correct base
 2. **The feedback loop** is the critical design constraint — UBI must be
    large enough to maintain the revenue base that funds it
-3. **Businesses are better off** in SPICE world even after LAT — the deal
+3. **Businesses are better off** in SPICE world even after MPC — the deal
    is genuinely attractive, not punitive
 4. **Walmart needs UBI** more than citizens do — without it, their
    customer base evaporates and the store closes

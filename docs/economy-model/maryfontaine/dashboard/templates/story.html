@@ -45,7 +45,7 @@
   <article class="doc-body">
     <h1>The Transition story</h1>
     <div class="lede">
-      Year-by-year, what happens to a 3,900-person colony under the Transition scenario at default settings. UBI 100 S/month, no LAT, no mortgage refinance. Honda Inc owns 60% of the factory but doesn't extract dividends — the value flow is the cars they buy as an export customer, not a profit dividend. The peg breaks in year 3. By year 10, citizens have lost <strong>67% of real purchasing power</strong>. Then we look at what happens with mitigations on.
+      Year-by-year, what happens to a 3,900-person colony under the Transition scenario at default settings. UBI 100 S/month, no MPC, no mortgage refinance. Honda Inc owns 60% of the factory but doesn't extract dividends — the value flow is the cars they buy as an export customer, not a profit dividend. The peg breaks in year 3. By year 10, citizens have lost <strong>67% of real purchasing power</strong>. Then we look at what happens with mitigations on.
     </div>
 
     <h2 id="setup">1. The setup</h2>
@@ -164,7 +164,7 @@
       <li><strong>Reserve replenishment is bounded</strong> — exports + remote-worker income are fixed flows that don't grow with the S supply.</li>
       <li><strong>Reserve drains are persistent</strong> — mortgages ($13M/yr at 10% scale) + citizen cashouts ($1-2M/yr) + imports ($5M/yr) consume most of the inflow.</li>
       <li><strong>The Fisc defends cover ratio first, peg second</strong> — when reserve can't back target rate at 0.30 cover, rate compresses. Citizens bear the cost.</li>
-      <li><strong>No reserve-replenishment mechanism keyed to S supply</strong> — without LAT or S-tax, there's nothing to make the reserve grow as supply grows.</li>
+      <li><strong>No reserve-replenishment mechanism keyed to S supply</strong> — without MPC or S-tax, there's nothing to make the reserve grow as supply grows.</li>
     </ol>
     <p>
       <em>Note on Honda Inc.</em> Earlier versions of this simulation modelled Honda Inc as extracting monthly dividends in USDC from its 60% Honda factory equity. That was wrong: a manufacturing subsidiary doesn't take dividends; it ships cars. The factory is a cost-center for Honda Inc, paid for via the export revenue (cars sold to Honda Inc). The current model has Honda Inc owning 60% on paper but extracting zero monthly dividend. The 87.5% of distributable surplus that previously went to Honda Inc as USDC now goes to Honda factory workers as S — making them the colony's wealthiest citizens but also generating cashouts of their own.
@@ -172,7 +172,7 @@
 
     <h2 id="mitigated">8. The same colony, mitigated</h2>
     <p>
-      Run Transition again with two switches: <strong>LAT 5%</strong> and <strong>mortgage refinance to S</strong>.
+      Run Transition again with two switches: <strong>MPC 5%</strong> and <strong>mortgage refinance to S</strong>.
     </p>
     <table>
       <thead>
@@ -195,14 +195,14 @@
       <li>Real purchasing power loss = <strong>37.5% (vs. 67%)</strong></li>
     </ul>
     <p>
-      Roughly half the welfare loss with two switches. Neither mitigation fundamentally changes the design — they're plausible policy choices. LAT taxes the automated firms causing the deflation in the first place, redistributing some of that wealth back into reserve defence. Mortgage refinancing converts USD obligations (a $13M/year reserve drain) into S obligations that stay inside the colony.
+      Roughly half the welfare loss with two switches. Neither mitigation fundamentally changes the design — they're plausible policy choices. MPC taxes the automated firms causing the deflation in the first place, redistributing some of that wealth back into reserve defence. Mortgage refinancing converts USD obligations (a $13M/year reserve drain) into S obligations that stay inside the colony.
     </p>
     <div class="callout ok">
-      <strong>This is what the simulation is for.</strong> The unmitigated Transition run shows the colony in trouble. The mitigated run shows what it takes to cope. Together they tell us the design <em>can</em> work, but only with deliberate reserve-replenishment + capital-retention mechanisms. The default no-LAT zero-mitigation baseline is <em>not</em> the recommended configuration — it's the experimental control.
+      <strong>This is what the simulation is for.</strong> The unmitigated Transition run shows the colony in trouble. The mitigated run shows what it takes to cope. Together they tell us the design <em>can</em> work, but only with deliberate reserve-replenishment + capital-retention mechanisms. The default no-MPC zero-mitigation baseline is <em>not</em> the recommended configuration — it's the experimental control.
     </div>
 
     <p>
-      Try the dashboard yourself. Start with Transition, no mitigations. Then turn on LAT, then mortgage refi, one at a time. Each lever's contribution becomes visible in the basket-cost and reserve charts.
+      Try the dashboard yourself. Start with Transition, no mitigations. Then turn on MPC, then mortgage refi, one at a time. Each lever's contribution becomes visible in the basket-cost and reserve charts.
     </p>
   </article>
 </div>

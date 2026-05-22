@@ -40,7 +40,7 @@ demographic the SPICE model is designed to serve.
 | UBI per epoch | 35 S | Equivalent to ~$26/day at $0.75/S |
 | Monthly equivalent | ~1,050 S (~$788) | Meaningful vs $903 median rent |
 | Fisc rate | $0.75 / S | Starting rate |
-| LAT collection | Daily sweep | Compressed from quarterly |
+| MPC collection | Daily sweep | Compressed from quarterly |
 | Bread basket target | 5 S | ~$3.75 at starting rate |
 
 **UBI rationale:** $788/month represents 13% of median household income — meaningful
@@ -51,14 +51,14 @@ $788 goes further in Fairbrook than in a coastal city.
 
 ## 3. Business Register
 
-### 3a. National Chains — High LAT
+### 3a. National Chains — High MPC
 
 These businesses use significant automation, displacing local workers. They are the
-primary LAT revenue source. All operate as bot wallets in the simulation.
+primary MPC revenue source. All operate as bot wallets in the simulation.
 
-| Business | Type | Locations | Est. staff | Automation | LAT rate | Notes |
+| Business | Type | Locations | Est. staff | Automation | MPC rate | Notes |
 |----------|------|-----------|------------|------------|----------|-------|
-| **Walmart Supercenter** | Grocery/retail | 1 (2281 US-68 S) | 300 | Very high — self-checkout (30+ units), AI inventory, automated distribution | 25% | Largest single employer + LAT payer |
+| **Walmart Supercenter** | Grocery/retail | 1 (2281 US-68 S) | 300 | Very high — self-checkout (30+ units), AI inventory, automated distribution | 25% | Largest single employer + MPC payer |
 | **Kroger** | Grocery/pharmacy | 1 (2129 S Main) | 120 | High — self-checkout, automated ordering, pharmacy robots | 18% | Has in-store pharmacy |
 | **McDonald's** | Fast food | 2 (S Main + N Main) | 60 total | High — kiosks replaced cashiers, AI drive-through | 20% | 2 locations |
 | **Lowe's** | Home improvement | 1 (2168 US-68 S) | 150 | High — self-checkout, inventory drones, AI pricing | 18% | Adjacent to Walmart |
@@ -80,10 +80,10 @@ primary LAT revenue source. All operate as bot wallets in the simulation.
 
 ### 3b. National Chains — Banking / Finance
 
-Banks are significant LAT payers — AI has automated teller functions, loan processing,
+Banks are significant MPC payers — AI has automated teller functions, loan processing,
 fraud detection. Each employs far fewer staff than 20 years ago.
 
-| Business | Type | Locations | LAT rate |
+| Business | Type | Locations | MPC rate |
 |----------|------|-----------|----------|
 | **Chase** | Bank | 1 | 20% |
 | **KeyBank** | Bank | 1 | 20% |
@@ -93,7 +93,7 @@ fraud detection. Each employs far fewer staff than 20 years ago.
 
 ### 3c. National Services
 
-| Business | Type | LAT rate | Notes |
+| Business | Type | MPC rate | Notes |
 |----------|------|----------|-------|
 | **H&R Block** | Tax preparation | 15% | AI tax prep significantly reduced staff |
 | **AT&T** | Telecom | 18% | Automated stores, AI customer service |
@@ -111,9 +111,9 @@ fraud detection. Each employs far fewer staff than 20 years ago.
 ### 3d. Major Local Employers (Colony institutions)
 
 These are Fairbrook's genuine local institutions. They employ citizens, pay wages in S,
-and have low or zero LAT.
+and have low or zero MPC.
 
-| Business | Type | Est. staff | LAT | Notes |
+| Business | Type | Est. staff | MPC | Notes |
 |----------|------|------------|-----|-------|
 | **Mary Rutan Hospital** | Healthcare | 500+ | Low (8%) | Some diagnostic AI, but human-care focused. Major S-wage payer. |
 | **Fairbrook City Schools** | Education | 400 | Zero | Public institution, human teachers |
@@ -125,9 +125,9 @@ and have low or zero LAT.
 
 ### 3e. Downtown Local Businesses (colony SMEs)
 
-Small, human-run. Zero or near-zero LAT. S-economy participants.
+Small, human-run. Zero or near-zero MPC. S-economy participants.
 
-| Business | Type | LAT | Notes |
+| Business | Type | MPC | Notes |
 |----------|------|-----|-------|
 | **Carla's Coffee** | Café | Zero | Our persona — human-run |
 | **Brewfontaine** | Craft brewery/bar | Zero | Award-winning local |
@@ -157,7 +157,7 @@ Small, human-run. Zero or near-zero LAT. S-economy participants.
 When a user joins the Fairbrook simulation, they choose a role. The role determines:
 - Employer (who sends them wages)
 - Wage amount in S
-- LAT relevance
+- MPC relevance
 - Economic narrative
 
 | Role | Employer bot | Daily wage (S) | Total daily income | Story |
@@ -166,7 +166,7 @@ When a user joins the Fairbrook simulation, they choose a role. The role determi
 | **Kroger cashier** | Kroger bot | 40 S | 75 S | One of the last human cashiers |
 | **Nurse (Mary Rutan)** | Hospital bot | 60 S | 95 S | Human care, AI diagnostic support |
 | **Teacher (Fairbrook Schools)** | Schools bot | 55 S | 90 S | Public sector, fully human |
-| **Local café worker** | Carla's bot | 30 S | 65 S | Small business, zero LAT employer |
+| **Local café worker** | Carla's bot | 30 S | 65 S | Small business, zero MPC employer |
 | **Contractor (remote)** | ExaTech (USDC→S) | 70 S equiv | 105 S | Converts USDC salary at Fisc boundary |
 | **Self-employed** | None | 0 | 35 S (UBI only) | Entrepreneur, no employer |
 | **Retired** | None | 0 | 35 S (UBI only) | UBI as pension supplement |
@@ -174,7 +174,7 @@ When a user joins the Fairbrook simulation, they choose a role. The role determi
 
 ---
 
-## 5. LAT Revenue Model
+## 5. MPC Revenue Model
 
 ### Automation scoring methodology
 
@@ -185,11 +185,11 @@ Each business is scored on a 0–100 automation scale based on:
 - Back-office automation
 - Manufacturing/warehouse robots
 
-LAT = automation_score × base_revenue_proxy × rate
+MPC = automation_score × base_revenue_proxy × rate
 
-### Estimated annual LAT revenue (simulation proxy, USD equivalent)
+### Estimated annual MPC revenue (simulation proxy, USD equivalent)
 
-| Business | Est. annual LAT (USD) |
+| Business | Est. annual MPC (USD) |
 |----------|----------------------|
 | Walmart | $280,000 |
 | Kroger | $95,000 |
@@ -206,13 +206,13 @@ LAT = automation_score × base_revenue_proxy × rate
 
 ### UBI funding check
 
-- Total LAT: ~$1.025M/year
+- Total MPC: ~$1.025M/year
 - Citizens: 14,100
 - UBI per citizen: $1,025,000 / 14,100 = **$72.70/year = $6.06/month**
 
-**This is insufficient on its own.** At launch scale, LAT alone doesn't fund a
+**This is insufficient on its own.** At launch scale, MPC alone doesn't fund a
 meaningful UBI. This is realistic and expected — Bellefontaine's economy isn't large
-enough for LAT alone to fund $800/month UBI without additional sources:
+enough for MPC alone to fund $800/month UBI without additional sources:
 
 | Additional sources needed | Est. annual |
 |--------------------------|-------------|
@@ -222,9 +222,9 @@ enough for LAT alone to fund $800/month UBI without additional sources:
 | Reserve yield (USDC deployed) | $50K |
 
 **Simulation approach:** The simulation seeds the Fisc reserve with enough USDC to
-run 90 days of UBI at 35 S/day for all citizens. LAT revenue is real and flows
+run 90 days of UBI at 35 S/day for all citizens. MPC revenue is real and flows
 into the reserve, but the reserve seed is what makes the first epoch viable.
-This is honest — early colonies need founding capital. The LAT flywheel builds over time.
+This is honest — early colonies need founding capital. The MPC flywheel builds over time.
 
 ---
 
@@ -235,7 +235,7 @@ Each external business runs as a bot wallet in the simulation. A daily cron orch
 ```
 06:00 UTC — MCC mints UBI → all citizens receive 35 S
 06:05 UTC — Employer bots pay wages → citizen wallets
-06:10 UTC — Business bots pay LAT → MCC (S or USDC)
+06:10 UTC — Business bots pay MPC → MCC (S or USDC)
 06:15 UTC — Export bots run boundary flows → Kroger, Walmart convert S profit → USDC
 06:20 UTC — Import bot — ExaTech sends USDC to Graham → Graham receives S
 06:25 UTC — Fisc rate algorithm runs (F9) → rate updated if needed
@@ -267,14 +267,14 @@ commerce. Real users interact on top of this running simulation.
 | 06:00 | 35 S UBI arrives |
 | 06:05 | 45 S wages arrive from Walmart bot |
 | Morning | Buy coffee at Carla's for 4 S. See transaction in history. |
-| Midday | Check Fisc dashboard — Walmart's LAT payment visible in reserve |
+| Midday | Check Fisc dashboard — Walmart's MPC payment visible in reserve |
 | Afternoon | Save 20 S to V |
 | 06:00 next day | New epoch. Do it again. |
 
 **The SPICE argument lands in one day:**
 - You got paid without working (UBI)
-- Walmart funded part of it (LAT)
-- Your money stayed local (Carla didn't pay LAT)
+- Walmart funded part of it (MPC)
+- Your money stayed local (Carla didn't pay MPC)
 - The reserve grew
 
 ---
@@ -287,12 +287,12 @@ commerce. Real users interact on top of this running simulation.
 | **Compressed epoch config** | Colony epoch = 1 day for Fairbrook simulation | P0 |
 | **Bot orchestrator cron** | Daily cron runs all bot transactions in sequence | P0 |
 | **Role selection UI** | Choose job at signup, employer bot wired up | P0 |
-| **LAT payment mechanism** | Business bots pay LAT to MCC daily | P1 |
+| **MPC payment mechanism** | Business bots pay MPC to MCC daily | P1 |
 | **Boundary flows** | Fisc deposit/withdraw (Graham import, Kroger export) | P1 |
 | **Reserve seeding** | Fund Fisc reserve with enough USDC for 90-day run | P1 |
 | **Full business register** | All ~40 businesses seeded as bot wallets | P1 |
 | **Fairbrook landing page** | `app.zpc.finance/fairbrook` — town overview, join CTA | P2 |
-| **Town economy dashboard** | Live view of all LAT flows, reserve, UBI, business activity | P2 |
+| **Town economy dashboard** | Live view of all MPC flows, reserve, UBI, business activity | P2 |
 | **V savings + yield** | Yield distribution to V holders | P2 |
 
 ---
@@ -303,7 +303,7 @@ When a real district approaches for deployment, the following must be in place:
 
 - [ ] Full asset register (property, business, land)
 - [ ] Real citizen identity verification (KYC-lite at minimum)
-- [ ] Real LAT assessment process (third-party audit or self-declaration)
+- [ ] Real MPC assessment process (third-party audit or self-declaration)
 - [ ] Governance elections live and tested
 - [ ] Fisc boundary flows battle-tested at simulation scale
 - [ ] MCC onboarding documentation (legal framework for colony)

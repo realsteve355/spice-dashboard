@@ -828,14 +828,14 @@ def tick_one_month(state: SimState, cfg: SimConfig, trajectory: EnvironmentTraje
             update_min_balance(co)
         update_min_balance(mcc)
 
-    # 7.5. LAT (Local Automation Tax) — if enabled, charge each company a % of their
+    # 7.5. MPC (Market Participation Charge) — if enabled, charge each company a % of their
     # max_revenue_per_month_s as a proxy for automation level. S is destroyed at Fisc
     # (reduces denominator in cover ratio → strengthens reserve coverage).
-    if cfg.lat_enabled and cfg.lat_rate_pct > 0:
+    if cfg.mpc_enabled and cfg.mpc_rate_pct > 0:
         for co in state.companies:
             if co.is_mcc or co.closed_year is not None:
                 continue
-            bill = co.max_revenue_per_month_s * cfg.lat_rate_pct
+            bill = co.max_revenue_per_month_s * cfg.mpc_rate_pct
             charge = min(bill, max(0.0, co.s_balance))
             if charge <= 0:
                 continue
@@ -845,7 +845,7 @@ def tick_one_month(state: SimState, cfg: SimConfig, trajectory: EnvironmentTraje
             txs.add(year, month, "lat_payment",
                     from_wallet=("company", co.id), to_wallet=("fisc", 0),
                     s_amount=charge, usdc_amount=0.0, fisc_rate=fisc_rate,
-                    related_company_id=co.id, description="LAT")
+                    related_company_id=co.id, description="MPC")
             update_min_balance(co)
 
     # 8. Citizen consumption (basket via supplier picker)

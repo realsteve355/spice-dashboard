@@ -165,11 +165,11 @@ def main():
     print("\nTest 5: Best mitigations + levy vs without", file=sys.stderr)
     results["test5_combo"] = [
         run_one("trans_LATmortrefi_no_levy", scenario="transition", months=120,
-                lat_enabled=True, lat_rate_pct=0.05,
+                mpc_enabled=True, mpc_rate_pct=0.05,
                 mortgage_refinance_to_s=True, external_rent_refinance=True,
                 levy_enabled=False),
         run_one("trans_LATmortrefi_with_levy", scenario="transition", months=120,
-                lat_enabled=True, lat_rate_pct=0.05,
+                mpc_enabled=True, mpc_rate_pct=0.05,
                 mortgage_refinance_to_s=True, external_rent_refinance=True,
                 levy_enabled=True),
         run_one("trans_levy_only", scenario="transition", months=120, levy_enabled=True),

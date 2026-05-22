@@ -34,7 +34,7 @@ Optional flags:
 - Cover-ratio target (0.10–0.50, default 0.30)
 
 **Mitigations** (the search levers for the steady-ground config):
-- LAT (Local Automation Tax) rate (0–20% of company revenue capacity)
+- MPC (Market Participation Charge) rate (0–20% of company revenue capacity)
 - Honda Inc dividend vesting (toggle — keeps S in colony, no USDC cashout)
 - Refinance mortgages → S (toggle — colony bank buyout, no USDC outflow)
 - Refinance external rent → S (toggle — colony landlord buyout)
