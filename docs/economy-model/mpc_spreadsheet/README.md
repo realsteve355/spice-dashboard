@@ -14,6 +14,8 @@ Generated 22 May 2026 from `docs/economy-model/maryfontaine/external_suppliers.p
 | `external_by_sector.csv` | Same data rolled up by sector (~20 rows) — sum employees, sum profit, sum MF revenue, avg P/emp |
 | `transactions_per_business.csv` | Per sector: txs/HH/month, total colony monthly txs, # firms (named + long-tail estimate), avg txs and revenue per firm |
 | `mpc_calc_per_company.csv` | Per-firm MPC at flat 5% vs progressive (k=0.05, threshold $80k P/emp, exponent 1.5, capped at 25%) |
+| `basket_composition.csv` | The basket: 10 categories, each with 2026 share, monthly $, annual change rate, price floor, rationale |
+| `basket_trajectory.csv` | 25-year-out trajectory — aggregate basket factor + per-category monthly $ for years 2026–2051 |
 
 ## Key numbers at default settings
 
