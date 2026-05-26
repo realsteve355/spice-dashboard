@@ -2,56 +2,70 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sector trajectory — Manufacturing</title>
+<title>Sector trajectory — bridge years</title>
 <style>
   body { font-family: 'IBM Plex Mono', monospace; background: #06070a; color: #ede5d4; padding: 32px; max-width: 1100px; margin: 0 auto; }
   h1 { font-weight: 500; letter-spacing: 0.02em; }
-  .subtitle { color: #888; margin-bottom: 32px; }
+  .subtitle { color: #888; margin-bottom: 24px; }
   .chart { background: #0b0d12; border: 1px solid #1f2330; padding: 24px; margin-bottom: 18px; }
-  .legend { display: flex; gap: 24px; font-size: 13px; margin: 16px 0 24px; }
+  .legend { display: flex; gap: 24px; font-size: 13px; margin: 16px 0 24px; flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 8px; }
   .legend .swatch { width: 16px; height: 3px; }
-  .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; padding: 16px; background: #0b0d12; border: 1px solid #1f2330; }
-  .controls label { font-size: 12px; color: #aaa; display: block; }
-  .controls input[type=range] { width: 100%; }
-  .controls .val { font-size: 13px; color: #ede5d4; }
+  .controls { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 20px; padding: 18px; background: #0b0d12; border: 1px solid #1f2330; align-items: center; }
+  .controls label { font-size: 12px; color: #aaa; display: block; margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .controls input[type=range], .controls select { width: 100%; }
+  .controls .val { font-size: 14px; color: #ede5d4; margin-top: 4px; }
+  .controls select { background: #0b0d12; color: #ede5d4; border: 1px solid #444; padding: 8px; font-family: inherit; font-size: 13px; }
+  .info-panel { background: #0b0d12; border: 1px solid #1f2330; padding: 14px 18px; margin-bottom: 20px; font-size: 12px; color: #bbb; line-height: 1.7; }
+  .info-panel strong { color: #ede5d4; }
   table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 8px; }
   th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid #1a1e28; }
-  th { color: #888; text-align: right; }
+  th { color: #888; }
   td:first-child, th:first-child { text-align: left; color: #888; }
-  .note { font-size: 12px; color: #999; line-height: 1.6; }
+  .note { font-size: 12px; color: #999; line-height: 1.6; margin-top: 24px; }
+  .params-display { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px; color: #aaa; }
+  .params-display .item { background: #14171f; padding: 6px 10px; }
+  .params-display .item .key { color: #777; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .params-display .item .val { color: #ede5d4; font-size: 13px; }
 </style>
 </head>
 <body>
 
-<h1>Manufacturing sector — bridge years</h1>
+<h1>Sector trajectory — bridge years</h1>
 <div class="subtitle">
   Price deflation vs. employment displacement, 2026–2046.
-  Maryfontaine baseline: ~1,500 manufacturing jobs (Honda factory + suppliers).
+  Per-sector parameters research-anchored; one slider tunes overall transition velocity.
 </div>
 
 <div class="controls">
   <div>
-    <label>Speed factor (overall transition pace; 1.0 = base)</label>
-    <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
-    <div class="val">×<span id="speed-val">1.00</span></div>
+    <label>Sector</label>
+    <select id="sector">
+      <option value="software">Software / digital</option>
+      <option value="legal">Legal / professional</option>
+      <option value="financial">Financial / banking</option>
+      <option value="big_retail">Big retail</option>
+      <option value="manufacturing" selected>Manufacturing (auto + traditional)</option>
+      <option value="energy">Energy / utilities</option>
+      <option value="transport">Transport / logistics</option>
+      <option value="construction">Construction</option>
+      <option value="food_processed">Food (processed)</option>
+      <option value="food_fresh">Food (fresh)</option>
+      <option value="education">Education</option>
+      <option value="healthcare">Healthcare</option>
+      <option value="hospitality">Hospitality / restaurants</option>
+      <option value="personal_services">Personal services (hair, repair)</option>
+      <option value="care_work">Care work (childcare, eldercare)</option>
+    </select>
   </div>
   <div>
-    <label>Displacement ceiling (% jobs gone by plateau)</label>
-    <input type="range" id="ceiling" min="0.4" max="0.95" step="0.05" value="0.75">
-    <div class="val"><span id="ceiling-val">75</span>%</div>
-  </div>
-  <div>
-    <label>Annual price deflation (compounded)</label>
-    <input type="range" id="deflation" min="0.5" max="6" step="0.25" value="2.5">
-    <div class="val">−<span id="deflation-val">2.5</span>% / year</div>
-  </div>
-  <div>
-    <label>Deflation floor (% of 2026 price, can't fall below)</label>
-    <input type="range" id="floor" min="10" max="80" step="5" value="30">
-    <div class="val"><span id="floor-val">30</span>%</div>
+    <label>Transition velocity (end-of-shock year)</label>
+    <input type="range" id="velocity" min="2036" max="2046" step="1" value="2040">
+    <div class="val">Mostly complete by <span id="velocity-val">2040</span></div>
   </div>
 </div>
+
+<div class="info-panel" id="info-panel"></div>
 
 <div class="legend">
   <span><span class="swatch" style="background:#3b82f6"></span> Price index (% of 2026 cost)</span>
@@ -61,87 +75,197 @@
 
 <div class="chart">
   <svg id="chart" width="100%" viewBox="0 0 900 460" style="display:block;">
-    <!-- axes drawn dynamically -->
   </svg>
 </div>
 
 <table id="data-table">
   <thead>
-    <tr><th>Year</th><th>Price idx</th><th>Employment</th><th>MF jobs</th><th>Displaced</th><th>Cumulative gap</th></tr>
+    <tr><th>Year</th><th>Price idx</th><th>Employment</th><th>MF jobs</th><th>Displaced</th><th>Gap (pts)</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<div class="note" style="margin-top: 24px;">
-  <strong>What the chart shows.</strong>
-  Both lines start at 100% in 2026 — same factory, same prices, same headcount.
-  The red line (employment) falls fast as automation displaces workers.
-  The blue line (price) falls slower — the goods get cheaper, but not as fast as the jobs vanish.
-  The shaded gap between the two is the <strong>bridge problem</strong>: people are
-  unemployed at a faster rate than the basket gets cheap enough for UBI to cover them.
-  That's the years where the Fisc reserve takes the strain.
+<div class="note">
+  <strong>Research notes per sector.</strong> Deflation rates from the basket model (basket_model.py).
+  Displacement ceilings calibrated against (1) current automation level — auto/manufacturing already
+  industrially automated since 1970s, so further runway is modest; (2) AI exposure scores from
+  GPT-doability studies — software / legal / financial have the most disruption ahead;
+  (3) embodied/relational work — hospitality, healthcare, care work are stickiest because the
+  service IS the human interaction.
 </div>
 
 <script>
-const MF_JOBS_2026 = 1500;
 const YEAR_START = 2026;
 const YEAR_END   = 2046;
 const YEARS = Array.from({length: YEAR_END - YEAR_START + 1}, (_, i) => YEAR_START + i);
+
+// Per-sector research-anchored parameters
+// deflation: annual price change (negative = deflating)
+// floor: minimum price as % of 2026
+// ceiling: maximum displacement % of 2026 employment
+// mf_jobs: estimated Maryfontaine employment in this sector in 2026
+// note: research rationale, displayed in info panel
+const SECTORS = {
+  software: {
+    label: "Software / digital",
+    deflation: 0.10, floor: 0.05, ceiling: 0.80, mf_jobs: 300,
+    note: "Code-writing, design, content, analysis all LLM-doable. GPT-doability scores rank this among the highest. Big disruption still ahead of us — automation barely started in 2024-25."
+  },
+  legal: {
+    label: "Legal / professional services",
+    deflation: 0.05, floor: 0.20, ceiling: 0.70, mf_jobs: 200,
+    note: "Contract review, research, drafting — all LLM-doable. Accreditation and courtroom advocacy stickier. Most disruption ahead."
+  },
+  financial: {
+    label: "Financial / banking",
+    deflation: 0.03, floor: 0.25, ceiling: 0.65, mf_jobs: 250,
+    note: "Customer service chatbots, automated compliance, AI underwriting, robo-advisory. Branch tellers, paraprofessionals heavily exposed. Relationship banking sticky."
+  },
+  big_retail: {
+    label: "Big retail (Walmart-style)",
+    deflation: 0.01, floor: 0.60, ceiling: 0.55, mf_jobs: 1200,
+    note: "Self-checkout, robotic stocking, automated distribution. Pickers + cashiers exposed. Customer service + last-mile delivery slower. Most big-box already heavily logistics-automated."
+  },
+  manufacturing: {
+    label: "Manufacturing (auto + traditional)",
+    deflation: 0.025, floor: 0.30, ceiling: 0.35, mf_jobs: 1500,
+    note: "Already heavily industrially automated since 1970s — most assembly is robotic. Remaining displacement: quality inspection (AI vision), supply chain admin, R&D. Modest runway compared to white-collar."
+  },
+  energy: {
+    label: "Energy / utilities",
+    deflation: 0.05, floor: 0.15, ceiling: 0.50, mf_jobs: 350,
+    note: "Smart grids, predictive maintenance, automated generation, demand response. Line workers + emergency response stick. Power generation already mostly unmanned."
+  },
+  transport: {
+    label: "Transport / logistics",
+    deflation: 0.025, floor: 0.30, ceiling: 0.45, mf_jobs: 600,
+    note: "Autonomous trucking gradually viable; warehouse robotics already mature. Drivers still needed long-tail (last mile, niche cargo). Uber/Lyft drivers exposed once AV scales."
+  },
+  construction: {
+    label: "Construction",
+    deflation: 0.015, floor: 0.40, ceiling: 0.30, mf_jobs: 450,
+    note: "3D printing, modular construction, robotic framing — promising but site work sticky. Trades (plumbing, electrical, finish carpentry) hard to automate. Modest displacement ceiling."
+  },
+  food_processed: {
+    label: "Food (processed)",
+    deflation: 0.01, floor: 0.40, ceiling: 0.40, mf_jobs: 250,
+    note: "Vertical farming, automated processing, lab meat. Distribution + retail human in near term."
+  },
+  food_fresh: {
+    label: "Food (fresh)",
+    deflation: -0.01, floor: 0.60, ceiling: 0.20, mf_jobs: 180,
+    note: "Picking robots coming but slow; land-bound; consumer preference for human-touched local. Net slight inflation expected."
+  },
+  education: {
+    label: "Education",
+    deflation: 0.01, floor: 0.30, ceiling: 0.30, mf_jobs: 350,
+    note: "AI tutors deflate content delivery hard. Humans needed for mentorship, accreditation, special-needs support, classroom management."
+  },
+  healthcare: {
+    label: "Healthcare (provider)",
+    deflation: -0.005, floor: 0.80, ceiling: 0.20, mf_jobs: 800,
+    note: "Diagnostic AI saves doctor time but doesn't remove the doctor. Care work (nursing, eldercare) growing as population ages. Mild net inflation despite AI productivity gains."
+  },
+  hospitality: {
+    label: "Hospitality / restaurants",
+    deflation: -0.02, floor: 0.90, ceiling: 0.15, mf_jobs: 400,
+    note: "The hardest to automate. Service IS the human interaction. Kitchen back-of-house some robotics; front-of-house essentially sticky. Mild net inflation due to demand growth."
+  },
+  personal_services: {
+    label: "Personal services (hair, repair, beauty)",
+    deflation: 0.0, floor: 0.80, ceiling: 0.10, mf_jobs: 280,
+    note: "Hands-on physical work that people want a human to do. Robotics conceivable but consumer preference is the constraint. Near-zero displacement projected."
+  },
+  care_work: {
+    label: "Care work (childcare, eldercare)",
+    deflation: 0.01, floor: 0.90, ceiling: 0.08, mf_jobs: 320,
+    note: "Highest emotional + physical complexity. Demand growing with aging demographics. Robots and AI assistants augment but cannot replace human carers in near term."
+  }
+};
+
+function getSector() {
+  return SECTORS[document.getElementById('sector').value];
+}
 
 function logistic(t, midpoint, k, ceiling) {
   return ceiling / (1 + Math.exp(-k * (t - midpoint)));
 }
 
 function compute() {
-  const speed     = parseFloat(document.getElementById('speed').value);
-  const ceiling   = parseFloat(document.getElementById('ceiling').value);
-  const deflPct   = parseFloat(document.getElementById('deflation').value) / 100;
-  const floor     = parseFloat(document.getElementById('floor').value) / 100;
+  const s = getSector();
+  const endYear = parseInt(document.getElementById('velocity').value);
 
-  // S-curve midpoint shifts with speed factor:
-  //   speed 1.0 -> midpoint at 2032 (Steve's "mostly by 2036")
-  //   speed 2.0 -> compressed (everything happens by 2030)
-  //   speed 0.5 -> stretched (everything by 2046)
-  const baseMidpoint = 2032;
-  const midpoint = YEAR_START + (baseMidpoint - YEAR_START) / speed;
-  const k = 0.6 * speed;  // steepness scales with speed
+  // Velocity translates to: by `endYear`, displacement is ~95% complete.
+  // For logistic curve: at midpoint + 3/k years, we're at ~95% of ceiling.
+  // So pick k such that midpoint + 3/k = endYear, with midpoint somewhere
+  // between start year and endYear.
+  // Simple approach: place midpoint at (YEAR_START + endYear) / 2, choose k
+  // so that 95% of ceiling is reached at endYear.
+  const midpoint = (YEAR_START + endYear) / 2;
+  // We want logistic((endYear - midpoint) * k) = 0.95 -> k * (endYear - midpoint) ~ 3
+  const halfWidth = endYear - midpoint;
+  const k = halfWidth > 0 ? 3 / halfWidth : 1;
 
   return YEARS.map(year => {
-    const displaced = logistic(year, midpoint, k, ceiling);
+    const displaced = logistic(year, midpoint, k, s.ceiling);
     const employment = 1 - displaced;
-    const yearsElapsed = year - YEAR_START;
-    const price = Math.max(floor, Math.pow(1 - deflPct, yearsElapsed));
+    const yrElapsed = year - YEAR_START;
+    let price;
+    if (s.deflation >= 0) {
+      price = Math.max(s.floor, Math.pow(1 - s.deflation, yrElapsed));
+    } else {
+      // Negative deflation = inflation; no floor for inflation, just compound up
+      price = Math.pow(1 - s.deflation, yrElapsed);
+    }
     const gap = Math.max(0, price - employment);
     return { year, displaced, employment, price, gap };
   });
 }
 
 function render() {
-  document.getElementById('speed-val').textContent     = parseFloat(document.getElementById('speed').value).toFixed(2);
-  document.getElementById('ceiling-val').textContent   = Math.round(parseFloat(document.getElementById('ceiling').value) * 100);
-  document.getElementById('deflation-val').textContent = parseFloat(document.getElementById('deflation').value).toFixed(2);
-  document.getElementById('floor-val').textContent     = Math.round(parseFloat(document.getElementById('floor').value) * 100);
+  const s = getSector();
+  document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
 
   const data = compute();
-  drawChart(data);
-  drawTable(data);
+  drawChart(data, s);
+  drawTable(data, s);
+  drawInfoPanel(s);
 }
 
-function drawChart(data) {
+function drawInfoPanel(s) {
+  const deflPct = s.deflation >= 0 ? `−${(s.deflation*100).toFixed(1)}%` : `+${(-s.deflation*100).toFixed(1)}%`;
+  document.getElementById('info-panel').innerHTML = `
+    <strong>${s.label}</strong> — MF baseline: ${s.mf_jobs.toLocaleString()} jobs in 2026.
+    Research-anchored parameters:
+    <div class="params-display" style="margin-top:10px;">
+      <div class="item"><div class="key">Annual price change</div><div class="val">${deflPct} / yr</div></div>
+      <div class="item"><div class="key">Price floor</div><div class="val">${(s.floor*100).toFixed(0)}% of 2026</div></div>
+      <div class="item"><div class="key">Displacement ceiling</div><div class="val">${(s.ceiling*100).toFixed(0)}% of jobs</div></div>
+      <div class="item"><div class="key">MF jobs (2026)</div><div class="val">${s.mf_jobs.toLocaleString()}</div></div>
+    </div>
+    <div style="margin-top:10px; color: #999;">${s.note}</div>
+  `;
+}
+
+function drawChart(data, s) {
   const svg = document.getElementById('chart');
   const W = 900, H = 460;
   const ml = 60, mr = 24, mt = 24, mb = 50;
   const pw = W - ml - mr, ph = H - mt - mb;
 
-  const xs = year => ml + ((year - YEAR_START) / (YEAR_END - YEAR_START)) * pw;
-  const ys = v    => mt + (1 - v) * ph;
+  // Y range: handle inflation case where price exceeds 100%
+  const maxPrice = Math.max(1.0, ...data.map(d => d.price));
+  const yMax = Math.max(1.0, Math.ceil(maxPrice * 10) / 10);
 
-  const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  const xs = year => ml + ((year - YEAR_START) / (YEAR_END - YEAR_START)) * pw;
+  const ys = v    => mt + (1 - v / yMax) * ph;
+
+  const ticks = [];
+  for (let t = 0; t <= yMax + 0.001; t += 0.2) ticks.push(t);
   const yearTicks = [2026, 2031, 2036, 2041, 2046];
 
   let svgChildren = '';
 
-  // Grid + Y-axis labels
   for (const t of ticks) {
     const y = ys(t);
     svgChildren += `<line x1="${ml}" y1="${y}" x2="${ml + pw}" y2="${y}" stroke="#1a1e28" stroke-width="1"/>`;
@@ -153,35 +277,28 @@ function drawChart(data) {
     svgChildren += `<text x="${x}" y="${mt + ph + 18}" font-size="11" fill="#888" text-anchor="middle">${t}</text>`;
   }
 
-  // Bridge gap (shaded area)
+  // Bridge gap shaded
   let gapPath = `M ${xs(data[0].year)} ${ys(data[0].employment)}`;
-  for (let i = 0; i < data.length; i++) {
-    gapPath += ` L ${xs(data[i].year)} ${ys(data[i].employment)}`;
-  }
-  for (let i = data.length - 1; i >= 0; i--) {
-    gapPath += ` L ${xs(data[i].year)} ${ys(data[i].price)}`;
-  }
+  for (let i = 0; i < data.length; i++) gapPath += ` L ${xs(data[i].year)} ${ys(data[i].employment)}`;
+  for (let i = data.length - 1; i >= 0; i--) gapPath += ` L ${xs(data[i].year)} ${ys(data[i].price)}`;
   gapPath += ' Z';
   svgChildren += `<path d="${gapPath}" fill="#fbbf24" fill-opacity="0.18"/>`;
 
-  // Price line (blue)
+  // Price line
   let pricePath = `M ${xs(data[0].year)} ${ys(data[0].price)}`;
   data.slice(1).forEach(d => pricePath += ` L ${xs(d.year)} ${ys(d.price)}`);
   svgChildren += `<path d="${pricePath}" stroke="#3b82f6" stroke-width="2.5" fill="none"/>`;
 
-  // Employment line (red)
+  // Employment line
   let empPath = `M ${xs(data[0].year)} ${ys(data[0].employment)}`;
   data.slice(1).forEach(d => empPath += ` L ${xs(d.year)} ${ys(d.employment)}`);
   svgChildren += `<path d="${empPath}" stroke="#ef4444" stroke-width="2.5" fill="none"/>`;
 
-  // Axes
   svgChildren += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
   svgChildren += `<line x1="${ml}" y1="${mt + ph}" x2="${ml + pw}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
 
-  // Y-axis label
   svgChildren += `<text x="14" y="${mt + ph / 2}" font-size="11" fill="#888" text-anchor="middle" transform="rotate(-90, 14, ${mt + ph / 2})">% of 2026 baseline</text>`;
 
-  // Label endpoints (2036)
   const idx2036 = data.findIndex(d => d.year === 2036);
   if (idx2036 >= 0) {
     const d = data[idx2036];
@@ -194,32 +311,30 @@ function drawChart(data) {
   svg.innerHTML = svgChildren;
 }
 
-function drawTable(data) {
+function drawTable(data, s) {
   const tbody = document.querySelector('#data-table tbody');
-  const showYears = [2026, 2028, 2030, 2031, 2032, 2034, 2036, 2038, 2040, 2042, 2046];
-  let cumGap = 0;
+  const showYears = [2026, 2028, 2030, 2032, 2034, 2036, 2038, 2040, 2042, 2046];
   let html = '';
   for (const year of showYears) {
     const d = data.find(x => x.year === year);
     if (!d) continue;
-    // approximate cum gap as sum of yearly gaps to this point
-    cumGap = data.filter(x => x.year <= year).reduce((s, x) => s + x.gap, 0);
-    const jobs = Math.round(MF_JOBS_2026 * d.employment);
-    const displaced = MF_JOBS_2026 - jobs;
+    const jobs = Math.round(s.mf_jobs * d.employment);
+    const displaced = s.mf_jobs - jobs;
     html += `<tr>
       <td>${year}</td>
       <td>${(d.price * 100).toFixed(1)}%</td>
       <td>${(d.employment * 100).toFixed(1)}%</td>
       <td>${jobs.toLocaleString()}</td>
       <td>${displaced.toLocaleString()}</td>
-      <td>${(cumGap * 100).toFixed(1)}</td>
+      <td>${(d.gap * 100).toFixed(1)}</td>
     </tr>`;
   }
   tbody.innerHTML = html;
 }
 
-['speed', 'ceiling', 'deflation', 'floor'].forEach(id => {
+['sector', 'velocity'].forEach(id => {
   document.getElementById(id).addEventListener('input', render);
+  document.getElementById(id).addEventListener('change', render);
 });
 render();
 </script>
