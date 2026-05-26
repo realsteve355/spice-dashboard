@@ -13,6 +13,9 @@
       { path: '/profitability',  label: 'Profitability' },
       { path: '/references',     label: 'References' },
     ]},
+    { label: 'Transition', items: [
+      { path: '/sectors',        label: 'Sectors' },
+    ]},
   ];
 
   const current = window.location.pathname.replace(/\/$/, '') || '/';
