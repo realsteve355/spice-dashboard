@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sector trajectory — Manufacturing</title>
+<style>
+  body { font-family: 'IBM Plex Mono', monospace; background: #06070a; color: #ede5d4; padding: 32px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-weight: 500; letter-spacing: 0.02em; }
+  .subtitle { color: #888; margin-bottom: 32px; }
+  .chart { background: #0b0d12; border: 1px solid #1f2330; padding: 24px; margin-bottom: 18px; }
+  .legend { display: flex; gap: 24px; font-size: 13px; margin: 16px 0 24px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend .swatch { width: 16px; height: 3px; }
+  .controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; padding: 16px; background: #0b0d12; border: 1px solid #1f2330; }
+  .controls label { font-size: 12px; color: #aaa; display: block; }
+  .controls input[type=range] { width: 100%; }
+  .controls .val { font-size: 13px; color: #ede5d4; }
+  table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 8px; }
+  th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid #1a1e28; }
+  th { color: #888; text-align: right; }
+  td:first-child, th:first-child { text-align: left; color: #888; }
+  .note { font-size: 12px; color: #999; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>Manufacturing sector — bridge years</h1>
+<div class="subtitle">
+  Price deflation vs. employment displacement, 2026–2046.
+  Maryfontaine baseline: ~1,500 manufacturing jobs (Honda factory + suppliers).
+</div>
+
+<div class="controls">
+  <div>
+    <label>Speed factor (overall transition pace; 1.0 = base)</label>
+    <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
+    <div class="val">×<span id="speed-val">1.00</span></div>
+  </div>
+  <div>
+    <label>Displacement ceiling (% jobs gone by plateau)</label>
+    <input type="range" id="ceiling" min="0.4" max="0.95" step="0.05" value="0.75">
+    <div class="val"><span id="ceiling-val">75</span>%</div>
+  </div>
+  <div>
+    <label>Annual price deflation (compounded)</label>
+    <input type="range" id="deflation" min="0.5" max="6" step="0.25" value="2.5">
+    <div class="val">−<span id="deflation-val">2.5</span>% / year</div>
+  </div>
+  <div>
+    <label>Deflation floor (% of 2026 price, can't fall below)</label>
+    <input type="range" id="floor" min="10" max="80" step="5" value="30">
+    <div class="val"><span id="floor-val">30</span>%</div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#3b82f6"></span> Price index (% of 2026 cost)</span>
+  <span><span class="swatch" style="background:#ef4444"></span> Employment remaining (% of 2026 jobs)</span>
+  <span><span class="swatch" style="background:#fbbf24; opacity:0.3"></span> Bridge gap (price &gt; employment)</span>
+</div>
+
+<div class="chart">
+  <svg id="chart" width="100%" viewBox="0 0 900 460" style="display:block;">
+    <!-- axes drawn dynamically -->
+  </svg>
+</div>
+
+<table id="data-table">
+  <thead>
+    <tr><th>Year</th><th>Price idx</th><th>Employment</th><th>MF jobs</th><th>Displaced</th><th>Cumulative gap</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="note" style="margin-top: 24px;">
+  <strong>What the chart shows.</strong>
+  Both lines start at 100% in 2026 — same factory, same prices, same headcount.
+  The red line (employment) falls fast as automation displaces workers.
+  The blue line (price) falls slower — the goods get cheaper, but not as fast as the jobs vanish.
+  The shaded gap between the two is the <strong>bridge problem</strong>: people are
+  unemployed at a faster rate than the basket gets cheap enough for UBI to cover them.
+  That's the years where the Fisc reserve takes the strain.
+</div>
+
+<script>
+const MF_JOBS_2026 = 1500;
+const YEAR_START = 2026;
+const YEAR_END   = 2046;
+const YEARS = Array.from({length: YEAR_END - YEAR_START + 1}, (_, i) => YEAR_START + i);
+
+function logistic(t, midpoint, k, ceiling) {
+  return ceiling / (1 + Math.exp(-k * (t - midpoint)));
+}
+
+function compute() {
+  const speed     = parseFloat(document.getElementById('speed').value);
+  const ceiling   = parseFloat(document.getElementById('ceiling').value);
+  const deflPct   = parseFloat(document.getElementById('deflation').value) / 100;
+  const floor     = parseFloat(document.getElementById('floor').value) / 100;
+
+  // S-curve midpoint shifts with speed factor:
+  //   speed 1.0 -> midpoint at 2032 (Steve's "mostly by 2036")
+  //   speed 2.0 -> compressed (everything happens by 2030)
+  //   speed 0.5 -> stretched (everything by 2046)
+  const baseMidpoint = 2032;
+  const midpoint = YEAR_START + (baseMidpoint - YEAR_START) / speed;
+  const k = 0.6 * speed;  // steepness scales with speed
+
+  return YEARS.map(year => {
+    const displaced = logistic(year, midpoint, k, ceiling);
+    const employment = 1 - displaced;
+    const yearsElapsed = year - YEAR_START;
+    const price = Math.max(floor, Math.pow(1 - deflPct, yearsElapsed));
+    const gap = Math.max(0, price - employment);
+    return { year, displaced, employment, price, gap };
+  });
+}
+
+function render() {
+  document.getElementById('speed-val').textContent     = parseFloat(document.getElementById('speed').value).toFixed(2);
+  document.getElementById('ceiling-val').textContent   = Math.round(parseFloat(document.getElementById('ceiling').value) * 100);
+  document.getElementById('deflation-val').textContent = parseFloat(document.getElementById('deflation').value).toFixed(2);
+  document.getElementById('floor-val').textContent     = Math.round(parseFloat(document.getElementById('floor').value) * 100);
+
+  const data = compute();
+  drawChart(data);
+  drawTable(data);
+}
+
+function drawChart(data) {
+  const svg = document.getElementById('chart');
+  const W = 900, H = 460;
+  const ml = 60, mr = 24, mt = 24, mb = 50;
+  const pw = W - ml - mr, ph = H - mt - mb;
+
+  const xs = year => ml + ((year - YEAR_START) / (YEAR_END - YEAR_START)) * pw;
+  const ys = v    => mt + (1 - v) * ph;
+
+  const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  const yearTicks = [2026, 2031, 2036, 2041, 2046];
+
+  let svgChildren = '';
+
+  // Grid + Y-axis labels
+  for (const t of ticks) {
+    const y = ys(t);
+    svgChildren += `<line x1="${ml}" y1="${y}" x2="${ml + pw}" y2="${y}" stroke="#1a1e28" stroke-width="1"/>`;
+    svgChildren += `<text x="${ml - 8}" y="${y + 4}" font-size="11" fill="#888" text-anchor="end">${Math.round(t * 100)}%</text>`;
+  }
+  for (const t of yearTicks) {
+    const x = xs(t);
+    svgChildren += `<line x1="${x}" y1="${mt}" x2="${x}" y2="${mt + ph}" stroke="#1a1e28" stroke-width="1"/>`;
+    svgChildren += `<text x="${x}" y="${mt + ph + 18}" font-size="11" fill="#888" text-anchor="middle">${t}</text>`;
+  }
+
+  // Bridge gap (shaded area)
+  let gapPath = `M ${xs(data[0].year)} ${ys(data[0].employment)}`;
+  for (let i = 0; i < data.length; i++) {
+    gapPath += ` L ${xs(data[i].year)} ${ys(data[i].employment)}`;
+  }
+  for (let i = data.length - 1; i >= 0; i--) {
+    gapPath += ` L ${xs(data[i].year)} ${ys(data[i].price)}`;
+  }
+  gapPath += ' Z';
+  svgChildren += `<path d="${gapPath}" fill="#fbbf24" fill-opacity="0.18"/>`;
+
+  // Price line (blue)
+  let pricePath = `M ${xs(data[0].year)} ${ys(data[0].price)}`;
+  data.slice(1).forEach(d => pricePath += ` L ${xs(d.year)} ${ys(d.price)}`);
+  svgChildren += `<path d="${pricePath}" stroke="#3b82f6" stroke-width="2.5" fill="none"/>`;
+
+  // Employment line (red)
+  let empPath = `M ${xs(data[0].year)} ${ys(data[0].employment)}`;
+  data.slice(1).forEach(d => empPath += ` L ${xs(d.year)} ${ys(d.employment)}`);
+  svgChildren += `<path d="${empPath}" stroke="#ef4444" stroke-width="2.5" fill="none"/>`;
+
+  // Axes
+  svgChildren += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
+  svgChildren += `<line x1="${ml}" y1="${mt + ph}" x2="${ml + pw}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
+
+  // Y-axis label
+  svgChildren += `<text x="14" y="${mt + ph / 2}" font-size="11" fill="#888" text-anchor="middle" transform="rotate(-90, 14, ${mt + ph / 2})">% of 2026 baseline</text>`;
+
+  // Label endpoints (2036)
+  const idx2036 = data.findIndex(d => d.year === 2036);
+  if (idx2036 >= 0) {
+    const d = data[idx2036];
+    svgChildren += `<circle cx="${xs(d.year)}" cy="${ys(d.price)}" r="4" fill="#3b82f6"/>`;
+    svgChildren += `<text x="${xs(d.year) + 8}" y="${ys(d.price) - 6}" font-size="11" fill="#3b82f6">${Math.round(d.price * 100)}%</text>`;
+    svgChildren += `<circle cx="${xs(d.year)}" cy="${ys(d.employment)}" r="4" fill="#ef4444"/>`;
+    svgChildren += `<text x="${xs(d.year) + 8}" y="${ys(d.employment) + 16}" font-size="11" fill="#ef4444">${Math.round(d.employment * 100)}%</text>`;
+  }
+
+  svg.innerHTML = svgChildren;
+}
+
+function drawTable(data) {
+  const tbody = document.querySelector('#data-table tbody');
+  const showYears = [2026, 2028, 2030, 2031, 2032, 2034, 2036, 2038, 2040, 2042, 2046];
+  let cumGap = 0;
+  let html = '';
+  for (const year of showYears) {
+    const d = data.find(x => x.year === year);
+    if (!d) continue;
+    // approximate cum gap as sum of yearly gaps to this point
+    cumGap = data.filter(x => x.year <= year).reduce((s, x) => s + x.gap, 0);
+    const jobs = Math.round(MF_JOBS_2026 * d.employment);
+    const displaced = MF_JOBS_2026 - jobs;
+    html += `<tr>
+      <td>${year}</td>
+      <td>${(d.price * 100).toFixed(1)}%</td>
+      <td>${(d.employment * 100).toFixed(1)}%</td>
+      <td>${jobs.toLocaleString()}</td>
+      <td>${displaced.toLocaleString()}</td>
+      <td>${(cumGap * 100).toFixed(1)}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html;
+}
+
+['speed', 'ceiling', 'deflation', 'floor'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+render();
+</script>
+
+</body>
+</html>
