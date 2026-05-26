@@ -7,17 +7,25 @@
 // basket_category maps each sector to a basket_model.py category, where applicable;
 // non-consumer sectors (legal, financial, wholesale, government, self-employed)
 // have basket_category = null and don't contribute to basket cost.
+//
+// IMPORTANT (abundance-mode reframe): "displacement" here ≠ involuntary job loss.
+// Once UBI floors income, many people CHOOSE to leave jobs they did out of need.
+// Dangerous (police, fire), dirty, tedious, or low-status work loses its workforce
+// supply faster than automation alone would imply. Government employees in
+// particular: most would gladly accept UBI; police/fire welcome robot replacement;
+// judges automatable with human appeal only. This is reflected in higher ceilings
+// than pure GPT-doability literature would suggest.
 
 window.SECTOR_DEFAULTS = [
   { id: 'software',          label: 'Software / digital',         p1_defl: 15,  p1_ceil: 70, p2_defl: 25, p2_ceil: 92, floor:  3, jobs:  250,
     basket_category: 'digital_electronics',
     note: 'LLMs eat coding, design, content, analysis. P2: software writes software, marginal cost ≈ 0.' },
-  { id: 'legal',             label: 'Legal / professional',       p1_defl:  7,  p1_ceil: 60, p2_defl: 15, p2_ceil: 85, floor: 10, jobs:  700,
+  { id: 'legal',             label: 'Legal / professional',       p1_defl:  7,  p1_ceil: 70, p2_defl: 15, p2_ceil: 92, floor: 10, jobs:  700,
     basket_category: null,
-    note: 'Includes accounting, consulting. Contract review, research, drafting → automated. P2: AI judges, autonomous compliance.' },
-  { id: 'financial',         label: 'Financial / insurance',      p1_defl:  5,  p1_ceil: 50, p2_defl: 10, p2_ceil: 75, floor: 20, jobs: 1050,
+    note: 'Accounting, consulting, paralegals, contract attorneys. Many would leave for UBI. P2: AI judges + autonomous compliance + AI tax prep — human appeal only.' },
+  { id: 'financial',         label: 'Financial / insurance',      p1_defl:  5,  p1_ceil: 60, p2_defl: 10, p2_ceil: 88, floor: 20, jobs: 1050,
     basket_category: null,
-    note: 'Banking + insurance + real estate brokerage. Branch closures, robo-advisors, automated underwriting.' },
+    note: 'Banking + insurance + real estate. Rooms full of clerks who would gladly take UBI. P2: agentic banking, AI underwriting, autonomous treasury — almost no humans.' },
   { id: 'big_retail',        label: 'Big retail (incl. pass-through)', p1_defl: 3.5, p1_ceil: 50, p2_defl: 7, p2_ceil: 75, floor: 40, jobs: 1800,
     basket_category: 'apparel_manufactured',
     note: 'Walmart/Kroger/Target/CVS/Walgreens. Slow own value-add + fast upstream products. P2: lights-out warehouses.' },
@@ -42,27 +50,27 @@ window.SECTOR_DEFAULTS = [
   { id: 'food_fresh',        label: 'Food (fresh) / agriculture', p1_defl:  0,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 40, floor: 50, jobs:  200,
     basket_category: 'food_fresh',
     note: 'Local farmers, ag workers. Land-bound. P2: robotic picking at scale, autonomous greenhouses.' },
-  { id: 'education',         label: 'Education',                  p1_defl:  3,  p1_ceil: 30, p2_defl: 6,  p2_ceil: 50, floor: 25, jobs: 1200,
+  { id: 'education',         label: 'Education',                  p1_defl:  3,  p1_ceil: 40, p2_defl: 6,  p2_ceil: 70, floor: 25, jobs: 1200,
     basket_category: 'education',
-    note: 'K-12 + community college. AI tutors deflate content delivery hard. P2: AI mentors, automated accreditation.' },
-  { id: 'healthcare',        label: 'Healthcare (provider)',      p1_defl:  1,  p1_ceil: 25, p2_defl: 8,  p2_ceil: 60, floor: 30, jobs: 1800,
+    note: 'AI tutors deflate content delivery; many teachers happy to leave classroom management once UBI is available. P2: AI mentors + automated accreditation — most teaching role goes.' },
+  { id: 'healthcare',        label: 'Healthcare (provider)',      p1_defl:  1,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 75, floor: 25, jobs: 1800,
     basket_category: 'healthcare',
-    note: 'Regional hospital + doctor offices + clinics. P1: diagnostic AI assists. P2: robotic surgeons, autonomous nursing.' },
-  { id: 'hospitality',       label: 'Hospitality / restaurants',  p1_defl: -1,  p1_ceil: 15, p2_defl: 2,  p2_ceil: 40, floor: 50, jobs: 1100,
+    note: 'P1: diagnostic AI assists; admin staff thin out. P2: robotic surgeons, AI primary care, autonomous nursing — high-emotional palliative + paediatric work stickier.' },
+  { id: 'hospitality',       label: 'Hospitality / restaurants',  p1_defl: -1,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 50, floor: 50, jobs: 1100,
     basket_category: 'hospitality',
-    note: 'Kitchen back-of-house automates. P2: full kitchen robotics, robotic baristas, AI hosts.' },
-  { id: 'personal_services', label: 'Personal services',          p1_defl:  0,  p1_ceil: 10, p2_defl: 2,  p2_ceil: 30, floor: 50, jobs:  500,
+    note: 'Kitchen back-of-house automates; many servers/dishwashers/cleaners take UBI. P2: full kitchen robotics, robotic baristas; remaining staff is craft-driven (chefs who want to cook).' },
+  { id: 'personal_services', label: 'Personal services',          p1_defl:  0,  p1_ceil: 15, p2_defl: 2,  p2_ceil: 35, floor: 50, jobs:  500,
     basket_category: null,
-    note: 'Hair, repair, beauty. Near-zero P1. P2: home robots for cleaning, basic care, simple repair.' },
-  { id: 'care_work',         label: 'Care work',                  p1_defl:  0,  p1_ceil: 10, p2_defl: 3,  p2_ceil: 50, floor: 40, jobs:  700,
+    note: 'Hair, repair, beauty. Consumer demand prefers humans, so demand-side sticky. Supply-side: most operators want fewer hours once UBI exists — so net employment falls faster than pure tech-doability suggests.' },
+  { id: 'care_work',         label: 'Care work',                  p1_defl:  0,  p1_ceil: 15, p2_defl: 3,  p2_ceil: 60, floor: 40, jobs:  700,
     basket_category: null,
-    note: 'Childcare, eldercare, home health aides. AI assistance in P1. P2: humanoid carers.' },
-  { id: 'government',        label: 'Government / public sector', p1_defl:  1,  p1_ceil: 25, p2_defl: 3,  p2_ceil: 70, floor: 40, jobs: 2200,
+    note: 'Care workers themselves overwhelmingly want out — low-paid, exhausting, often abusive. UBI is their exit. P2: humanoid carers acceptable when consumers cant afford humans.' },
+  { id: 'government',        label: 'Government / public sector', p1_defl:  1,  p1_ceil: 40, p2_defl: 3,  p2_ceil: 90, floor: 40, jobs: 2200,
     basket_category: null,
-    note: 'City + state + federal. AXION itself replaces welfare/tax/banking admin → P2 ceiling raised to 70% reflecting AXION-driven displacement on top of automation.' },
-  { id: 'self_employed',     label: 'Self-employed / small biz',  p1_defl:  2,  p1_ceil: 20, p2_defl: 5,  p2_ceil: 50, floor: 30, jobs: 1700,
+    note: 'Most gov employees would gladly accept UBI. AXION itself replaces welfare/tax/banking admin. Police/fire ARE dangerous professions people do for income — robots welcomed. Judges automatable with human appeal only. End state: very few public employees.' },
+  { id: 'self_employed',     label: 'Self-employed / small biz',  p1_defl:  2,  p1_ceil: 25, p2_defl: 5,  p2_ceil: 60, floor: 30, jobs: 1700,
     basket_category: null,
-    note: 'Gig workers, freelancers, sole proprietors. Mixed exposure — writers/designers/coders vulnerable.' },
+    note: 'Mix of involuntary gig workers (Uber drivers wanting employment but couldnt get it) and chosen entrepreneurs. The involuntary side takes UBI immediately. P2: AI competition for design/writing/code work. Only craft-driven + niche service self-employment remains.' },
 ];
 
 // Basket category weights (% of monthly basket spend). From basket_model.py.
