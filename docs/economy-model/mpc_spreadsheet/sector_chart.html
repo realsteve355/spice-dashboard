@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sector trajectory — bridge years</title>
+<title>Sector trajectory — two-phase transition</title>
 <style>
   body { font-family: 'IBM Plex Mono', monospace; background: #06070a; color: #ede5d4; padding: 32px; max-width: 1100px; margin: 0 auto; }
   h1 { font-weight: 500; letter-spacing: 0.02em; }
-  .subtitle { color: #888; margin-bottom: 24px; }
+  .subtitle { color: #888; margin-bottom: 24px; line-height: 1.6; }
   .chart { background: #0b0d12; border: 1px solid #1f2330; padding: 24px; margin-bottom: 18px; }
   .legend { display: flex; gap: 24px; font-size: 13px; margin: 16px 0 24px; flex-wrap: wrap; }
   .legend span { display: inline-flex; align-items: center; gap: 8px; }
@@ -23,18 +23,25 @@
   th { color: #888; }
   td:first-child, th:first-child { text-align: left; color: #888; }
   .note { font-size: 12px; color: #999; line-height: 1.6; margin-top: 24px; }
-  .params-display { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 11px; color: #aaa; }
-  .params-display .item { background: #14171f; padding: 6px 10px; }
-  .params-display .item .key { color: #777; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .params-display .item .val { color: #ede5d4; font-size: 13px; }
+  .params-display { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 11px; color: #aaa; margin-top: 12px; }
+  .phase-box { background: #14171f; padding: 10px 14px; border-left: 3px solid #444; }
+  .phase-box.p1 { border-left-color: #3b82f6; }
+  .phase-box.p2 { border-left-color: #a855f7; }
+  .phase-box .title { color: #ede5d4; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .phase-box .item { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+  .phase-box .item .key { color: #888; }
+  .phase-box .item .val { color: #ede5d4; }
 </style>
 </head>
 <body>
 
-<h1>Sector trajectory — bridge years</h1>
+<h1>Sector trajectory — two-phase transition</h1>
 <div class="subtitle">
-  Price deflation vs. employment displacement, 2026–2046.
-  Per-sector parameters research-anchored; one slider tunes overall transition velocity.
+  Per-sector projections, 2026–2046. Each chart split into two phases:
+  <strong style="color:#3b82f6;">Phase 1 (2026–2036)</strong> — "imaginable" automation
+  (LLMs at scale, autonomous trucks, robotic warehouses).
+  <strong style="color:#a855f7;">Phase 2 (2036–2046)</strong> — "unimaginable" automation
+  (robotic surgeons, humanoid care workers, autonomous construction crews).
 </div>
 
 <div class="controls">
@@ -44,7 +51,7 @@
       <option value="software">Software / digital</option>
       <option value="legal">Legal / professional</option>
       <option value="financial">Financial / banking</option>
-      <option value="big_retail">Big retail</option>
+      <option value="big_retail">Big retail (incl. pass-through goods)</option>
       <option value="manufacturing" selected>Manufacturing (auto + traditional)</option>
       <option value="energy">Energy / utilities</option>
       <option value="transport">Transport / logistics</option>
@@ -59,9 +66,9 @@
     </select>
   </div>
   <div>
-    <label>Transition velocity (end-of-shock year)</label>
-    <input type="range" id="velocity" min="2036" max="2046" step="1" value="2040">
-    <div class="val">Mostly complete by <span id="velocity-val">2040</span></div>
+    <label>Transition velocity (Phase 2 plateau year)</label>
+    <input type="range" id="velocity" min="2042" max="2050" step="1" value="2046">
+    <div class="val">Unimaginable phase plateaus by <span id="velocity-val">2046</span></div>
   </div>
 </div>
 
@@ -70,7 +77,8 @@
 <div class="legend">
   <span><span class="swatch" style="background:#3b82f6"></span> Price index (% of 2026 cost)</span>
   <span><span class="swatch" style="background:#ef4444"></span> Employment remaining (% of 2026 jobs)</span>
-  <span><span class="swatch" style="background:#fbbf24; opacity:0.3"></span> Bridge gap (price &gt; employment)</span>
+  <span><span class="swatch" style="background:#fbbf24; opacity:0.3"></span> Bridge gap</span>
+  <span><span class="swatch" style="background:#a855f7; opacity:0.18; width:24px; height:14px;"></span> Phase 2 ("unimaginable")</span>
 </div>
 
 <div class="chart">
@@ -80,106 +88,140 @@
 
 <table id="data-table">
   <thead>
-    <tr><th>Year</th><th>Price idx</th><th>Employment</th><th>MF jobs</th><th>Displaced</th><th>Gap (pts)</th></tr>
+    <tr><th>Year</th><th>Phase</th><th>Price idx</th><th>Employment</th><th>MF jobs</th><th>Displaced</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 
 <div class="note">
-  <strong>Research notes per sector.</strong> Deflation rates from the basket model (basket_model.py).
-  Displacement ceilings calibrated against (1) current automation level — auto/manufacturing already
-  industrially automated since 1970s, so further runway is modest; (2) AI exposure scores from
-  GPT-doability studies — software / legal / financial have the most disruption ahead;
-  (3) embodied/relational work — hospitality, healthcare, care work are stickiest because the
-  service IS the human interaction.
+  <strong>Phase 1 vs Phase 2.</strong> Phase 1 ends in 2036 — by then everything currently
+  in-progress has scaled (LLMs in offices, robotaxis everywhere, fully automated warehouses,
+  AI tutors). Phase 2 (2036–2046) is where the things that look impossible today fall:
+  robotic surgeons, humanoid carers, AI-driven construction crews assembling houses, robotic
+  plumbers, robotic farmers. By 2046, basically every job is automatable in principle —
+  the question is just consumer preference for human-delivered service in certain categories
+  (hospitality, care work, personal services hold on partly for this reason).
+  <br><br>
+  The big retail line accounts for pass-through deflation: Walmart sells iPhones, and the
+  iPhones get cheaper. So "big retail" deflation is a weighted blend of Walmart's own
+  value-added (slow to deflate) and the products it sells (deflating with their categories).
 </div>
 
 <script>
 const YEAR_START = 2026;
-const YEAR_END   = 2046;
+const PHASE_BOUNDARY = 2036;
+const YEAR_END = 2046;
 const YEARS = Array.from({length: YEAR_END - YEAR_START + 1}, (_, i) => YEAR_START + i);
 
-// Per-sector research-anchored parameters
-// deflation: annual price change (negative = deflating)
-// floor: minimum price as % of 2026
-// ceiling: maximum displacement % of 2026 employment
-// mf_jobs: estimated Maryfontaine employment in this sector in 2026
-// note: research rationale, displayed in info panel
+// Per-sector parameters with TWO PHASES.
+// p1_deflation, p1_ceiling: rates and displacement during the "imaginable" phase (2026-2036)
+// p2_deflation, p2_ceiling: rates and displacement during the "unimaginable" phase (2036-2046)
+// p2_ceiling is the cumulative ceiling, not additional
 const SECTORS = {
   software: {
     label: "Software / digital",
-    deflation: 0.10, floor: 0.05, ceiling: 0.80, mf_jobs: 300,
-    note: "Code-writing, design, content, analysis all LLM-doable. GPT-doability scores rank this among the highest. Big disruption still ahead of us — automation barely started in 2024-25."
+    p1_deflation: 0.15, p1_ceiling: 0.70,
+    p2_deflation: 0.25, p2_ceiling: 0.92,
+    floor: 0.03, mf_jobs: 300,
+    note: "Phase 1: LLMs eat coding, design, content, analysis at scale. Phase 2: software writes software, marginal cost approaches zero. Among the most exposed sectors."
   },
   legal: {
     label: "Legal / professional services",
-    deflation: 0.05, floor: 0.20, ceiling: 0.70, mf_jobs: 200,
-    note: "Contract review, research, drafting — all LLM-doable. Accreditation and courtroom advocacy stickier. Most disruption ahead."
+    p1_deflation: 0.07, p1_ceiling: 0.60,
+    p2_deflation: 0.15, p2_ceiling: 0.85,
+    floor: 0.10, mf_jobs: 200,
+    note: "Phase 1: contract review, research, drafting automated. Phase 2: AI judges/arbitrators, autonomous compliance — accreditation gatekeepers shrink."
   },
   financial: {
     label: "Financial / banking",
-    deflation: 0.03, floor: 0.25, ceiling: 0.65, mf_jobs: 250,
-    note: "Customer service chatbots, automated compliance, AI underwriting, robo-advisory. Branch tellers, paraprofessionals heavily exposed. Relationship banking sticky."
+    p1_deflation: 0.05, p1_ceiling: 0.50,
+    p2_deflation: 0.10, p2_ceiling: 0.75,
+    floor: 0.20, mf_jobs: 250,
+    note: "Phase 1: branch closures, robo-advisor scale, automated underwriting. Phase 2: full agentic banking, AI loan decisions, autonomous treasury management."
   },
   big_retail: {
-    label: "Big retail (Walmart-style)",
-    deflation: 0.01, floor: 0.60, ceiling: 0.55, mf_jobs: 1200,
-    note: "Self-checkout, robotic stocking, automated distribution. Pickers + cashiers exposed. Customer service + last-mile delivery slower. Most big-box already heavily logistics-automated."
+    label: "Big retail (incl. pass-through)",
+    p1_deflation: 0.035, p1_ceiling: 0.50,
+    p2_deflation: 0.07, p2_ceiling: 0.75,
+    floor: 0.40, mf_jobs: 1200,
+    note: "Walmart's own deflation is slow (~1%/yr) but the products it sells deflate fast. Weighted blend of retail value-add + product COGS. Phase 2: lights-out warehouses, drone delivery, fully automated stocking."
   },
   manufacturing: {
     label: "Manufacturing (auto + traditional)",
-    deflation: 0.025, floor: 0.30, ceiling: 0.35, mf_jobs: 1500,
-    note: "Already heavily industrially automated since 1970s — most assembly is robotic. Remaining displacement: quality inspection (AI vision), supply chain admin, R&D. Modest runway compared to white-collar."
+    p1_deflation: 0.03, p1_ceiling: 0.30,
+    p2_deflation: 0.05, p2_ceiling: 0.55,
+    floor: 0.25, mf_jobs: 1500,
+    note: "Already heavily automated; modest Phase 1 runway (admin, design, QC vision). Phase 2: lights-out factories, AI-driven supply chains, full robotic assembly + finish work."
   },
   energy: {
     label: "Energy / utilities",
-    deflation: 0.05, floor: 0.15, ceiling: 0.50, mf_jobs: 350,
-    note: "Smart grids, predictive maintenance, automated generation, demand response. Line workers + emergency response stick. Power generation already mostly unmanned."
+    p1_deflation: 0.06, p1_ceiling: 0.40,
+    p2_deflation: 0.08, p2_ceiling: 0.65,
+    floor: 0.10, mf_jobs: 350,
+    note: "Phase 1: smart grids, automated generation, predictive maintenance. Phase 2: line-worker robots, autonomous transformer servicing, distributed renewables make grid simpler."
   },
   transport: {
     label: "Transport / logistics",
-    deflation: 0.025, floor: 0.30, ceiling: 0.45, mf_jobs: 600,
-    note: "Autonomous trucking gradually viable; warehouse robotics already mature. Drivers still needed long-tail (last mile, niche cargo). Uber/Lyft drivers exposed once AV scales."
+    p1_deflation: 0.04, p1_ceiling: 0.40,
+    p2_deflation: 0.10, p2_ceiling: 0.80,
+    floor: 0.20, mf_jobs: 600,
+    note: "Robotaxis already rolling out 2024+. Phase 1: AV trucking matures, warehouse robotics ubiquitous. Phase 2: drone delivery, autonomous last-mile, near-zero driver demand."
   },
   construction: {
     label: "Construction",
-    deflation: 0.015, floor: 0.40, ceiling: 0.30, mf_jobs: 450,
-    note: "3D printing, modular construction, robotic framing — promising but site work sticky. Trades (plumbing, electrical, finish carpentry) hard to automate. Modest displacement ceiling."
+    p1_deflation: 0.02, p1_ceiling: 0.25,
+    p2_deflation: 0.06, p2_ceiling: 0.60,
+    floor: 0.30, mf_jobs: 450,
+    note: "Phase 1: 3D-printed homes scale, modular construction, AI-driven planning. Phase 2: robotic site workers, autonomous excavators, AI architects — what seems impossible now."
   },
   food_processed: {
     label: "Food (processed)",
-    deflation: 0.01, floor: 0.40, ceiling: 0.40, mf_jobs: 250,
-    note: "Vertical farming, automated processing, lab meat. Distribution + retail human in near term."
+    p1_deflation: 0.02, p1_ceiling: 0.35,
+    p2_deflation: 0.05, p2_ceiling: 0.60,
+    floor: 0.30, mf_jobs: 250,
+    note: "Phase 1: vertical farms, automated processing, lab-grown meat at scale. Phase 2: fully automated food production from raw inputs to packaged goods."
   },
   food_fresh: {
     label: "Food (fresh)",
-    deflation: -0.01, floor: 0.60, ceiling: 0.20, mf_jobs: 180,
-    note: "Picking robots coming but slow; land-bound; consumer preference for human-touched local. Net slight inflation expected."
+    p1_deflation: 0.0, p1_ceiling: 0.20,
+    p2_deflation: 0.02, p2_ceiling: 0.40,
+    floor: 0.50, mf_jobs: 180,
+    note: "Phase 1: slow — land-bound, consumer preference for human-touched local. Phase 2: robotic picking at scale, autonomous greenhouses, drone monitoring."
   },
   education: {
     label: "Education",
-    deflation: 0.01, floor: 0.30, ceiling: 0.30, mf_jobs: 350,
-    note: "AI tutors deflate content delivery hard. Humans needed for mentorship, accreditation, special-needs support, classroom management."
+    p1_deflation: 0.03, p1_ceiling: 0.30,
+    p2_deflation: 0.06, p2_ceiling: 0.50,
+    floor: 0.25, mf_jobs: 350,
+    note: "Phase 1: AI tutors deflate content delivery hard. Phase 2: AI mentors, automated accreditation, persistent learning companions — most human teaching role evaporates."
   },
   healthcare: {
     label: "Healthcare (provider)",
-    deflation: -0.005, floor: 0.80, ceiling: 0.20, mf_jobs: 800,
-    note: "Diagnostic AI saves doctor time but doesn't remove the doctor. Care work (nursing, eldercare) growing as population ages. Mild net inflation despite AI productivity gains."
+    p1_deflation: 0.01, p1_ceiling: 0.25,
+    p2_deflation: 0.08, p2_ceiling: 0.60,
+    floor: 0.30, mf_jobs: 800,
+    note: "Phase 1: diagnostic AI assists, doesn't replace. Phase 2: robotic surgeons, AI primary care, autonomous nursing aides — the impossible-today wave."
   },
   hospitality: {
     label: "Hospitality / restaurants",
-    deflation: -0.02, floor: 0.90, ceiling: 0.15, mf_jobs: 400,
-    note: "The hardest to automate. Service IS the human interaction. Kitchen back-of-house some robotics; front-of-house essentially sticky. Mild net inflation due to demand growth."
+    p1_deflation: -0.01, p1_ceiling: 0.15,
+    p2_deflation: 0.02, p2_ceiling: 0.40,
+    floor: 0.50, mf_jobs: 400,
+    note: "Phase 1: kitchen back-of-house automates, front-of-house sticky. Phase 2: full kitchen robotics, robotic baristas, AI hosts — what consumers will tolerate is the question."
   },
   personal_services: {
     label: "Personal services (hair, repair, beauty)",
-    deflation: 0.0, floor: 0.80, ceiling: 0.10, mf_jobs: 280,
-    note: "Hands-on physical work that people want a human to do. Robotics conceivable but consumer preference is the constraint. Near-zero displacement projected."
+    p1_deflation: 0.0, p1_ceiling: 0.10,
+    p2_deflation: 0.02, p2_ceiling: 0.30,
+    floor: 0.50, mf_jobs: 280,
+    note: "Phase 1: near-zero displacement — consumer preference for humans dominates. Phase 2: home robots for cleaning, basic care, simple repair — niche but real."
   },
   care_work: {
     label: "Care work (childcare, eldercare)",
-    deflation: 0.01, floor: 0.90, ceiling: 0.08, mf_jobs: 320,
-    note: "Highest emotional + physical complexity. Demand growing with aging demographics. Robots and AI assistants augment but cannot replace human carers in near term."
+    p1_deflation: 0.0, p1_ceiling: 0.10,
+    p2_deflation: 0.03, p2_ceiling: 0.50,
+    floor: 0.40, mf_jobs: 320,
+    note: "Phase 1: AI assistance to human carers. Phase 2: humanoid carers emerge — they will be acceptable to many, especially when family budgets are tight, even though they can't truly replace human bonding."
   }
 };
 
@@ -193,32 +235,37 @@ function logistic(t, midpoint, k, ceiling) {
 
 function compute() {
   const s = getSector();
-  const endYear = parseInt(document.getElementById('velocity').value);
+  const p2EndYear = parseInt(document.getElementById('velocity').value);
 
-  // Velocity translates to: by `endYear`, displacement is ~95% complete.
-  // For logistic curve: at midpoint + 3/k years, we're at ~95% of ceiling.
-  // So pick k such that midpoint + 3/k = endYear, with midpoint somewhere
-  // between start year and endYear.
-  // Simple approach: place midpoint at (YEAR_START + endYear) / 2, choose k
-  // so that 95% of ceiling is reached at endYear.
-  const midpoint = (YEAR_START + endYear) / 2;
-  // We want logistic((endYear - midpoint) * k) = 0.95 -> k * (endYear - midpoint) ~ 3
-  const halfWidth = endYear - midpoint;
-  const k = halfWidth > 0 ? 3 / halfWidth : 1;
+  // Phase 1 logistic (2026 → 2036): ramps from 0 to p1_ceiling
+  // Midpoint ~ 2031, steepness chosen to hit ~95% of p1_ceiling at 2036
+  const p1_mid = 2031;
+  const p1_k   = 3 / (PHASE_BOUNDARY - p1_mid);  // hit ~95% at 2036
+
+  // Phase 2 logistic (2036 → p2EndYear): ramps from p1_ceiling to p2_ceiling
+  // Midpoint between 2036 and p2EndYear; steepness similarly
+  const p2_mid = (PHASE_BOUNDARY + p2EndYear) / 2;
+  const p2_k   = 3 / (p2EndYear - p2_mid);
 
   return YEARS.map(year => {
-    const displaced = logistic(year, midpoint, k, s.ceiling);
+    // Compose two phases for displacement
+    const phase1_at = logistic(year, p1_mid, p1_k, s.p1_ceiling);
+    const phase2_at = logistic(year, p2_mid, p2_k, s.p2_ceiling - s.p1_ceiling);
+    const displaced = phase1_at + phase2_at;
     const employment = 1 - displaced;
-    const yrElapsed = year - YEAR_START;
+
+    // Two-phase price deflation: phase1 rate up to 2036, phase2 rate after
     let price;
-    if (s.deflation >= 0) {
-      price = Math.max(s.floor, Math.pow(1 - s.deflation, yrElapsed));
+    if (year <= PHASE_BOUNDARY) {
+      price = Math.max(s.floor, Math.pow(1 - s.p1_deflation, year - YEAR_START));
     } else {
-      // Negative deflation = inflation; no floor for inflation, just compound up
-      price = Math.pow(1 - s.deflation, yrElapsed);
+      const price_at_boundary = Math.max(s.floor, Math.pow(1 - s.p1_deflation, PHASE_BOUNDARY - YEAR_START));
+      const phase2_factor = Math.pow(1 - s.p2_deflation, year - PHASE_BOUNDARY);
+      price = Math.max(s.floor, price_at_boundary * phase2_factor);
     }
+
     const gap = Math.max(0, price - employment);
-    return { year, displaced, employment, price, gap };
+    return { year, displaced, employment, price, gap, phase: year <= PHASE_BOUNDARY ? 1 : 2 };
   });
 }
 
@@ -232,18 +279,29 @@ function render() {
   drawInfoPanel(s);
 }
 
+function pctStr(v) {
+  if (v < 0) return `+${(-v * 100).toFixed(1)}% / yr (inflation)`;
+  if (v === 0) return `flat`;
+  return `−${(v * 100).toFixed(1)}% / yr`;
+}
+
 function drawInfoPanel(s) {
-  const deflPct = s.deflation >= 0 ? `−${(s.deflation*100).toFixed(1)}%` : `+${(-s.deflation*100).toFixed(1)}%`;
   document.getElementById('info-panel').innerHTML = `
     <strong>${s.label}</strong> — MF baseline: ${s.mf_jobs.toLocaleString()} jobs in 2026.
-    Research-anchored parameters:
-    <div class="params-display" style="margin-top:10px;">
-      <div class="item"><div class="key">Annual price change</div><div class="val">${deflPct} / yr</div></div>
-      <div class="item"><div class="key">Price floor</div><div class="val">${(s.floor*100).toFixed(0)}% of 2026</div></div>
-      <div class="item"><div class="key">Displacement ceiling</div><div class="val">${(s.ceiling*100).toFixed(0)}% of jobs</div></div>
-      <div class="item"><div class="key">MF jobs (2026)</div><div class="val">${s.mf_jobs.toLocaleString()}</div></div>
+    <div class="params-display">
+      <div class="phase-box p1">
+        <div class="title">Phase 1 (2026–2036) — imaginable</div>
+        <div class="item"><span class="key">Price change</span><span class="val">${pctStr(s.p1_deflation)}</span></div>
+        <div class="item"><span class="key">Displacement ceiling</span><span class="val">${(s.p1_ceiling * 100).toFixed(0)}%</span></div>
+      </div>
+      <div class="phase-box p2">
+        <div class="title">Phase 2 (2036–${document.getElementById('velocity').value}) — unimaginable</div>
+        <div class="item"><span class="key">Price change</span><span class="val">${pctStr(s.p2_deflation)}</span></div>
+        <div class="item"><span class="key">Displacement ceiling</span><span class="val">${(s.p2_ceiling * 100).toFixed(0)}%</span></div>
+      </div>
     </div>
-    <div style="margin-top:10px; color: #999;">${s.note}</div>
+    <div style="margin-top:12px; color: #999;">${s.note}</div>
+    <div style="margin-top:6px; color: #777; font-size: 11px;">Long-run price floor: ${(s.floor * 100).toFixed(0)}% of 2026 cost (irreducible material / human-touch component).</div>
   `;
 }
 
@@ -253,7 +311,6 @@ function drawChart(data, s) {
   const ml = 60, mr = 24, mt = 24, mb = 50;
   const pw = W - ml - mr, ph = H - mt - mb;
 
-  // Y range: handle inflation case where price exceeds 100%
   const maxPrice = Math.max(1.0, ...data.map(d => d.price));
   const yMax = Math.max(1.0, Math.ceil(maxPrice * 10) / 10);
 
@@ -266,6 +323,12 @@ function drawChart(data, s) {
 
   let svgChildren = '';
 
+  // Phase 2 background shading (purple-ish)
+  const x2036 = xs(2036);
+  const x2046 = xs(2046);
+  svgChildren += `<rect x="${x2036}" y="${mt}" width="${x2046 - x2036}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
+
+  // Grid + Y labels
   for (const t of ticks) {
     const y = ys(t);
     svgChildren += `<line x1="${ml}" y1="${y}" x2="${ml + pw}" y2="${y}" stroke="#1a1e28" stroke-width="1"/>`;
@@ -277,7 +340,11 @@ function drawChart(data, s) {
     svgChildren += `<text x="${x}" y="${mt + ph + 18}" font-size="11" fill="#888" text-anchor="middle">${t}</text>`;
   }
 
-  // Bridge gap shaded
+  // Phase boundary line at 2036
+  svgChildren += `<line x1="${x2036}" y1="${mt}" x2="${x2036}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  svgChildren += `<text x="${x2036 + 6}" y="${mt + 14}" font-size="10" fill="#a855f7">PHASE 2 →</text>`;
+
+  // Bridge gap shaded (only positive gap shown)
   let gapPath = `M ${xs(data[0].year)} ${ys(data[0].employment)}`;
   for (let i = 0; i < data.length; i++) gapPath += ` L ${xs(data[i].year)} ${ys(data[i].employment)}`;
   for (let i = data.length - 1; i >= 0; i--) gapPath += ` L ${xs(data[i].year)} ${ys(data[i].price)}`;
@@ -294,18 +361,27 @@ function drawChart(data, s) {
   data.slice(1).forEach(d => empPath += ` L ${xs(d.year)} ${ys(d.employment)}`);
   svgChildren += `<path d="${empPath}" stroke="#ef4444" stroke-width="2.5" fill="none"/>`;
 
+  // Axes
   svgChildren += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
   svgChildren += `<line x1="${ml}" y1="${mt + ph}" x2="${ml + pw}" y2="${mt + ph}" stroke="#444" stroke-width="1"/>`;
-
   svgChildren += `<text x="14" y="${mt + ph / 2}" font-size="11" fill="#888" text-anchor="middle" transform="rotate(-90, 14, ${mt + ph / 2})">% of 2026 baseline</text>`;
 
-  const idx2036 = data.findIndex(d => d.year === 2036);
-  if (idx2036 >= 0) {
-    const d = data[idx2036];
-    svgChildren += `<circle cx="${xs(d.year)}" cy="${ys(d.price)}" r="4" fill="#3b82f6"/>`;
-    svgChildren += `<text x="${xs(d.year) + 8}" y="${ys(d.price) - 6}" font-size="11" fill="#3b82f6">${Math.round(d.price * 100)}%</text>`;
-    svgChildren += `<circle cx="${xs(d.year)}" cy="${ys(d.employment)}" r="4" fill="#ef4444"/>`;
-    svgChildren += `<text x="${xs(d.year) + 8}" y="${ys(d.employment) + 16}" font-size="11" fill="#ef4444">${Math.round(d.employment * 100)}%</text>`;
+  // Annotate at 2036 (phase boundary)
+  const d2036 = data.find(d => d.year === 2036);
+  if (d2036) {
+    svgChildren += `<circle cx="${xs(d2036.year)}" cy="${ys(d2036.price)}" r="4" fill="#3b82f6"/>`;
+    svgChildren += `<text x="${xs(d2036.year) - 6}" y="${ys(d2036.price) - 8}" font-size="11" fill="#3b82f6" text-anchor="end">${Math.round(d2036.price * 100)}%</text>`;
+    svgChildren += `<circle cx="${xs(d2036.year)}" cy="${ys(d2036.employment)}" r="4" fill="#ef4444"/>`;
+    svgChildren += `<text x="${xs(d2036.year) - 6}" y="${ys(d2036.employment) + 14}" font-size="11" fill="#ef4444" text-anchor="end">${Math.round(d2036.employment * 100)}%</text>`;
+  }
+
+  // Annotate at 2046 (end)
+  const d2046 = data[data.length - 1];
+  if (d2046) {
+    svgChildren += `<circle cx="${xs(d2046.year)}" cy="${ys(d2046.price)}" r="4" fill="#3b82f6"/>`;
+    svgChildren += `<text x="${xs(d2046.year) - 6}" y="${ys(d2046.price) - 8}" font-size="11" fill="#3b82f6" text-anchor="end">${Math.round(d2046.price * 100)}%</text>`;
+    svgChildren += `<circle cx="${xs(d2046.year)}" cy="${ys(d2046.employment)}" r="4" fill="#ef4444"/>`;
+    svgChildren += `<text x="${xs(d2046.year) - 6}" y="${ys(d2046.employment) + 14}" font-size="11" fill="#ef4444" text-anchor="end">${Math.round(d2046.employment * 100)}%</text>`;
   }
 
   svg.innerHTML = svgChildren;
@@ -313,20 +389,21 @@ function drawChart(data, s) {
 
 function drawTable(data, s) {
   const tbody = document.querySelector('#data-table tbody');
-  const showYears = [2026, 2028, 2030, 2032, 2034, 2036, 2038, 2040, 2042, 2046];
+  const showYears = [2026, 2030, 2034, 2036, 2038, 2042, 2046];
   let html = '';
   for (const year of showYears) {
     const d = data.find(x => x.year === year);
     if (!d) continue;
     const jobs = Math.round(s.mf_jobs * d.employment);
     const displaced = s.mf_jobs - jobs;
+    const phaseLabel = d.phase === 1 ? '<span style="color:#3b82f6;">P1</span>' : '<span style="color:#a855f7;">P2</span>';
     html += `<tr>
       <td>${year}</td>
+      <td>${phaseLabel}</td>
       <td>${(d.price * 100).toFixed(1)}%</td>
       <td>${(d.employment * 100).toFixed(1)}%</td>
       <td>${jobs.toLocaleString()}</td>
       <td>${displaced.toLocaleString()}</td>
-      <td>${(d.gap * 100).toFixed(1)}</td>
     </tr>`;
   }
   tbody.innerHTML = html;
