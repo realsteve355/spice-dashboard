@@ -15,6 +15,7 @@
     ]},
     { label: 'Transition', items: [
       { path: '/sectors',        label: 'Sectors' },
+      { path: '/aggregate',      label: 'Aggregate' },
     ]},
   ];
 

@@ -9,54 +9,13 @@
 //   Phase 2 (2036–velocity) — "unimaginable" (robotic surgeons, humanoid carers,
 //     autonomous construction crews)
 
-const YEAR_START = 2026;
-const PHASE_BOUNDARY = 2036;
-const YEAR_END = 2046;
+const YEAR_START = window.SECTORS_META.YEAR_START;
+const PHASE_BOUNDARY = window.SECTORS_META.PHASE_BOUNDARY;
+const YEAR_END = window.SECTORS_META.YEAR_END;
 const YEARS = Array.from({length: YEAR_END - YEAR_START + 1}, (_, i) => YEAR_START + i);
 
-// Research-anchored defaults per sector.
-// Numbers are %/year (deflation) and % (ceiling, floor).
-// Sector employment calibrated to BLS national shares scaled to 18,000 MF jobs
-// (30,000 adults × ~60% labour force participation).
-// Deflation rates from basket_model.py; displacement ceilings from GPT-doability literature.
-const DEFAULTS = [
-  { id: 'software',          label: 'Software / digital',         p1_defl: 15,  p1_ceil: 70, p2_defl: 25, p2_ceil: 92, floor:  3, jobs:  250,
-    note: 'LLMs eat coding, design, content, analysis. P2: software writes software, marginal cost ≈ 0.' },
-  { id: 'legal',             label: 'Legal / professional',       p1_defl:  7,  p1_ceil: 60, p2_defl: 15, p2_ceil: 85, floor: 10, jobs:  700,
-    note: 'Includes accounting, consulting. Contract review, research, drafting → automated. P2: AI judges, autonomous compliance.' },
-  { id: 'financial',         label: 'Financial / insurance',      p1_defl:  5,  p1_ceil: 50, p2_defl: 10, p2_ceil: 75, floor: 20, jobs: 1050,
-    note: 'Banking + insurance + real estate brokerage. Branch closures, robo-advisors, automated underwriting. P2: agentic banking.' },
-  { id: 'big_retail',        label: 'Big retail (incl. pass-through)', p1_defl: 3.5, p1_ceil: 50, p2_defl: 7, p2_ceil: 75, floor: 40, jobs: 1800,
-    note: 'Walmart/Kroger/Target/CVS/Walgreens. Slow own value-add + fast upstream products. P2: lights-out warehouses, drone delivery.' },
-  { id: 'wholesale',         label: 'Wholesale / distribution',   p1_defl:  3,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 60, floor: 35, jobs:  400,
-    note: 'Warehouses, trucking dispatch, distribution centres. Already heavily robotic. P2: lights-out fulfilment, autonomous freight at scale.' },
-  { id: 'manufacturing',     label: 'Manufacturing (auto + trad.)', p1_defl: 3, p1_ceil: 30, p2_defl: 5, p2_ceil: 55, floor: 25, jobs: 2200,
-    note: 'Honda factory + suppliers. Already heavily industrial-automated; modest P1 (admin, QC vision). P2: lights-out factories + finish work.' },
-  { id: 'energy',            label: 'Energy / utilities',         p1_defl:  6,  p1_ceil: 40, p2_defl: 8,  p2_ceil: 65, floor: 10, jobs:  250,
-    note: 'Smart grids, automated generation, predictive maintenance. P2: line-worker robots, distributed renewables.' },
-  { id: 'transport',         label: 'Transport / logistics',      p1_defl:  4,  p1_ceil: 40, p2_defl: 10, p2_ceil: 80, floor: 20, jobs:  800,
-    note: 'Robotaxis rolling out 2024+. P1: AV trucking matures. P2: drone delivery, near-zero driver demand.' },
-  { id: 'construction',      label: 'Construction',               p1_defl:  2,  p1_ceil: 25, p2_defl: 6,  p2_ceil: 60, floor: 30, jobs:  900,
-    note: 'Trades + contractors. 3D-printed homes, modular. P2: robotic site workers, autonomous excavators.' },
-  { id: 'food_processed',    label: 'Food (processed)',           p1_defl:  2,  p1_ceil: 35, p2_defl: 5,  p2_ceil: 60, floor: 30, jobs:  250,
-    note: 'Vertical farms, lab-grown meat at scale. P2: fully automated from raw inputs to packaged.' },
-  { id: 'food_fresh',        label: 'Food (fresh) / agriculture', p1_defl:  0,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 40, floor: 50, jobs:  200,
-    note: 'Local farmers, ag workers. Land-bound. P2: robotic picking at scale, autonomous greenhouses.' },
-  { id: 'education',         label: 'Education',                  p1_defl:  3,  p1_ceil: 30, p2_defl: 6,  p2_ceil: 50, floor: 25, jobs: 1200,
-    note: 'K-12 + community college teachers + admin. AI tutors deflate content delivery hard. P2: AI mentors, automated accreditation.' },
-  { id: 'healthcare',        label: 'Healthcare (provider)',      p1_defl:  1,  p1_ceil: 25, p2_defl: 8,  p2_ceil: 60, floor: 30, jobs: 1800,
-    note: 'Regional hospital + doctor offices + clinics. P1: diagnostic AI assists. P2: robotic surgeons, AI primary care, autonomous nursing aides.' },
-  { id: 'hospitality',       label: 'Hospitality / restaurants',  p1_defl: -1,  p1_ceil: 15, p2_defl: 2,  p2_ceil: 40, floor: 50, jobs: 1100,
-    note: 'Kitchen back-of-house automates. P2: full kitchen robotics, robotic baristas, AI hosts.' },
-  { id: 'personal_services', label: 'Personal services',          p1_defl:  0,  p1_ceil: 10, p2_defl: 2,  p2_ceil: 30, floor: 50, jobs:  500,
-    note: 'Hair, repair, beauty. Near-zero P1. P2: home robots for cleaning, basic care, simple repair.' },
-  { id: 'care_work',         label: 'Care work',                  p1_defl:  0,  p1_ceil: 10, p2_defl: 3,  p2_ceil: 50, floor: 40, jobs:  700,
-    note: 'Childcare, eldercare, home health aides. AI assistance in P1. P2: humanoid carers emerge.' },
-  { id: 'government',        label: 'Government / public sector', p1_defl:  1,  p1_ceil: 15, p2_defl: 3,  p2_ceil: 40, floor: 40, jobs: 2200,
-    note: 'City + state + federal employees: public-school teachers, postal workers, county clerks, police, fire. Back-office highly automatable; political resistance + public-facing roles moderate pace.' },
-  { id: 'self_employed',     label: 'Self-employed / small biz',  p1_defl:  2,  p1_ceil: 20, p2_defl: 5,  p2_ceil: 50, floor: 30, jobs: 1700,
-    note: 'Independent contractors, freelancers, gig workers, sole proprietors. Catch-all residual. Mixed exposure — writers/designers/coders vulnerable; trades and niche service work stickier.' },
-];
+// Shared defaults loaded from /static/sector-defaults.js (also used by /aggregate).
+const DEFAULTS = window.SECTOR_DEFAULTS;
 
 // Working copy of sector data (mutated by inputs)
 let SECTORS = JSON.parse(JSON.stringify(DEFAULTS));
