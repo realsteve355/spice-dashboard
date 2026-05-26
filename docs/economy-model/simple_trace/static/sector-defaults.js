@@ -11,64 +11,73 @@
 // IMPORTANT (abundance-mode reframe): "displacement" here ≠ involuntary job loss.
 // Once UBI floors income, many people CHOOSE to leave jobs they did out of need.
 // Dangerous (police, fire), dirty, tedious, or low-status work loses its workforce
-// supply faster than automation alone would imply. Government employees in
-// particular: most would gladly accept UBI; police/fire welcome robot replacement;
-// judges automatable with human appeal only. This is reflected in higher ceilings
-// than pure GPT-doability literature would suggest.
+// supply faster than automation alone would imply.
+//
+// PHASE 2 END STATE: By the plateau (2046 default), almost nobody works because
+// they NEED to. The remaining ~10% of 2026 workforce is people doing their jobs
+// by CHOICE — craft chefs who love cooking, frontier researchers, teachers
+// driven by vocation, niche craftspeople, palliative-care workers committed to
+// the role, top-level appellate judges, athletes, performers.
+//
+// What people DO with their time in the abundance economy (gaming, art,
+// altruism, learning, parenting, sport, exploration) is NOT employment in the
+// economic sense. It's what fills the time. Those activities don't show on
+// this chart — this chart shows "people earning external wages for productive
+// work", which approaches a small minority by 2046.
 
 window.SECTOR_DEFAULTS = [
-  { id: 'software',          label: 'Software / digital',         p1_defl: 15,  p1_ceil: 70, p2_defl: 25, p2_ceil: 92, floor:  3, jobs:  250,
+  { id: 'software',          label: 'Software / digital',         p1_defl: 15,  p1_ceil: 70, p2_defl: 25, p2_ceil: 95, floor:  3, jobs:  250,
     basket_category: 'digital_electronics',
     note: 'LLMs eat coding, design, content, analysis. P2: software writes software, marginal cost ≈ 0.' },
-  { id: 'legal',             label: 'Legal / professional',       p1_defl:  7,  p1_ceil: 70, p2_defl: 15, p2_ceil: 92, floor: 10, jobs:  700,
+  { id: 'legal',             label: 'Legal / professional',       p1_defl:  7,  p1_ceil: 70, p2_defl: 15, p2_ceil: 95, floor: 10, jobs:  700,
     basket_category: null,
     note: 'Accounting, consulting, paralegals, contract attorneys. Many would leave for UBI. P2: AI judges + autonomous compliance + AI tax prep — human appeal only.' },
-  { id: 'financial',         label: 'Financial / insurance',      p1_defl:  5,  p1_ceil: 60, p2_defl: 10, p2_ceil: 88, floor: 20, jobs: 1050,
+  { id: 'financial',         label: 'Financial / insurance',      p1_defl:  5,  p1_ceil: 60, p2_defl: 10, p2_ceil: 95, floor: 20, jobs: 1050,
     basket_category: null,
     note: 'Banking + insurance + real estate. Rooms full of clerks who would gladly take UBI. P2: agentic banking, AI underwriting, autonomous treasury — almost no humans.' },
-  { id: 'big_retail',        label: 'Big retail (incl. pass-through)', p1_defl: 3.5, p1_ceil: 50, p2_defl: 7, p2_ceil: 75, floor: 40, jobs: 1800,
+  { id: 'big_retail',        label: 'Big retail (incl. pass-through)', p1_defl: 3.5, p1_ceil: 50, p2_defl: 7, p2_ceil: 90, floor: 40, jobs: 1800,
     basket_category: 'apparel_manufactured',
     note: 'Walmart/Kroger/Target/CVS/Walgreens. Slow own value-add + fast upstream products. P2: lights-out warehouses.' },
-  { id: 'wholesale',         label: 'Wholesale / distribution',   p1_defl:  3,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 60, floor: 35, jobs:  400,
+  { id: 'wholesale',         label: 'Wholesale / distribution',   p1_defl:  3,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 90, floor: 35, jobs:  400,
     basket_category: null,
     note: 'Warehouses, trucking dispatch, distribution centres. Already heavily robotic. P2: lights-out fulfilment.' },
-  { id: 'manufacturing',     label: 'Manufacturing (auto + trad.)', p1_defl: 3, p1_ceil: 30, p2_defl: 5, p2_ceil: 55, floor: 25, jobs: 2200,
+  { id: 'manufacturing',     label: 'Manufacturing (auto + trad.)', p1_defl: 3, p1_ceil: 30, p2_defl: 5, p2_ceil: 85, floor: 25, jobs: 2200,
     basket_category: 'apparel_manufactured',
     note: 'Honda factory + suppliers. Already heavily industrial-automated. P2: lights-out factories + finish work.' },
-  { id: 'energy',            label: 'Energy / utilities',         p1_defl:  6,  p1_ceil: 40, p2_defl: 8,  p2_ceil: 65, floor: 10, jobs:  250,
+  { id: 'energy',            label: 'Energy / utilities',         p1_defl:  6,  p1_ceil: 40, p2_defl: 8,  p2_ceil: 90, floor: 10, jobs:  250,
     basket_category: 'energy_utilities',
     note: 'Smart grids, automated generation, predictive maintenance. P2: line-worker robots, distributed renewables.' },
-  { id: 'transport',         label: 'Transport / logistics',      p1_defl:  4,  p1_ceil: 40, p2_defl: 10, p2_ceil: 80, floor: 20, jobs:  800,
+  { id: 'transport',         label: 'Transport / logistics',      p1_defl:  4,  p1_ceil: 40, p2_defl: 10, p2_ceil: 92, floor: 20, jobs:  800,
     basket_category: 'transport',
     note: 'Robotaxis rolling out. P1: AV trucking matures. P2: drone delivery, near-zero driver demand.' },
-  { id: 'construction',      label: 'Construction',               p1_defl:  2,  p1_ceil: 25, p2_defl: 6,  p2_ceil: 60, floor: 30, jobs:  900,
+  { id: 'construction',      label: 'Construction',               p1_defl:  2,  p1_ceil: 25, p2_defl: 6,  p2_ceil: 85, floor: 30, jobs:  900,
     basket_category: 'housing_structure',
     note: 'Trades + contractors. 3D-printed homes, modular. P2: robotic site workers.' },
-  { id: 'food_processed',    label: 'Food (processed)',           p1_defl:  2,  p1_ceil: 35, p2_defl: 5,  p2_ceil: 60, floor: 30, jobs:  250,
+  { id: 'food_processed',    label: 'Food (processed)',           p1_defl:  2,  p1_ceil: 35, p2_defl: 5,  p2_ceil: 85, floor: 30, jobs:  250,
     basket_category: 'food_processed',
     note: 'Vertical farms, lab-grown meat at scale. P2: fully automated from raw inputs to packaged.' },
-  { id: 'food_fresh',        label: 'Food (fresh) / agriculture', p1_defl:  0,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 40, floor: 50, jobs:  200,
+  { id: 'food_fresh',        label: 'Food (fresh) / agriculture', p1_defl:  0,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 70, floor: 50, jobs:  200,
     basket_category: 'food_fresh',
     note: 'Local farmers, ag workers. Land-bound. P2: robotic picking at scale, autonomous greenhouses.' },
-  { id: 'education',         label: 'Education',                  p1_defl:  3,  p1_ceil: 40, p2_defl: 6,  p2_ceil: 70, floor: 25, jobs: 1200,
+  { id: 'education',         label: 'Education',                  p1_defl:  3,  p1_ceil: 40, p2_defl: 6,  p2_ceil: 85, floor: 25, jobs: 1200,
     basket_category: 'education',
     note: 'AI tutors deflate content delivery; many teachers happy to leave classroom management once UBI is available. P2: AI mentors + automated accreditation — most teaching role goes.' },
-  { id: 'healthcare',        label: 'Healthcare (provider)',      p1_defl:  1,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 75, floor: 25, jobs: 1800,
+  { id: 'healthcare',        label: 'Healthcare (provider)',      p1_defl:  1,  p1_ceil: 30, p2_defl: 8,  p2_ceil: 85, floor: 25, jobs: 1800,
     basket_category: 'healthcare',
     note: 'P1: diagnostic AI assists; admin staff thin out. P2: robotic surgeons, AI primary care, autonomous nursing — high-emotional palliative + paediatric work stickier.' },
-  { id: 'hospitality',       label: 'Hospitality / restaurants',  p1_defl: -1,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 50, floor: 50, jobs: 1100,
+  { id: 'hospitality',       label: 'Hospitality / restaurants',  p1_defl: -1,  p1_ceil: 20, p2_defl: 2,  p2_ceil: 70, floor: 50, jobs: 1100,
     basket_category: 'hospitality',
     note: 'Kitchen back-of-house automates; many servers/dishwashers/cleaners take UBI. P2: full kitchen robotics, robotic baristas; remaining staff is craft-driven (chefs who want to cook).' },
-  { id: 'personal_services', label: 'Personal services',          p1_defl:  0,  p1_ceil: 15, p2_defl: 2,  p2_ceil: 35, floor: 50, jobs:  500,
+  { id: 'personal_services', label: 'Personal services',          p1_defl:  0,  p1_ceil: 15, p2_defl: 2,  p2_ceil: 70, floor: 50, jobs:  500,
     basket_category: null,
     note: 'Hair, repair, beauty. Consumer demand prefers humans, so demand-side sticky. Supply-side: most operators want fewer hours once UBI exists — so net employment falls faster than pure tech-doability suggests.' },
-  { id: 'care_work',         label: 'Care work',                  p1_defl:  0,  p1_ceil: 15, p2_defl: 3,  p2_ceil: 60, floor: 40, jobs:  700,
+  { id: 'care_work',         label: 'Care work',                  p1_defl:  0,  p1_ceil: 15, p2_defl: 3,  p2_ceil: 80, floor: 40, jobs:  700,
     basket_category: null,
     note: 'Care workers themselves overwhelmingly want out — low-paid, exhausting, often abusive. UBI is their exit. P2: humanoid carers acceptable when consumers cant afford humans.' },
-  { id: 'government',        label: 'Government / public sector', p1_defl:  1,  p1_ceil: 40, p2_defl: 3,  p2_ceil: 90, floor: 40, jobs: 2200,
+  { id: 'government',        label: 'Government / public sector', p1_defl:  1,  p1_ceil: 40, p2_defl: 3,  p2_ceil: 95, floor: 40, jobs: 2200,
     basket_category: null,
     note: 'Most gov employees would gladly accept UBI. AXION itself replaces welfare/tax/banking admin. Police/fire ARE dangerous professions people do for income — robots welcomed. Judges automatable with human appeal only. End state: very few public employees.' },
-  { id: 'self_employed',     label: 'Self-employed / small biz',  p1_defl:  2,  p1_ceil: 25, p2_defl: 5,  p2_ceil: 60, floor: 30, jobs: 1700,
+  { id: 'self_employed',     label: 'Self-employed / small biz',  p1_defl:  2,  p1_ceil: 25, p2_defl: 5,  p2_ceil: 80, floor: 30, jobs: 1700,
     basket_category: null,
     note: 'Mix of involuntary gig workers (Uber drivers wanting employment but couldnt get it) and chosen entrepreneurs. The involuntary side takes UBI immediately. P2: AI competition for design/writing/code work. Only craft-driven + niche service self-employment remains.' },
 ];
