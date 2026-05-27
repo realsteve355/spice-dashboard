@@ -12,10 +12,41 @@ const CITIZENS = ['Bob', 'Alice', 'John', 'Jane'];
 // Per-citizen monthly essential-spend baseline in 2026 dollars. Used to compute
 // the basket deflator and "real UBI" (citizens get N baskets per month).
 const BASKET_2026 = 350;
+const STORAGE_KEY = 'axion_abundance_v1';
+const INPUT_IDS = ['ubi','fisc_start','mpc_rate','c_external','c_internal',
+                   'pottery_rev','pottery_sup','n_months','fx_pct','working_bal'];
 
 function readNum(id, def = 0) {
   const v = parseFloat(document.getElementById(id).value);
   return isNaN(v) ? def : v;
+}
+
+function saveInputs() {
+  try {
+    const o = {};
+    for (const id of INPUT_IDS) {
+      const el = document.getElementById(id);
+      if (el) o[id] = el.value;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(o));
+  } catch (e) { /* localStorage may be disabled */ }
+}
+
+function restoreInputs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    for (const [id, v] of Object.entries(o)) {
+      const el = document.getElementById(id);
+      if (el && v !== undefined && v !== null && v !== '') el.value = v;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function resetInputs() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  location.reload();
 }
 
 function readSetup() {
@@ -242,6 +273,8 @@ function renderLog(result) {
 
 function renderBalances(result) {
   const grid = document.getElementById('balance-grid');
+  const fxOut = result.fxOut || {};
+  const totalFx = Object.values(fxOut).reduce((s, v) => s + (v || 0), 0);
   const entities = [
     { key: 'Bob',   label: 'Bob' },
     { key: 'Alice', label: 'Alice' },
@@ -256,14 +289,17 @@ function renderBalances(result) {
           <div class="name">${e.label}</div>
           <div class="row"><span class="lbl">USD reserve</span><span class="val">$${fmt(result.fiscUsd)}</span></div>
           <div class="row"><span class="lbl">MOND outstanding</span><span class="val">${fmt(result.mondOutstanding)}</span></div>
+          <div class="row"><span class="lbl">FX outflow (mo)</span><span class="val" style="color:#ffb86c">${totalFx > 0 ? '−$' + fmt(totalFx) : '—'}</span></div>
         </div>
       `;
     }
     const a = result.accounts[e.key];
+    const fx = fxOut[e.key] || 0;
     return `
       <div class="balance-card">
         <div class="name">${e.label}</div>
         <div class="row"><span class="lbl">MOND</span><span class="val">${fmt(a.mond)}</span></div>
+        <div class="row"><span class="lbl">→ USD this mo</span><span class="val" style="color:${fx > 0 ? '#ffb86c' : 'var(--dim)'}">${fx > 0 ? '$' + fmt(fx) : '—'}</span></div>
       </div>
     `;
   }).join('');
@@ -548,12 +584,16 @@ function render() {
   renderTrajectoryTable(series);
 }
 
-['ubi','fisc_start','mpc_rate','c_external','c_internal','pottery_rev','pottery_sup','n_months','fx_pct','working_bal'].forEach(id => {
+INPUT_IDS.forEach(id => {
   const el = document.getElementById(id);
   if (el) {
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+    el.addEventListener('input', () => { saveInputs(); render(); });
+    el.addEventListener('change', () => { saveInputs(); render(); });
   }
 });
 
+const resetBtn = document.getElementById('reset-defaults');
+if (resetBtn) resetBtn.addEventListener('click', resetInputs);
+
+restoreInputs();
 render();

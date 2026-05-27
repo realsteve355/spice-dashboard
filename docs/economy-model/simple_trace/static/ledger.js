@@ -174,6 +174,7 @@ function runMonth(monthNum, prevState, setup) {
   // Earth-variant escape valve: citizens convert spare MOND to USD at the
   // Fisc boundary and invest externally (S&P/bonds/BTC/bank). MOND retires;
   // Fisc USD reserve drops; citizen owns USD outside the colony.
+  const fxOut = { Bob: 0, Alice: 0, John: 0, Jane: 0 };
   if (setup.fx_pct > 0) {
     const conversions = [];
     for (const c of CITIZENS) {
@@ -187,6 +188,7 @@ function runMonth(monthNum, prevState, setup) {
         accounts[c].mond -= conv;
         mondOutstanding  -= conv;
         fiscUsd          -= conv;
+        fxOut[c]         += conv;
         events.push({
           day: 30, from: c, to: 'External (S&P/bonds/BTC/bank)',
           amount: conv, currency: 'MOND',
@@ -215,6 +217,7 @@ function runMonth(monthNum, prevState, setup) {
     events,
     monthSummary,
     profitOf,
+    fxOut,
   };
 }
 
@@ -250,8 +253,10 @@ function renderLog(result) {
   tbody.innerHTML = html;
 }
 
-function renderBalances(state) {
+function renderBalances(state, fxOut) {
   const grid = document.getElementById('balance-grid');
+  fxOut = fxOut || {};
+  const totalFx = Object.values(fxOut).reduce((s, v) => s + (v || 0), 0);
   const entities = [
     { key: 'Bob',   label: 'Bob' },
     { key: 'Alice', label: 'Alice' },
@@ -266,14 +271,17 @@ function renderBalances(state) {
           <div class="name">${e.label}</div>
           <div class="row"><span class="lbl">USD reserve</span><span class="val">$${fmt(state.fiscUsd)}</span></div>
           <div class="row"><span class="lbl">MOND outstanding</span><span class="val">${fmt(state.mondOutstanding)}</span></div>
+          <div class="row"><span class="lbl">FX outflow (mo)</span><span class="val" style="color:#ffb86c">${totalFx > 0 ? '−$' + fmt(totalFx) : '—'}</span></div>
         </div>
       `;
     }
     const a = state.accounts[e.key];
+    const fx = fxOut[e.key] || 0;
     return `
       <div class="balance-card">
         <div class="name">${e.label}</div>
         <div class="row"><span class="lbl">MOND</span><span class="val">${fmt(a.mond)}</span></div>
+        <div class="row"><span class="lbl">→ USD this mo</span><span class="val" style="color:${fx > 0 ? '#ffb86c' : 'var(--dim)'}">${fx > 0 ? '$' + fmt(fx) : '—'}</span></div>
       </div>
     `;
   }).join('');
@@ -481,26 +489,60 @@ function renderIndicators(ind, setup) {
   `).join('');
 }
 
+// ── localStorage persistence ──
+const STORAGE_KEY = 'axion_ledger_v1';
+const INPUT_IDS = ['ubi_mode','ubi_floor','ubi_universal','fisc_start','mpc_rate',
+                   'c_mcd','c_coffee','c_external',
+                   'mcd_corp','coffee_sup','pottery_rev','pottery_sup',
+                   'fx_pct','working_bal'];
+
+function saveInputs() {
+  try {
+    const o = {};
+    for (const id of INPUT_IDS) {
+      const el = document.getElementById(id);
+      if (el) o[id] = el.value;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(o));
+  } catch (e) {}
+}
+function restoreInputs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    for (const [id, v] of Object.entries(o)) {
+      const el = document.getElementById(id);
+      if (el && v !== undefined && v !== null && v !== '') el.value = v;
+    }
+  } catch (e) {}
+}
+function resetInputs() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  location.reload();
+}
+
 function render() {
   const setup = readSetup();
   const result = runMonth(1, null, setup);
   renderLog(result);
-  renderBalances(result.state);
+  renderBalances(result.state, result.fxOut);
   renderFlowCheck(result);
   const ind = computeIndicators(setup, result, result.profitOf);
   renderIndicators(ind, setup);
 }
 
 // Wire up inputs
-['ubi_mode','ubi_floor','ubi_universal','fisc_start','mpc_rate',
- 'c_mcd','c_coffee','c_external',
- 'mcd_corp','coffee_sup','pottery_rev','pottery_sup',
- 'fx_pct','working_bal'].forEach(id => {
+INPUT_IDS.forEach(id => {
   const el = document.getElementById(id);
   if (el) {
-    el.addEventListener('input', render);
-    el.addEventListener('change', render);
+    el.addEventListener('input',  () => { saveInputs(); render(); });
+    el.addEventListener('change', () => { saveInputs(); render(); });
   }
 });
 
+const resetBtn = document.getElementById('reset-defaults');
+if (resetBtn) resetBtn.addEventListener('click', resetInputs);
+
+restoreInputs();
 render();
