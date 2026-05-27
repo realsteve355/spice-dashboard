@@ -121,6 +121,54 @@ function runMonth(setup) {
   return { accounts, fiscUsd, mondOutstanding, events };
 }
 
+// ── Multi-month projection ──
+// Repeats the same monthly pattern, chaining balances forward.
+// State that carries: accounts.mond per citizen, fiscUsd, mondOutstanding.
+
+function runMonths(setup, nMonths) {
+  const accounts = {};
+  for (const c of CITIZENS) accounts[c] = { mond: 0 };
+  let fiscUsd = setup.fisc_start;
+  let mondOutstanding = 0;
+  const series = [{
+    month: 0,
+    fiscUsd,
+    mondOutstanding,
+    citizens: Object.fromEntries(CITIZENS.map(c => [c, 0])),
+    netToFisc: 0,
+  }];
+
+  for (let m = 1; m <= nMonths; m++) {
+    // Re-run the month with current carry-over state.
+    // We just call runMonth() and apply its delta to our running state.
+    // runMonth starts from zero per-citizen MOND, so we apply its deltas additively.
+    const monthSetup = { ...setup, fisc_start: fiscUsd };
+    const result = runMonth(monthSetup);
+
+    // Carry MOND balances forward additively
+    for (const c of CITIZENS) accounts[c].mond += result.accounts[c].mond;
+    // Fisc reflects starting + net change
+    fiscUsd = result.fiscUsd;
+    mondOutstanding += result.mondOutstanding;
+
+    // Compute net change for this month
+    let netToFisc = 0;
+    for (const ev of result.events) {
+      if (ev.section || !ev.fiscDelta) continue;
+      netToFisc += ev.fiscDelta;
+    }
+
+    series.push({
+      month: m,
+      fiscUsd,
+      mondOutstanding,
+      citizens: Object.fromEntries(CITIZENS.map(c => [c, accounts[c].mond])),
+      netToFisc,
+    });
+  }
+  return series;
+}
+
 // ── Rendering ──
 
 function fmt(n) {
@@ -222,15 +270,89 @@ function renderFlowCheck(result) {
   `;
 }
 
-function render() {
-  const setup = readSetup();
-  const result = runMonth(setup);
-  renderLog(result);
-  renderBalances(result);
-  renderFlowCheck(result);
+function renderTrajectoryChart(series) {
+  const svg = document.getElementById('traj-chart');
+  if (!svg) return;
+  const W = 1100, H = 280, pad = { l: 70, r: 70, t: 16, b: 32 };
+  const innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
+  const months = series.map(p => p.month);
+  const fiscMax = Math.max(...series.map(p => p.fiscUsd)) * 1.05;
+  const fiscMin = Math.min(...series.map(p => p.fiscUsd)) * 0.95;
+  const mondMax = Math.max(...series.map(p => p.mondOutstanding)) * 1.05;
+  const xScale = m => pad.l + (m / months[months.length - 1]) * innerW;
+  const yFisc = v => pad.t + innerH - ((v - fiscMin) / (fiscMax - fiscMin || 1)) * innerH;
+  const yMond = v => pad.t + innerH - (v / (mondMax || 1)) * innerH;
+
+  const fiscPath = series.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${xScale(p.month).toFixed(1)} ${yFisc(p.fiscUsd).toFixed(1)}`).join(' ');
+  const mondPath = series.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${xScale(p.month).toFixed(1)} ${yMond(p.mondOutstanding).toFixed(1)}`).join(' ');
+
+  // X grid + labels every 3 months
+  let xGrid = '';
+  for (let m = 0; m <= months[months.length - 1]; m += 3) {
+    xGrid += `<line x1="${xScale(m)}" y1="${pad.t}" x2="${xScale(m)}" y2="${pad.t + innerH}" stroke="#14171f" stroke-width="1"/>`;
+    xGrid += `<text x="${xScale(m)}" y="${H - 10}" fill="#5a6373" font-size="10" text-anchor="middle">M${m}</text>`;
+  }
+  // Y axes labels
+  let yLabels = '';
+  for (let i = 0; i <= 4; i++) {
+    const yPx = pad.t + (innerH * i / 4);
+    const fiscVal = fiscMax - (fiscMax - fiscMin) * (i / 4);
+    const mondVal = mondMax - mondMax * (i / 4);
+    yLabels += `<line x1="${pad.l}" y1="${yPx}" x2="${pad.l + innerW}" y2="${yPx}" stroke="#14171f" stroke-width="1"/>`;
+    yLabels += `<text x="${pad.l - 8}" y="${yPx + 3}" fill="#a8e6a8" font-size="10" text-anchor="end">$${Math.round(fiscVal).toLocaleString()}</text>`;
+    yLabels += `<text x="${pad.l + innerW + 8}" y="${yPx + 3}" fill="#7aa2ff" font-size="10" text-anchor="start">${Math.round(mondVal).toLocaleString()}</text>`;
+  }
+
+  svg.innerHTML = `
+    ${xGrid}
+    ${yLabels}
+    <path d="${fiscPath}" fill="none" stroke="#a8e6a8" stroke-width="2"/>
+    <path d="${mondPath}" fill="none" stroke="#7aa2ff" stroke-width="2"/>
+    <text x="${pad.l}" y="${pad.t - 4}" fill="#a8e6a8" font-size="10">Fisc USD reserve</text>
+    <text x="${pad.l + innerW}" y="${pad.t - 4}" fill="#7aa2ff" font-size="10" text-anchor="end">MOND outstanding</text>
+  `;
 }
 
-['ubi','fisc_start','mpc_rate','c_external','c_internal','pottery_rev','pottery_sup'].forEach(id => {
+function renderTrajectoryTable(series) {
+  const tbody = document.querySelector('#traj-table tbody');
+  if (!tbody) return;
+  // Show every 3rd month + final
+  const last = series[series.length - 1].month;
+  const rows = series.filter(p => p.month === 0 || p.month % 3 === 0 || p.month === last);
+  const startFisc = series[0].fiscUsd;
+  tbody.innerHTML = rows.map(p => {
+    const fiscDelta = p.fiscUsd - startFisc;
+    const fiscDeltaClass = fiscDelta >= 0 ? 'pos' : 'neg';
+    return `<tr>
+      <td class="day">${p.month}</td>
+      <td class="fisc">$${fmt(p.fiscUsd)}</td>
+      <td class="${fiscDeltaClass}">${fiscDelta >= 0 ? '+' : ''}$${fmt(fiscDelta)}</td>
+      <td class="mond-out">${fmt(p.mondOutstanding)}</td>
+      <td>${fmt(p.citizens.Bob)}</td>
+      <td>${fmt(p.citizens.Alice)}</td>
+      <td>${fmt(p.citizens.John)}</td>
+      <td>${fmt(p.citizens.Jane)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function render() {
+  const setup = readSetup();
+  const months = Math.max(1, Math.min(60, parseInt(document.getElementById('n_months').value, 10) || 24));
+  // Single-month detail
+  const m1 = runMonth(setup);
+  renderLog(m1);
+  renderBalances(m1);
+  renderFlowCheck(m1);
+  // Multi-month trajectory
+  const series = runMonths(setup, months);
+  renderTrajectoryChart(series);
+  renderTrajectoryTable(series);
+}
+
+['ubi','fisc_start','mpc_rate','c_external','c_internal','pottery_rev','pottery_sup','n_months'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('input', render);

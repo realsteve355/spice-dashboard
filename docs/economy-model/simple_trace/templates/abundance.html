@@ -97,6 +97,18 @@
     text-align: right; font-variant-numeric: tabular-nums;
     color: var(--ok); font-size: 10px;
   }
+  table.log td.pos {
+    text-align: right; font-variant-numeric: tabular-nums;
+    color: var(--ok);
+  }
+  table.log td.neg {
+    text-align: right; font-variant-numeric: tabular-nums;
+    color: var(--crit);
+  }
+  table.log td.mond-out {
+    text-align: right; font-variant-numeric: tabular-nums;
+    color: #7aa2ff;
+  }
   table.log tr.section td {
     background: #14171f; color: var(--headline);
     font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -171,6 +183,7 @@
         <div class="title">John's pottery business</div>
         <label>Pottery revenue (USD/mo) <input type="number" id="pottery_rev" value="300" min="0" step="50"></label>
         <label>Supplies cost (% of revenue) <input type="number" id="pottery_sup" value="20" min="0" max="100" step="5"></label>
+        <label>Months to project <input type="number" id="n_months" value="24" min="1" max="60" step="1"></label>
       </div>
 
     </div>
@@ -187,6 +200,39 @@
   <div class="card">
     <h3>End-of-month balances</h3>
     <div class="balance-grid" id="balance-grid"></div>
+  </div>
+
+  <!-- Multi-month trajectory chart -->
+  <div class="card">
+    <h3>Multi-month projection</h3>
+    <div class="sub">
+      Same monthly pattern repeated, carrying balances forward.
+      <span style="color:#a8e6a8;">●</span> Fisc USD reserve (left axis) ·
+      <span style="color:#7aa2ff;">●</span> MOND outstanding in citizen hands (right axis).
+    </div>
+    <svg id="traj-chart" viewBox="0 0 1100 280" preserveAspectRatio="xMidYMid meet"
+         style="width:100%; height:280px; background:#0b0d12; border:1px solid var(--line-hot);"></svg>
+  </div>
+
+  <!-- Multi-month summary table -->
+  <div class="card">
+    <h3>Trajectory — quarterly snapshot</h3>
+    <div class="sub">Per-citizen MOND balances accumulate as universal UBI continues. Fisc grows from MPC + pottery exports.</div>
+    <table class="log" id="traj-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="fisc">Fisc USD</th>
+          <th class="amt">Δ vs start</th>
+          <th class="amt">MOND out</th>
+          <th class="amt">Bob</th>
+          <th class="amt">Alice</th>
+          <th class="amt">John</th>
+          <th class="amt">Jane</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <!-- Transaction log -->
