@@ -183,29 +183,6 @@ function runMonth(monthNum, prevState, setup) {
   };
 }
 
-// ── 12-month run ─────────────────────────────────────────────────────────
-
-function runYear() {
-  const setup = readSetup();
-  let prevState = null;
-  const monthSummaries = [];
-  let month1 = null;
-
-  for (let m = 1; m <= 12; m++) {
-    const result = runMonth(m, prevState, setup);
-    monthSummaries.push(result.monthSummary);
-    if (m === 1) month1 = result;
-    prevState = result.state;
-  }
-
-  return {
-    setup,
-    finalState: prevState,
-    monthSummaries,
-    month1,  // for the detail log
-  };
-}
-
 // ── Rendering ─────────────────────────────────────────────────────────────
 
 function fmt(n) {
@@ -213,11 +190,11 @@ function fmt(n) {
   return Math.abs(n) >= 1e3 ? Math.round(n).toLocaleString() : n.toFixed(0);
 }
 
-function renderLog(month1) {
+function renderLog(result) {
   const tbody = document.querySelector('#log-table tbody');
   let html = '';
   let fisc = parseFloat(document.getElementById('fisc_start').value);
-  for (const ev of month1.events) {
+  for (const ev of result.events) {
     if (ev.section) {
       html += `<tr class="section"><td colspan="7">${ev.section}</td></tr>`;
       continue;
@@ -238,7 +215,7 @@ function renderLog(month1) {
   tbody.innerHTML = html;
 }
 
-function renderBalances(finalState) {
+function renderBalances(state) {
   const grid = document.getElementById('balance-grid');
   const entities = [
     { key: 'Bob',   label: 'Bob' },
@@ -252,12 +229,12 @@ function renderBalances(finalState) {
       return `
         <div class="balance-card fisc">
           <div class="name">${e.label}</div>
-          <div class="row"><span class="lbl">USD reserve</span><span class="val">$${fmt(finalState.fiscUsd)}</span></div>
-          <div class="row"><span class="lbl">MOND outstanding</span><span class="val">${fmt(finalState.mondOutstanding)}</span></div>
+          <div class="row"><span class="lbl">USD reserve</span><span class="val">$${fmt(state.fiscUsd)}</span></div>
+          <div class="row"><span class="lbl">MOND outstanding</span><span class="val">${fmt(state.mondOutstanding)}</span></div>
         </div>
       `;
     }
-    const a = finalState.accounts[e.key];
+    const a = state.accounts[e.key];
     return `
       <div class="balance-card">
         <div class="name">${e.label}</div>
@@ -267,10 +244,10 @@ function renderBalances(finalState) {
   }).join('');
 }
 
-function renderFlowCheck(month1) {
+function renderFlowCheck(result) {
   let inflows = 0, outflows = 0;
   const inMap = {}, outMap = {};
-  for (const ev of month1.events) {
+  for (const ev of result.events) {
     if (ev.section || !ev.fiscDelta) continue;
     const key = ev.from + ' — ' + ev.description;
     if (ev.fiscDelta > 0) {
@@ -307,96 +284,12 @@ function renderFlowCheck(month1) {
   `;
 }
 
-function renderYearSummary(monthSummaries, setup) {
-  const tbody = document.querySelector('#year-table tbody');
-  let html = '';
-  for (const m of monthSummaries) {
-    html += `<tr>
-      <td class="month">${m.month}</td>
-      <td class="amt">${fmt(m.ubiMinted)}</td>
-      <td class="amt usd">$${fmt(m.mpcCollected)}</td>
-      <td class="amt usd">$${fmt(m.fiscReserveEnd)}</td>
-      <td class="amt">${fmt(m.mondOutstandingEnd)}</td>
-      <td class="amt">${fmt(m.bob)}</td>
-      <td class="amt">${fmt(m.alice)}</td>
-      <td class="amt">${fmt(m.john)}</td>
-      <td class="amt">${fmt(m.jane)}</td>
-    </tr>`;
-  }
-  tbody.innerHTML = html;
-}
-
-// ── 12-month chart ──
-function renderYearChart(monthSummaries, setup) {
-  const svg = document.getElementById('year-chart');
-  const W = 1300, H = 280;
-  const ml = 70, mr = 80, mt = 14, mb = 32;
-  const pw = W - ml - mr, ph = H - mt - mb;
-
-  // Two series:
-  //   1. Fisc reserve (USD)
-  //   2. MOND outstanding (we treat 1 MOND = $1 so plot on same axis)
-  const data = monthSummaries;
-  const maxV = Math.max(
-    setup.fisc_start,
-    ...data.map(d => Math.max(d.fiscReserveEnd, d.mondOutstandingEnd))
-  );
-  const yMax = Math.ceil(maxV / 5000) * 5000;
-
-  const xs = m => ml + ((m - 0) / 12) * pw;
-  const ys = v => mt + (1 - v / yMax) * ph;
-
-  let parts = '';
-
-  // Y-grid
-  for (let v = 0; v <= yMax; v += yMax / 5) {
-    const y = ys(v);
-    parts += `<line x1="${ml}" y1="${y}" x2="${ml + pw}" y2="${y}" stroke="var(--line-hot)" stroke-width="0.5" stroke-opacity="0.4"/>`;
-    parts += `<text x="${ml - 6}" y="${y + 3}" font-size="10" fill="var(--dim)" text-anchor="end">$${(v/1000).toFixed(0)}k</text>`;
-  }
-
-  // X labels
-  for (let m = 0; m <= 12; m += 2) {
-    const x = xs(m);
-    parts += `<text x="${x}" y="${mt + ph + 16}" font-size="10" fill="var(--dim)" text-anchor="middle">M${m}</text>`;
-  }
-
-  // Fisc reserve line (green)
-  const fiscPts = [{ m: 0, v: setup.fisc_start }, ...data.map(d => ({ m: d.month, v: d.fiscReserveEnd }))];
-  const fiscPath = 'M ' + fiscPts.map(p => `${xs(p.m)} ${ys(p.v)}`).join(' L ');
-  parts += `<path d="${fiscPath}" stroke="var(--ok)" stroke-width="2.5" fill="none"/>`;
-
-  // MOND outstanding line (blue)
-  const mondPts = [{ m: 0, v: 0 }, ...data.map(d => ({ m: d.month, v: d.mondOutstandingEnd }))];
-  const mondPath = 'M ' + mondPts.map(p => `${xs(p.m)} ${ys(p.v)}`).join(' L ');
-  parts += `<path d="${mondPath}" stroke="var(--blue)" stroke-width="2.5" fill="none"/>`;
-
-  // Endpoints
-  const lastFisc = fiscPts[fiscPts.length - 1];
-  const lastMond = mondPts[mondPts.length - 1];
-  parts += `<circle cx="${xs(lastFisc.m)}" cy="${ys(lastFisc.v)}" r="3.5" fill="var(--ok)"/>`;
-  parts += `<text x="${xs(lastFisc.m) + 8}" y="${ys(lastFisc.v) - 6}" font-size="11" fill="var(--ok)">$${fmt(lastFisc.v)}</text>`;
-  parts += `<circle cx="${xs(lastMond.m)}" cy="${ys(lastMond.v)}" r="3.5" fill="var(--blue)"/>`;
-  parts += `<text x="${xs(lastMond.m) + 8}" y="${ys(lastMond.v) + 14}" font-size="11" fill="var(--blue)">${fmt(lastMond.v)}</text>`;
-
-  // Y axis label
-  parts += `<text x="14" y="${mt + ph / 2}" font-size="11" fill="var(--dim)" text-anchor="middle" transform="rotate(-90, 14, ${mt + ph / 2})">USD reserve · MOND outstanding</text>`;
-
-  // Axes
-  parts += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt + ph}" stroke="var(--line-hot)" stroke-width="1"/>`;
-  parts += `<line x1="${ml}" y1="${mt + ph}" x2="${ml + pw}" y2="${mt + ph}" stroke="var(--line-hot)" stroke-width="1"/>`;
-
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.innerHTML = parts;
-}
-
 function render() {
-  const result = runYear();
-  renderLog(result.month1);
-  renderBalances(result.finalState);
-  renderFlowCheck(result.month1);
-  renderYearSummary(result.monthSummaries, result.setup);
-  renderYearChart(result.monthSummaries, result.setup);
+  const setup = readSetup();
+  const result = runMonth(1, null, setup);
+  renderLog(result);
+  renderBalances(result.state);
+  renderFlowCheck(result);
 }
 
 // Wire up inputs

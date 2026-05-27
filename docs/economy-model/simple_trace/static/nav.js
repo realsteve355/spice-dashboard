@@ -18,7 +18,8 @@
       { path: '/aggregate',      label: 'Aggregate' },
     ]},
     { label: 'Toy colony', items: [
-      { path: '/ledger',         label: 'Ledger' },
+      { path: '/ledger',         label: 'Support phase' },
+      { path: '/abundance',      label: 'Abundance' },
     ]},
   ];
 

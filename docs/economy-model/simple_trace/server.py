@@ -75,6 +75,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "aggregate.html", "text/html; charset=utf-8")
         elif p == "/ledger":
             self._send_file(self.templates_dir / "ledger.html", "text/html; charset=utf-8")
+        elif p == "/abundance":
+            self._send_file(self.templates_dir / "abundance.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")

@@ -233,44 +233,15 @@
     <div class="flow-check" id="flow-check"></div>
   </div>
 
-  <!-- 12-month chart -->
+  <!-- Balance summary -->
   <div class="card">
-    <h3>12-month trajectory</h3>
-    <div class="sub">Fisc USD reserve (green) and MOND outstanding (blue) over 12 months at the current setup.</div>
-    <svg id="year-chart" style="width: 100%; height: 280px;"></svg>
-  </div>
-
-  <!-- 12-month summary table -->
-  <div class="card">
-    <h3>12-month summary</h3>
-    <div class="sub">Each row is the end of that month. Citizen columns show MOND balance accumulating.</div>
-    <table class="log" id="year-table">
-      <thead>
-        <tr>
-          <th>Month</th>
-          <th class="amt">UBI minted</th>
-          <th class="amt">MPC collected</th>
-          <th class="amt">Fisc USD</th>
-          <th class="amt">MOND out</th>
-          <th class="amt">Bob</th>
-          <th class="amt">Alice</th>
-          <th class="amt">John</th>
-          <th class="amt">Jane</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- Balance summary (end of year) -->
-  <div class="card">
-    <h3>End-of-year balances (month 12)</h3>
+    <h3>End-of-month balances</h3>
     <div class="balance-grid" id="balance-grid"></div>
   </div>
 
   <!-- Transaction log -->
   <div class="card">
-    <h3>Transaction log — month 1, chronological (mechanism is the same each month)</h3>
+    <h3>Transaction log — one month, chronological</h3>
     <div class="sub">
       MOND entries in blue · USD in amber · Fisc reserve column shows running USD balance.
     </div>

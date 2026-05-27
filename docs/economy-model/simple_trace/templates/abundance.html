@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Abundance ledger — 4-person colony at the end state</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  main.abundance { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+  .preamble {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    border-left: 3px solid #a855f7;
+    padding: 14px 20px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: var(--txt);
+    line-height: 1.65;
+  }
+  .preamble strong { color: var(--headline); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+  }
+  .card h3 {
+    font-size: 11px; color: var(--headline);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .card .sub { font-size: 11px; color: var(--dim); margin-bottom: 12px; }
+
+  .setup-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px;
+  }
+  .setup-grid .group {
+    background: #0b0d12; border: 1px solid var(--line-hot); padding: 12px 14px;
+  }
+  .setup-grid .group .title {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .setup-grid label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; color: var(--txt); padding: 4px 0;
+  }
+  .setup-grid input[type=number] {
+    background: #14171f; color: var(--txt);
+    border: 1px solid #2a2f3d; padding: 3px 6px;
+    width: 80px; text-align: right;
+    font-family: inherit; font-size: 11px;
+  }
+
+  .balance-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  }
+  .balance-card {
+    background: #0b0d12; border: 1px solid var(--line-hot); padding: 10px 14px;
+  }
+  .balance-card.fisc { border-left: 3px solid var(--ok); }
+  .balance-card .name {
+    font-size: 11px; color: var(--headline);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .balance-card .row {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--txt); padding: 2px 0;
+  }
+  .balance-card .row .lbl { color: var(--dim); font-size: 10px; }
+
+  table.log {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+  }
+  table.log th {
+    color: var(--dim); text-align: left; padding: 6px 8px;
+    border-bottom: 1px solid var(--line-hot);
+    letter-spacing: 0.06em; font-weight: 400;
+  }
+  table.log th.amt, table.log th.fisc { text-align: right; }
+  table.log td {
+    padding: 4px 8px; border-bottom: 1px solid #14171f; color: var(--txt);
+  }
+  table.log td.day {
+    color: var(--dim); width: 32px; font-variant-numeric: tabular-nums;
+  }
+  table.log td.from, table.log td.to { color: var(--headline); }
+  table.log td.amt {
+    text-align: right; font-variant-numeric: tabular-nums; color: var(--blue);
+  }
+  table.log td.amt.usd { color: var(--warn); }
+  table.log td.desc { color: var(--dim); font-size: 10px; }
+  table.log td.fisc {
+    text-align: right; font-variant-numeric: tabular-nums;
+    color: var(--ok); font-size: 10px;
+  }
+  table.log tr.section td {
+    background: #14171f; color: var(--headline);
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 5px 8px;
+    border-top: 1px solid var(--line-hot);
+    border-bottom: 1px solid var(--line-hot);
+  }
+
+  .flow-check {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; font-size: 12px;
+  }
+  .flow-check .flow {
+    background: #0b0d12; border: 1px solid var(--line-hot); padding: 12px 14px;
+  }
+  .flow-check .flow .title {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .flow-check .flow .row {
+    display: flex; justify-content: space-between; padding: 3px 0;
+  }
+  .flow-check .flow .row.total {
+    border-top: 1px solid #2a2f3d;
+    padding-top: 6px; margin-top: 4px; color: var(--headline);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Abundance ledger — 4-person colony at the end state</h1>
+  <div class="subtitle">
+    Same four citizens, ~20 years later. Phase 2 has played out; full abundance.
+    Edit the setup; the log recalculates live.
+  </div>
+</header>
+
+<main class="abundance">
+
+  <div class="preamble">
+    <strong>What's different from /ledger.</strong> Automation has displaced most
+    productive work. <strong>Bob's McDonald's franchise closed</strong> — McDonald's
+    HQ runs the location with robots, no franchisee needed. <strong>Alice's coffee shop
+    closed</strong> — kitchen automation made it unprofitable for a human-run shop.
+    Bob and Alice now live entirely on universal UBI. <strong>Only John continues
+    pottery</strong> as a vocational business (some external buyers still want
+    hand-made). Jane retired. The basket has deflated to roughly 15% of its 2026
+    cost (per the basket model). External imports are correspondingly cheap.
+    Universal UBI is small in nominal MOND terms because the basket it covers is small.
+  </div>
+
+  <!-- Setup -->
+  <div class="card">
+    <h3>Setup — abundance state</h3>
+    <div class="setup-grid">
+
+      <div class="group">
+        <div class="title">Universal UBI &amp; reserve</div>
+        <label>UBI per citizen (MOND/mo) <input type="number" id="ubi" value="100" min="0" step="10"></label>
+        <label>Fisc starting reserve (USD) <input type="number" id="fisc_start" value="20000" min="0" step="500"></label>
+        <label>MPC rate (% of external rev) <input type="number" id="mpc_rate" value="15" min="0" max="100" step="1"></label>
+      </div>
+
+      <div class="group">
+        <div class="title">Citizen consumption (per person, per month)</div>
+        <label>External (USD, basket has deflated) <input type="number" id="c_external" value="50" min="0" step="5"></label>
+        <label>Internal informal trade (MOND, each citizen) <input type="number" id="c_internal" value="15" min="0" step="5"></label>
+      </div>
+
+      <div class="group">
+        <div class="title">John's pottery business</div>
+        <label>Pottery revenue (USD/mo) <input type="number" id="pottery_rev" value="300" min="0" step="50"></label>
+        <label>Supplies cost (% of revenue) <input type="number" id="pottery_sup" value="20" min="0" max="100" step="5"></label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Flow check -->
+  <div class="card">
+    <h3>USD flow check (balance of payments)</h3>
+    <div class="sub">Inflows: pottery exports + MPC. Outflows: citizen imports + pottery supplies.</div>
+    <div class="flow-check" id="flow-check"></div>
+  </div>
+
+  <!-- Balance summary -->
+  <div class="card">
+    <h3>End-of-month balances</h3>
+    <div class="balance-grid" id="balance-grid"></div>
+  </div>
+
+  <!-- Transaction log -->
+  <div class="card">
+    <h3>Transaction log — one month, chronological</h3>
+    <div class="sub">
+      MOND entries in blue · USD in amber · Fisc reserve column shows running USD balance.
+    </div>
+    <table class="log" id="log-table">
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>From</th>
+          <th>→ To</th>
+          <th class="amt">Amount</th>
+          <th>Cur</th>
+          <th>Description</th>
+          <th class="fisc">Fisc $</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script src="/static/nav.js"></script>
+<script src="/static/abundance.js"></script>
+</body>
+</html>
