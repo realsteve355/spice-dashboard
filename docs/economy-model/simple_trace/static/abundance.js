@@ -9,6 +9,9 @@
 //   - Some informal internal MOND trade between citizens
 
 const CITIZENS = ['Bob', 'Alice', 'John', 'Jane'];
+// Per-citizen monthly essential-spend baseline in 2026 dollars. Used to compute
+// the basket deflator and "real UBI" (citizens get N baskets per month).
+const BASKET_2026 = 350;
 
 function readNum(id, def = 0) {
   const v = parseFloat(document.getElementById(id).value);
@@ -24,6 +27,8 @@ function readSetup() {
     c_internal:    readNum('c_internal', 15),
     pottery_rev:   readNum('pottery_rev', 300),
     pottery_sup:   readNum('pottery_sup', 20) / 100,
+    fx_pct:        readNum('fx_pct', 80) / 100,
+    working_bal:   readNum('working_bal', 65),
   };
 }
 
@@ -118,7 +123,38 @@ function runMonth(setup) {
     }
   }
 
-  return { accounts, fiscUsd, mondOutstanding, events };
+  // ── Day 30: citizen FX investment — spare MOND → external USD savings ──
+  // Earth-variant abundance: citizens park surplus in S&P/bonds/BTC/bank. MOND
+  // above one month of working balance gets converted at the Fisc boundary.
+  // Tracks per-citizen external USD savings so the chart can show that the
+  // colony's total wealth (Fisc + citizen savings) doesn't vanish, it migrates.
+  const fxOut = { Bob: 0, Alice: 0, John: 0, Jane: 0 };
+  if (setup.fx_pct > 0) {
+    const conversions = [];
+    for (const c of CITIZENS) {
+      const surplus = Math.max(0, accounts[c].mond - setup.working_bal);
+      const conv = surplus * setup.fx_pct;
+      if (conv > 0.5) conversions.push([c, conv]);
+    }
+    if (conversions.length > 0) {
+      events.push({ section: `Day 30 — Citizen FX investment (${(setup.fx_pct * 100).toFixed(0)}% of surplus → external USD)` });
+      for (const [c, conv] of conversions) {
+        accounts[c].mond -= conv;
+        mondOutstanding   -= conv;
+        fiscUsd           -= conv;
+        fxOut[c]          += conv;
+        events.push({
+          day: 30, from: c, to: 'External (S&P/bonds/BTC/bank)',
+          amount: conv, currency: 'MOND',
+          description: `Boundary swap — invest spare MOND as USD externally`,
+          fiscDelta: -conv,
+          isCapital: true,
+        });
+      }
+    }
+  }
+
+  return { accounts, fiscUsd, mondOutstanding, events, fxOut };
 }
 
 // ── Multi-month projection ──
@@ -127,7 +163,8 @@ function runMonth(setup) {
 
 function runMonths(setup, nMonths) {
   const accounts = {};
-  for (const c of CITIZENS) accounts[c] = { mond: 0 };
+  const citizenUsd = {};
+  for (const c of CITIZENS) { accounts[c] = { mond: 0 }; citizenUsd[c] = 0; }
   let fiscUsd = setup.fisc_start;
   let mondOutstanding = 0;
   const series = [{
@@ -135,34 +172,36 @@ function runMonths(setup, nMonths) {
     fiscUsd,
     mondOutstanding,
     citizens: Object.fromEntries(CITIZENS.map(c => [c, 0])),
+    citizenUsd: Object.fromEntries(CITIZENS.map(c => [c, 0])),
+    citizenUsdTotal: 0,
     netToFisc: 0,
   }];
 
   for (let m = 1; m <= nMonths; m++) {
-    // Re-run the month with current carry-over state.
-    // We just call runMonth() and apply its delta to our running state.
-    // runMonth starts from zero per-citizen MOND, so we apply its deltas additively.
     const monthSetup = { ...setup, fisc_start: fiscUsd };
     const result = runMonth(monthSetup);
 
-    // Carry MOND balances forward additively
-    for (const c of CITIZENS) accounts[c].mond += result.accounts[c].mond;
-    // Fisc reflects starting + net change
+    for (const c of CITIZENS) {
+      accounts[c].mond += result.accounts[c].mond;
+      citizenUsd[c]    += (result.fxOut && result.fxOut[c]) || 0;
+    }
     fiscUsd = result.fiscUsd;
     mondOutstanding += result.mondOutstanding;
 
-    // Compute net change for this month
     let netToFisc = 0;
     for (const ev of result.events) {
       if (ev.section || !ev.fiscDelta) continue;
       netToFisc += ev.fiscDelta;
     }
+    const totalUsd = CITIZENS.reduce((s, c) => s + citizenUsd[c], 0);
 
     series.push({
       month: m,
       fiscUsd,
       mondOutstanding,
       citizens: Object.fromEntries(CITIZENS.map(c => [c, accounts[c].mond])),
+      citizenUsd: Object.fromEntries(CITIZENS.map(c => [c, citizenUsd[c]])),
+      citizenUsdTotal: totalUsd,
       netToFisc,
     });
   }
@@ -338,6 +377,159 @@ function renderTrajectoryTable(series) {
   }).join('');
 }
 
+// ── Feasibility indicators — textbook small-open-economy diagnostics ──
+// Six headline numbers an economist would track for this colony:
+//   1. Current account balance   — exports + MPC − imports − supplies (USD/mo)
+//   2. Reserve cover             — Fisc USD / monthly USD outflow (months)
+//   3. Money supply              — MOND outstanding + net seigniorage/mo
+//   4. Velocity (Fisher MV=PY)   — MOND transactions / average M
+//   5. Inflation / basket        — basket cost vs 2026 baseline
+//   6. Real UBI                  — UBI / monthly basket cost (baskets/mo)
+
+function computeIndicators(setup, m1) {
+  // Decompose the month's events into current vs capital flows.
+  let exports = 0, mpcUsd = 0, imports = 0, supplies = 0, fxOut = 0;
+  let mondTxnVolume = 0;
+  for (const ev of m1.events) {
+    if (ev.section) continue;
+    if (ev.currency === 'MOND') mondTxnVolume += ev.amount;
+    if (!ev.fiscDelta) continue;
+    if (ev.isCapital) {
+      fxOut += -ev.fiscDelta;
+    } else if (ev.fiscDelta > 0) {
+      if (ev.currency === 'USD') mpcUsd += ev.fiscDelta;
+      else exports += ev.fiscDelta;
+    } else {
+      if (ev.description && /suppl/i.test(ev.description)) supplies += -ev.fiscDelta;
+      else imports += -ev.fiscDelta;
+    }
+  }
+  // 1. Current account (USD/mo)
+  const currentAccount = exports + mpcUsd - imports - supplies;
+  // 2. Reserve cover (months): Fisc / (current-account outflow + capital outflow)
+  const monthlyOut = imports + supplies + fxOut;
+  const reserveCover = monthlyOut > 0 ? m1.fiscUsd / monthlyOut : null;
+  // 3. Money supply: MOND outstanding now + seigniorage = net mint this month
+  const M = m1.mondOutstanding;
+  const minted = (4 * setup.ubi) + setup.pottery_rev;
+  const retired = imports + supplies + fxOut;
+  const seigniorage = minted - retired;
+  // 4. Velocity (Fisher MV=PY): transactions ÷ average outstanding M
+  // Use end-of-month M as proxy for M_avg (single-month sim has no prior).
+  const velocity = M > 0 ? mondTxnVolume / M : null;
+  // 5. Basket / inflation
+  const basket = setup.c_external + setup.c_internal;     // per-citizen monthly spend (MOND/USD 1:1)
+  const basketRatio = basket / BASKET_2026;                // e.g. 0.186
+  const cumulativeDeflation = 1 - basketRatio;             // 0.81 = 81% below 2026
+  // 6. Real UBI: how many basket-cycles UBI buys
+  const realUBI = basket > 0 ? setup.ubi / basket : null;
+  return {
+    currentAccount, reserveCover,
+    M, seigniorage, velocity,
+    basket, basketRatio, cumulativeDeflation,
+    realUBI,
+    flows: { exports, mpcUsd, imports, supplies, fxOut },
+  };
+}
+
+function indicatorClass(value, thresholds) {
+  // thresholds = { green: fn, red: fn }
+  if (value === null || value === undefined || isNaN(value)) return 'ind-flat';
+  if (thresholds.green(value)) return 'ind-ok';
+  if (thresholds.red(value))   return 'ind-crit';
+  return 'ind-warn';
+}
+
+function renderIndicators(ind) {
+  const grid = document.getElementById('indicators');
+  if (!grid) return;
+
+  const cards = [
+    {
+      title: '1 · Current account',
+      big: (ind.currentAccount >= 0 ? '+' : '') + '$' + fmt(ind.currentAccount) + ' / mo',
+      sub: `exports $${fmt(ind.flows.exports)} + MPC $${fmt(ind.flows.mpcUsd)} − imports $${fmt(ind.flows.imports)} − supplies $${fmt(ind.flows.supplies)}`,
+      verdict: ind.currentAccount >= 0
+        ? 'colony pays its own way on goods + services'
+        : 'colony spending more abroad than it earns',
+      cls: indicatorClass(ind.currentAccount, {
+        green: v => v > 0, red: v => v < -50,
+      }),
+    },
+    {
+      title: '2 · Reserve cover',
+      big: ind.reserveCover === null
+        ? '∞'
+        : fmt(ind.reserveCover) + ' months',
+      sub: `Fisc USD ÷ monthly outflow ($${fmt(ind.flows.imports + ind.flows.supplies + ind.flows.fxOut)})`,
+      verdict: ind.reserveCover === null ? 'no outflow'
+        : ind.reserveCover >= 6 ? 'comfortable (IMF: ≥3 mo adequate)'
+        : ind.reserveCover >= 3 ? 'adequate (IMF floor)'
+        : 'vulnerable — below IMF floor',
+      cls: indicatorClass(ind.reserveCover, {
+        green: v => v >= 6, red: v => v < 3,
+      }),
+    },
+    {
+      title: '3 · Money supply (M)',
+      big: fmt(ind.M) + ' MOND',
+      sub: `seigniorage this month: ${ind.seigniorage >= 0 ? '+' : ''}${fmt(ind.seigniorage)} MOND (mint − retire)`,
+      verdict: Math.abs(ind.seigniorage) < 20
+        ? 'stable — mint roughly matches retirement'
+        : ind.seigniorage > 0
+          ? 'expanding — new MOND faster than burn'
+          : 'contracting — burn exceeds new mint',
+      cls: indicatorClass(Math.abs(ind.seigniorage), {
+        green: v => v < 50, red: v => v > 200,
+      }),
+    },
+    {
+      title: '4 · Velocity (V)',
+      big: ind.velocity === null ? '—' : ind.velocity.toFixed(2) + ' / mo',
+      sub: 'MOND transactions ÷ average outstanding (Fisher MV = PY)',
+      verdict: ind.velocity === null ? 'no MOND in circulation yet'
+        : ind.velocity > 5  ? 'fast circulation — money working hard'
+        : ind.velocity > 1  ? 'healthy circulation'
+        : 'slow — MOND piling up rather than spent',
+      cls: indicatorClass(ind.velocity, {
+        green: v => v >= 1 && v <= 10, red: v => v < 0.5 || v > 15,
+      }),
+    },
+    {
+      title: '5 · Inflation / basket',
+      big: '−' + fmt(ind.cumulativeDeflation * 100) + '% vs 2026',
+      sub: `basket cost: $${fmt(ind.basket)}/mo (was $${BASKET_2026} in 2026)`,
+      verdict: ind.cumulativeDeflation > 0.5
+        ? 'deep deflation — automation has slashed real costs'
+        : ind.cumulativeDeflation > 0
+          ? 'moderate deflation'
+          : 'no deflation — abundance not yet reached',
+      cls: 'ind-flat',
+    },
+    {
+      title: '6 · Real UBI',
+      big: ind.realUBI === null ? '—' : ind.realUBI.toFixed(2) + '× basket',
+      sub: `${fmt(parseFloat(document.getElementById('ubi').value))} MOND UBI ÷ $${fmt(ind.basket)} basket`,
+      verdict: ind.realUBI === null ? '—'
+        : ind.realUBI >= 1.5 ? 'generous — surplus available for savings'
+        : ind.realUBI >= 1.0 ? 'sufficient — exactly covers essentials'
+        : 'insufficient — citizens fall short',
+      cls: indicatorClass(ind.realUBI, {
+        green: v => v >= 1, red: v => v < 0.8,
+      }),
+    },
+  ];
+
+  grid.innerHTML = cards.map(c => `
+    <div class="indicator ${c.cls}">
+      <div class="ind-title">${c.title}</div>
+      <div class="ind-big">${c.big}</div>
+      <div class="ind-sub">${c.sub}</div>
+      <div class="ind-verdict">${c.verdict}</div>
+    </div>
+  `).join('');
+}
+
 function render() {
   const setup = readSetup();
   const months = Math.max(1, Math.min(60, parseInt(document.getElementById('n_months').value, 10) || 24));
@@ -346,13 +538,16 @@ function render() {
   renderLog(m1);
   renderBalances(m1);
   renderFlowCheck(m1);
+  // Indicators
+  const ind = computeIndicators(setup, m1);
+  renderIndicators(ind);
   // Multi-month trajectory
   const series = runMonths(setup, months);
   renderTrajectoryChart(series);
   renderTrajectoryTable(series);
 }
 
-['ubi','fisc_start','mpc_rate','c_external','c_internal','pottery_rev','pottery_sup','n_months'].forEach(id => {
+['ubi','fisc_start','mpc_rate','c_external','c_internal','pottery_rev','pottery_sup','n_months','fx_pct','working_bal'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('input', render);

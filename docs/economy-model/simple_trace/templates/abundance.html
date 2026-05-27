@@ -109,6 +109,42 @@
     text-align: right; font-variant-numeric: tabular-nums;
     color: #7aa2ff;
   }
+
+  /* Feasibility indicators */
+  .indicator-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .indicator {
+    background: #0b0d12; border: 1px solid var(--line-hot);
+    border-left: 3px solid #5a6373;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .indicator.ind-ok   { border-left-color: var(--ok); }
+  .indicator.ind-warn { border-left-color: var(--warn); }
+  .indicator.ind-crit { border-left-color: var(--crit); }
+  .indicator.ind-flat { border-left-color: var(--dim); }
+  .indicator .ind-title {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .indicator .ind-big {
+    font-size: 18px; color: var(--headline);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin: 2px 0 2px;
+  }
+  .indicator.ind-ok   .ind-big { color: var(--ok); }
+  .indicator.ind-warn .ind-big { color: var(--warn); }
+  .indicator.ind-crit .ind-big { color: var(--crit); }
+  .indicator .ind-sub {
+    font-size: 10px; color: var(--txt); line-height: 1.45;
+  }
+  .indicator .ind-verdict {
+    font-size: 10px; color: var(--dim); line-height: 1.4;
+    border-top: 1px solid #14171f; padding-top: 4px; margin-top: 2px;
+    font-style: italic;
+  }
   table.log tr.section td {
     background: #14171f; color: var(--headline);
     font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
@@ -159,6 +195,20 @@
     hand-made). Jane retired. The basket has deflated to roughly 15% of its 2026
     cost (per the basket model). External imports are correspondingly cheap.
     Universal UBI is small in nominal MOND terms because the basket it covers is small.
+    Citizens now have an outlet for spare MOND: <strong>convert at the Fisc boundary
+    and invest externally</strong> (S&amp;P, bonds, BTC, bank deposits). That's the
+    Earth-variant escape valve — Mars uses V-tokens instead because it has no
+    external markets to invest into.
+  </div>
+
+  <!-- Feasibility indicators (textbook) -->
+  <div class="card">
+    <h3>Feasibility indicators — textbook macro view</h3>
+    <div class="sub">
+      Six standard small-open-economy diagnostics. Computed from the single-month
+      transaction log below. Green = healthy · amber = watch · red = breach.
+    </div>
+    <div class="indicator-grid" id="indicators"></div>
   </div>
 
   <!-- Setup -->
@@ -177,6 +227,8 @@
         <div class="title">Citizen consumption (per person, per month)</div>
         <label>External (USD, basket has deflated) <input type="number" id="c_external" value="50" min="0" step="5"></label>
         <label>Internal informal trade (MOND, each citizen) <input type="number" id="c_internal" value="15" min="0" step="5"></label>
+        <label>FX investment (% of spare MOND → USD) <input type="number" id="fx_pct" value="80" min="0" max="100" step="5"></label>
+        <label>Working balance (MOND held by each citizen) <input type="number" id="working_bal" value="65" min="0" step="5"></label>
       </div>
 
       <div class="group">
