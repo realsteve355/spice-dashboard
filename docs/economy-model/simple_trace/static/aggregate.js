@@ -36,6 +36,21 @@ const SECTOR_COLOURS = {
   self_employed:     '#475569',
 };
 
+
+// Velocity is shared between /sectors and /aggregate via localStorage so the
+// slider position persists when navigating between the two pages.
+function loadSavedVelocity() {
+  try {
+    const v = localStorage.getItem('axion_velocity');
+    if (v) document.getElementById('velocity').value = v;
+  } catch (e) { /* localStorage might be disabled — fall back to default */ }
+  document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
+}
+function saveVelocity() {
+  try { localStorage.setItem('axion_velocity', document.getElementById('velocity').value); }
+  catch (e) {}
+}
+
 function logistic(t, midpoint, k, ceiling) {
   return ceiling / (1 + Math.exp(-k * (t - midpoint)));
 }
@@ -323,6 +338,7 @@ function updateHeadline(data) {
 
 function render() {
   document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
+  saveVelocity();
   const velocity = parseInt(document.getElementById('velocity').value);
   const phaseBoundary = YEAR_START + 0.50 * (velocity - YEAR_START);
   const data = computeAggregate(velocity);
@@ -333,4 +349,5 @@ function render() {
 }
 
 document.getElementById('velocity').addEventListener('input', render);
+loadSavedVelocity();
 render();

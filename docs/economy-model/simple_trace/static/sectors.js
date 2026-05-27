@@ -20,6 +20,21 @@ const DEFAULTS = window.SECTOR_DEFAULTS;
 // Working copy of sector data (mutated by inputs)
 let SECTORS = JSON.parse(JSON.stringify(DEFAULTS));
 
+
+// Velocity is shared between /sectors and /aggregate via localStorage so the
+// slider position persists when navigating between the two pages.
+function loadSavedVelocity() {
+  try {
+    const v = localStorage.getItem('axion_velocity');
+    if (v) document.getElementById('velocity').value = v;
+  } catch (e) { /* localStorage might be disabled — fall back to default */ }
+  document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
+}
+function saveVelocity() {
+  try { localStorage.setItem('axion_velocity', document.getElementById('velocity').value); }
+  catch (e) {}
+}
+
 function logistic(t, midpoint, k, ceiling) {
   return ceiling / (1 + Math.exp(-k * (t - midpoint)));
 }
@@ -192,6 +207,7 @@ function renderAll() {
 
 document.getElementById('velocity').addEventListener('input', () => {
   document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
+  saveVelocity();
   for (let i = 0; i < SECTORS.length; i++) {
     renderChartForSector(i);
   }
@@ -204,5 +220,6 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 });
 
 // Initial render
+loadSavedVelocity();
 renderTable();
 renderAll();
