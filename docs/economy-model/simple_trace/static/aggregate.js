@@ -86,6 +86,9 @@ function computeAggregate(velocityYear) {
   for (const s of SECTORS) {
     traj[s.id] = sectorTrajectory(s, velocityYear);
   }
+  // Phase boundary for the snapshot table + phase tagging (matches the
+  // proportional scaling inside sectorTrajectory).
+  const phase_boundary = YEAR_START + 0.50 * (velocityYear - YEAR_START);
 
   return YEARS.map((year, yi) => {
     const sectorJobs = {};
