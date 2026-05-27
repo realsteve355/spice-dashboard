@@ -400,8 +400,9 @@ function computeIndicators(setup, m1) {
       if (ev.currency === 'USD') mpcUsd += ev.fiscDelta;
       else exports += ev.fiscDelta;
     } else {
-      if (ev.description && /suppl/i.test(ev.description)) supplies += -ev.fiscDelta;
-      else imports += -ev.fiscDelta;
+      const desc = ev.description || '';
+      if (/Clay|kiln|postage|suppl/i.test(desc)) supplies += -ev.fiscDelta;
+      else                                       imports  += -ev.fiscDelta;
     }
   }
   // 1. Current account (USD/mo)

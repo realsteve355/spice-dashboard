@@ -177,6 +177,42 @@
     margin-top: 4px;
     color: var(--headline);
   }
+
+  /* Feasibility indicators */
+  .indicator-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  }
+  .indicator {
+    background: #0b0d12; border: 1px solid var(--line-hot);
+    border-left: 3px solid #5a6373;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .indicator.ind-ok   { border-left-color: var(--ok); }
+  .indicator.ind-warn { border-left-color: var(--warn); }
+  .indicator.ind-crit { border-left-color: var(--crit); }
+  .indicator.ind-flat { border-left-color: var(--dim); }
+  .indicator .ind-title {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .indicator .ind-big {
+    font-size: 18px; color: var(--headline);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    margin: 2px 0 2px;
+  }
+  .indicator.ind-ok   .ind-big { color: var(--ok); }
+  .indicator.ind-warn .ind-big { color: var(--warn); }
+  .indicator.ind-crit .ind-big { color: var(--crit); }
+  .indicator .ind-sub {
+    font-size: 10px; color: var(--txt); line-height: 1.45;
+  }
+  .indicator .ind-verdict {
+    font-size: 10px; color: var(--dim); line-height: 1.4;
+    border-top: 1px solid #14171f; padding-top: 4px; margin-top: 2px;
+    font-style: italic;
+  }
 </style>
 </head>
 <body>
@@ -190,6 +226,16 @@
 </header>
 
 <main class="ledger">
+
+  <!-- Feasibility indicators (textbook macro view) -->
+  <div class="card">
+    <h3>Feasibility indicators — textbook macro view</h3>
+    <div class="sub">
+      Six standard small-open-economy diagnostics, computed live from the
+      transaction log below. Green = healthy · amber = watch · red = breach.
+    </div>
+    <div class="indicator-grid" id="indicators"></div>
+  </div>
 
   <!-- Setup -->
   <div class="card">
@@ -213,6 +259,8 @@
         <label>McDonald's (MOND) <input type="number" id="c_mcd" value="300" min="0" step="50"></label>
         <label>Coffee shop (MOND) <input type="number" id="c_coffee" value="150" min="0" step="25"></label>
         <label>External (USD) <input type="number" id="c_external" value="150" min="0" step="25"></label>
+        <label>FX investment (% of spare MOND → USD) <input type="number" id="fx_pct" value="50" min="0" max="100" step="5"></label>
+        <label>Working balance (MOND held by each citizen) <input type="number" id="working_bal" value="600" min="0" step="50"></label>
       </div>
 
       <div class="group">

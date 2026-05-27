@@ -13,6 +13,10 @@
 //   John, Jane — pottery export
 
 const CITIZENS = ['Bob', 'Alice', 'John', 'Jane'];
+// 2026 baseline basket: total per-citizen monthly consumption at support-phase
+// prices (McDonald's $300 + Coffee $150 + External imports $150 = $600).
+// Used by the inflation/deflation indicator.
+const BASKET_2026 = 600;
 
 function readNum(id, def = 0) {
   const v = parseFloat(document.getElementById(id).value);
@@ -35,6 +39,9 @@ function readSetup() {
     coffee_sup:    readNum('coffee_sup', 40) / 100,
     pottery_rev:   readNum('pottery_rev', 2000),
     pottery_sup:   readNum('pottery_sup', 20) / 100,
+
+    fx_pct:        readNum('fx_pct', 50) / 100,
+    working_bal:   readNum('working_bal', 600),
   };
 }
 
@@ -163,6 +170,34 @@ function runMonth(monthNum, prevState, setup) {
     }
   }
 
+  // ── Day 30: citizen FX investment — spare MOND above working balance → external USD ──
+  // Earth-variant escape valve: citizens convert spare MOND to USD at the
+  // Fisc boundary and invest externally (S&P/bonds/BTC/bank). MOND retires;
+  // Fisc USD reserve drops; citizen owns USD outside the colony.
+  if (setup.fx_pct > 0) {
+    const conversions = [];
+    for (const c of CITIZENS) {
+      const surplus = Math.max(0, accounts[c].mond - setup.working_bal);
+      const conv = surplus * setup.fx_pct;
+      if (conv > 0.5) conversions.push([c, conv]);
+    }
+    if (conversions.length > 0) {
+      events.push({ section: `Day 30 — Citizen FX investment (${(setup.fx_pct * 100).toFixed(0)}% of spare MOND → external USD)` });
+      for (const [c, conv] of conversions) {
+        accounts[c].mond -= conv;
+        mondOutstanding  -= conv;
+        fiscUsd          -= conv;
+        events.push({
+          day: 30, from: c, to: 'External (S&P/bonds/BTC/bank)',
+          amount: conv, currency: 'MOND',
+          description: 'Boundary swap — invest spare MOND as USD externally',
+          fiscDelta: -conv,
+          isCapital: true,
+        });
+      }
+    }
+  }
+
   const monthSummary = {
     month: monthNum,
     ubiMinted: totalUbiMinted,
@@ -284,18 +319,183 @@ function renderFlowCheck(result) {
   `;
 }
 
+// ── Feasibility indicators — textbook small-open-economy diagnostics ──
+// Same six as /abundance, calibrated for support-phase scale:
+//   1. Current account     exports + MPC − imports − supplies − corporate fees
+//   2. Reserve cover       Fisc USD / monthly USD outflow (months)
+//   3. Money supply (M)    MOND outstanding + seigniorage (net mint/mo)
+//   4. Velocity            MOND transactions / average outstanding
+//   5. Inflation / basket  basket cost vs 2026 baseline ($600/citizen/mo)
+//   6. Real UBI            mean UBI received ÷ monthly basket cost
+
+function computeIndicators(setup, result, profitOf) {
+  // Decompose the month's events into current vs capital flows.
+  let exports = 0, mpcUsd = 0, imports = 0, supplies = 0, fxOut = 0, corpFees = 0;
+  let mondTxnVolume = 0;
+  for (const ev of result.events) {
+    if (ev.section) continue;
+    if (ev.currency === 'MOND') mondTxnVolume += ev.amount;
+    if (!ev.fiscDelta) continue;
+    if (ev.isCapital) {
+      fxOut += -ev.fiscDelta;
+    } else if (ev.fiscDelta > 0) {
+      if (ev.currency === 'USD') mpcUsd += ev.fiscDelta;
+      else exports += ev.fiscDelta;
+    } else {
+      const desc = ev.description || '';
+      if (/Clay|kiln|postage/i.test(desc))         supplies += -ev.fiscDelta;
+      else if (/HQ|franchise|wholesaler/i.test(desc)) corpFees += -ev.fiscDelta;
+      else                                         imports  += -ev.fiscDelta;
+    }
+  }
+  // 1. Current account — all goods/services on the boundary except citizen FX
+  const currentAccount = exports + mpcUsd - imports - supplies - corpFees;
+  // 2. Reserve cover
+  const monthlyOut = imports + supplies + corpFees + fxOut;
+  const reserveCover = monthlyOut > 0 ? result.state.fiscUsd / monthlyOut : null;
+  // 3. Money supply + seigniorage
+  const M = result.state.mondOutstanding;
+  const seigniorage = result.monthSummary.ubiMinted + setup.pottery_rev - (imports + supplies + corpFees + fxOut);
+  // 4. Velocity (Fisher MV = PY): single-month proxy uses end-of-month M
+  const velocity = M > 0 ? mondTxnVolume / M : null;
+  // 5. Basket / inflation — support phase IS the 2026 baseline, so deflation ≈ 0
+  const basket = setup.c_mcd + setup.c_coffee + setup.c_external;
+  const basketRatio = basket / BASKET_2026;
+  const cumulativeDeflation = 1 - basketRatio;
+  // 6. Real UBI — mean UBI received ÷ basket
+  let totalUbi = 0;
+  if (setup.ubi_mode === 'universal') {
+    totalUbi = setup.ubi_universal * CITIZENS.length;
+  } else {
+    for (const c of CITIZENS) totalUbi += Math.max(0, setup.ubi_floor - (profitOf[c] || 0));
+  }
+  const meanUbi = totalUbi / CITIZENS.length;
+  const realUBI = basket > 0 ? meanUbi / basket : null;
+
+  return {
+    currentAccount, reserveCover,
+    M, seigniorage, velocity,
+    basket, basketRatio, cumulativeDeflation,
+    realUBI, meanUbi,
+    flows: { exports, mpcUsd, imports, supplies, corpFees, fxOut },
+  };
+}
+
+function indicatorClass(value, thresholds) {
+  if (value === null || value === undefined || isNaN(value)) return 'ind-flat';
+  if (thresholds.green(value)) return 'ind-ok';
+  if (thresholds.red(value))   return 'ind-crit';
+  return 'ind-warn';
+}
+
+function renderIndicators(ind, setup) {
+  const grid = document.getElementById('indicators');
+  if (!grid) return;
+  const totalOut = ind.flows.imports + ind.flows.supplies + ind.flows.corpFees + ind.flows.fxOut;
+
+  const cards = [
+    {
+      title: '1 · Current account',
+      big: (ind.currentAccount >= 0 ? '+' : '') + '$' + fmt(ind.currentAccount) + ' / mo',
+      sub: `exports $${fmt(ind.flows.exports)} + MPC $${fmt(ind.flows.mpcUsd)} − imports $${fmt(ind.flows.imports)} − supplies $${fmt(ind.flows.supplies)} − corp fees $${fmt(ind.flows.corpFees)}`,
+      verdict: ind.currentAccount >= 0
+        ? 'colony pays its own way on goods + services'
+        : 'colony spending more abroad than it earns',
+      cls: indicatorClass(ind.currentAccount, {
+        green: v => v > 0, red: v => v < -500,
+      }),
+    },
+    {
+      title: '2 · Reserve cover',
+      big: ind.reserveCover === null ? '∞' : fmt(ind.reserveCover) + ' months',
+      sub: `Fisc USD ÷ monthly outflow ($${fmt(totalOut)})`,
+      verdict: ind.reserveCover === null ? 'no outflow'
+        : ind.reserveCover >= 6 ? 'comfortable (IMF: ≥3 mo adequate)'
+        : ind.reserveCover >= 3 ? 'adequate (IMF floor)'
+        : 'vulnerable — below IMF floor',
+      cls: indicatorClass(ind.reserveCover, {
+        green: v => v >= 6, red: v => v < 3,
+      }),
+    },
+    {
+      title: '3 · Money supply (M)',
+      big: fmt(ind.M) + ' MOND',
+      sub: `seigniorage this month: ${ind.seigniorage >= 0 ? '+' : ''}${fmt(ind.seigniorage)} MOND (mint − retire)`,
+      verdict: Math.abs(ind.seigniorage) < 500
+        ? 'stable — mint roughly matches retirement'
+        : ind.seigniorage > 0
+          ? 'expanding — new MOND faster than burn'
+          : 'contracting — burn exceeds new mint',
+      cls: indicatorClass(Math.abs(ind.seigniorage), {
+        green: v => v < 500, red: v => v > 2000,
+      }),
+    },
+    {
+      title: '4 · Velocity (V)',
+      big: ind.velocity === null ? '—' : ind.velocity.toFixed(2) + ' / mo',
+      sub: 'MOND transactions ÷ average outstanding (Fisher MV = PY)',
+      verdict: ind.velocity === null ? 'no MOND in circulation yet'
+        : ind.velocity > 5  ? 'fast circulation — money working hard'
+        : ind.velocity > 1  ? 'healthy circulation'
+        : 'slow — MOND piling up rather than spent',
+      cls: indicatorClass(ind.velocity, {
+        green: v => v >= 1 && v <= 10, red: v => v < 0.5 || v > 15,
+      }),
+    },
+    {
+      title: '5 · Inflation / basket',
+      big: ind.cumulativeDeflation > 0
+        ? '−' + fmt(ind.cumulativeDeflation * 100) + '% vs 2026'
+        : 'at 2026 baseline',
+      sub: `basket cost: $${fmt(ind.basket)}/mo per citizen (baseline $${BASKET_2026})`,
+      verdict: ind.cumulativeDeflation > 0.5
+        ? 'deep deflation — automation has slashed real costs'
+        : ind.cumulativeDeflation > 0
+          ? 'moderate deflation'
+          : 'no deflation — support phase still at 2026 prices',
+      cls: 'ind-flat',
+    },
+    {
+      title: '6 · Real UBI',
+      big: ind.realUBI === null ? '—' : ind.realUBI.toFixed(2) + '× basket',
+      sub: setup.ubi_mode === 'universal'
+        ? `${fmt(setup.ubi_universal)} MOND universal ÷ $${fmt(ind.basket)} basket`
+        : `mean UBI ${fmt(ind.meanUbi)} MOND (means-tested) ÷ $${fmt(ind.basket)} basket`,
+      verdict: ind.realUBI === null ? '—'
+        : ind.realUBI >= 1.5 ? 'generous — surplus available for savings'
+        : ind.realUBI >= 1.0 ? 'sufficient — exactly covers essentials'
+        : 'insufficient — citizens rely on business income too',
+      cls: indicatorClass(ind.realUBI, {
+        green: v => v >= 1, red: v => v < 0.5,
+      }),
+    },
+  ];
+
+  grid.innerHTML = cards.map(c => `
+    <div class="indicator ${c.cls}">
+      <div class="ind-title">${c.title}</div>
+      <div class="ind-big">${c.big}</div>
+      <div class="ind-sub">${c.sub}</div>
+      <div class="ind-verdict">${c.verdict}</div>
+    </div>
+  `).join('');
+}
+
 function render() {
   const setup = readSetup();
   const result = runMonth(1, null, setup);
   renderLog(result);
   renderBalances(result.state);
   renderFlowCheck(result);
+  const ind = computeIndicators(setup, result, result.profitOf);
+  renderIndicators(ind, setup);
 }
 
 // Wire up inputs
 ['ubi_mode','ubi_floor','ubi_universal','fisc_start','mpc_rate',
  'c_mcd','c_coffee','c_external',
- 'mcd_corp','coffee_sup','pottery_rev','pottery_sup'].forEach(id => {
+ 'mcd_corp','coffee_sup','pottery_rev','pottery_sup',
+ 'fx_pct','working_bal'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('input', render);
