@@ -327,6 +327,123 @@ function renderFlowCheck(result) {
   `;
 }
 
+// ── Multi-month projection ──
+// Chains runMonth() across N months using prevState. Citizen MOND, Fisc USD,
+// and MOND outstanding all carry forward. This is where the real stress test
+// lives — single-month dynamics are stable by construction, but the cumulative
+// trajectory reveals whether the colony actually holds together.
+
+function runMonths(setup, nMonths) {
+  const cumulativeUsd = { Bob: 0, Alice: 0, John: 0, Jane: 0 };
+  const series = [{
+    month: 0,
+    fiscUsd: setup.fisc_start,
+    mondOutstanding: 0,
+    citizens: { Bob: 0, Alice: 0, John: 0, Jane: 0 },
+    citizenUsd: { ...cumulativeUsd },
+    citizenUsdTotal: 0,
+  }];
+  let prevState = null;
+  let lastResult = null;
+  for (let m = 1; m <= nMonths; m++) {
+    const result = runMonth(m, prevState, setup);
+    for (const c of CITIZENS) {
+      cumulativeUsd[c] += (result.fxOut && result.fxOut[c]) || 0;
+    }
+    const totalUsd = CITIZENS.reduce((s, c) => s + cumulativeUsd[c], 0);
+    series.push({
+      month: m,
+      fiscUsd: result.state.fiscUsd,
+      mondOutstanding: result.state.mondOutstanding,
+      citizens: {
+        Bob:   result.state.accounts.Bob.mond,
+        Alice: result.state.accounts.Alice.mond,
+        John:  result.state.accounts.John.mond,
+        Jane:  result.state.accounts.Jane.mond,
+      },
+      citizenUsd: { ...cumulativeUsd },
+      citizenUsdTotal: totalUsd,
+    });
+    prevState = result.state;
+    lastResult = result;
+  }
+  return { series, lastResult };
+}
+
+function renderTrajectoryChart(series) {
+  const svg = document.getElementById('traj-chart');
+  if (!svg) return;
+  const W = 1100, H = 280, pad = { l: 80, r: 80, t: 20, b: 32 };
+  const innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
+  const months = series.map(p => p.month);
+  // Three series: Fisc USD (left axis), MOND outstanding + cumulative citizen USD (right axis)
+  const fiscMax = Math.max(...series.map(p => p.fiscUsd)) * 1.05;
+  const fiscMin = Math.min(0, Math.min(...series.map(p => p.fiscUsd))) * 1.05;
+  const rightMax = Math.max(
+    ...series.map(p => p.mondOutstanding),
+    ...series.map(p => p.citizenUsdTotal)
+  ) * 1.05 || 1;
+  const xScale = m => pad.l + (m / months[months.length - 1]) * innerW;
+  const yFisc = v => pad.t + innerH - ((v - fiscMin) / (fiscMax - fiscMin || 1)) * innerH;
+  const yRight = v => pad.t + innerH - (v / rightMax) * innerH;
+
+  const pathFor = (sel, scale) => series.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${xScale(p.month).toFixed(1)} ${scale(sel(p)).toFixed(1)}`
+  ).join(' ');
+
+  const fiscPath  = pathFor(p => p.fiscUsd,         yFisc);
+  const mondPath  = pathFor(p => p.mondOutstanding, yRight);
+  const usdPath   = pathFor(p => p.citizenUsdTotal, yRight);
+
+  let xGrid = '';
+  const tickStep = months[months.length - 1] >= 24 ? 3 : 2;
+  for (let m = 0; m <= months[months.length - 1]; m += tickStep) {
+    xGrid += `<line x1="${xScale(m)}" y1="${pad.t}" x2="${xScale(m)}" y2="${pad.t + innerH}" stroke="#14171f" stroke-width="1"/>`;
+    xGrid += `<text x="${xScale(m)}" y="${H - 10}" fill="#5a6373" font-size="10" text-anchor="middle">M${m}</text>`;
+  }
+  let yLabels = '';
+  for (let i = 0; i <= 4; i++) {
+    const yPx = pad.t + (innerH * i / 4);
+    const fiscVal  = fiscMax - (fiscMax - fiscMin) * (i / 4);
+    const rightVal = rightMax - rightMax * (i / 4);
+    yLabels += `<line x1="${pad.l}" y1="${yPx}" x2="${pad.l + innerW}" y2="${yPx}" stroke="#14171f" stroke-width="1"/>`;
+    yLabels += `<text x="${pad.l - 8}" y="${yPx + 3}" fill="#a8e6a8" font-size="10" text-anchor="end">$${Math.round(fiscVal).toLocaleString()}</text>`;
+    yLabels += `<text x="${pad.l + innerW + 8}" y="${yPx + 3}" fill="#7aa2ff" font-size="10" text-anchor="start">${Math.round(rightVal).toLocaleString()}</text>`;
+  }
+  svg.innerHTML = `
+    ${xGrid}
+    ${yLabels}
+    <path d="${fiscPath}" fill="none" stroke="#a8e6a8" stroke-width="2"/>
+    <path d="${mondPath}" fill="none" stroke="#7aa2ff" stroke-width="2"/>
+    <path d="${usdPath}"  fill="none" stroke="#ffb86c" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="${pad.l}" y="${pad.t - 6}" fill="#a8e6a8" font-size="10">Fisc USD reserve (left)</text>
+    <text x="${pad.l + innerW}" y="${pad.t - 6}" fill="#7aa2ff" font-size="10" text-anchor="end">MOND outstanding (right) · <tspan fill="#ffb86c">citizens' USD savings (right, dashed)</tspan></text>
+  `;
+}
+
+function renderTrajectoryTable(series) {
+  const tbody = document.querySelector('#traj-table tbody');
+  if (!tbody) return;
+  const last = series[series.length - 1].month;
+  const rows = series.filter(p => p.month === 0 || p.month % 3 === 0 || p.month === last);
+  const startFisc = series[0].fiscUsd;
+  tbody.innerHTML = rows.map(p => {
+    const fiscDelta = p.fiscUsd - startFisc;
+    const fiscDeltaClass = fiscDelta >= 0 ? 'pos' : 'neg';
+    return `<tr>
+      <td class="day">${p.month}</td>
+      <td class="fisc">$${fmt(p.fiscUsd)}</td>
+      <td class="${fiscDeltaClass}">${fiscDelta >= 0 ? '+' : ''}$${fmt(fiscDelta)}</td>
+      <td class="mond-out">${fmt(p.mondOutstanding)}</td>
+      <td class="usd-out">$${fmt(p.citizenUsdTotal)}</td>
+      <td>${fmt(p.citizens.Bob)}</td>
+      <td>${fmt(p.citizens.Alice)}</td>
+      <td>${fmt(p.citizens.John)}</td>
+      <td>${fmt(p.citizens.Jane)}</td>
+    </tr>`;
+  }).join('');
+}
+
 // ── Feasibility indicators — textbook small-open-economy diagnostics ──
 // Same six as /abundance, calibrated for support-phase scale:
 //   1. Current account     exports + MPC − imports − supplies − corporate fees
@@ -494,7 +611,7 @@ const STORAGE_KEY = 'axion_ledger_v1';
 const INPUT_IDS = ['ubi_mode','ubi_floor','ubi_universal','fisc_start','mpc_rate',
                    'c_mcd','c_coffee','c_external',
                    'mcd_corp','coffee_sup','pottery_rev','pottery_sup',
-                   'fx_pct','working_bal'];
+                   'fx_pct','working_bal','n_months'];
 
 function saveInputs() {
   try {
@@ -524,12 +641,19 @@ function resetInputs() {
 
 function render() {
   const setup = readSetup();
-  const result = runMonth(1, null, setup);
-  renderLog(result);
-  renderBalances(result.state, result.fxOut);
-  renderFlowCheck(result);
-  const ind = computeIndicators(setup, result, result.profitOf);
+  const months = Math.max(1, Math.min(60, parseInt(
+    (document.getElementById('n_months') || {}).value, 10) || 24));
+  // Single-month detail for log/balances/flow/indicators (month 1)
+  const m1 = runMonth(1, null, setup);
+  renderLog(m1);
+  renderBalances(m1.state, m1.fxOut);
+  renderFlowCheck(m1);
+  const ind = computeIndicators(setup, m1, m1.profitOf);
   renderIndicators(ind, setup);
+  // Multi-month trajectory
+  const { series } = runMonths(setup, months);
+  renderTrajectoryChart(series);
+  renderTrajectoryTable(series);
 }
 
 // Wire up inputs

@@ -147,6 +147,18 @@
     border-top: 1px solid var(--line-hot);
     border-bottom: 1px solid var(--line-hot);
   }
+  table.log td.pos {
+    text-align: right; font-variant-numeric: tabular-nums; color: var(--ok);
+  }
+  table.log td.neg {
+    text-align: right; font-variant-numeric: tabular-nums; color: var(--crit);
+  }
+  table.log td.mond-out {
+    text-align: right; font-variant-numeric: tabular-nums; color: #7aa2ff;
+  }
+  table.log td.usd-out {
+    text-align: right; font-variant-numeric: tabular-nums; color: #ffb86c;
+  }
 
   /* Flow check */
   .flow-check {
@@ -277,6 +289,7 @@
         <label>Coffee supplier cost (%) <input type="number" id="coffee_sup" value="40" min="0" max="100" step="5"></label>
         <label>Pottery total revenue (USD/mo) <input type="number" id="pottery_rev" value="2000" min="0" step="100"></label>
         <label>Pottery supplies cost (%) <input type="number" id="pottery_sup" value="20" min="0" max="100" step="5"></label>
+        <label>Months to project <input type="number" id="n_months" value="24" min="1" max="60" step="1"></label>
       </div>
 
     </div>
@@ -293,6 +306,45 @@
   <div class="card">
     <h3>End-of-month balances</h3>
     <div class="balance-grid" id="balance-grid"></div>
+  </div>
+
+  <!-- Multi-month trajectory chart -->
+  <div class="card">
+    <h3>Multi-month projection — stress test</h3>
+    <div class="sub">
+      Chains the monthly pattern forward. Each citizen's MOND, the Fisc reserve,
+      and external USD savings all carry month-to-month.
+      <span style="color:#a8e6a8;">●</span> Fisc USD reserve (left axis) ·
+      <span style="color:#7aa2ff;">●</span> MOND outstanding (right axis) ·
+      <span style="color:#ffb86c;">●</span> Citizens' cumulative external USD savings (right axis, dashed).
+    </div>
+    <svg id="traj-chart" viewBox="0 0 1100 280" preserveAspectRatio="xMidYMid meet"
+         style="width:100%; height:280px; background:#0b0d12; border:1px solid var(--line-hot);"></svg>
+  </div>
+
+  <!-- Quarterly snapshot table -->
+  <div class="card">
+    <h3>Trajectory — quarterly snapshot</h3>
+    <div class="sub">
+      Per-citizen MOND balances accumulate; FX outflow grows as savings build;
+      Fisc trajectory tells you whether the colony actually holds together.
+    </div>
+    <table class="log" id="traj-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th class="fisc">Fisc USD</th>
+          <th class="amt">Δ vs start</th>
+          <th class="amt">MOND out</th>
+          <th class="amt">USD saved</th>
+          <th class="amt">Bob</th>
+          <th class="amt">Alice</th>
+          <th class="amt">John</th>
+          <th class="amt">Jane</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <!-- Transaction log -->
