@@ -17,6 +17,9 @@
       { path: '/sectors',        label: 'Sectors' },
       { path: '/aggregate',      label: 'Aggregate' },
     ]},
+    { label: 'Toy colony', items: [
+      { path: '/ledger',         label: 'Ledger' },
+    ]},
   ];
 
   const current = window.location.pathname.replace(/\/$/, '') || '/';
