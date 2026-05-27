@@ -1,51 +1,33 @@
 // Colony ledger — toy 4-person colony, full transaction trace for one month.
 //
-// 4 citizens:
-//   Bob   — runs McDonald's franchise (internal-facing business with external obligations)
-//   Alice — runs coffee shop (internal-facing business with external supplier costs)
-//   John  — co-owner of pottery business (export earner — colony's USD inflow)
-//   Jane  — co-owner of pottery business
+// Model assumption (post-simplification):
+//   - Citizens and businesses hold MOND only.
+//   - External companies hold USD only (we don't track them in detail except for MPC).
+//   - The Fisc sits at the boundary. It holds a USD reserve and tracks MOND outstanding.
+//   - Any "external" transaction (import, export, supplier payment, corporate fee) is
+//     shown as ONE event from the citizen/business perspective in MOND, with the Fisc's
+//     USD reserve adjusting silently. Boundary conversion is at 1 MOND = 1 USD.
 //
-// All MOND flows are tracked. Fisc reserve (USD) updates after each
-// USD-affecting transaction.
+// 4 citizens:
+//   Bob   — runs McDonald's franchise (internal-facing biz with external obligations)
+//   Alice — runs coffee shop (internal-facing biz with external supplier costs)
+//   John, Jane — co-owners of pottery business (export earners, colony's USD inflow)
 
-// Track running balances per entity
 function newState() {
   return {
     accounts: {
-      'Bob':              { mond: 0, usd: 0 },
-      'Alice':            { mond: 0, usd: 0 },
-      'John':             { mond: 0, usd: 0 },
-      'Jane':             { mond: 0, usd: 0 },
-      "Bob's McDonald's": { mond: 0, usd: 0 },
-      "Alice's Coffee":   { mond: 0, usd: 0 },
-      'Fisc':             { mond: 0, usd: 0 },  // mond = total minted - retired (notional liability)
-      'External':         { mond: 0, usd: 0 },  // sinks for outbound USD
+      'Bob':              { mond: 0 },
+      'Alice':            { mond: 0 },
+      'John':             { mond: 0 },
+      'Jane':             { mond: 0 },
+      "Bob's McDonald's": { mond: 0 },
+      "Alice's Coffee":   { mond: 0 },
     },
+    fiscUsd: 0,
+    mondOutstanding: 0,  // total MOND minted - retired
     events: [],
-    fiscOverTime: [],  // [(day, reserveUsd)]
+    mpcAccrued: {},  // by recipient: external company → USD revenue from MF
   };
-}
-
-function record(state, day, from, to, amount, currency, description) {
-  // Update balances. MOND is held by accounts; USD circulates.
-  const ev = { day, from, to, amount, currency, description };
-  state.events.push(ev);
-
-  if (currency === 'MOND') {
-    if (from === 'Fisc')        { state.accounts.Fisc.mond += amount; }     // mint
-    else                         { state.accounts[from].mond -= amount; }
-    if (to === 'Fisc')           { state.accounts.Fisc.mond -= amount; }    // retire
-    else                         { state.accounts[to].mond   += amount; }
-  } else if (currency === 'USD') {
-    state.accounts[from].usd -= amount;
-    state.accounts[to].usd   += amount;
-  }
-
-  // Snapshot Fisc reserve after each USD-affecting transaction
-  if (currency === 'USD') {
-    state.fiscOverTime.push({ day, reserve: state.accounts.Fisc.usd });
-  }
 }
 
 function readNum(id, def = 0) {
@@ -53,12 +35,76 @@ function readNum(id, def = 0) {
   return isNaN(v) ? def : v;
 }
 
+// ── Event helpers ─────────────────────────────────────────────────────────
+
+function eventInternal(state, day, from, to, mondAmount, description) {
+  // Internal MOND transfer — no Fisc USD change.
+  state.accounts[from].mond -= mondAmount;
+  state.accounts[to].mond   += mondAmount;
+  state.events.push({
+    day, from, to, amount: mondAmount, currency: 'MOND',
+    description, fiscDelta: 0,
+  });
+}
+
+function eventUbiMint(state, day, to, mondAmount, description) {
+  // Fisc prints MOND for citizen.
+  state.accounts[to].mond += mondAmount;
+  state.mondOutstanding   += mondAmount;
+  state.events.push({
+    day, from: 'Fisc', to, amount: mondAmount, currency: 'MOND',
+    description, fiscDelta: 0,
+  });
+}
+
+function eventPayExternal(state, day, from, mondAmount, description, mpcRecipient) {
+  // Citizen/business pays external — one logical transaction.
+  // Under the hood: MOND retired by Fisc, USD reserve decreases, USD lands at external.
+  state.accounts[from].mond -= mondAmount;
+  state.mondOutstanding     -= mondAmount;
+  state.fiscUsd             -= mondAmount;  // 1:1 boundary
+
+  // Track MPC accrual on this external recipient
+  if (mpcRecipient) {
+    state.mpcAccrued[mpcRecipient] = (state.mpcAccrued[mpcRecipient] || 0) + mondAmount;
+  }
+
+  state.events.push({
+    day, from, to: 'External', amount: mondAmount, currency: 'MOND',
+    description, fiscDelta: -mondAmount,
+  });
+}
+
+function eventExportEarning(state, day, to, mondAmount, description) {
+  // External buyer pays the colony. Fisc receives USD, mints MOND to recipient.
+  state.accounts[to].mond += mondAmount;
+  state.mondOutstanding   += mondAmount;
+  state.fiscUsd           += mondAmount;
+  state.events.push({
+    day, from: 'External', to, amount: mondAmount, currency: 'MOND',
+    description, fiscDelta: +mondAmount,
+  });
+}
+
+function eventMpc(state, day, externalSource, usdAmount, description) {
+  // External company pays MPC to Fisc. Reserve goes up. No MOND minted (MPC is a USD inflow).
+  state.fiscUsd += usdAmount;
+  state.events.push({
+    day, from: `External (${externalSource})`, to: 'Fisc',
+    amount: usdAmount, currency: 'USD',
+    description, fiscDelta: +usdAmount,
+  });
+}
+
+// ── Main month simulation ────────────────────────────────────────────────
+
 function runMonth() {
   const setup = {
     ubi_mode:      document.getElementById('ubi_mode').value,
     ubi_floor:     readNum('ubi_floor', 600),
     ubi_universal: readNum('ubi_universal', 1000),
     fisc_start:    readNum('fisc_start', 10000),
+    mpc_rate:      readNum('mpc_rate', 15) / 100,
 
     c_mcd:         readNum('c_mcd', 300),
     c_coffee:      readNum('c_coffee', 150),
@@ -71,23 +117,18 @@ function runMonth() {
   };
 
   const state = newState();
-  state.accounts.Fisc.usd = setup.fisc_start;
-  state.fiscOverTime.push({ day: 0, reserve: setup.fisc_start });
+  state.fiscUsd = setup.fisc_start;
 
   const citizens = ['Bob', 'Alice', 'John', 'Jane'];
 
-  // ── Day 1: Compute business profits to determine means-tested UBI ──
-  // Pre-compute the expected profit per citizen for this month, used by the
-  // means-tested UBI calculation. (In reality this is messy — for our toy, we
-  // assume profits are predictable monthly.)
+  // Compute expected business profits this month (used for means-tested UBI)
+  const totalMcdRev    = setup.c_mcd    * citizens.length;
+  const totalCoffeeRev = setup.c_coffee * citizens.length;
+  const totalPotteryRev = setup.pottery_rev;
 
-  const totalMcdRev    = setup.c_mcd    * citizens.length;       // 4×300 = 1200
-  const totalCoffeeRev = setup.c_coffee * citizens.length;       // 4×150 = 600
-  const totalPotteryRev = setup.pottery_rev;                     // $2000 → 2000 MOND (parity)
-
-  const bobProfit    = totalMcdRev    * (1 - setup.mcd_corp);    // 1200 × 0.4 = 480
-  const aliceProfit  = totalCoffeeRev * (1 - setup.coffee_sup);  // 600 × 0.6  = 360
-  const potteryProfit = totalPotteryRev * (1 - setup.pottery_sup); // 2000 × 0.8 = 1600
+  const bobProfit    = totalMcdRev    * (1 - setup.mcd_corp);
+  const aliceProfit  = totalCoffeeRev * (1 - setup.coffee_sup);
+  const potteryProfit = totalPotteryRev * (1 - setup.pottery_sup);
   const johnProfit   = potteryProfit / 2;
   const janeProfit   = potteryProfit / 2;
 
@@ -98,115 +139,115 @@ function runMonth() {
     return Math.max(0, setup.ubi_floor - profitOf[name]);
   }
 
-  // ── Section: UBI issuance ──
+  // ── Day 1: UBI ──
   state.events.push({ section: 'Day 1 — UBI issuance' });
   for (const c of citizens) {
     const amt = ubiFor(c);
     if (amt > 0) {
-      record(state, 1, 'Fisc', c, amt, 'MOND', setup.ubi_mode === 'universal'
+      eventUbiMint(state, 1, c, amt, setup.ubi_mode === 'universal'
         ? 'Universal UBI'
-        : `Top-up to floor (${c}'s business profit ${profitOf[c].toFixed(0)} < floor)`);
+        : `Top-up to floor (profit ${profitOf[c].toFixed(0)} < ${setup.ubi_floor})`);
     } else {
       state.events.push({ day: 1, from: 'Fisc', to: c, amount: 0, currency: 'MOND',
-        description: `No UBI needed (${c}'s profit ${profitOf[c].toFixed(0)} ≥ floor)` });
+        description: `No UBI needed (profit ${profitOf[c].toFixed(0)} ≥ floor)`, fiscDelta: 0 });
     }
   }
 
-  // ── Section: Citizens spend at McDonald's ──
+  // ── Days 3-7: McDonald's purchases ──
   state.events.push({ section: 'Days 3-7 — McDonald\'s purchases' });
   citizens.forEach((c, i) => {
-    record(state, 3 + i, c, "Bob's McDonald's", setup.c_mcd, 'MOND', 'Lunch');
+    eventInternal(state, 3 + i, c, "Bob's McDonald's", setup.c_mcd, 'Lunch');
   });
 
-  // ── Section: Citizens spend at coffee ──
+  // ── Days 8-12: Coffee purchases ──
   state.events.push({ section: 'Days 8-12 — Coffee purchases' });
   citizens.forEach((c, i) => {
-    record(state, 8 + i, c, "Alice's Coffee", setup.c_coffee, 'MOND', 'Coffee');
+    eventInternal(state, 8 + i, c, "Alice's Coffee", setup.c_coffee, 'Coffee');
   });
 
-  // ── Section: External imports ──
-  state.events.push({ section: 'Days 13-17 — External imports (MOND → USD → External)' });
+  // ── Days 13-17: External imports ──
+  state.events.push({ section: 'Days 13-17 — External imports (via Fisc boundary)' });
   citizens.forEach((c, i) => {
-    const day = 13 + i;
-    // Citizen converts MOND → USD at Fisc
-    record(state, day, c, 'Fisc', setup.c_external, 'MOND', 'Convert for external import');
-    record(state, day, 'Fisc', c, setup.c_external, 'USD', 'Boundary: MOND→USD (Fisc rate 1:1)');
-    // Citizen sends USD to external
-    record(state, day, c, 'External', setup.c_external, 'USD', 'Amazon/groceries/gas');
+    eventPayExternal(state, 13 + i, c, setup.c_external,
+      'Amazon / groceries / gas', 'External retailers');
   });
 
-  // ── Section: Pottery exports come in ──
-  state.events.push({ section: 'Days 18-20 — Pottery exports (USD inflow)' });
-  // External buyers pay John and Jane
-  record(state, 18, 'External', 'John', setup.pottery_rev / 2, 'USD', 'Etsy pottery sales');
-  record(state, 19, 'External', 'Jane', setup.pottery_rev / 2, 'USD', 'Etsy pottery sales');
+  // ── Days 18-19: Pottery export earnings ──
+  state.events.push({ section: 'Days 18-19 — Pottery exports (USD into Fisc, MOND to owners)' });
+  eventExportEarning(state, 18, 'John', setup.pottery_rev / 2,
+    'Etsy pottery sale (boundary mints MOND)');
+  eventExportEarning(state, 19, 'Jane', setup.pottery_rev / 2,
+    'Etsy pottery sale (boundary mints MOND)');
 
-  // ── Section: Pottery supplies ──
+  // ── Day 21: Pottery supplies ──
   state.events.push({ section: 'Day 21 — Pottery supplies' });
-  const potterySuppliesPerOwner = setup.pottery_rev * setup.pottery_sup / 2;
-  record(state, 21, 'John', 'External', potterySuppliesPerOwner, 'USD', 'Clay, kiln gas, postage');
-  record(state, 21, 'Jane', 'External', potterySuppliesPerOwner, 'USD', 'Clay, kiln gas, postage');
+  const potterySupOwner = setup.pottery_rev * setup.pottery_sup / 2;
+  eventPayExternal(state, 21, 'John', potterySupOwner,
+    'Clay, kiln gas, postage', 'Pottery suppliers');
+  eventPayExternal(state, 21, 'Jane', potterySupOwner,
+    'Clay, kiln gas, postage', 'Pottery suppliers');
 
-  // ── Section: John & Jane convert remaining USD → MOND for internal use ──
-  state.events.push({ section: 'Days 22-23 — John & Jane convert pottery proceeds to MOND' });
-  const johnConvertAmt = state.accounts.John.usd;   // whatever they have left
-  const janeConvertAmt = state.accounts.Jane.usd;
-  record(state, 22, 'John', 'Fisc', johnConvertAmt, 'USD', 'Hand USD to Fisc');
-  record(state, 22, 'Fisc', 'John', johnConvertAmt, 'MOND', 'Boundary: USD→MOND minted');
-  record(state, 23, 'Jane', 'Fisc', janeConvertAmt, 'USD', 'Hand USD to Fisc');
-  record(state, 23, 'Fisc', 'Jane', janeConvertAmt, 'MOND', 'Boundary: USD→MOND minted');
-
-  // ── Section: Bob pays McDonald's corporate ──
+  // ── Day 26: Bob pays McDonald's corporate ──
   state.events.push({ section: 'Day 26 — McDonald\'s corporate fee' });
   const mcdCorpMond = totalMcdRev * setup.mcd_corp;
-  record(state, 26, "Bob's McDonald's", 'Fisc', mcdCorpMond, 'MOND', 'Convert to USD for corporate');
-  record(state, 26, 'Fisc', "Bob's McDonald's", mcdCorpMond, 'USD', 'Boundary: MOND→USD');
-  record(state, 26, "Bob's McDonald's", 'External', mcdCorpMond, 'USD', 'McDonald\'s HQ franchise fee + supplies');
+  eventPayExternal(state, 26, "Bob's McDonald's", mcdCorpMond,
+    'McDonald\'s HQ franchise fee + supplies', 'McDonald\'s HQ');
 
-  // ── Section: Alice pays coffee supplier ──
+  // ── Day 27: Alice pays coffee supplier ──
   state.events.push({ section: 'Day 27 — Coffee supplier' });
   const coffeeSupMond = totalCoffeeRev * setup.coffee_sup;
-  record(state, 27, "Alice's Coffee", 'Fisc', coffeeSupMond, 'MOND', 'Convert to USD for supplier');
-  record(state, 27, 'Fisc', "Alice's Coffee", coffeeSupMond, 'USD', 'Boundary: MOND→USD');
-  record(state, 27, "Alice's Coffee", 'External', coffeeSupMond, 'USD', 'Coffee bean wholesaler');
+  eventPayExternal(state, 27, "Alice's Coffee", coffeeSupMond,
+    'Coffee bean wholesaler', 'Coffee supplier');
 
-  // ── Section: Business profits passed to owners (book entry) ──
-  state.events.push({ section: 'Day 30 — Business owners take month-end draw' });
-  const bobNetMond   = state.accounts["Bob's McDonald's"].mond;
-  const aliceNetMond = state.accounts["Alice's Coffee"].mond;
-  if (bobNetMond > 0)   record(state, 30, "Bob's McDonald's", 'Bob',     bobNetMond,   'MOND', 'Owner draw (Bob = his McDonald\'s)');
-  if (aliceNetMond > 0) record(state, 30, "Alice's Coffee",   'Alice',   aliceNetMond, 'MOND', 'Owner draw (Alice = her shop)');
+  // ── Day 28: Owner draws ──
+  state.events.push({ section: 'Day 28 — Business owners take month-end draw' });
+  const bobNet   = state.accounts["Bob's McDonald's"].mond;
+  const aliceNet = state.accounts["Alice's Coffee"].mond;
+  if (bobNet > 0)   eventInternal(state, 28, "Bob's McDonald's", 'Bob',   bobNet,   'Owner draw');
+  if (aliceNet > 0) eventInternal(state, 28, "Alice's Coffee",   'Alice', aliceNet, 'Owner draw');
+
+  // ── Day 30: MPC collection ──
+  if (setup.mpc_rate > 0) {
+    state.events.push({ section: `Day 30 — MPC collected from external companies @ ${(setup.mpc_rate * 100).toFixed(0)}%` });
+    // Sort recipients by accrued amount for readable order
+    const recipients = Object.entries(state.mpcAccrued).sort((a,b) => b[1] - a[1]);
+    for (const [source, revenue] of recipients) {
+      const mpcUsd = revenue * setup.mpc_rate;
+      eventMpc(state, 30, source, mpcUsd,
+        `${(setup.mpc_rate * 100).toFixed(0)}% MPC on $${revenue.toLocaleString()} colony revenue`);
+    }
+  }
 
   return { setup, state, profitOf };
 }
 
 // ── Rendering ──
 
-function fmt(n, currency) {
+function fmt(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
-  const v = Math.abs(n) >= 1e6 ? (n/1e6).toFixed(2) + 'M' :
-            Math.abs(n) >= 1e3 ? n.toLocaleString() : n.toFixed(0);
-  return currency === 'USD' ? '$' + v : v;
+  return Math.abs(n) >= 1e3 ? n.toLocaleString() : n.toFixed(0);
 }
 
 function renderLog(state) {
   const tbody = document.querySelector('#log-table tbody');
   let html = '';
-  let runningFisc = state.accounts.Fisc.usd; // we'll recompute as we walk
-  // recompute the Fisc trail by simulating order again — easier: track per event
   let fisc = parseFloat(document.getElementById('fisc_start').value);
   for (const ev of state.events) {
     if (ev.section) {
       html += `<tr class="section"><td colspan="7">${ev.section}</td></tr>`;
       continue;
     }
-    // Update Fisc reserve if USD transaction
+    fisc += (ev.fiscDelta || 0);
+
+    let amtClass, amtStr;
     if (ev.currency === 'USD') {
-      if (ev.from === 'Fisc') fisc -= ev.amount;
-      else if (ev.to === 'Fisc') fisc += ev.amount;
+      amtClass = 'amt usd';
+      amtStr = '$' + fmt(ev.amount);
+    } else {
+      amtClass = 'amt';
+      amtStr = fmt(ev.amount);
     }
-    const amtClass = ev.currency === 'USD' ? 'amt usd' : 'amt';
-    const amtStr = ev.currency === 'USD' ? '$' + fmt(ev.amount, 'USD').replace('$','') : fmt(ev.amount, 'MOND');
+
     html += `<tr>
       <td class="day">${ev.day}</td>
       <td class="from">${ev.from}</td>
@@ -222,45 +263,56 @@ function renderLog(state) {
 
 function renderBalances(state) {
   const grid = document.getElementById('balance-grid');
-  const entities = ['Bob', 'Alice', 'John', 'Jane', 'Fisc'];
-  grid.innerHTML = entities.map(name => {
-    const a = state.accounts[name];
-    const isFisc = name === 'Fisc';
+  const entities = [
+    { key: 'Bob',              label: 'Bob' },
+    { key: 'Alice',            label: 'Alice' },
+    { key: 'John',             label: 'John' },
+    { key: 'Jane',             label: 'Jane' },
+    { key: 'fisc',             label: 'Fisc',  fisc: true },
+  ];
+  grid.innerHTML = entities.map(e => {
+    if (e.fisc) {
+      return `
+        <div class="balance-card fisc">
+          <div class="name">${e.label}</div>
+          <div class="row"><span class="lbl">USD reserve</span><span class="val">$${fmt(state.fiscUsd)}</span></div>
+          <div class="row"><span class="lbl">MOND outstanding</span><span class="val">${fmt(state.mondOutstanding)}</span></div>
+        </div>
+      `;
+    }
+    const a = state.accounts[e.key];
     return `
-      <div class="balance-card${isFisc ? ' fisc' : ''}">
-        <div class="name">${name}</div>
-        <div class="row"><span class="lbl">MOND</span><span class="val">${fmt(a.mond, 'MOND')}</span></div>
-        <div class="row"><span class="lbl">USD</span><span class="val">$${fmt(a.usd, 'USD').replace('$','')}</span></div>
+      <div class="balance-card">
+        <div class="name">${e.label}</div>
+        <div class="row"><span class="lbl">MOND</span><span class="val">${fmt(a.mond)}</span></div>
       </div>
     `;
   }).join('');
 }
 
 function renderFlowCheck(state, setup) {
-  // Compute the USD ledger: into Fisc, out of Fisc, net.
+  // USD-side: aggregate inflows and outflows to the Fisc.
   let inflows = 0, outflows = 0;
   const inflowItems = [];
   const outflowItems = [];
 
   for (const ev of state.events) {
     if (ev.section) continue;
-    if (ev.currency !== 'USD') continue;
-    if (ev.to === 'Fisc') {
-      inflows += ev.amount;
-      inflowItems.push({ from: ev.from, desc: ev.description, amount: ev.amount });
-    } else if (ev.from === 'Fisc') {
-      outflows += ev.amount;
-      outflowItems.push({ to: ev.to, desc: ev.description, amount: ev.amount });
+    if (!ev.fiscDelta) continue;
+    if (ev.fiscDelta > 0) {
+      inflows += ev.fiscDelta;
+      inflowItems.push({ key: ev.from + ' — ' + ev.description, amount: ev.fiscDelta });
+    } else {
+      outflows += -ev.fiscDelta;
+      outflowItems.push({ key: ev.from + ' — ' + ev.description, amount: -ev.fiscDelta });
     }
   }
 
-  // Reduce items by source/destination + description
   function reduce(items) {
     const map = {};
     for (const item of items) {
-      const key = (item.from || item.to) + '|' + item.desc;
-      if (!map[key]) map[key] = { ...item, amount: 0 };
-      map[key].amount += item.amount;
+      if (!map[item.key]) map[item.key] = { key: item.key, amount: 0 };
+      map[item.key].amount += item.amount;
     }
     return Object.values(map);
   }
@@ -269,10 +321,10 @@ function renderFlowCheck(state, setup) {
   const outRows = reduce(outflowItems);
 
   const inflowHtml = inRows.map(r =>
-    `<div class="row"><span>${r.from} — ${r.desc}</span><span>$${r.amount.toLocaleString()}</span></div>`
+    `<div class="row"><span>${r.key}</span><span>$${r.amount.toLocaleString()}</span></div>`
   ).join('');
   const outflowHtml = outRows.map(r =>
-    `<div class="row"><span>${r.to} — ${r.desc}</span><span>$${r.amount.toLocaleString()}</span></div>`
+    `<div class="row"><span>${r.key}</span><span>$${r.amount.toLocaleString()}</span></div>`
   ).join('');
 
   const net = inflows - outflows;
@@ -280,12 +332,12 @@ function renderFlowCheck(state, setup) {
 
   document.getElementById('flow-check').innerHTML = `
     <div class="flow">
-      <div class="title">USD → Fisc (inflows)</div>
+      <div class="title">USD into Fisc</div>
       ${inflowHtml}
       <div class="row total"><span>Total inflows</span><span>$${inflows.toLocaleString()}</span></div>
     </div>
     <div class="flow">
-      <div class="title">Fisc → USD (outflows)</div>
+      <div class="title">USD out of Fisc</div>
       ${outflowHtml}
       <div class="row total"><span>Total outflows</span><span>$${outflows.toLocaleString()}</span></div>
       <div class="row total" style="border-top: 1px solid var(--line-hot); margin-top: 8px; padding-top: 8px;">
@@ -304,7 +356,7 @@ function render() {
 }
 
 // Wire up inputs
-['ubi_mode','ubi_floor','ubi_universal','fisc_start',
+['ubi_mode','ubi_floor','ubi_universal','fisc_start','mpc_rate',
  'c_mcd','c_coffee','c_external',
  'mcd_corp','coffee_sup','pottery_rev','pottery_sup'].forEach(id => {
   const el = document.getElementById(id);
