@@ -43,10 +43,15 @@ function logistic(t, midpoint, k, ceiling) {
 // For a single sector, compute the employment fraction (% of 2026 baseline)
 // remaining each year.
 function sectorTrajectory(s, velocityYear) {
-  const p1_mid = 2031;
-  const p1_k = 3 / (PHASE_BOUNDARY - p1_mid);
-  const p2_mid = (PHASE_BOUNDARY + velocityYear) / 2;
-  const p2_k = velocityYear > PHASE_BOUNDARY ? 3 / (velocityYear - p2_mid) : 1;
+  // Proportional scaling: velocity stretches/compresses the whole timeline.
+  // Phase 1 occupies the first half of the active range; Phase 2 the second.
+  // P1 midpoint at 25%, P2 midpoint at 75% of (YEAR_START → velocityYear).
+  const span = velocityYear - YEAR_START;
+  const p1_mid = YEAR_START + 0.25 * span;
+  const phase_boundary = YEAR_START + 0.50 * span;
+  const p2_mid = YEAR_START + 0.75 * span;
+  const p1_k = phase_boundary > p1_mid ? 3 / (phase_boundary - p1_mid) : 1;
+  const p2_k = velocityYear > p2_mid ? 3 / (velocityYear - p2_mid) : 1;
 
   const p1_ceil = s.p1_ceil / 100;
   const p2_ceil = s.p2_ceil / 100;
@@ -61,11 +66,11 @@ function sectorTrajectory(s, velocityYear) {
     const employment = 1 - displaced;
 
     let price;
-    if (year <= PHASE_BOUNDARY) {
+    if (year <= phase_boundary) {
       price = Math.max(floor, Math.pow(1 - p1_defl, year - YEAR_START));
     } else {
-      const at_boundary = Math.max(floor, Math.pow(1 - p1_defl, PHASE_BOUNDARY - YEAR_START));
-      price = Math.max(floor, at_boundary * Math.pow(1 - p2_defl, year - PHASE_BOUNDARY));
+      const at_boundary = Math.max(floor, Math.pow(1 - p1_defl, phase_boundary - YEAR_START));
+      price = Math.max(floor, at_boundary * Math.pow(1 - p2_defl, year - phase_boundary));
     }
 
     return { year, employment, displaced, price };
@@ -119,13 +124,13 @@ function computeAggregate(velocityYear) {
       unempPct,
       basketFactor,
       basketUsd,
-      phase: year <= PHASE_BOUNDARY ? 1 : 2,
+      phase: year <= phase_boundary ? 1 : 2,
     };
   });
 }
 
 // ── Employment chart (stacked area) ──
-function drawEmploymentChart(data) {
+function drawEmploymentChart(data, phaseBoundary) {
   const svg = document.getElementById('emp-chart');
   const W = 1400, H = 380;
   const ml = 70, mr = 80, mt = 12, mb = 32;
@@ -138,7 +143,7 @@ function drawEmploymentChart(data) {
   let parts = '';
 
   // Phase 2 background
-  parts += `<rect x="${xs(2036)}" y="${mt}" width="${xs(2046) - xs(2036)}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
+  parts += `<rect x="${xs(phaseBoundary)}" y="${mt}" width="${xs(YEAR_END) - xs(phaseBoundary)}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
 
   // Y grid (every 3,000)
   for (let v = 0; v <= 18000; v += 3000) {
@@ -186,7 +191,7 @@ function drawEmploymentChart(data) {
   parts += `<path d="${totalPath}" stroke="#ede5d4" stroke-width="2" fill="none"/>`;
 
   // Phase boundary
-  parts += `<line x1="${xs(2036)}" y1="${mt}" x2="${xs(2036)}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  parts += `<line x1="${xs(phaseBoundary)}" y1="${mt}" x2="${xs(phaseBoundary)}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 4"/>`;
 
   // Endpoint labels — total at 2026, 2036, 2046
   for (const yr of [2026, 2036, 2046]) {
@@ -218,7 +223,7 @@ function drawEmploymentChart(data) {
 }
 
 // ── Basket cost chart ──
-function drawBasketChart(data) {
+function drawBasketChart(data, phaseBoundary) {
   const svg = document.getElementById('basket-chart');
   const W = 1400, H = 320;
   const ml = 70, mr = 80, mt = 12, mb = 32;
@@ -231,7 +236,7 @@ function drawBasketChart(data) {
   let parts = '';
 
   // Phase 2 background
-  parts += `<rect x="${xs(2036)}" y="${mt}" width="${xs(2046) - xs(2036)}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
+  parts += `<rect x="${xs(phaseBoundary)}" y="${mt}" width="${xs(YEAR_END) - xs(phaseBoundary)}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
 
   // Y grid (every $200)
   for (let v = 0; v <= maxY; v += 200) {
@@ -257,7 +262,7 @@ function drawBasketChart(data) {
   parts += `<path d="${path}" stroke="var(--blue)" stroke-width="2.5" fill="none"/>`;
 
   // Phase boundary
-  parts += `<line x1="${xs(2036)}" y1="${mt}" x2="${xs(2036)}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+  parts += `<line x1="${xs(phaseBoundary)}" y1="${mt}" x2="${xs(phaseBoundary)}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="4 4"/>`;
 
   // Endpoint labels
   for (const yr of [2026, 2036, 2046]) {
@@ -279,7 +284,7 @@ function drawBasketChart(data) {
 }
 
 // ── Snapshot table ──
-function drawSnapshot(data) {
+function drawSnapshot(data, phaseBoundary) {
   const tbody = document.querySelector('#snap-table tbody');
   const yrs = [2026, 2031, 2036, 2041, 2046];
   let html = '';
@@ -290,7 +295,7 @@ function drawSnapshot(data) {
     const phaseTag = d.phase === 1
       ? '<span style="color: var(--blue);">P1</span>'
       : '<span style="color: #a855f7;">P2</span>';
-    const isBoundary = yr === 2036;
+    const isBoundary = yr === Math.round(phaseBoundary);
     html += `<tr${isBoundary ? ' class="boundary"' : ''}>
       <td>${yr}</td>
       <td>${phaseTag}</td>
@@ -316,10 +321,11 @@ function updateHeadline(data) {
 function render() {
   document.getElementById('velocity-val').textContent = document.getElementById('velocity').value;
   const velocity = parseInt(document.getElementById('velocity').value);
+  const phaseBoundary = YEAR_START + 0.50 * (velocity - YEAR_START);
   const data = computeAggregate(velocity);
-  drawEmploymentChart(data);
-  drawBasketChart(data);
-  drawSnapshot(data);
+  drawEmploymentChart(data, phaseBoundary);
+  drawBasketChart(data, phaseBoundary);
+  drawSnapshot(data, phaseBoundary);
   updateHeadline(data);
 }
 

@@ -25,10 +25,15 @@ function logistic(t, midpoint, k, ceiling) {
 }
 
 function computeSector(s, velocityYear) {
-  const p1_mid = 2031;
-  const p1_k = 3 / (PHASE_BOUNDARY - p1_mid);
-  const p2_mid = (PHASE_BOUNDARY + velocityYear) / 2;
-  const p2_k = velocityYear > PHASE_BOUNDARY ? 3 / (velocityYear - p2_mid) : 1;
+  // Proportional scaling: velocity stretches/compresses the whole timeline.
+  // Phase 1 occupies the first half of the active range; Phase 2 the second.
+  // P1 midpoint at 25%, P2 midpoint at 75% of (YEAR_START → velocityYear).
+  const span = velocityYear - YEAR_START;
+  const p1_mid = YEAR_START + 0.25 * span;
+  const phase_boundary = YEAR_START + 0.50 * span;
+  const p2_mid = YEAR_START + 0.75 * span;
+  const p1_k = phase_boundary > p1_mid ? 3 / (phase_boundary - p1_mid) : 1;
+  const p2_k = velocityYear > p2_mid ? 3 / (velocityYear - p2_mid) : 1;
 
   const p1_ceil = s.p1_ceil / 100;
   const p2_ceil = s.p2_ceil / 100;
@@ -43,11 +48,11 @@ function computeSector(s, velocityYear) {
     const employment = 1 - displaced;
 
     let price;
-    if (year <= PHASE_BOUNDARY) {
+    if (year <= phase_boundary) {
       price = Math.max(floor, Math.pow(1 - p1_defl, year - YEAR_START));
     } else {
-      const at_boundary = Math.max(floor, Math.pow(1 - p1_defl, PHASE_BOUNDARY - YEAR_START));
-      price = Math.max(floor, at_boundary * Math.pow(1 - p2_defl, year - PHASE_BOUNDARY));
+      const at_boundary = Math.max(floor, Math.pow(1 - p1_defl, phase_boundary - YEAR_START));
+      price = Math.max(floor, at_boundary * Math.pow(1 - p2_defl, year - phase_boundary));
     }
 
     return { year, price, employment, displaced };
@@ -89,7 +94,7 @@ function updateTotalJobs() {
   document.getElementById('total-jobs').textContent = total.toLocaleString();
 }
 
-function drawSectorChart(svg, data, sector) {
+function drawSectorChart(svg, data, sector, phaseBoundary) {
   const W = 360, H = 180;
   const ml = 30, mr = 8, mt = 8, mb = 22;
   const pw = W - ml - mr, ph = H - mt - mb;
@@ -103,9 +108,9 @@ function drawSectorChart(svg, data, sector) {
   let parts = '';
 
   // Phase 2 shading
-  const x2036 = xs(2036);
-  const x2046 = xs(2046);
-  parts += `<rect x="${x2036}" y="${mt}" width="${x2046 - x2036}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
+  const xpb = xs(phaseBoundary);
+  const xend = xs(YEAR_END);
+  parts += `<rect x="${xpb}" y="${mt}" width="${xend - xpb}" height="${ph}" fill="#a855f7" fill-opacity="0.08"/>`;
 
   // Y grid (every 25%)
   for (let t = 0; t <= yMax + 0.001; t += 0.25) {
@@ -134,7 +139,7 @@ function drawSectorChart(svg, data, sector) {
   parts += `<path d="${empPath}" stroke="var(--crit)" stroke-width="2" fill="none"/>`;
 
   // Phase boundary dashed
-  parts += `<line x1="${x2036}" y1="${mt}" x2="${x2036}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.6"/>`;
+  parts += `<line x1="${xpb}" y1="${mt}" x2="${xpb}" y2="${mt + ph}" stroke="#a855f7" stroke-width="1" stroke-dasharray="3 3" stroke-opacity="0.6"/>`;
 
   // Axes
   parts += `<line x1="${ml}" y1="${mt + ph}" x2="${ml + pw}" y2="${mt + ph}" stroke="var(--line-hot)" stroke-width="0.5"/>`;
@@ -146,11 +151,12 @@ function drawSectorChart(svg, data, sector) {
 function renderChartForSector(idx) {
   const s = SECTORS[idx];
   const velocity = parseInt(document.getElementById('velocity').value);
+  const phaseBoundary = YEAR_START + 0.50 * (velocity - YEAR_START);
   const data = computeSector(s, velocity);
   const card = document.querySelector(`.chart-card[data-idx="${idx}"]`);
   if (!card) return;
   const svg = card.querySelector('svg');
-  drawSectorChart(svg, data, s);
+  drawSectorChart(svg, data, s, phaseBoundary);
 
   // Endpoint stats
   const d2026 = data[0];
