@@ -266,11 +266,26 @@ function resetInputs() {
   location.reload();
 }
 
-for (const id of INPUTS) {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', refresh);
+// Defensive: wait for DOM ready before wiring (script tag is at bottom of body
+// so this usually fires immediately, but explicit guard avoids race conditions).
+function init() {
+  for (const id of INPUTS) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', refresh);
+      el.addEventListener('input',  refresh);
+    }
+  }
+  const resetBtn = document.getElementById('reset');
+  if (resetBtn) resetBtn.addEventListener('click', resetInputs);
+  restoreInputs();
+  refresh().catch(err => {
+    console.error('[colony-v0] init failed:', err);
+    setStatus('init failed: ' + (err && err.message ? err.message : err), true);
+  });
 }
-document.getElementById('reset').addEventListener('click', resetInputs);
-
-restoreInputs();
-refresh();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
