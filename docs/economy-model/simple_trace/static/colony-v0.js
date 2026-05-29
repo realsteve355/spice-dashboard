@@ -221,10 +221,12 @@ function renderFirmsTable(firms) {
   const tbody = document.querySelector('#firms-table tbody');
   if (!tbody) return;
   const TYPE_COLOR = {
-    local:  '#7eb24f',
-    chain:  '#ffb86c',
-    import: '#ef4444',
-    public: '#7aa2ff',
+    local:   '#7eb24f',
+    chain:   '#ffb86c',
+    import:  '#ef4444',
+    public:  '#7aa2ff',
+    exports: '#a8e6a8',
+    tax:     '#cfa340',
   };
   tbody.innerHTML = firms.map(f => {
     const color = TYPE_COLOR[f.type] || 'var(--dim)';
@@ -237,12 +239,24 @@ function renderFirmsTable(firms) {
       flow = `−$${fmt(f.revenue_cum || 0)} cum. drained out of colony`;
     } else if (f.type === 'public') {
       flow = `+$${fmt(f.transfers_cum || 0)} cum. transfers in`;
+    } else if (f.type === 'exports') {
+      flow = `+$${fmt(f.exports_cum || 0)} cum. external earnings INTO colony`;
+    } else if (f.type === 'tax') {
+      flow = `−$${fmt(f.tax_drained_cum || 0)} drained · +$${fmt(f.tax_local_cum || 0)} stayed local`;
     }
-    const revMonth = f.revenue_month !== undefined ? '$' + fmt(f.revenue_month) : '—';
-    const revCum   = f.revenue_cum   !== undefined ? '$' + fmt(f.revenue_cum)   : '—';
-    const wagesCum = f.wages_cum     !== undefined ? '$' + fmt(f.wages_cum)     : '—';
-    const txnMonth = f.txns_month    !== undefined ? fmt(f.txns_month) : '—';
-    const txnCum   = f.txns_cum      !== undefined ? fmt(f.txns_cum)   : '—';
+    let revMonth = '—', revCum = '—', wagesCum = '—', txnMonth = '—', txnCum = '—';
+    if (f.revenue_month !== undefined) revMonth = '$' + fmt(f.revenue_month);
+    if (f.revenue_cum   !== undefined) revCum   = '$' + fmt(f.revenue_cum);
+    if (f.wages_cum     !== undefined) wagesCum = '$' + fmt(f.wages_cum);
+    if (f.txns_month    !== undefined) txnMonth = fmt(f.txns_month);
+    if (f.txns_cum      !== undefined) txnCum   = fmt(f.txns_cum);
+    // For synthetic entities show their cumulative flow in the revenue_cum slot
+    if (f.type === 'exports' && f.exports_cum !== undefined) {
+      revCum = '$' + fmt(f.exports_cum);
+    }
+    if (f.type === 'tax') {
+      revCum = '$' + fmt((f.income_tax_cum || 0) + (f.sales_tax_cum || 0));
+    }
     return `<tr style="border-bottom:1px solid #14171f;">
       <td style="padding:6px 8px; color:var(--headline);">${f.name}</td>
       <td style="padding:6px 8px;"><span style="color:${color}">●</span> ${f.type}</td>

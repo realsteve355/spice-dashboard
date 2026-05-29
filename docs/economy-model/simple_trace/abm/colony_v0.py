@@ -82,6 +82,15 @@ PUBLIC_TARGET_WORKERS_PCT = 0.23  # ~23% of workforce in public sector (US natio
 # dependents so families with kids aren't structurally insolvent.
 CHILD_TRANSFER = 220.0
 
+# Today's approximate tax structure (US small-town effective rates).
+# AXION's narrative will depend on changing this treatment, so taxes are
+# explicit here rather than buried in chain corp fees etc.
+INCOME_TAX_RATE       = 0.20   # federal + state income + FICA employee side
+INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
+                                # as local income / payroll tax (rest drains)
+SALES_TAX_RATE        = 0.07   # state + local sales tax combined
+SALES_TAX_LOCAL_PCT   = 0.30   # of sales tax, this fraction stays in colony
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
 # monthly_external_transfers so the total inflow approximately matches the
@@ -308,7 +317,7 @@ class ColonyV0Model(Model):
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
-        monthly_external_transfers: float = 2800.0,  # public-sector payroll inflow
+        monthly_external_transfers: float = 5500.0,  # public-sector + federal redistribution inflow
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -330,6 +339,17 @@ class ColonyV0Model(Model):
         self.drain_pure_imports_step = 0.0
         # Transactions tracking for velocity (= total monthly consumption flow)
         self.transactions_this_step = 0.0
+        # Tax tracking — separate from chain corp fees etc.
+        self.income_tax_this_step = 0.0
+        self.income_tax_cumulative = 0.0
+        self.income_tax_drained_cumulative = 0.0
+        self.income_tax_local_cumulative = 0.0
+        self.sales_tax_this_step = 0.0
+        self.sales_tax_cumulative = 0.0
+        self.sales_tax_drained_cumulative = 0.0
+        self.sales_tax_local_cumulative = 0.0
+        # Track total exports so we can show a dedicated "external buyers" row
+        self.exports_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
 
@@ -496,6 +516,13 @@ class ColonyV0Model(Model):
                 "public_balance":    lambda m: m.public_sector.balance,
                 "transfers_in":      lambda m: m.public_sector.transfers_received_this_step,
                 "child_transfers":   lambda m: getattr(m, "child_transfers_this_step", 0.0),
+                # Tax flows
+                "income_tax_step":   lambda m: m.income_tax_this_step,
+                "sales_tax_step":    lambda m: m.sales_tax_this_step,
+                "income_tax_cum":    lambda m: m.income_tax_cumulative,
+                "sales_tax_cum":     lambda m: m.sales_tax_cumulative,
+                "tax_drained_cum":   lambda m: m.income_tax_drained_cumulative + m.sales_tax_drained_cumulative,
+                "tax_local_cum":     lambda m: m.income_tax_local_cumulative + m.sales_tax_local_cumulative,
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -590,6 +617,27 @@ class ColonyV0Model(Model):
                 victim = ch.workers[0]
                 ch.fire(victim)
 
+    def _withhold_income_tax(self):
+        """Federal/state/FICA income tax on wages.
+        Most drains to external (Washington, Columbus, FICA trust funds);
+        the local-share % stays in colony as local payroll / income tax,
+        going to the public sector balance."""
+        self.income_tax_this_step = 0.0
+        for c in self.citizens:
+            if c.last_income > 0:
+                tax = c.last_income * INCOME_TAX_RATE
+                tax = min(tax, c.savings)  # can't pay tax from negative balance
+                c.savings -= tax
+                local_share = tax * INCOME_TAX_LOCAL_PCT
+                drained    = tax - local_share
+                self.public_sector.balance += local_share
+                self.income_tax_local_cumulative += local_share
+                self.money_drained_total += drained
+                self.imports_this_step    += drained
+                self.income_tax_drained_cumulative += drained
+                self.income_tax_this_step += tax
+                self.income_tax_cumulative += tax
+
     def _external_transfers(self):
         """Federal / state money flowing into the colony. Two channels:
         (a) bulk transfers to the public sector — funds public payroll
@@ -644,6 +692,7 @@ class ColonyV0Model(Model):
             f.revenue_this_month = 0.0
             f.txns_this_month = 0
         self.transactions_this_step = 0.0
+        self.sales_tax_this_step = 0.0
 
         order = list(self.citizens)
         self.random.shuffle(order)
@@ -674,12 +723,25 @@ class ColonyV0Model(Model):
                         break
                 if chosen is None:
                     chosen = "local"
+                # Sales tax — citizen's payment splits: most to the provider,
+                # SALES_TAX_RATE portion to the tax authority.
+                tax = sector_spend * SALES_TAX_RATE
+                to_provider = sector_spend - tax
+                local_tax_share = tax * SALES_TAX_LOCAL_PCT
+                drained_tax     = tax - local_tax_share
+                self.public_sector.balance += local_tax_share
+                self.sales_tax_local_cumulative += local_tax_share
+                self.money_drained_total += drained_tax
+                self.imports_this_step   += drained_tax
+                self.sales_tax_drained_cumulative += drained_tax
+                self.sales_tax_this_step += tax
+                self.sales_tax_cumulative += tax
                 if chosen == "local":
-                    self.local_firms[sector].collect_revenue(sector_spend)
+                    self.local_firms[sector].collect_revenue(to_provider)
                 elif chosen == "chain":
-                    self.chain_branches[sector].collect_revenue(sector_spend)
+                    self.chain_branches[sector].collect_revenue(to_provider)
                 else:
-                    self.pure_imports[sector].collect_revenue(sector_spend)
+                    self.pure_imports[sector].collect_revenue(to_provider)
                 c.savings -= sector_spend
                 self.transactions_this_step += sector_spend
 
@@ -712,6 +774,7 @@ class ColonyV0Model(Model):
             firm.exports_cumulative += export_rev
             self.money_returned_total += export_rev
             self.exports_this_step += export_rev
+            self.exports_cumulative += export_rev
 
     def _firm_workforce_adjust(self):
         """Revenue-driven hire/fire for both local and chain firms.
@@ -772,6 +835,7 @@ class ColonyV0Model(Model):
         self._external_exports()
         self._external_transfers()
         self._pay_wages()
+        self._withhold_income_tax()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])

@@ -159,6 +159,26 @@ def run_colony_v0(cfg):
         "transfers_cum": pub.transfers_cumulative,
         "wages_cum": pub.wages_paid_cumulative,
     })
+    # Synthetic "External markets" entity — shows colony's cumulative export
+    # earnings clearly, surfaced from the model rather than buried in local rows.
+    firms.append({
+        "name": "External markets (export buyers)",
+        "type": "exports",
+        "sector": "—",
+        "workers": 0,
+        "exports_cum": model.exports_cumulative,
+    })
+    # Tax authority — federal/state collecting income + sales tax.
+    firms.append({
+        "name": "Federal/State (tax authority)",
+        "type": "tax",
+        "sector": "—",
+        "workers": 0,
+        "income_tax_cum": model.income_tax_cumulative,
+        "sales_tax_cum": model.sales_tax_cumulative,
+        "tax_drained_cum": model.income_tax_drained_cumulative + model.sales_tax_drained_cumulative,
+        "tax_local_cum": model.income_tax_local_cumulative + model.sales_tax_local_cumulative,
+    })
 
     return {
         "trajectory":     rows,
