@@ -25,6 +25,60 @@ from trajectory import run as run_trajectory
 from forecasts import get_forecasts
 
 
+def run_abm(cfg):
+    """Run a single Mesa-ABM scenario and a fixed 4-way policy comparison."""
+    from abm.model import ColonyModel
+    months = int(cfg.get("months", 24))
+
+    def _series(model_cfg):
+        model = ColonyModel(**model_cfg)
+        for _ in range(months):
+            model.step()
+        df = model.datacollector.get_model_vars_dataframe()
+        rows = df.to_dict(orient="records")
+        for i, r in enumerate(rows):
+            r["month"] = i
+        return rows
+
+    # Single scenario from user-supplied config
+    base_cfg = dict(
+        ubi_mode      = cfg.get("ubi_mode", "universal"),
+        ubi_universal = float(cfg.get("ubi_universal", 1000)),
+        ubi_floor     = float(cfg.get("ubi_floor", 600)),
+        fisc_start    = float(cfg.get("fisc_start", 10000)),
+        mpc_rate      = float(cfg.get("mpc_rate", 0.15)),
+        c_mcd         = float(cfg.get("c_mcd", 300)),
+        c_coffee      = float(cfg.get("c_coffee", 150)),
+        c_external    = float(cfg.get("c_external", 150)),
+        pottery_rev   = float(cfg.get("pottery_rev", 2000)),
+        fx_pct        = float(cfg.get("fx_pct", 0.50)),
+        working_bal   = float(cfg.get("working_bal", 600)),
+    )
+    single = _series(base_cfg)
+
+    # Fixed 4-scenario policy comparison (independent of user config)
+    compare_base = dict(
+        ubi_universal=1000, ubi_floor=600, fisc_start=10000, mpc_rate=0.15,
+        c_mcd=300, c_coffee=150, c_external=150, pottery_rev=2000,
+        working_bal=600,
+    )
+    scenarios = [
+        {"name": "Universal UBI · fx 50%",  "color": "#ef4444",
+         "cfg": {**compare_base, "ubi_mode": "universal", "fx_pct": 0.50}},
+        {"name": "Means-tested · fx 50%",   "color": "#a8e6a8",
+         "cfg": {**compare_base, "ubi_mode": "targeted",  "fx_pct": 0.50}},
+        {"name": "Universal UBI · fx 0%",   "color": "#ffb86c",
+         "cfg": {**compare_base, "ubi_mode": "universal", "fx_pct": 0.00}},
+        {"name": "Means-tested · fx 0%",    "color": "#7aa2ff",
+         "cfg": {**compare_base, "ubi_mode": "targeted",  "fx_pct": 0.00}},
+    ]
+    for s in scenarios:
+        s["trajectory"] = _series(s["cfg"])
+        del s["cfg"]
+
+    return {"single": single, "scenarios": scenarios, "months": months}
+
+
 class Handler(BaseHTTPRequestHandler):
     static_dir = HERE / "static"
     templates_dir = HERE / "templates"
@@ -77,6 +131,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "ledger.html", "text/html; charset=utf-8")
         elif p == "/abundance":
             self._send_file(self.templates_dir / "abundance.html", "text/html; charset=utf-8")
+        elif p == "/abm":
+            self._send_file(self.templates_dir / "abm.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
@@ -92,7 +148,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urlparse(self.path).path
-        if p in ("/api/run", "/api/trajectory"):
+        if p in ("/api/run", "/api/trajectory", "/api/abm"):
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
             try:
@@ -101,7 +157,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(400, {"error": f"bad JSON: {e}"})
                 return
             try:
-                runner = run_sim if p == "/api/run" else run_trajectory
+                runner = {
+                    "/api/run":        run_sim,
+                    "/api/trajectory": run_trajectory,
+                    "/api/abm":        run_abm,
+                }[p]
                 result = runner(cfg)
                 self._send_json(200, result)
             except Exception as e:
