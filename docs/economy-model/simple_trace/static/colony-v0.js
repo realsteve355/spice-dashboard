@@ -79,31 +79,35 @@ function renderChart(svgId, traj, series, opts = {}) {
     grid += `<text x="${pad.l - 6}" y="${yPx + 3}" fill="#9aa3b3" font-size="10" text-anchor="end">${lbl}</text>`;
   }
 
+  // Lines (no per-series labels here — legend handles those)
   let lines = '';
   for (const s of series) {
     const d = traj.map((p, i) =>
       `${i === 0 ? 'M' : 'L'} ${xScale(i).toFixed(1)} ${yScale(s.fn(p)).toFixed(1)}`).join(' ');
     lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2"${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}/>`;
-    if (s.label) {
-      // Stagger labels vertically when multiple
-      const idx = series.indexOf(s);
-      lines += `<text x="${pad.l}" y="${pad.t - 8 - idx * 0}" fill="${s.color}" font-size="10">${s.label}</text>`;
-    }
   }
 
-  // Title row of labels
+  // Title in top-left
   let labels = '';
   if (opts.title) {
     labels += `<text x="${pad.l}" y="${pad.t - 8}" fill="#9aa3b3" font-size="10" letter-spacing="0.1em">${opts.title}</text>`;
   }
-  // Compact legend in top-right
+  // Legend in top-right — lay out left-to-right with a swatch + label per series
   let legend = '';
-  let lx = W - pad.r;
-  for (let i = series.length - 1; i >= 0; i--) {
-    const s = series[i];
-    if (!s.label) continue;
-    legend = `<text x="${lx}" y="${pad.t - 8}" fill="${s.color}" font-size="10" text-anchor="end">${s.label}</text>` + legend;
-    lx -= (s.label.length * 6 + 18);
+  const labelled = series.filter(s => s.label);
+  if (labelled.length > 0) {
+    // Estimate widths: each entry needs ~ (8 + label.length*5.5 + 14) px
+    const entries = labelled.map(s => ({
+      label: s.label, color: s.color,
+      w: 14 + s.label.length * 5.8 + 12,
+    }));
+    let totalW = entries.reduce((a, e) => a + e.w, 0);
+    let cursor = W - pad.r - totalW;
+    for (const e of entries) {
+      legend += `<rect x="${cursor.toFixed(1)}" y="${pad.t - 13}" width="10" height="2" fill="${e.color}"/>`;
+      legend += `<text x="${(cursor + 14).toFixed(1)}" y="${(pad.t - 8).toFixed(1)}" fill="${e.color}" font-size="10">${e.label}</text>`;
+      cursor += e.w;
+    }
   }
 
   svg.innerHTML = grid + lines + labels + legend;
