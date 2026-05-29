@@ -1,7 +1,7 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'automation_end', 'automation_months', 'seed'];
+const INPUTS = ['months', 'monthly_external_transfers', 'seed'];
 const STORAGE_KEY = 'axion_colony_v0_v1';
 
 function readNum(id, def) {
@@ -22,10 +22,9 @@ function setStatus(msg, err = false) {
 
 async function fetchRun() {
   const cfg = {
-    months:            readNum('months', 60),
-    automation_end:    readNum('automation_end', 0.85),
-    automation_months: readNum('automation_months', 60),
-    seed:              readNum('seed', 42),
+    months:                     readNum('months', 60),
+    monthly_external_transfers: readNum('monthly_external_transfers', 2800),
+    seed:                       readNum('seed', 42),
   };
   setStatus('running…');
   const r = await fetch('/api/colony-v0', {
@@ -178,32 +177,35 @@ function renderSnapshot(data) {
   const last = data.trajectory[data.trajectory.length - 1];
   const first = data.trajectory[0];
   const moneyDelta = last.money_supply - first.money_supply;
-  const drained = last.money_drained;
-  const returned = last.money_returned;
   const netBoP = last.net_bop_step;
-  const monthsLeft = last.months_until_bust;
   const cells = [
     {
+      lbl: 'Population',
+      val: `${last.n_total_pop}`,
+      sub: `${last.n_adults} adults + ${last.n_dependents} children`,
+      color: 'var(--ok)',
+    },
+    {
       lbl: 'Employment rate', val: pct(last.employment_rate),
-      sub: `${Math.round(last.employment_rate * data.productivities.length)} / ${data.productivities.length} citizens producing`,
-      color: last.employment_rate < 0.3 ? 'var(--crit)' : (last.employment_rate < 0.7 ? 'var(--warn)' : 'var(--ok)'),
+      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public}`,
+      color: last.employment_rate < 0.5 ? 'var(--crit)' : (last.employment_rate < 0.85 ? 'var(--warn)' : 'var(--ok)'),
     },
     {
       lbl: 'Money supply', val: '$' + fmt(last.money_supply),
-      sub: `${moneyDelta >= 0 ? '+' : ''}$${fmt(moneyDelta)} vs start · $${fmt(drained)} out · $${fmt(returned)} in`,
-      color: last.money_supply < first.money_supply * 0.3 ? 'var(--crit)' : (moneyDelta < 0 ? 'var(--warn)' : 'var(--ok)'),
+      sub: `${moneyDelta >= 0 ? '+' : ''}$${fmt(moneyDelta)} vs start · transfers in $${fmt(last.transfers_in + (last.child_transfers || 0))}/mo`,
+      color: Math.abs(moneyDelta) / Math.max(1, first.money_supply) < 0.20 ? 'var(--ok)' : 'var(--warn)',
     },
     {
       lbl: 'Net BoP (monthly)',
       val: (netBoP >= 0 ? '+' : '') + '$' + fmt(netBoP) + ' / mo',
-      sub: `imports $${fmt(last.imports_step)} − exports $${fmt(last.exports_step)}`,
-      color: netBoP >= 0 ? 'var(--ok)' : (netBoP < -1000 ? 'var(--crit)' : 'var(--warn)'),
+      sub: `imports $${fmt(last.imports_step)} · exports + transfers $${fmt(last.exports_step)}`,
+      color: Math.abs(netBoP) < 500 ? 'var(--ok)' : (netBoP < -2000 ? 'var(--crit)' : 'var(--warn)'),
     },
     {
       lbl: 'Money velocity (annual)',
       val: last.velocity_annual.toFixed(2) + ' / yr',
-      sub: `transactions $${fmt(last.transactions)}/mo · basket cost $${fmt(last.basket_cost_avg)}`,
-      color: last.velocity_annual > 2 ? 'var(--ok)' : (last.velocity_annual > 0.5 ? 'var(--warn)' : 'var(--crit)'),
+      sub: `transactions $${fmt(last.transactions)}/mo · basket $${fmt(last.basket_cost_avg)}`,
+      color: last.velocity_annual > 1.5 ? 'var(--ok)' : (last.velocity_annual > 0.5 ? 'var(--warn)' : 'var(--crit)'),
     },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
@@ -221,13 +223,12 @@ async function refresh() {
     const data = await fetchRun();
     const t = data.trajectory;
 
-    // Employment in absolute counts — percentage view caused the chain line
-    // (small share) to sit on the x-axis and the local line to overlap with total.
     renderChart('ch-employment', t, [
-      { fn: p => p.workers_local + p.workers_chain, color: '#a8e6a8', label: 'total jobs' },
-      { fn: p => p.workers_local, color: '#7eb24f', label: 'truly-local jobs', dash: '4 3' },
-      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain-branch jobs', dash: '4 3' },
-    ], { title: 'Employment by firm type (citizens)' });
+      { fn: p => p.workers_local + p.workers_chain + p.workers_public, color: '#a8e6a8', label: 'total jobs' },
+      { fn: p => p.workers_local, color: '#7eb24f', label: 'truly-local', dash: '4 3' },
+      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain-branch', dash: '4 3' },
+      { fn: p => p.workers_public, color: '#7aa2ff', label: 'public sector', dash: '4 3' },
+    ], { title: 'Employment by firm type (adult citizens)' });
 
     renderChart('ch-money', t, [
       { fn: p => p.money_supply, color: '#a8e6a8', label: 'money supply' },

@@ -1,8 +1,12 @@
-"""Colony v0 — pre-AXION baseline (chain-aware).
+"""Colony v0 — Maryfontaine baseline (Step 1 of 3).
 
-A small open economy under automation pressure, no UBI, no central authority,
-fixed money supply (within the colony — money drains via imports AND via chain
-branches' corporate fees).
+A small open economy modelling today's Maryfontaine — 30 adult citizens
+with realistic household dependents (children scale consumption), a chain-
+dominated private retail/services economy, AND a public sector (~7 workers)
+funded by external federal/state transfers. No UBI, no automation. Step 1
+verifies the colony can be modelled as a stable healthy baseline before
+introducing interventions (Step 2 = local currency) or stress tests
+(Step 3 = automation).
 
 3 sectors: food, goods, services.
 Each sector has THREE providers (Steve's reframing 29 May 2026 — modern
@@ -55,25 +59,48 @@ CHAIN_CORP_FEE_RATE  = 0.70    # 70% of chain revenue drains to external HQ
 PRICE_ELASTICITY     = 1.5     # how sharply share shifts with price differential
 
 # Wages differ by firm type — chains pay minimum-wage-ish (Walmart cashier);
-# truly-local indy firms pay better (local artisan, skilled trades, dentists).
-WAGE_MULT_LOCAL = 1.20
-WAGE_MULT_CHAIN = 0.55
+# truly-local indy firms pay better (local artisan, skilled trades, dentists);
+# public sector sits in the middle (teachers, town-hall workers).
+WAGE_MULT_LOCAL  = 1.20
+WAGE_MULT_CHAIN  = 0.55
+WAGE_MULT_PUBLIC = 1.00
+
+# Household composition. Each adult independently has a chance of having
+# dependents. Matches MF demographics (39k people, 30k adults → ~30% kids).
+P_HAS_CHILD       = 0.30          # prob an adult has at least one dependent
+P_HAS_SECOND      = 0.05          # conditional prob of a second
+CHILD_CONSUMPTION = 0.40          # each child adds this fraction to adult target spending
+
+# Public sector — modelled as a single employer. Funded by external transfers
+# (federal/state money — Social Security, Medicare, federal jobs, state
+# contracts, etc. — which are massive money inflows to real US small towns).
+PUBLIC_TARGET_WORKERS_PCT = 0.23  # ~23% of workforce in public sector (US national avg)
+
+# Direct family transfers — child tax credit, SNAP, school lunch subsidies, etc.
+# Flow from federal/state directly to households with children. Counted as
+# BoP credit. Calibrated to cover the additional household consumption from
+# dependents so families with kids aren't structurally insolvent.
+CHILD_TRANSFER = 220.0
 
 # Exports (truly local firms only — chain branches don't export, they ARE
-# the external HQ's branch into the colony):
-EXPORT_BASELINE = {"food": 1500.0, "goods": 6500.0, "services": 1600.0}
-# Total $9,600/mo — calibrated to balance chain corp fees ($7k) + pure imports
-# ($2.5k) at A=0 with default consumption shares.
+# the external HQ's branch into the colony). Calibrated together with
+# monthly_external_transfers so the total inflow approximately matches the
+# total drain (chain corp fees + pure imports) at A=0, giving balanced BoP.
+EXPORT_BASELINE = {"food": 400.0, "goods": 2100.0, "services": 800.0}
+# Total $3,300/mo. Pair with default monthly_external_transfers $2,800
+# (= public sector payroll) + child transfers ~$2,600/mo → balanced inflow vs
+# chain corp fees + pure import drain at default consumption levels.
 EXPORT_DECAY = 0.90            # at A=1, export demand → 10% of baseline
 
 
 # ── Agents ───────────────────────────────────────────────────────────────
 class Citizen(Agent):
-    def __init__(self, model, productivity, initial_savings):
+    def __init__(self, model, productivity, initial_savings, dependents=0):
         super().__init__(model)
         self.productivity = productivity
         self.savings = initial_savings
-        self.employer = None         # LocalFirm | ChainBranch | None
+        self.dependents = dependents     # number of children in household
+        self.employer = None             # LocalFirm | ChainBranch | PublicSector | None
         self.last_income = 0.0
         self.months_unemployed = 0
 
@@ -83,12 +110,19 @@ class Citizen(Agent):
 
     @property
     def wage_if_hired(self):
-        if self.employer is None:
-            # Asking what they'd earn if hired anywhere — assume local rate
-            mult = WAGE_MULT_LOCAL
-        else:
-            mult = WAGE_MULT_LOCAL if self.employer.kind == "local" else WAGE_MULT_CHAIN
-        return self.model.base_wage * self.productivity * mult
+        # Private firms pay productivity-scaled wages. Public sector pays a
+        # graded scale that's independent of personal productivity — civil
+        # service jobs, teaching, government roles all have set bands.
+        if self.employer is None or self.employer.kind == "local":
+            return self.model.base_wage * self.productivity * WAGE_MULT_LOCAL
+        if self.employer.kind == "chain":
+            return self.model.base_wage * self.productivity * WAGE_MULT_CHAIN
+        # public
+        return self.model.base_wage * WAGE_MULT_PUBLIC
+
+    @property
+    def household_size(self):
+        return 1 + self.dependents
 
     def receive_wage(self, amount):
         self.savings += amount
@@ -176,6 +210,38 @@ class ChainBranch(Agent):
         pass
 
 
+class PublicSector(Agent):
+    """Government employer (schools, town hall, healthcare workers etc).
+    Funded by external transfers — federal/state money flowing into the colony.
+    Pays wages to public employees. Doesn't have a price/revenue per se;
+    services consumed are 'free at point of use' (citizens already paid via
+    federal taxes outside the colony scope)."""
+    def __init__(self, model, initial_workers, initial_float):
+        super().__init__(model)
+        self.kind = "public"
+        self.workers: list[Citizen] = []
+        self.balance = initial_float
+        self.transfers_received_this_step = 0.0
+        for c in initial_workers:
+            c.employer = self
+            self.workers.append(c)
+
+    def receive_transfer(self, amount):
+        self.balance += amount
+        self.transfers_received_this_step += amount
+        self.model.money_returned_total += amount
+        self.model.exports_this_step += amount   # external money in counts as BoP credit
+
+    def fire(self, citizen):
+        if citizen in self.workers:
+            self.workers.remove(citizen)
+            citizen.employer = None
+            citizen.months_unemployed = 0
+
+    def step(self):
+        pass
+
+
 class PureImport(Agent):
     """Amazon-style. No local presence. Citizens spend → money drains."""
     def __init__(self, model, sector):
@@ -211,11 +277,12 @@ class ColonyV0Model(Model):
         target_spend_pct: float = 1.00,
         subsistence_floor: float = 250.0,
         firm_initial_float: float = 3000.0,
-        automation_end: float = 0.85,
+        automation_end: float = 0.0,
         automation_months: int = 60,
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
+        monthly_external_transfers: float = 2800.0,  # public-sector payroll inflow
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -238,21 +305,37 @@ class ColonyV0Model(Model):
         # Transactions tracking for velocity (= total monthly consumption flow)
         self.transactions_this_step = 0.0
 
-        # Spawn citizens with Pareto productivity (capped at 3.0 — looser caps
-        # cause one outlier worker to bankrupt the small firm that ends up
-        # employing them).
+        self.monthly_external_transfers = monthly_external_transfers
+
+        # Spawn citizens — adults with Pareto productivity, some have child
+        # dependents. Children aren't separate agents; they're counted on the
+        # household's adult so consumption scales with family size.
         self.citizens: list[Citizen] = []
         for _ in range(n_citizens):
             p = self.random.paretovariate(pareto_alpha)
             p = min(p, 3.0)
-            self.citizens.append(Citizen(self, productivity=p, initial_savings=initial_savings))
+            # Independent household composition draw
+            n_kids = 0
+            if self.random.random() < P_HAS_CHILD:
+                n_kids = 1
+                if self.random.random() < P_HAS_SECOND:
+                    n_kids = 2
+            self.citizens.append(Citizen(self, productivity=p,
+                                          initial_savings=initial_savings,
+                                          dependents=n_kids))
         avg_p = sum(c.productivity for c in self.citizens) / len(self.citizens)
+        self.total_dependents = sum(c.dependents for c in self.citizens)
+        self.total_population = n_citizens + self.total_dependents
 
-        # Workforce allocation — based on SUSTAINABLE wage budgets, not revenue.
-        # Chain branches have ~30% of revenue available for wages (after corp
-        # fee); local firms have 100% of revenue + export earnings. So the
-        # equilibrium employment distribution favours local heavily, even
-        # though chains dominate revenue.
+        # Reserve some citizens for the public sector (real US public-sector
+        # employment is ~22-25% of total workforce). These are pre-allocated;
+        # the remainder fills private firms.
+        n_public_target = max(1, round(n_citizens * PUBLIC_TARGET_WORKERS_PCT))
+        n_private = n_citizens - n_public_target
+
+        # Workforce allocation for PRIVATE firms — based on sustainable wage
+        # budgets (chain branches keep 30% of revenue for wages; local firms
+        # keep 100% + earn exports).
         local_recapture = sum(BASKET_WEIGHTS[s] * SECTOR_PROVIDER_SHARES[s]["local"]
                               for s in SECTORS)
         chain_recapture = sum(BASKET_WEIGHTS[s] * SECTOR_PROVIDER_SHARES[s]["chain"]
@@ -261,7 +344,7 @@ class ColonyV0Model(Model):
         exports_total = sum(EXPORT_BASELINE.values())
         if total_recapture >= 1.0:
             raise ValueError("Recapture rate >= 1, money creation feedback loop")
-        W_eq = exports_total / (1.0 - total_recapture)  # steady-state total wages
+        W_eq = exports_total / (1.0 - total_recapture)  # steady-state private wages
 
         budgets: dict[tuple, float] = {}
         for s in SECTORS:
@@ -273,8 +356,7 @@ class ColonyV0Model(Model):
                 sector_W * SECTOR_PROVIDER_SHARES[s]["chain"] * (1 - CHAIN_CORP_FEE_RATE)
             )
 
-        # Convert budgets to worker counts, using the firm-type-specific avg wage.
-        # Chains pay less per worker, so the same budget supports more chain workers.
+        # Convert budgets to worker counts, using firm-type-specific avg wage.
         local_avg_wage = base_wage * avg_p * WAGE_MULT_LOCAL
         chain_avg_wage = base_wage * avg_p * WAGE_MULT_CHAIN
         capacity: dict[tuple, float] = {}
@@ -287,19 +369,22 @@ class ColonyV0Model(Model):
         keys_list = list(capacity.keys())
         for i, key in enumerate(keys_list):
             if i == len(keys_list) - 1:
-                per_firm_capacity[key] = max(1, n_citizens - allocated)
+                per_firm_capacity[key] = max(0, n_private - allocated)
             else:
-                n = max(1, round(n_citizens * capacity[key] / total_capacity))
+                n = max(1, round(n_private * capacity[key] / total_capacity))
                 per_firm_capacity[key] = n
                 allocated += n
 
-        # Round-robin citizens (sorted by productivity desc) across all firms
-        # to balance payrolls.
+        # Round-robin citizens (sorted by productivity desc) — first n_public_target
+        # workers go to the public sector, then the rest fill private firms.
         by_p_desc = sorted(self.citizens, key=lambda c: c.productivity, reverse=True)
+        public_workers = by_p_desc[:n_public_target]
+        private_pool   = by_p_desc[n_public_target:]
+
         firm_workers: dict[tuple, list] = {k: [] for k in per_firm_capacity}
         firm_keys = list(per_firm_capacity.keys())
         i = 0
-        for c in by_p_desc:
+        for c in private_pool:
             for _ in range(len(firm_keys)):
                 key = firm_keys[i % len(firm_keys)]
                 i += 1
@@ -328,6 +413,14 @@ class ColonyV0Model(Model):
         self._initial_chain_workforce = {
             s: len(self.chain_branches[s].workers) for s in SECTORS
         }
+
+        # Public sector — single employer, funded by external transfers.
+        self.public_sector = PublicSector(
+            self,
+            initial_workers=public_workers,
+            initial_float=firm_initial_float,
+        )
+        self._initial_public_workforce = len(self.public_sector.workers)
 
         self.pure_imports: dict[str, PureImport] = {
             s: PureImport(self, s) for s in SECTORS
@@ -365,8 +458,18 @@ class ColonyV0Model(Model):
                 # Employment by firm type
                 "workers_local":     lambda m: sum(len(f.workers) for f in m.local_firms.values()),
                 "workers_chain":     lambda m: sum(len(f.workers) for f in m.chain_branches.values()),
+                "workers_public":    lambda m: len(m.public_sector.workers),
                 "workers_local_pct": lambda m: sum(len(f.workers) for f in m.local_firms.values()) / max(1, len(m.citizens)),
                 "workers_chain_pct": lambda m: sum(len(f.workers) for f in m.chain_branches.values()) / max(1, len(m.citizens)),
+                "workers_public_pct":lambda m: len(m.public_sector.workers) / max(1, len(m.citizens)),
+                # Demographics
+                "n_adults":          lambda m: len(m.citizens),
+                "n_dependents":      lambda m: m.total_dependents,
+                "n_total_pop":       lambda m: m.total_population,
+                # Public sector financials
+                "public_balance":    lambda m: m.public_sector.balance,
+                "transfers_in":      lambda m: m.public_sector.transfers_received_this_step,
+                "child_transfers":   lambda m: getattr(m, "child_transfers_this_step", 0.0),
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -398,6 +501,7 @@ class ColonyV0Model(Model):
             sum(c.savings for c in self.citizens)
             + sum(f.balance for f in self.local_firms.values())
             + sum(f.balance for f in self.chain_branches.values())
+            + self.public_sector.balance
         )
 
     def basket_cost_avg(self):
@@ -460,8 +564,32 @@ class ColonyV0Model(Model):
                 victim = ch.workers[0]
                 ch.fire(victim)
 
+    def _external_transfers(self):
+        """Federal / state money flowing into the colony. Two channels:
+        (a) bulk transfers to the public sector — funds public payroll
+        (b) per-child transfers directly to households — covers the
+            extra consumption that dependents create
+        Both are BoP credits. In real small towns these inflows are huge."""
+        self.public_sector.transfers_received_this_step = 0.0
+        self.child_transfers_this_step = 0.0
+        if self.monthly_external_transfers > 0:
+            self.public_sector.receive_transfer(self.monthly_external_transfers)
+        # Per-child transfers go straight to the household's adult
+        for c in self.citizens:
+            if c.dependents > 0:
+                amt = c.dependents * CHILD_TRANSFER
+                c.savings += amt
+                self.child_transfers_this_step += amt
+                self.money_returned_total += amt
+                self.exports_this_step += amt
+
     def _pay_wages(self):
-        for firm in list(self.local_firms.values()) + list(self.chain_branches.values()):
+        all_employers = (
+            list(self.local_firms.values())
+            + list(self.chain_branches.values())
+            + [self.public_sector]
+        )
+        for firm in all_employers:
             for worker in list(firm.workers):
                 w = worker.wage_if_hired
                 if firm.balance >= w:
@@ -487,9 +615,11 @@ class ColonyV0Model(Model):
 
         for c in order:
             if c.savings <= 0: continue
-            target = (c.last_income * self.target_spend_pct
-                      if c.employed else self.subsistence_floor)
-            target = max(target, self.subsistence_floor)
+            base_target = (c.last_income * self.target_spend_pct
+                           if c.employed else self.subsistence_floor)
+            # Scale up for dependents — kids consume from the household budget.
+            target = base_target * (1 + c.dependents * CHILD_CONSUMPTION)
+            target = max(target, self.subsistence_floor * (1 + c.dependents * CHILD_CONSUMPTION))
             spend = min(target, c.savings)
             if spend <= 0: continue
 
@@ -594,16 +724,16 @@ class ColonyV0Model(Model):
                 c.months_unemployed += 1
 
     def step(self):
-        # Order matters: collect revenue BEFORE paying wages so firms can
-        # fund their payroll from the month's actual sales rather than from
-        # accumulated float. Otherwise the colony collapses in month 1 from
-        # an artificial cash-flow mismatch.
+        # Order matters: collect revenue + external inflows BEFORE paying wages
+        # so firms (including public sector) fund payroll from the month's actual
+        # cash flow rather than initial float alone.
         self.imports_this_step = 0.0
         self.exports_this_step = 0.0
         self._ramp_automation()
         self._chain_hq_workforce_reduction()
         self._citizens_consume()
         self._external_exports()
+        self._external_transfers()
         self._pay_wages()
         self._firm_workforce_adjust()
         self._track_unemployment()

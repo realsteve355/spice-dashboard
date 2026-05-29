@@ -48,7 +48,7 @@
   .status { font-size: 11px; color: var(--dim); margin-top: 6px; }
   .status.err { color: var(--crit); }
   .stat-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
     margin-top: 10px;
   }
   .stat {
@@ -85,30 +85,26 @@
 <main class="colony">
 
   <div class="preamble">
-    <strong>What this is.</strong> Step 1 of the colony exploration —
-    today's small town, USD only, no UBI, <strong>no automation</strong>
-    (default A=0). Each sector has three providers: a <em>chain branch</em>
-    (Walmart / McDonald's / Target — employs citizens locally but ~70% of
-    revenue drains to HQ as corporate fee), a <em>truly-local indy</em>
-    (the independent restaurant, the artisan, the dentist — revenue stays
-    local, premium wages), and <em>pure imports</em> (Amazon, streaming —
-    no local jobs, all revenue drains). Chains employ more workers (more
-    citizens at lower wages) than locals; locals carry the colony's export
-    industries (car factory, etc.) that bring USD back in. The colony's BoP
-    is approximately balanced at A=0 — chain corporate fees + pure imports
-    flowing out, exports flowing in. Crank up A to see what automation
-    does to this picture, but for the first cut, leave A=0 and verify the
-    healthy baseline. <strong>Next colonies will explore (a) introducing a
-    local currency on top of this baseline and (b) layering automation on
-    top of both.</strong>
+    <strong>Step 1 — Maryfontaine today.</strong> 30 adult citizens (with
+    ~12 children as dependents) in a chain-dominated small town. Each sector
+    has three private providers: a <em>chain branch</em> (Walmart / McDonald's —
+    employs citizens at low wages, ~70% of revenue drains to corporate HQ),
+    a <em>truly-local indy</em> (the independent shop, the artisan, the dentist —
+    revenue stays local, better wages), and <em>pure imports</em> (Amazon,
+    streaming — no local jobs, all revenue drains). Plus a <em>public sector</em>
+    (~23% of workforce — teachers, town-hall, healthcare workers) funded by
+    federal/state transfers. Households with kids get child-credit transfers
+    matched to their consumption boost. The colony's BoP is calibrated to
+    balance: chain corp fees + pure imports flow OUT; exports + federal
+    transfers + child credits flow IN. <strong>Next colonies: (2) introduce
+    a local currency, (3) layer automation pressure on top.</strong>
   </div>
 
   <div class="card">
     <h3>Controls</h3>
     <div class="controls">
       <label>Months <input type="number" id="months" value="60" min="12" max="120" step="6"></label>
-      <label>Automation end (A_max) <input type="number" id="automation_end" value="0" min="0" max="1" step="0.05"></label>
-      <label>Automation ramp (months) <input type="number" id="automation_months" value="60" min="6" max="120" step="6"></label>
+      <label>Monthly federal/state transfers ($) <input type="number" id="monthly_external_transfers" value="2800" min="0" step="100"></label>
       <label>Seed <input type="number" id="seed" value="42" min="1" max="9999" step="1"></label>
       <button id="reset" type="button"
         style="background:transparent; border:1px solid var(--line-hot); color:var(--dim);

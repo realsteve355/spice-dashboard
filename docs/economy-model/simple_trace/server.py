@@ -86,15 +86,16 @@ def run_colony_v0(cfg):
     seed = int(cfg.get("seed", 42))
     model = ColonyV0Model(
         seed=seed,
-        n_citizens         = int(cfg.get("n_citizens", 30)),
-        pareto_alpha       = float(cfg.get("pareto_alpha", 1.6)),
-        initial_savings    = float(cfg.get("initial_savings", 1500)),
-        base_wage          = float(cfg.get("base_wage", 400)),
-        target_spend_pct   = float(cfg.get("target_spend_pct", 1.0)),
-        subsistence_floor  = float(cfg.get("subsistence_floor", 250)),
-        firm_initial_float = float(cfg.get("firm_initial_float", 3000)),
-        automation_end     = float(cfg.get("automation_end", 0.85)),
-        automation_months  = int(cfg.get("automation_months", 60)),
+        n_citizens                  = int(cfg.get("n_citizens", 30)),
+        pareto_alpha                = float(cfg.get("pareto_alpha", 1.6)),
+        initial_savings             = float(cfg.get("initial_savings", 1500)),
+        base_wage                   = float(cfg.get("base_wage", 400)),
+        target_spend_pct            = float(cfg.get("target_spend_pct", 1.0)),
+        subsistence_floor           = float(cfg.get("subsistence_floor", 250)),
+        firm_initial_float          = float(cfg.get("firm_initial_float", 3000)),
+        automation_end              = float(cfg.get("automation_end", 0.0)),
+        automation_months           = int(cfg.get("automation_months", 60)),
+        monthly_external_transfers  = float(cfg.get("monthly_external_transfers", 2800)),
     )
     for _ in range(months):
         model.step()
