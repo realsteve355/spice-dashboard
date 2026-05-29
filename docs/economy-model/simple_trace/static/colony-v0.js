@@ -200,10 +200,10 @@ function renderSnapshot(data) {
       color: netBoP >= 0 ? 'var(--ok)' : (netBoP < -1000 ? 'var(--crit)' : 'var(--warn)'),
     },
     {
-      lbl: 'Months until insolvent',
-      val: (monthsLeft >= 999 ? '∞' : fmt(monthsLeft)),
-      sub: monthsLeft >= 999 ? 'BoP sustainable at this rate' : `at current burn rate of $${fmt(-netBoP)}/mo`,
-      color: monthsLeft >= 999 ? 'var(--ok)' : (monthsLeft < 12 ? 'var(--crit)' : 'var(--warn)'),
+      lbl: 'Money velocity (annual)',
+      val: last.velocity_annual.toFixed(2) + ' / yr',
+      sub: `transactions $${fmt(last.transactions)}/mo · basket cost $${fmt(last.basket_cost_avg)}`,
+      color: last.velocity_annual > 2 ? 'var(--ok)' : (last.velocity_annual > 0.5 ? 'var(--warn)' : 'var(--crit)'),
     },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
@@ -221,11 +221,13 @@ async function refresh() {
     const data = await fetchRun();
     const t = data.trajectory;
 
+    // Employment in absolute counts — percentage view caused the chain line
+    // (small share) to sit on the x-axis and the local line to overlap with total.
     renderChart('ch-employment', t, [
-      { fn: p => p.employment_rate, color: '#a8e6a8', label: 'total' },
-      { fn: p => p.workers_local_pct, color: '#7eb24f', label: 'truly-local jobs', dash: '4 3' },
-      { fn: p => p.workers_chain_pct, color: '#ffb86c', label: 'chain-branch jobs', dash: '4 3' },
-    ], { percent: true, title: 'Employment by firm type' });
+      { fn: p => p.workers_local + p.workers_chain, color: '#a8e6a8', label: 'total jobs' },
+      { fn: p => p.workers_local, color: '#7eb24f', label: 'truly-local jobs', dash: '4 3' },
+      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain-branch jobs', dash: '4 3' },
+    ], { title: 'Employment by firm type (citizens)' });
 
     renderChart('ch-money', t, [
       { fn: p => p.money_supply, color: '#a8e6a8', label: 'money supply' },
@@ -238,10 +240,12 @@ async function refresh() {
       { fn: p => p.exports_step,        color: '#a8e6a8', label: 'exports / mo' },
     ], { dollar: true, title: 'Balance of payments (monthly)' });
 
+    // Velocity replaces basket cost (the local-only basket line was meaningless —
+    // citizens always buy a mix; basket cost is now in the snapshot tile).
     renderChart('ch-basket', t, [
-      { fn: p => p.basket_cost_avg, color: '#7aa2ff', label: 'avg basket cost' },
-      { fn: p => p.basket_cost_local, color: '#a8e6a8', label: 'local-only basket', dash: '3 3' },
-    ], { dollar: true, title: 'Basket cost (deflation)' });
+      { fn: p => p.velocity_annual, color: '#cfa340', label: 'V annual (MV=PY)' },
+      { fn: p => p.velocity_monthly, color: '#a05a30', label: 'V monthly', dash: '3 3' },
+    ], { title: 'Money velocity (transactions ÷ supply)' });
 
     renderHeatmap(data.savings_grid, data.productivities, data.employed_grid);
     renderSnapshot(data);

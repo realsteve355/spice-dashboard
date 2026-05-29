@@ -54,6 +54,11 @@ CHAIN_LAYOFF_RATE    = 0.85    # ChainBranch target workforce at A=1 → 15% of 
 CHAIN_CORP_FEE_RATE  = 0.70    # 70% of chain revenue drains to external HQ
 PRICE_ELASTICITY     = 1.5     # how sharply share shifts with price differential
 
+# Wages differ by firm type — chains pay minimum-wage-ish (Walmart cashier);
+# truly-local indy firms pay better (local artisan, skilled trades, dentists).
+WAGE_MULT_LOCAL = 1.20
+WAGE_MULT_CHAIN = 0.55
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony):
 EXPORT_BASELINE = {"food": 1500.0, "goods": 6500.0, "services": 1600.0}
@@ -78,7 +83,12 @@ class Citizen(Agent):
 
     @property
     def wage_if_hired(self):
-        return self.model.base_wage * self.productivity
+        if self.employer is None:
+            # Asking what they'd earn if hired anywhere — assume local rate
+            mult = WAGE_MULT_LOCAL
+        else:
+            mult = WAGE_MULT_LOCAL if self.employer.kind == "local" else WAGE_MULT_CHAIN
+        return self.model.base_wage * self.productivity * mult
 
     def receive_wage(self, amount):
         self.savings += amount
@@ -223,16 +233,20 @@ class ColonyV0Model(Model):
         self.money_returned_total = 0.0
         self.imports_this_step = 0.0
         self.exports_this_step = 0.0
-        # Split-out drained for diagnostics
         self.drain_corp_fees_step = 0.0
         self.drain_pure_imports_step = 0.0
+        # Transactions tracking for velocity (= total monthly consumption flow)
+        self.transactions_this_step = 0.0
 
-        # Spawn citizens with Pareto productivity
+        # Spawn citizens with Pareto productivity (capped at 3.0 — looser caps
+        # cause one outlier worker to bankrupt the small firm that ends up
+        # employing them).
         self.citizens: list[Citizen] = []
         for _ in range(n_citizens):
             p = self.random.paretovariate(pareto_alpha)
-            p = min(p, 6.0)
+            p = min(p, 3.0)
             self.citizens.append(Citizen(self, productivity=p, initial_savings=initial_savings))
+        avg_p = sum(c.productivity for c in self.citizens) / len(self.citizens)
 
         # Workforce allocation — based on SUSTAINABLE wage budgets, not revenue.
         # Chain branches have ~30% of revenue available for wages (after corp
@@ -258,15 +272,24 @@ class ColonyV0Model(Model):
             budgets[(s, "chain")] = (
                 sector_W * SECTOR_PROVIDER_SHARES[s]["chain"] * (1 - CHAIN_CORP_FEE_RATE)
             )
-        total_budget = sum(budgets.values())
+
+        # Convert budgets to worker counts, using the firm-type-specific avg wage.
+        # Chains pay less per worker, so the same budget supports more chain workers.
+        local_avg_wage = base_wage * avg_p * WAGE_MULT_LOCAL
+        chain_avg_wage = base_wage * avg_p * WAGE_MULT_CHAIN
+        capacity: dict[tuple, float] = {}
+        for (s, kind), b in budgets.items():
+            wage = local_avg_wage if kind == "local" else chain_avg_wage
+            capacity[(s, kind)] = b / max(1.0, wage)
+        total_capacity = sum(capacity.values())
         per_firm_capacity: dict[tuple, int] = {}
         allocated = 0
-        keys_list = list(budgets.keys())
+        keys_list = list(capacity.keys())
         for i, key in enumerate(keys_list):
             if i == len(keys_list) - 1:
                 per_firm_capacity[key] = max(1, n_citizens - allocated)
             else:
-                n = max(1, round(n_citizens * budgets[key] / total_budget))
+                n = max(1, round(n_citizens * capacity[key] / total_capacity))
                 per_firm_capacity[key] = n
                 allocated += n
 
@@ -350,9 +373,17 @@ class ColonyV0Model(Model):
                 "rev_import":        lambda m: sum(f.revenue_this_month for f in m.pure_imports.values()),
                 # Automation (one number — applies uniformly across sectors)
                 "automation":        lambda m: m.pure_imports["food"].automation,
-                # Basket cost (citizen-weighted)
+                # Basket cost (citizen-weighted across the actual mix)
                 "basket_cost_avg":   lambda m: m.basket_cost_avg(),
-                "basket_cost_local": lambda m: sum(m.local_firms[s].price * BASKET_WEIGHTS[s] for s in SECTORS),
+                # Money velocity (Fisher MV = PY). Monthly velocity = consumption
+                # transactions per dollar of money supply, per month.
+                "transactions":      lambda m: m.transactions_this_step,
+                "velocity_monthly":  lambda m: (
+                    m.transactions_this_step / max(1.0, m.money_supply_internal())
+                ),
+                "velocity_annual":   lambda m: (
+                    12.0 * m.transactions_this_step / max(1.0, m.money_supply_internal())
+                ),
             }
         )
         self.datacollector.collect(self)
@@ -449,6 +480,7 @@ class ColonyV0Model(Model):
             f.revenue_this_month = 0.0
             f.corp_fee_paid_this_month = 0.0
         for f in self.pure_imports.values():   f.revenue_this_month = 0.0
+        self.transactions_this_step = 0.0
 
         order = list(self.citizens)
         self.random.shuffle(order)
@@ -484,6 +516,7 @@ class ColonyV0Model(Model):
                 else:
                     self.pure_imports[sector].collect_revenue(sector_spend)
                 c.savings -= sector_spend
+                self.transactions_this_step += sector_spend
 
         # Floor savings at zero
         for c in self.citizens:
