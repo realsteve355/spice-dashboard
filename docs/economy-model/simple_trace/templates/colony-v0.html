@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Colony v0 — pre-AXION baseline (Mesa ABM)</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  main.colony { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .preamble {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    border-left: 3px solid #ef4444;
+    padding: 14px 20px; margin-bottom: 18px;
+    font-size: 12px; color: var(--txt); line-height: 1.65;
+  }
+  .preamble strong { color: var(--headline); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    padding: 16px 20px; margin-bottom: 18px;
+  }
+  .card h3 {
+    font-size: 11px; color: var(--headline);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .card .sub { font-size: 11px; color: var(--dim); margin-bottom: 12px; }
+  .controls {
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+    font-size: 11px; color: var(--txt);
+  }
+  .controls label { display: inline-flex; gap: 6px; align-items: center; }
+  .controls input[type=number] {
+    background: #14171f; color: var(--txt);
+    border: 1px solid #2a2f3d; padding: 3px 6px;
+    width: 70px; text-align: right;
+    font-family: inherit; font-size: 11px;
+  }
+  .chart-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  svg.chart {
+    width: 100%; height: 240px;
+    background: #0b0d12; border: 1px solid var(--line-hot);
+  }
+  svg.heatmap {
+    width: 100%; height: 320px;
+    background: #0b0d12; border: 1px solid var(--line-hot);
+  }
+  .status { font-size: 11px; color: var(--dim); margin-top: 6px; }
+  .status.err { color: var(--crit); }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-top: 10px;
+  }
+  .stat {
+    background: #0b0d12; border: 1px solid var(--line-hot);
+    border-left: 3px solid #5a6373; padding: 12px 14px;
+  }
+  .stat .lbl {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .stat .val {
+    font-size: 18px; color: var(--headline);
+    font-variant-numeric: tabular-nums; margin: 4px 0 2px;
+  }
+  .stat .sub { font-size: 10px; color: var(--dim); }
+  .legend {
+    display: flex; gap: 14px; margin-top: 8px; font-size: 11px;
+    color: var(--txt); flex-wrap: wrap;
+  }
+  .legend .item { display: inline-flex; gap: 6px; align-items: center; }
+  .legend .sw { display: inline-block; width: 14px; height: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Colony v0 — pre-AXION baseline</h1>
+  <div class="subtitle">
+    Open economy under automation pressure. No UBI, no central authority,
+    fixed money supply. Mesa-driven agent simulation, 30 citizens, 3 sectors.
+  </div>
+</header>
+
+<main class="colony">
+
+  <div class="preamble">
+    <strong>What this is.</strong> The pre-AXION baseline. A small open colony
+    with three sectors (food, goods, services), three local firms employing
+    citizens, three external automated firms competing on price. As the
+    external automation level <strong>A</strong> rises, external prices fall,
+    citizens shift spending out of the colony, local firms lose revenue,
+    workers get laid off, savings drain, money supply shrinks. The colony
+    hollows out. <strong>This is the Collision at colony scale, with no
+    intervention.</strong> AXION's job (in v1) is to interrupt this trajectory.
+  </div>
+
+  <div class="card">
+    <h3>Controls</h3>
+    <div class="controls">
+      <label>Months <input type="number" id="months" value="60" min="12" max="120" step="6"></label>
+      <label>Automation end (A_max) <input type="number" id="automation_end" value="0.85" min="0" max="1" step="0.05"></label>
+      <label>Automation ramp (months) <input type="number" id="automation_months" value="60" min="6" max="120" step="6"></label>
+      <label>Seed <input type="number" id="seed" value="42" min="1" max="9999" step="1"></label>
+      <button id="reset" type="button"
+        style="background:transparent; border:1px solid var(--line-hot); color:var(--dim);
+               font-family:inherit; font-size:10px; letter-spacing:0.1em;
+               padding:4px 10px; cursor:pointer; text-transform:uppercase;">Reset</button>
+      <span class="status" id="status">running…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Endpoint snapshot</h3>
+    <div class="stat-grid" id="snapshot"></div>
+  </div>
+
+  <div class="card">
+    <h3>Macro trajectories</h3>
+    <div class="sub">
+      Top-left: employment rate (per sector + total) · Top-right: money supply within colony vs cumulative drained ·
+      Bottom-left: wealth concentration (Gini + top-10% share) · Bottom-right: average basket cost (deflation).
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-employment" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-money"      class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-gini"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-basket"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Per-citizen wealth heatmap</h3>
+    <div class="sub">
+      Each row is one citizen, sorted by initial productivity (top = highest skilled).
+      Columns = months. Colour = savings (green = healthy, amber = strained, red = destitute).
+      The collapse front sweeping right-to-left is the cascade in slow motion.
+    </div>
+    <svg id="heatmap" class="heatmap" preserveAspectRatio="none"></svg>
+    <div class="legend" id="hm-legend">
+      <span class="item"><span class="sw" style="background:#2d3a4a"></span>$0 (destitute)</span>
+      <span class="item"><span class="sw" style="background:#a05a30"></span>~$500</span>
+      <span class="item"><span class="sw" style="background:#cfa340"></span>~$1500</span>
+      <span class="item"><span class="sw" style="background:#3fb86c"></span>$5000+</span>
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/nav.js"></script>
+<script src="/static/colony-v0.js"></script>
+</body>
+</html>

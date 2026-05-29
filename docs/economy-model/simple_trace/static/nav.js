@@ -22,6 +22,9 @@
       { path: '/abundance',      label: 'Abundance' },
       { path: '/abm',            label: 'Mesa ABM' },
     ]},
+    { label: 'Pre-AXION baseline', items: [
+      { path: '/colony-v0',      label: 'Colony v0' },
+    ]},
   ];
 
   const current = window.location.pathname.replace(/\/$/, '') || '/';

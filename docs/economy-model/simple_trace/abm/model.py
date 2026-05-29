@@ -205,7 +205,6 @@ class ColonyModel(Model):
                     c.external_usd += conv
                     self.fx_outflow_this_step += conv
 
-        # Increment step counter (Mesa 3.x tracks this itself in run_model,
-        # but our manual loop needs to advance it) and record the snapshot.
-        self.steps += 1
+        # Mesa 3.x auto-increments self.steps in base Model.step machinery —
+        # do not increment manually here.
         self.datacollector.collect(self)

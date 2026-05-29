@@ -79,6 +79,39 @@ def run_abm(cfg):
     return {"single": single, "scenarios": scenarios, "months": months}
 
 
+def run_colony_v0(cfg):
+    """Pre-AXION colony baseline — heterogeneous citizens, external automation pressure."""
+    from abm.colony_v0 import ColonyV0Model
+    months = int(cfg.get("months", 60))
+    seed = int(cfg.get("seed", 42))
+    model = ColonyV0Model(
+        seed=seed,
+        n_citizens         = int(cfg.get("n_citizens", 30)),
+        pareto_alpha       = float(cfg.get("pareto_alpha", 1.6)),
+        initial_savings    = float(cfg.get("initial_savings", 1500)),
+        base_wage          = float(cfg.get("base_wage", 400)),
+        target_spend_pct   = float(cfg.get("target_spend_pct", 1.0)),
+        subsistence_floor  = float(cfg.get("subsistence_floor", 250)),
+        firm_initial_float = float(cfg.get("firm_initial_float", 3000)),
+        automation_end     = float(cfg.get("automation_end", 0.85)),
+        automation_months  = int(cfg.get("automation_months", 60)),
+    )
+    for _ in range(months):
+        model.step()
+    df = model.datacollector.get_model_vars_dataframe()
+    rows = df.to_dict(orient="records")
+    for i, r in enumerate(rows):
+        r["month"] = i
+    return {
+        "trajectory":   rows,
+        "savings_grid": model.savings_history,   # [month][citizen]
+        "employed_grid": model.employed_history,  # [month][citizen]
+        "productivities": model.productivities,
+        "months":       months,
+        "n_citizens":   model.params if False else len(model.citizens),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     static_dir = HERE / "static"
     templates_dir = HERE / "templates"
@@ -133,6 +166,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "abundance.html", "text/html; charset=utf-8")
         elif p == "/abm":
             self._send_file(self.templates_dir / "abm.html", "text/html; charset=utf-8")
+        elif p == "/colony-v0":
+            self._send_file(self.templates_dir / "colony-v0.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
@@ -148,7 +183,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urlparse(self.path).path
-        if p in ("/api/run", "/api/trajectory", "/api/abm"):
+        if p in ("/api/run", "/api/trajectory", "/api/abm", "/api/colony-v0"):
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
             try:
@@ -161,6 +196,7 @@ class Handler(BaseHTTPRequestHandler):
                     "/api/run":        run_sim,
                     "/api/trajectory": run_trajectory,
                     "/api/abm":        run_abm,
+                    "/api/colony-v0":  run_colony_v0,
                 }[p]
                 result = runner(cfg)
                 self._send_json(200, result)
