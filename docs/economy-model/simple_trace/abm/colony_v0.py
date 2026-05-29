@@ -69,7 +69,7 @@ WAGE_MULT_PUBLIC = 1.00
 # dependents. Matches MF demographics (39k people, 30k adults → ~30% kids).
 P_HAS_CHILD       = 0.30          # prob an adult has at least one dependent
 P_HAS_SECOND      = 0.05          # conditional prob of a second
-CHILD_CONSUMPTION = 0.40          # each child adds this fraction to adult target spending
+CHILD_CONSUMPTION = 0.30          # each child adds this fraction to adult target spending
 
 # Public sector — modelled as a single employer. Funded by external transfers
 # (federal/state money — Social Security, Medicare, federal jobs, state
@@ -85,7 +85,7 @@ CHILD_TRANSFER = 220.0
 # Today's approximate tax structure (US small-town effective rates).
 # AXION's narrative will depend on changing this treatment, so taxes are
 # explicit here rather than buried in chain corp fees etc.
-INCOME_TAX_RATE       = 0.20   # federal + state income + FICA employee side
+INCOME_TAX_RATE       = 0.15   # federal + state income + FICA employee side (effective middle-class rate)
 INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
                                 # as local income / payroll tax (rest drains)
 SALES_TAX_RATE        = 0.07   # state + local sales tax combined
@@ -317,7 +317,7 @@ class ColonyV0Model(Model):
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
-        monthly_external_transfers: float = 5500.0,  # public-sector + federal redistribution inflow
+        monthly_external_transfers: float = 4500.0,  # public-sector + federal redistribution inflow
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -699,9 +699,14 @@ class ColonyV0Model(Model):
 
         for c in order:
             if c.savings <= 0: continue
-            base_target = (c.last_income * self.target_spend_pct
-                           if c.employed else self.subsistence_floor)
-            # Scale up for dependents — kids consume from the household budget.
+            # Citizens spend disposable (post-income-tax) income, scaled up
+            # for dependents (kids consume from household budget). Sales tax
+            # is deducted at point of purchase, so it comes from this spending.
+            if c.employed:
+                disposable = c.last_income * (1 - INCOME_TAX_RATE)
+                base_target = disposable * self.target_spend_pct
+            else:
+                base_target = self.subsistence_floor
             target = base_target * (1 + c.dependents * CHILD_CONSUMPTION)
             target = max(target, self.subsistence_floor * (1 + c.dependents * CHILD_CONSUMPTION))
             spend = min(target, c.savings)
