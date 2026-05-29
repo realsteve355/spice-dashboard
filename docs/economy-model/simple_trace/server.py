@@ -119,6 +119,8 @@ def run_colony_v0(cfg):
             "exports_cum": f.exports_cumulative,
             "wages_cum": f.wages_paid_cumulative,
             "balance": f.balance,
+            "txns_month": f.txns_this_month,
+            "txns_cum": f.txns_cumulative,
         })
         c = model.chain_branches[s]
         firms.append({
@@ -132,6 +134,8 @@ def run_colony_v0(cfg):
             "corp_fee_cum": c.corp_fee_cumulative,
             "wages_cum": c.wages_paid_cumulative,
             "balance": c.balance,
+            "txns_month": c.txns_this_month,
+            "txns_cum": c.txns_cumulative,
         })
         p = model.pure_imports[s]
         firms.append({
@@ -142,6 +146,8 @@ def run_colony_v0(cfg):
             "price": p.price,
             "revenue_month": p.revenue_this_month,
             "revenue_cum": p.revenue_cumulative,
+            "txns_month": p.txns_this_month,
+            "txns_cum": p.txns_cumulative,
         })
     pub = model.public_sector
     firms.append({

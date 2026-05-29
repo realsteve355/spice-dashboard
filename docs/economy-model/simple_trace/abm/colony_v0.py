@@ -145,6 +145,8 @@ class LocalFirm(Agent):
         self.revenue_cumulative = 0.0
         self.exports_cumulative = 0.0
         self.wages_paid_cumulative = 0.0
+        self.txns_this_month = 0
+        self.txns_cumulative = 0
 
         for c in initial_workers:
             c.employer = self
@@ -154,6 +156,8 @@ class LocalFirm(Agent):
         self.balance += amount
         self.revenue_this_month += amount
         self.revenue_cumulative += amount
+        self.txns_this_month += 1
+        self.txns_cumulative += 1
 
     def fire(self, citizen):
         if citizen in self.workers:
@@ -181,6 +185,8 @@ class ChainBranch(Agent):
         self.corp_fee_paid_this_month = 0.0
         self.corp_fee_cumulative = 0.0
         self.wages_paid_cumulative = 0.0
+        self.txns_this_month = 0
+        self.txns_cumulative = 0
         self.automation = 0.0
 
         for c in initial_workers:
@@ -205,6 +211,8 @@ class ChainBranch(Agent):
         self.revenue_cumulative += amount
         self.corp_fee_paid_this_month += corp_fee
         self.corp_fee_cumulative += corp_fee
+        self.txns_this_month += 1
+        self.txns_cumulative += 1
         # Corporate fee = money leaving the colony
         self.model.money_drained_total += corp_fee
         self.model.imports_this_step += corp_fee
@@ -264,6 +272,8 @@ class PureImport(Agent):
         self.price = INITIAL_LOCAL_PRICES[sector]
         self.revenue_this_month = 0.0
         self.revenue_cumulative = 0.0
+        self.txns_this_month = 0
+        self.txns_cumulative = 0
 
     def update_price(self):
         base = INITIAL_LOCAL_PRICES[self.sector]
@@ -272,6 +282,8 @@ class PureImport(Agent):
     def collect_revenue(self, amount):
         self.revenue_this_month += amount
         self.revenue_cumulative += amount
+        self.txns_this_month += 1
+        self.txns_cumulative += 1
         self.model.money_drained_total += amount
         self.model.imports_this_step += amount
 
@@ -621,11 +633,16 @@ class ColonyV0Model(Model):
 
     def _citizens_consume(self):
         # Reset monthly counters
-        for f in self.local_firms.values():    f.revenue_this_month = 0.0
+        for f in self.local_firms.values():
+            f.revenue_this_month = 0.0
+            f.txns_this_month = 0
         for f in self.chain_branches.values():
             f.revenue_this_month = 0.0
             f.corp_fee_paid_this_month = 0.0
-        for f in self.pure_imports.values():   f.revenue_this_month = 0.0
+            f.txns_this_month = 0
+        for f in self.pure_imports.values():
+            f.revenue_this_month = 0.0
+            f.txns_this_month = 0
         self.transactions_this_step = 0.0
 
         order = list(self.citizens)
