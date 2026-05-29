@@ -103,13 +103,65 @@ def run_colony_v0(cfg):
     rows = df.to_dict(orient="records")
     for i, r in enumerate(rows):
         r["month"] = i
+    # Per-business snapshot for the bottom-of-page stats table
+    from abm.colony_v0 import SECTORS as V0_SECTORS
+    firms = []
+    for s in V0_SECTORS:
+        f = model.local_firms[s]
+        firms.append({
+            "name": f"{s.title()} — Truly local",
+            "type": "local",
+            "sector": s,
+            "workers": len(f.workers),
+            "price": f.price,
+            "revenue_month": f.revenue_this_month,
+            "revenue_cum": f.revenue_cumulative,
+            "exports_cum": f.exports_cumulative,
+            "wages_cum": f.wages_paid_cumulative,
+            "balance": f.balance,
+        })
+        c = model.chain_branches[s]
+        firms.append({
+            "name": f"{s.title()} — Chain branch",
+            "type": "chain",
+            "sector": s,
+            "workers": len(c.workers),
+            "price": c.price,
+            "revenue_month": c.revenue_this_month,
+            "revenue_cum": c.revenue_cumulative,
+            "corp_fee_cum": c.corp_fee_cumulative,
+            "wages_cum": c.wages_paid_cumulative,
+            "balance": c.balance,
+        })
+        p = model.pure_imports[s]
+        firms.append({
+            "name": f"{s.title()} — Pure imports",
+            "type": "import",
+            "sector": s,
+            "workers": 0,
+            "price": p.price,
+            "revenue_month": p.revenue_this_month,
+            "revenue_cum": p.revenue_cumulative,
+        })
+    pub = model.public_sector
+    firms.append({
+        "name": "Public sector",
+        "type": "public",
+        "sector": "—",
+        "workers": len(pub.workers),
+        "balance": pub.balance,
+        "transfers_cum": pub.transfers_cumulative,
+        "wages_cum": pub.wages_paid_cumulative,
+    })
+
     return {
-        "trajectory":   rows,
-        "savings_grid": model.savings_history,   # [month][citizen]
-        "employed_grid": model.employed_history,  # [month][citizen]
+        "trajectory":     rows,
+        "savings_grid":   model.savings_history,
+        "employed_grid":  model.employed_history,
         "productivities": model.productivities,
-        "months":       months,
-        "n_citizens":   model.params if False else len(model.citizens),
+        "firms":          firms,
+        "months":         months,
+        "n_citizens":     len(model.citizens),
     }
 
 

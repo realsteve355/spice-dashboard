@@ -217,6 +217,43 @@ function renderSnapshot(data) {
   `).join('');
 }
 
+function renderFirmsTable(firms) {
+  const tbody = document.querySelector('#firms-table tbody');
+  if (!tbody) return;
+  const TYPE_COLOR = {
+    local:  '#7eb24f',
+    chain:  '#ffb86c',
+    import: '#ef4444',
+    public: '#7aa2ff',
+  };
+  tbody.innerHTML = firms.map(f => {
+    const color = TYPE_COLOR[f.type] || 'var(--dim)';
+    let flow = '';
+    if (f.type === 'local') {
+      flow = `+$${fmt(f.exports_cum || 0)} cum. exports`;
+    } else if (f.type === 'chain') {
+      flow = `−$${fmt(f.corp_fee_cum || 0)} cum. corp fee → external HQ`;
+    } else if (f.type === 'import') {
+      flow = `−$${fmt(f.revenue_cum || 0)} cum. drained out of colony`;
+    } else if (f.type === 'public') {
+      flow = `+$${fmt(f.transfers_cum || 0)} cum. transfers in`;
+    }
+    const revMonth = f.revenue_month !== undefined ? '$' + fmt(f.revenue_month) : '—';
+    const revCum   = f.revenue_cum   !== undefined ? '$' + fmt(f.revenue_cum)   : '—';
+    const wagesCum = f.wages_cum     !== undefined ? '$' + fmt(f.wages_cum)     : '—';
+    return `<tr style="border-bottom:1px solid #14171f;">
+      <td style="padding:6px 8px; color:var(--headline);">${f.name}</td>
+      <td style="padding:6px 8px;"><span style="color:${color}">●</span> ${f.type}</td>
+      <td style="padding:6px 8px; color:var(--dim);">${f.sector}</td>
+      <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">${f.workers}</td>
+      <td style="padding:6px 8px; text-align:right; color:var(--txt); font-variant-numeric:tabular-nums;">${revMonth}</td>
+      <td style="padding:6px 8px; text-align:right; color:var(--txt); font-variant-numeric:tabular-nums;">${revCum}</td>
+      <td style="padding:6px 8px; text-align:right; color:var(--txt); font-variant-numeric:tabular-nums;">${wagesCum}</td>
+      <td style="padding:6px 8px; color:var(--dim); font-size:10px;">${flow}</td>
+    </tr>`;
+  }).join('');
+}
+
 async function refresh() {
   try {
     saveInputs();
@@ -250,6 +287,7 @@ async function refresh() {
 
     renderHeatmap(data.savings_grid, data.productivities, data.employed_grid);
     renderSnapshot(data);
+    renderFirmsTable(data.firms || []);
 
     setStatus(`${data.months} months, ${data.productivities.length} citizens, seed ${readNum('seed', 42)}`);
   } catch (err) {

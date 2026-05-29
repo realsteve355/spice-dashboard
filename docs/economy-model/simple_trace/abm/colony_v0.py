@@ -142,6 +142,9 @@ class LocalFirm(Agent):
         self.balance = initial_float
         self.price = INITIAL_LOCAL_PRICES[sector]
         self.revenue_this_month = 0.0
+        self.revenue_cumulative = 0.0
+        self.exports_cumulative = 0.0
+        self.wages_paid_cumulative = 0.0
 
         for c in initial_workers:
             c.employer = self
@@ -150,6 +153,7 @@ class LocalFirm(Agent):
     def collect_revenue(self, amount):
         self.balance += amount
         self.revenue_this_month += amount
+        self.revenue_cumulative += amount
 
     def fire(self, citizen):
         if citizen in self.workers:
@@ -173,7 +177,10 @@ class ChainBranch(Agent):
         self.balance = initial_float
         self.price = INITIAL_LOCAL_PRICES[sector]   # starts equal to local
         self.revenue_this_month = 0.0
+        self.revenue_cumulative = 0.0
         self.corp_fee_paid_this_month = 0.0
+        self.corp_fee_cumulative = 0.0
+        self.wages_paid_cumulative = 0.0
         self.automation = 0.0
 
         for c in initial_workers:
@@ -195,7 +202,9 @@ class ChainBranch(Agent):
         retained = amount - corp_fee
         self.balance += retained
         self.revenue_this_month += amount
+        self.revenue_cumulative += amount
         self.corp_fee_paid_this_month += corp_fee
+        self.corp_fee_cumulative += corp_fee
         # Corporate fee = money leaving the colony
         self.model.money_drained_total += corp_fee
         self.model.imports_this_step += corp_fee
@@ -222,6 +231,8 @@ class PublicSector(Agent):
         self.workers: list[Citizen] = []
         self.balance = initial_float
         self.transfers_received_this_step = 0.0
+        self.transfers_cumulative = 0.0
+        self.wages_paid_cumulative = 0.0
         for c in initial_workers:
             c.employer = self
             self.workers.append(c)
@@ -229,6 +240,7 @@ class PublicSector(Agent):
     def receive_transfer(self, amount):
         self.balance += amount
         self.transfers_received_this_step += amount
+        self.transfers_cumulative += amount
         self.model.money_returned_total += amount
         self.model.exports_this_step += amount   # external money in counts as BoP credit
 
@@ -251,6 +263,7 @@ class PureImport(Agent):
         self.automation = 0.0
         self.price = INITIAL_LOCAL_PRICES[sector]
         self.revenue_this_month = 0.0
+        self.revenue_cumulative = 0.0
 
     def update_price(self):
         base = INITIAL_LOCAL_PRICES[self.sector]
@@ -258,6 +271,7 @@ class PureImport(Agent):
 
     def collect_revenue(self, amount):
         self.revenue_this_month += amount
+        self.revenue_cumulative += amount
         self.model.money_drained_total += amount
         self.model.imports_this_step += amount
 
@@ -595,8 +609,12 @@ class ColonyV0Model(Model):
                 if firm.balance >= w:
                     firm.balance -= w
                     worker.receive_wage(w)
+                    if hasattr(firm, "wages_paid_cumulative"):
+                        firm.wages_paid_cumulative += w
                 else:
                     if firm.balance > 0:
+                        if hasattr(firm, "wages_paid_cumulative"):
+                            firm.wages_paid_cumulative += firm.balance
                         worker.receive_wage(firm.balance)
                         firm.balance = 0
                     firm.fire(worker)
@@ -673,6 +691,8 @@ class ColonyV0Model(Model):
             if export_rev <= 0: continue
             firm.balance += export_rev
             firm.revenue_this_month += export_rev
+            firm.revenue_cumulative += export_rev
+            firm.exports_cumulative += export_rev
             self.money_returned_total += export_rev
             self.exports_this_step += export_rev
 
