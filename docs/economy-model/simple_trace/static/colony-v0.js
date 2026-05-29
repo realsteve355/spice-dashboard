@@ -223,10 +223,9 @@ async function refresh() {
 
     renderChart('ch-employment', t, [
       { fn: p => p.employment_rate, color: '#a8e6a8', label: 'total' },
-      { fn: p => p.workers_food / data.productivities.length, color: '#ef4444', label: 'food', dash: '3 3' },
-      { fn: p => p.workers_goods / data.productivities.length, color: '#eab308', label: 'goods', dash: '3 3' },
-      { fn: p => p.workers_serv / data.productivities.length, color: '#7aa2ff', label: 'services', dash: '3 3' },
-    ], { percent: true, title: 'Employment rate' });
+      { fn: p => p.workers_local_pct, color: '#7eb24f', label: 'truly-local jobs', dash: '4 3' },
+      { fn: p => p.workers_chain_pct, color: '#ffb86c', label: 'chain-branch jobs', dash: '4 3' },
+    ], { percent: true, title: 'Employment by firm type' });
 
     renderChart('ch-money', t, [
       { fn: p => p.money_supply, color: '#a8e6a8', label: 'money supply' },

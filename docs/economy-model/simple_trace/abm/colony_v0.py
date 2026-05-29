@@ -1,22 +1,30 @@
-"""Colony v0 — pre-AXION baseline.
+"""Colony v0 — pre-AXION baseline (chain-aware).
 
 A small open economy under automation pressure, no UBI, no central authority,
-fixed money supply (within the colony — money drains permanently when citizens
-buy from external automated firms).
+fixed money supply (within the colony — money drains via imports AND via chain
+branches' corporate fees).
 
 3 sectors: food, goods, services.
-Each sector has 1 local firm (employs colony citizens) and 1 external firm
-(automated, exogenous price falls as automation level A_sector rises).
+Each sector has THREE providers (Steve's reframing 29 May 2026 — modern
+small towns don't have a 90%-local economy; chain dominance is already there
+before automation kicks in):
 
-30 citizens with Pareto-distributed productivity. Each month: citizens receive
-wages (if employed) → allocate target spending across sectors → choose local
-or external per sector by price (with loyalty noise). Local firms collect
-revenue, pay wages, lay off workers if revenue can't cover payroll.
+  1. **LocalIndy** — truly local independent firm. All revenue stays in colony.
+     Employs citizens, pays wages. No automation.
+  2. **ChainBranch** — physical chain store (Walmart/McDonald's/Target/etc.).
+     Employs citizens locally → wages stay. But ~70% of revenue drains as
+     corporate fees to external HQ. Automation hits HERE (HQ-driven workforce
+     reduction + price cuts).
+  3. **PureImport** — Amazon/streaming/online retail. No local presence.
+     All revenue drains. Prices fall sharply with automation.
 
-The expected story: as A_sector → 1, external prices fall → citizens shift
-spending external → local revenue collapses → layoffs cascade → savings
-drain → unemployment rises → money supply within colony shrinks → deflation
-+ destitution. This is the Collision at colony scale, no AXION yet.
+30 citizens with Pareto-distributed productivity, employed at LocalIndy or
+ChainBranch. Monthly: pay wages → consume (three-way split per sector) →
+local exports → workforce adjust (revenue-driven + chain HQ automation).
+
+Calibrated so that at A=0 the colony has approximately balanced BoP
+(matching Maryfontaine's design): chain corporate fees + pure imports
+≈ exports.
 """
 from __future__ import annotations
 import math
@@ -25,27 +33,33 @@ from mesa import Agent, Model
 from mesa.datacollection import DataCollector
 
 
-# ── Sectors ──────────────────────────────────────────────────────────────
-# 3 sectors. "goods" includes the manufacturing / car factory that drives
-# most of the colony's export earnings.
+# ── Sectors and structure ────────────────────────────────────────────────
 SECTORS = ["food", "goods", "services"]
 BASKET_WEIGHTS = {"food": 0.25, "goods": 0.35, "services": 0.40}
 INITIAL_LOCAL_PRICES = {"food": 80.0, "goods": 100.0, "services": 120.0}
-MAX_AUTOMATION_DEFLATION = 0.85   # external price at A=1 is 15% of local
 
-# Imports: even at A=0 some fraction of consumption goes external (specialty
-# imports, technology, items the colony doesn't produce). As external prices
-# fall, share rises smoothly.
-MIN_IMPORT_SHARE = 0.10
+# Baseline provider shares per sector (at A=0, equal prices). Reflects modern
+# US small-town chain dominance — Walmart owns most retail, indy services
+# (haircuts, dentists) hold the local share, Amazon takes a slice everywhere.
+SECTOR_PROVIDER_SHARES = {
+    "food":     {"local": 0.35, "chain": 0.60, "import": 0.05},
+    "goods":    {"local": 0.15, "chain": 0.65, "import": 0.20},
+    "services": {"local": 0.60, "chain": 0.30, "import": 0.10},
+}
 
-# Exports: baseline monthly USD revenue per sector that external buyers
-# send INTO the colony (in exchange for local goods). These were calibrated
-# so that at A=0 the colony has approximately balanced BoP, matching
-# Maryfontaine's design (car factory, services exports, food specialties).
-EXPORT_BASELINE = {"food": 500.0, "goods": 2500.0, "services": 1000.0}
-# Export demand decays with average external automation across sectors,
-# capturing the fact that automation hits the colony's export markets too.
-EXPORT_DECAY = 0.90               # at A=1, exports fall to (1-0.90)=10% of baseline
+# Automation effects (all driven by per-sector A, ramping 0 → automation_end):
+MAX_IMPORT_DEFLATION = 0.85    # PureImport price at A=1 → 15% of original
+CHAIN_DEFLATION      = 0.80    # ChainBranch price at A=1 → 20% of original
+CHAIN_LAYOFF_RATE    = 0.85    # ChainBranch target workforce at A=1 → 15% of initial
+CHAIN_CORP_FEE_RATE  = 0.70    # 70% of chain revenue drains to external HQ
+PRICE_ELASTICITY     = 1.5     # how sharply share shifts with price differential
+
+# Exports (truly local firms only — chain branches don't export, they ARE
+# the external HQ's branch into the colony):
+EXPORT_BASELINE = {"food": 1500.0, "goods": 6500.0, "services": 1600.0}
+# Total $9,600/mo — calibrated to balance chain corp fees ($7k) + pure imports
+# ($2.5k) at A=0 with default consumption shares.
+EXPORT_DECAY = 0.90            # at A=1, export demand → 10% of baseline
 
 
 # ── Agents ───────────────────────────────────────────────────────────────
@@ -54,7 +68,7 @@ class Citizen(Agent):
         super().__init__(model)
         self.productivity = productivity
         self.savings = initial_savings
-        self.employer = None         # LocalFirm or None
+        self.employer = None         # LocalFirm | ChainBranch | None
         self.last_income = 0.0
         self.months_unemployed = 0
 
@@ -71,22 +85,20 @@ class Citizen(Agent):
         self.last_income = amount
 
     def step(self):
-        # All decision logic happens in model phases. Citizens are state holders.
         pass
 
 
 class LocalFirm(Agent):
-    """Local firm — employs citizens, pays wages, prices set by costs + markup."""
+    """Truly local independent firm. All revenue stays in colony."""
     def __init__(self, model, sector, initial_workers, initial_float):
         super().__init__(model)
         self.sector = sector
+        self.kind = "local"
         self.workers: list[Citizen] = []
         self.balance = initial_float
         self.price = INITIAL_LOCAL_PRICES[sector]
         self.revenue_this_month = 0.0
-        self.markup = 1.20
 
-        # Hire initial workforce
         for c in initial_workers:
             c.employer = self
             self.workers.append(c)
@@ -105,22 +117,70 @@ class LocalFirm(Agent):
         pass
 
 
-class ExternalFirm(Agent):
-    """External firm — automated, exogenous price falls with automation level A."""
+class ChainBranch(Agent):
+    """Chain-store branch (Walmart/McDonald's-style). Employs citizens but
+    most revenue drains externally as corporate fee. Automation hits hardest
+    here: HQ drives workforce reduction + price cuts in parallel."""
+    def __init__(self, model, sector, initial_workers, initial_float):
+        super().__init__(model)
+        self.sector = sector
+        self.kind = "chain"
+        self.workers: list[Citizen] = []
+        self.balance = initial_float
+        self.price = INITIAL_LOCAL_PRICES[sector]   # starts equal to local
+        self.revenue_this_month = 0.0
+        self.corp_fee_paid_this_month = 0.0
+        self.automation = 0.0
+
+        for c in initial_workers:
+            c.employer = self
+            self.workers.append(c)
+
+    def update_price(self):
+        base = INITIAL_LOCAL_PRICES[self.sector]
+        self.price = base * (1.0 - self.automation * CHAIN_DEFLATION)
+
+    def target_workforce(self, initial_count):
+        """How many workers HQ wants given current automation level."""
+        return max(0, int(round(initial_count * (1.0 - self.automation * CHAIN_LAYOFF_RATE))))
+
+    def collect_revenue(self, amount):
+        # Of each $ collected, CHAIN_CORP_FEE_RATE drains immediately to HQ;
+        # the rest stays as branch balance to fund wages.
+        corp_fee = amount * CHAIN_CORP_FEE_RATE
+        retained = amount - corp_fee
+        self.balance += retained
+        self.revenue_this_month += amount
+        self.corp_fee_paid_this_month += corp_fee
+        # Corporate fee = money leaving the colony
+        self.model.money_drained_total += corp_fee
+        self.model.imports_this_step += corp_fee
+
+    def fire(self, citizen):
+        if citizen in self.workers:
+            self.workers.remove(citizen)
+            citizen.employer = None
+            citizen.months_unemployed = 0
+
+    def step(self):
+        pass
+
+
+class PureImport(Agent):
+    """Amazon-style. No local presence. Citizens spend → money drains."""
     def __init__(self, model, sector):
         super().__init__(model)
         self.sector = sector
+        self.kind = "import"
         self.automation = 0.0
         self.price = INITIAL_LOCAL_PRICES[sector]
         self.revenue_this_month = 0.0
 
     def update_price(self):
         base = INITIAL_LOCAL_PRICES[self.sector]
-        # At A=1, price falls to (1 - MAX_AUTOMATION_DEFLATION) × base
-        self.price = base * (1.0 - self.automation * MAX_AUTOMATION_DEFLATION)
+        self.price = base * (1.0 - self.automation * MAX_IMPORT_DEFLATION)
 
     def collect_revenue(self, amount):
-        # Money leaves the colony permanently (import payment)
         self.revenue_this_month += amount
         self.model.money_drained_total += amount
         self.model.imports_this_step += amount
@@ -135,18 +195,17 @@ class ColonyV0Model(Model):
         self,
         *,
         n_citizens: int = 30,
-        pareto_alpha: float = 1.6,    # lower = more wealth concentration
+        pareto_alpha: float = 1.6,
         initial_savings: float = 1500.0,
-        base_wage: float = 400.0,     # nominal wage; actual = base × productivity
-        target_spend_pct: float = 1.00,  # spend 100% of wages — fixed-supply colony with no banking
-                                          # cannot tolerate Keynesian leakage in steady state
+        base_wage: float = 400.0,
+        target_spend_pct: float = 1.00,
         subsistence_floor: float = 250.0,
         firm_initial_float: float = 3000.0,
-        automation_end: float = 0.85, # A_sector at last month
-        automation_months: int = 60,  # horizon for ramping A
+        automation_end: float = 0.85,
+        automation_months: int = 60,
         sectors_automate: tuple = ("food", "goods", "services"),
-        layoff_threshold: float = 0.70,  # fire if revenue/wage_cost < this
-        hire_threshold: float = 1.15,    # hire if revenue/wage_cost > this
+        layoff_threshold: float = 0.70,
+        hire_threshold: float = 1.15,
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -160,64 +219,110 @@ class ColonyV0Model(Model):
         self.hire_threshold = hire_threshold
 
         # Money tracking
-        self.money_drained_total = 0.0    # cumulative imports (money leaving)
-        self.money_returned_total = 0.0   # cumulative exports (money entering)
+        self.money_drained_total = 0.0
+        self.money_returned_total = 0.0
         self.imports_this_step = 0.0
         self.exports_this_step = 0.0
+        # Split-out drained for diagnostics
+        self.drain_corp_fees_step = 0.0
+        self.drain_pure_imports_step = 0.0
 
         # Spawn citizens with Pareto productivity
         self.citizens: list[Citizen] = []
         for _ in range(n_citizens):
-            # Pareto: minimum = 1.0, alpha = pareto_alpha. Most around 1-1.5, some 3-5+
             p = self.random.paretovariate(pareto_alpha)
-            # Cap at 6 to avoid extreme outliers
             p = min(p, 6.0)
             self.citizens.append(Citizen(self, productivity=p, initial_savings=initial_savings))
 
-        # Spawn firms — one local + one external per sector
-        # Workforce allocation: hire citizens proportional to sector basket weight
-        # AND distribute productivity evenly across firms so no firm starts with
-        # a payroll mismatch caused by random Pareto draws.
-        sector_alloc = {s: max(1, round(n_citizens * BASKET_WEIGHTS[s])) for s in SECTORS}
-        diff = n_citizens - sum(sector_alloc.values())
-        if diff:
-            biggest = max(sector_alloc, key=sector_alloc.get)
-            sector_alloc[biggest] += diff
-        # Round-robin highest-productivity citizens across firms to balance payrolls
+        # Workforce allocation — based on SUSTAINABLE wage budgets, not revenue.
+        # Chain branches have ~30% of revenue available for wages (after corp
+        # fee); local firms have 100% of revenue + export earnings. So the
+        # equilibrium employment distribution favours local heavily, even
+        # though chains dominate revenue.
+        local_recapture = sum(BASKET_WEIGHTS[s] * SECTOR_PROVIDER_SHARES[s]["local"]
+                              for s in SECTORS)
+        chain_recapture = sum(BASKET_WEIGHTS[s] * SECTOR_PROVIDER_SHARES[s]["chain"]
+                              for s in SECTORS)
+        total_recapture = local_recapture + chain_recapture * (1 - CHAIN_CORP_FEE_RATE)
+        exports_total = sum(EXPORT_BASELINE.values())
+        if total_recapture >= 1.0:
+            raise ValueError("Recapture rate >= 1, money creation feedback loop")
+        W_eq = exports_total / (1.0 - total_recapture)  # steady-state total wages
+
+        budgets: dict[tuple, float] = {}
+        for s in SECTORS:
+            sector_W = W_eq * BASKET_WEIGHTS[s]
+            budgets[(s, "local")] = (
+                sector_W * SECTOR_PROVIDER_SHARES[s]["local"] + EXPORT_BASELINE[s]
+            )
+            budgets[(s, "chain")] = (
+                sector_W * SECTOR_PROVIDER_SHARES[s]["chain"] * (1 - CHAIN_CORP_FEE_RATE)
+            )
+        total_budget = sum(budgets.values())
+        per_firm_capacity: dict[tuple, int] = {}
+        allocated = 0
+        keys_list = list(budgets.keys())
+        for i, key in enumerate(keys_list):
+            if i == len(keys_list) - 1:
+                per_firm_capacity[key] = max(1, n_citizens - allocated)
+            else:
+                n = max(1, round(n_citizens * budgets[key] / total_budget))
+                per_firm_capacity[key] = n
+                allocated += n
+
+        # Round-robin citizens (sorted by productivity desc) across all firms
+        # to balance payrolls.
         by_p_desc = sorted(self.citizens, key=lambda c: c.productivity, reverse=True)
-        firm_workers: dict[str, list] = {s: [] for s in SECTORS}
-        capacity = dict(sector_alloc)
-        sector_cycle = list(SECTORS)
+        firm_workers: dict[tuple, list] = {k: [] for k in per_firm_capacity}
+        firm_keys = list(per_firm_capacity.keys())
         i = 0
         for c in by_p_desc:
-            for _ in range(len(sector_cycle)):
-                s = sector_cycle[i % len(sector_cycle)]
+            for _ in range(len(firm_keys)):
+                key = firm_keys[i % len(firm_keys)]
                 i += 1
-                if capacity[s] > 0:
-                    firm_workers[s].append(c)
-                    capacity[s] -= 1
+                if per_firm_capacity[key] > 0:
+                    firm_workers[key].append(c)
+                    per_firm_capacity[key] -= 1
                     break
+
+        # Create the firms
         self.local_firms: dict[str, LocalFirm] = {}
+        self.chain_branches: dict[str, ChainBranch] = {}
         for sector in SECTORS:
             self.local_firms[sector] = LocalFirm(
-                self, sector, initial_workers=firm_workers[sector],
+                self, sector,
+                initial_workers=firm_workers[(sector, "local")],
                 initial_float=firm_initial_float,
             )
-        self._initial_worker_count = {
+            self.chain_branches[sector] = ChainBranch(
+                self, sector,
+                initial_workers=firm_workers[(sector, "chain")],
+                initial_float=firm_initial_float,
+            )
+        self._initial_local_workforce = {
             s: len(self.local_firms[s].workers) for s in SECTORS
         }
-
-        self.external_firms: dict[str, ExternalFirm] = {
-            s: ExternalFirm(self, s) for s in SECTORS
+        self._initial_chain_workforce = {
+            s: len(self.chain_branches[s].workers) for s in SECTORS
         }
 
-        # Per-citizen history — captured for the dashboard heatmap.
-        # savings_history[m][i] = citizen i's savings at end of month m.
+        self.pure_imports: dict[str, PureImport] = {
+            s: PureImport(self, s) for s in SECTORS
+        }
+
+        # Bootstrap citizens' last_income from expected wage. Without this,
+        # month-1 consumption is just subsistence (since last_income would be
+        # zero), and firms get no revenue to pay payroll → mass layoffs.
+        # The bootstrap represents "they were earning before the sim started."
+        for c in self.citizens:
+            if c.employed:
+                c.last_income = c.wage_if_hired
+
+        # Per-citizen history
         self.savings_history: list[list[float]] = [[c.savings for c in self.citizens]]
         self.employed_history: list[list[bool]] = [[c.employed for c in self.citizens]]
         self.productivities = [c.productivity for c in self.citizens]
 
-        # Data collection
         self.datacollector = DataCollector(
             model_reporters={
                 "month":             lambda m: m.steps,
@@ -230,24 +335,24 @@ class ColonyV0Model(Model):
                 "net_bop_step":      lambda m: m.exports_this_step - m.imports_this_step,
                 "cumulative_net_bop":lambda m: m.money_returned_total - m.money_drained_total,
                 "months_until_bust": lambda m: m.months_until_bust(),
-                "gini":              lambda m: m.gini(),
-                "top10_share":       lambda m: m.top_n_wealth_share(0.10),
-                "basket_cost_local": lambda m: m.basket_cost_local(),
-                "basket_cost_avg":   lambda m: m.basket_cost_avg(),
                 "destitute_count":   lambda m: sum(1 for c in m.citizens if c.savings < 1.0),
-                "automation_food":   lambda m: m.external_firms["food"].automation,
-                "automation_goods":  lambda m: m.external_firms["goods"].automation,
-                "automation_serv":   lambda m: m.external_firms["services"].automation,
-                "ext_price_food":    lambda m: m.external_firms["food"].price,
-                "ext_price_goods":   lambda m: m.external_firms["goods"].price,
-                "ext_price_serv":    lambda m: m.external_firms["services"].price,
-                "loc_revenue_food":  lambda m: m.local_firms["food"].revenue_this_month,
-                "loc_revenue_goods": lambda m: m.local_firms["goods"].revenue_this_month,
-                "loc_revenue_serv":  lambda m: m.local_firms["services"].revenue_this_month,
-                "workers_food":      lambda m: len(m.local_firms["food"].workers),
-                "workers_goods":     lambda m: len(m.local_firms["goods"].workers),
-                "workers_serv":      lambda m: len(m.local_firms["services"].workers),
-                "median_savings":    lambda m: m.median_savings(),
+                # Drain decomposition
+                "drain_corp_fees":   lambda m: m.drain_corp_fees_step,
+                "drain_imports":     lambda m: m.drain_pure_imports_step,
+                # Employment by firm type
+                "workers_local":     lambda m: sum(len(f.workers) for f in m.local_firms.values()),
+                "workers_chain":     lambda m: sum(len(f.workers) for f in m.chain_branches.values()),
+                "workers_local_pct": lambda m: sum(len(f.workers) for f in m.local_firms.values()) / max(1, len(m.citizens)),
+                "workers_chain_pct": lambda m: sum(len(f.workers) for f in m.chain_branches.values()) / max(1, len(m.citizens)),
+                # Revenue by channel (totals across sectors)
+                "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
+                "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
+                "rev_import":        lambda m: sum(f.revenue_this_month for f in m.pure_imports.values()),
+                # Automation (one number — applies uniformly across sectors)
+                "automation":        lambda m: m.pure_imports["food"].automation,
+                # Basket cost (citizen-weighted)
+                "basket_cost_avg":   lambda m: m.basket_cost_avg(),
+                "basket_cost_local": lambda m: sum(m.local_firms[s].price * BASKET_WEIGHTS[s] for s in SECTORS),
             }
         )
         self.datacollector.collect(self)
@@ -258,98 +363,98 @@ class ColonyV0Model(Model):
         return sum(1 for c in self.citizens if c.employed) / len(self.citizens)
 
     def money_supply_internal(self):
-        return sum(c.savings for c in self.citizens) + sum(f.balance for f in self.local_firms.values())
-
-    def gini(self):
-        """Standard Gini coefficient over citizen savings."""
-        savs = sorted(max(0.0, c.savings) for c in self.citizens)
-        n = len(savs)
-        total = sum(savs)
-        if n == 0 or total == 0: return 0.0
-        cumsum = 0
-        for i, v in enumerate(savs, start=1):
-            cumsum += i * v
-        return (2 * cumsum) / (n * total) - (n + 1) / n
-
-    def top_n_wealth_share(self, frac):
-        savs = sorted((max(0.0, c.savings) for c in self.citizens), reverse=True)
-        total = sum(savs)
-        if total == 0: return 0.0
-        k = max(1, int(len(savs) * frac))
-        return sum(savs[:k]) / total
-
-    def basket_cost_local(self):
-        return sum(self.local_firms[s].price * BASKET_WEIGHTS[s] for s in SECTORS)
+        return (
+            sum(c.savings for c in self.citizens)
+            + sum(f.balance for f in self.local_firms.values())
+            + sum(f.balance for f in self.chain_branches.values())
+        )
 
     def basket_cost_avg(self):
-        """Average basket cost weighted by where citizens shop (matched to consumption logistic)."""
+        """Average basket cost weighted by where citizens actually shop."""
         cost = 0.0
         for s in SECTORS:
+            shares = self._provider_shares(s)
             lp = self.local_firms[s].price
-            ep = self.external_firms[s].price
-            advantage = (lp - ep) / lp if lp > 0 else 0.0
-            if advantage <= 0:
-                p_ext = MIN_IMPORT_SHARE
-            else:
-                p_ext = MIN_IMPORT_SHARE + (1.0 - MIN_IMPORT_SHARE) / (
-                    1.0 + math.exp(-(advantage - 0.10) / 0.10)
-                )
-            avg_p = lp * (1 - p_ext) + ep * p_ext
+            cp = self.chain_branches[s].price
+            ip = self.pure_imports[s].price
+            avg_p = lp * shares["local"] + cp * shares["chain"] + ip * shares["import"]
             cost += avg_p * BASKET_WEIGHTS[s]
         return cost
 
-    def median_savings(self):
-        savs = sorted(c.savings for c in self.citizens)
-        n = len(savs)
-        if n == 0: return 0.0
-        return savs[n // 2]
-
     def months_until_bust(self):
-        """How long does the colony's money supply last at the current net BoP rate?
-        Positive net BoP → returns inf (sustainable). Negative → months until $0.
-        Returns capped value for display."""
         net = self.exports_this_step - self.imports_this_step
         if net >= 0:
-            return 999  # display sentinel for "sustainable"
+            return 999
         burn_rate = -net
         return min(999, self.money_supply_internal() / burn_rate)
 
+    def _provider_shares(self, sector):
+        """Compute consumption shares for one sector, given current prices.
+        Base shares (structural) adjusted multiplicatively by inverse price
+        elasticity — cheaper providers gain share."""
+        base = SECTOR_PROVIDER_SHARES[sector]
+        prices = {
+            "local":  self.local_firms[sector].price,
+            "chain":  self.chain_branches[sector].price,
+            "import": self.pure_imports[sector].price,
+        }
+        ref = max(prices.values())
+        weights = {
+            k: base[k] * ((ref / max(0.01, prices[k])) ** PRICE_ELASTICITY)
+            for k in base
+        }
+        total = sum(weights.values()) or 1.0
+        return {k: v / total for k, v in weights.items()}
+
     # ── Step orchestration ───────────────────────────────────────────────
     def _ramp_automation(self):
-        # Linear ramp from 0 to automation_end across automation_months
-        m = self.steps + 1   # next month
+        m = self.steps + 1
         frac = min(1.0, m / max(1, self.automation_months))
         for sector in SECTORS:
             if sector in self.sectors_automate:
-                self.external_firms[sector].automation = self.automation_end * frac
-            self.external_firms[sector].update_price()
+                a = self.automation_end * frac
+                self.pure_imports[sector].automation = a
+                self.chain_branches[sector].automation = a
+            self.pure_imports[sector].update_price()
+            self.chain_branches[sector].update_price()
+
+    def _chain_hq_workforce_reduction(self):
+        """ChainBranches forcibly reduce workforce per HQ's automation rollout,
+        regardless of revenue. This is the primary job-loss mechanism."""
+        for sector in SECTORS:
+            ch = self.chain_branches[sector]
+            target = ch.target_workforce(self._initial_chain_workforce[sector])
+            while len(ch.workers) > target:
+                ch.workers.sort(key=lambda c: c.productivity)  # cut lowest-productivity first
+                victim = ch.workers[0]
+                ch.fire(victim)
 
     def _pay_wages(self):
-        for firm in self.local_firms.values():
+        for firm in list(self.local_firms.values()) + list(self.chain_branches.values()):
             for worker in list(firm.workers):
                 w = worker.wage_if_hired
                 if firm.balance >= w:
                     firm.balance -= w
                     worker.receive_wage(w)
                 else:
-                    # Firm can't make payroll. Pay what we can; fire the worker.
                     if firm.balance > 0:
                         worker.receive_wage(firm.balance)
                         firm.balance = 0
                     firm.fire(worker)
 
     def _citizens_consume(self):
-        # Reset firm monthly revenue counters
+        # Reset monthly counters
         for f in self.local_firms.values():    f.revenue_this_month = 0.0
-        for f in self.external_firms.values(): f.revenue_this_month = 0.0
+        for f in self.chain_branches.values():
+            f.revenue_this_month = 0.0
+            f.corp_fee_paid_this_month = 0.0
+        for f in self.pure_imports.values():   f.revenue_this_month = 0.0
 
-        # Random order to avoid systematic bias
         order = list(self.citizens)
         self.random.shuffle(order)
 
         for c in order:
-            if c.savings <= 0:
-                continue
+            if c.savings <= 0: continue
             target = (c.last_income * self.target_spend_pct
                       if c.employed else self.subsistence_floor)
             target = max(target, self.subsistence_floor)
@@ -359,55 +464,91 @@ class ColonyV0Model(Model):
             for sector in SECTORS:
                 sector_spend = spend * BASKET_WEIGHTS[sector]
                 if sector_spend <= 0: continue
-                local = self.local_firms[sector]
-                ext   = self.external_firms[sector]
-                # External-switch probability: zero when ext is not cheaper,
-                # ramps up logistically as the price advantage grows.
-                advantage = (local.price - ext.price) / local.price if local.price > 0 else 0.0
-                if advantage <= 0:
-                    p_ext = MIN_IMPORT_SHARE
+                shares = self._provider_shares(sector)
+                # Stochastic provider choice per citizen-sector
+                # (rather than splitting one citizen across all three)
+                r = self.random.random()
+                cum = 0.0
+                chosen = None
+                for k, share in shares.items():
+                    cum += share
+                    if r <= cum:
+                        chosen = k
+                        break
+                if chosen is None:
+                    chosen = "local"
+                if chosen == "local":
+                    self.local_firms[sector].collect_revenue(sector_spend)
+                elif chosen == "chain":
+                    self.chain_branches[sector].collect_revenue(sector_spend)
                 else:
-                    # Logistic over the remaining share; mid-point at 10% advantage.
-                    p_ext = MIN_IMPORT_SHARE + (1.0 - MIN_IMPORT_SHARE) / (
-                        1.0 + math.exp(-(advantage - 0.10) / 0.10)
-                    )
+                    self.pure_imports[sector].collect_revenue(sector_spend)
+                c.savings -= sector_spend
 
-                if self.random.random() < p_ext:
-                    ext.collect_revenue(sector_spend)
-                    c.savings -= sector_spend
-                else:
-                    local.collect_revenue(sector_spend)
-                    c.savings -= sector_spend
-        # Floor savings at zero — can't borrow in v0
+        # Floor savings at zero
         for c in self.citizens:
             if c.savings < 0:
                 c.savings = 0.0
 
-    def _firm_workforce_adjust(self):
-        """Lay off workers if revenue can't cover payroll, hire if surplus."""
-        unemployed = [c for c in self.citizens if not c.employed]
-        # Sort unemployed by productivity (highest first — they get rehired first)
-        unemployed.sort(key=lambda c: c.productivity, reverse=True)
+        # Aggregate the drain decomposition for diagnostics
+        self.drain_corp_fees_step    = sum(f.corp_fee_paid_this_month for f in self.chain_branches.values())
+        self.drain_pure_imports_step = sum(f.revenue_this_month       for f in self.pure_imports.values())
 
+    def _external_exports(self):
+        """External buyers purchase from LocalIndy firms only. Chain branches
+        don't export — they ARE the external operator's outpost. Pure imports
+        obviously don't export."""
+        # Average automation across sectors
+        avg_a = sum(self.pure_imports[s].automation for s in SECTORS) / len(SECTORS)
+        decay = max(0.0, 1.0 - avg_a * EXPORT_DECAY)
         for sector in SECTORS:
             firm = self.local_firms[sector]
+            if not firm.workers:
+                continue
+            scale = min(1.0, len(firm.workers) / max(1, self._initial_local_workforce[sector]))
+            export_rev = EXPORT_BASELINE[sector] * decay * scale
+            if export_rev <= 0: continue
+            firm.balance += export_rev
+            firm.revenue_this_month += export_rev
+            self.money_returned_total += export_rev
+            self.exports_this_step += export_rev
+
+    def _firm_workforce_adjust(self):
+        """Revenue-driven hire/fire for both local and chain firms.
+        Chain HQ-driven downsizing already happened earlier in the step."""
+        unemployed = [c for c in self.citizens if not c.employed]
+        unemployed.sort(key=lambda c: c.productivity, reverse=True)
+
+        all_firms = []
+        for sector in SECTORS:
+            all_firms.append((sector, "local", self.local_firms[sector]))
+            all_firms.append((sector, "chain", self.chain_branches[sector]))
+
+        for sector, kind, firm in all_firms:
             wage_cost = sum(w.wage_if_hired for w in firm.workers)
-            rev = firm.revenue_this_month
+            # For chain branches, revenue available for wages is post-corp-fee
+            rev_for_wages = (
+                firm.revenue_this_month if kind == "local"
+                else firm.revenue_this_month * (1 - CHAIN_CORP_FEE_RATE)
+            )
             if wage_cost == 0:
-                # Empty firm — hire if revenue exists
-                if rev > 0 and unemployed:
+                if rev_for_wages > 0 and unemployed and kind == "local":
+                    # Local firms can bootstrap from zero workers
                     new_hire = unemployed.pop(0)
                     new_hire.employer = firm
                     firm.workers.append(new_hire)
                 continue
-            ratio = rev / wage_cost if wage_cost > 0 else float('inf')
+            ratio = rev_for_wages / wage_cost if wage_cost > 0 else float('inf')
             if ratio < self.layoff_threshold and firm.workers:
-                # Lay off the lowest-productivity worker
                 firm.workers.sort(key=lambda c: c.productivity)
                 victim = firm.workers[0]
                 firm.fire(victim)
             elif ratio > self.hire_threshold and unemployed:
-                # Hire one
+                # Chains won't hire above HQ target
+                if kind == "chain":
+                    cap = firm.target_workforce(self._initial_chain_workforce[sector])
+                    if len(firm.workers) >= cap:
+                        continue
                 new_hire = unemployed.pop(0)
                 new_hire.employer = firm
                 firm.workers.append(new_hire)
@@ -419,37 +560,18 @@ class ColonyV0Model(Model):
             else:
                 c.months_unemployed += 1
 
-    def _external_exports(self):
-        """External buyers purchase from local firms — money flows INTO the colony.
-        Export demand decays as external automation rises (automation competes
-        with the colony's export markets too, not just its import markets)."""
-        avg_a = sum(self.external_firms[s].automation for s in SECTORS) / len(SECTORS)
-        decay = max(0.0, 1.0 - avg_a * EXPORT_DECAY)
-        for sector in SECTORS:
-            firm = self.local_firms[sector]
-            # Only firms with workers can produce exports
-            if not firm.workers:
-                continue
-            # Scale export demand by remaining workforce vs initial allocation,
-            # so a partially-laid-off firm produces less
-            scale = min(1.0, len(firm.workers) / max(1, self._initial_worker_count[sector]))
-            export_rev = EXPORT_BASELINE[sector] * decay * scale
-            if export_rev <= 0:
-                continue
-            firm.balance += export_rev
-            firm.revenue_this_month += export_rev
-            self.money_returned_total += export_rev
-            self.exports_this_step += export_rev
-
     def step(self):
-        # Mesa 3.x auto-increments self.steps in the base Model.step machinery,
-        # so we must NOT increment it manually here (it would double-count).
+        # Order matters: collect revenue BEFORE paying wages so firms can
+        # fund their payroll from the month's actual sales rather than from
+        # accumulated float. Otherwise the colony collapses in month 1 from
+        # an artificial cash-flow mismatch.
         self.imports_this_step = 0.0
         self.exports_this_step = 0.0
         self._ramp_automation()
-        self._pay_wages()
+        self._chain_hq_workforce_reduction()
         self._citizens_consume()
         self._external_exports()
+        self._pay_wages()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])
