@@ -179,26 +179,31 @@ function renderSnapshot(data) {
   const first = data.trajectory[0];
   const moneyDelta = last.money_supply - first.money_supply;
   const drained = last.money_drained;
+  const returned = last.money_returned;
+  const netBoP = last.net_bop_step;
+  const monthsLeft = last.months_until_bust;
   const cells = [
     {
       lbl: 'Employment rate', val: pct(last.employment_rate),
-      sub: `${Math.round(last.employment_rate * data.productivities.length)} / ${data.productivities.length} citizens employed`,
+      sub: `${Math.round(last.employment_rate * data.productivities.length)} / ${data.productivities.length} citizens producing`,
       color: last.employment_rate < 0.3 ? 'var(--crit)' : (last.employment_rate < 0.7 ? 'var(--warn)' : 'var(--ok)'),
     },
     {
       lbl: 'Money supply', val: '$' + fmt(last.money_supply),
-      sub: `${moneyDelta >= 0 ? '+' : ''}$${fmt(moneyDelta)} vs start · $${fmt(drained)} drained abroad`,
+      sub: `${moneyDelta >= 0 ? '+' : ''}$${fmt(moneyDelta)} vs start · $${fmt(drained)} out · $${fmt(returned)} in`,
       color: last.money_supply < first.money_supply * 0.3 ? 'var(--crit)' : (moneyDelta < 0 ? 'var(--warn)' : 'var(--ok)'),
     },
     {
-      lbl: 'Wealth Gini', val: last.gini.toFixed(3),
-      sub: `top 10% holds ${pct(last.top10_share)}`,
-      color: last.gini > 0.7 ? 'var(--crit)' : (last.gini > 0.4 ? 'var(--warn)' : 'var(--ok)'),
+      lbl: 'Net BoP (monthly)',
+      val: (netBoP >= 0 ? '+' : '') + '$' + fmt(netBoP) + ' / mo',
+      sub: `imports $${fmt(last.imports_step)} − exports $${fmt(last.exports_step)}`,
+      color: netBoP >= 0 ? 'var(--ok)' : (netBoP < -1000 ? 'var(--crit)' : 'var(--warn)'),
     },
     {
-      lbl: 'Destitute citizens', val: `${last.destitute_count} / ${data.productivities.length}`,
-      sub: `basket cost: $${fmt(last.basket_cost_avg)} (was $${fmt(first.basket_cost_avg)})`,
-      color: last.destitute_count > data.productivities.length * 0.5 ? 'var(--crit)' : (last.destitute_count > 5 ? 'var(--warn)' : 'var(--ok)'),
+      lbl: 'Months until insolvent',
+      val: (monthsLeft >= 999 ? '∞' : fmt(monthsLeft)),
+      sub: monthsLeft >= 999 ? 'BoP sustainable at this rate' : `at current burn rate of $${fmt(-netBoP)}/mo`,
+      color: monthsLeft >= 999 ? 'var(--ok)' : (monthsLeft < 12 ? 'var(--crit)' : 'var(--warn)'),
     },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
@@ -224,14 +229,15 @@ async function refresh() {
     ], { percent: true, title: 'Employment rate' });
 
     renderChart('ch-money', t, [
-      { fn: p => p.money_supply, color: '#a8e6a8', label: 'inside colony' },
-      { fn: p => p.money_drained, color: '#ef4444', label: 'cumulative drained', dash: '4 3' },
-    ], { dollar: true, title: 'Money supply' });
+      { fn: p => p.money_supply, color: '#a8e6a8', label: 'money supply' },
+      { fn: p => p.money_drained, color: '#ef4444', label: 'cumulative imports', dash: '4 3' },
+      { fn: p => p.money_returned, color: '#7aa2ff', label: 'cumulative exports', dash: '4 3' },
+    ], { dollar: true, title: 'Money supply + cumulative trade' });
 
     renderChart('ch-gini', t, [
-      { fn: p => p.gini, color: '#ef4444', label: 'Gini' },
-      { fn: p => p.top10_share, color: '#eab308', label: 'top 10% share' },
-    ], { percent: false, title: 'Wealth concentration' });
+      { fn: p => p.imports_step,        color: '#ef4444', label: 'imports / mo' },
+      { fn: p => p.exports_step,        color: '#a8e6a8', label: 'exports / mo' },
+    ], { dollar: true, title: 'Balance of payments (monthly)' });
 
     renderChart('ch-basket', t, [
       { fn: p => p.basket_cost_avg, color: '#7aa2ff', label: 'avg basket cost' },

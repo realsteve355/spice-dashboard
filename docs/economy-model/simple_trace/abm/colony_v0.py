@@ -26,12 +26,26 @@ from mesa.datacollection import DataCollector
 
 
 # ── Sectors ──────────────────────────────────────────────────────────────
+# 3 sectors. "goods" includes the manufacturing / car factory that drives
+# most of the colony's export earnings.
 SECTORS = ["food", "goods", "services"]
 BASKET_WEIGHTS = {"food": 0.25, "goods": 0.35, "services": 0.40}
 INITIAL_LOCAL_PRICES = {"food": 80.0, "goods": 100.0, "services": 120.0}
 MAX_AUTOMATION_DEFLATION = 0.85   # external price at A=1 is 15% of local
-LOYALTY_BIAS = 0.15                # citizens prefer local at equal price
-PRICE_SENSITIVITY = 25.0           # logistic scale for switching
+
+# Imports: even at A=0 some fraction of consumption goes external (specialty
+# imports, technology, items the colony doesn't produce). As external prices
+# fall, share rises smoothly.
+MIN_IMPORT_SHARE = 0.10
+
+# Exports: baseline monthly USD revenue per sector that external buyers
+# send INTO the colony (in exchange for local goods). These were calibrated
+# so that at A=0 the colony has approximately balanced BoP, matching
+# Maryfontaine's design (car factory, services exports, food specialties).
+EXPORT_BASELINE = {"food": 500.0, "goods": 2500.0, "services": 1000.0}
+# Export demand decays with average external automation across sectors,
+# capturing the fact that automation hits the colony's export markets too.
+EXPORT_DECAY = 0.90               # at A=1, exports fall to (1-0.90)=10% of baseline
 
 
 # ── Agents ───────────────────────────────────────────────────────────────
@@ -106,9 +120,10 @@ class ExternalFirm(Agent):
         self.price = base * (1.0 - self.automation * MAX_AUTOMATION_DEFLATION)
 
     def collect_revenue(self, amount):
-        # Money leaves the colony permanently
+        # Money leaves the colony permanently (import payment)
         self.revenue_this_month += amount
         self.model.money_drained_total += amount
+        self.model.imports_this_step += amount
 
     def step(self):
         pass
@@ -145,7 +160,10 @@ class ColonyV0Model(Model):
         self.hire_threshold = hire_threshold
 
         # Money tracking
-        self.money_drained_total = 0.0   # cumulative money that left the colony
+        self.money_drained_total = 0.0    # cumulative imports (money leaving)
+        self.money_returned_total = 0.0   # cumulative exports (money entering)
+        self.imports_this_step = 0.0
+        self.exports_this_step = 0.0
 
         # Spawn citizens with Pareto productivity
         self.citizens: list[Citizen] = []
@@ -185,6 +203,9 @@ class ColonyV0Model(Model):
                 self, sector, initial_workers=firm_workers[sector],
                 initial_float=firm_initial_float,
             )
+        self._initial_worker_count = {
+            s: len(self.local_firms[s].workers) for s in SECTORS
+        }
 
         self.external_firms: dict[str, ExternalFirm] = {
             s: ExternalFirm(self, s) for s in SECTORS
@@ -203,6 +224,12 @@ class ColonyV0Model(Model):
                 "employment_rate":   lambda m: m.employment_rate(),
                 "money_supply":      lambda m: m.money_supply_internal(),
                 "money_drained":     lambda m: m.money_drained_total,
+                "money_returned":    lambda m: m.money_returned_total,
+                "imports_step":      lambda m: m.imports_this_step,
+                "exports_step":      lambda m: m.exports_this_step,
+                "net_bop_step":      lambda m: m.exports_this_step - m.imports_this_step,
+                "cumulative_net_bop":lambda m: m.money_returned_total - m.money_drained_total,
+                "months_until_bust": lambda m: m.months_until_bust(),
                 "gini":              lambda m: m.gini(),
                 "top10_share":       lambda m: m.top_n_wealth_share(0.10),
                 "basket_cost_local": lambda m: m.basket_cost_local(),
@@ -262,9 +289,11 @@ class ColonyV0Model(Model):
             ep = self.external_firms[s].price
             advantage = (lp - ep) / lp if lp > 0 else 0.0
             if advantage <= 0:
-                p_ext = 0.0
+                p_ext = MIN_IMPORT_SHARE
             else:
-                p_ext = 1.0 / (1.0 + math.exp(-(advantage - 0.10) / 0.10))
+                p_ext = MIN_IMPORT_SHARE + (1.0 - MIN_IMPORT_SHARE) / (
+                    1.0 + math.exp(-(advantage - 0.10) / 0.10)
+                )
             avg_p = lp * (1 - p_ext) + ep * p_ext
             cost += avg_p * BASKET_WEIGHTS[s]
         return cost
@@ -274,6 +303,16 @@ class ColonyV0Model(Model):
         n = len(savs)
         if n == 0: return 0.0
         return savs[n // 2]
+
+    def months_until_bust(self):
+        """How long does the colony's money supply last at the current net BoP rate?
+        Positive net BoP → returns inf (sustainable). Negative → months until $0.
+        Returns capped value for display."""
+        net = self.exports_this_step - self.imports_this_step
+        if net >= 0:
+            return 999  # display sentinel for "sustainable"
+        burn_rate = -net
+        return min(999, self.money_supply_internal() / burn_rate)
 
     # ── Step orchestration ───────────────────────────────────────────────
     def _ramp_automation(self):
@@ -326,10 +365,12 @@ class ColonyV0Model(Model):
                 # ramps up logistically as the price advantage grows.
                 advantage = (local.price - ext.price) / local.price if local.price > 0 else 0.0
                 if advantage <= 0:
-                    p_ext = 0.0
+                    p_ext = MIN_IMPORT_SHARE
                 else:
-                    # Mid-point at 10% advantage; spread 10%.
-                    p_ext = 1.0 / (1.0 + math.exp(-(advantage - 0.10) / 0.10))
+                    # Logistic over the remaining share; mid-point at 10% advantage.
+                    p_ext = MIN_IMPORT_SHARE + (1.0 - MIN_IMPORT_SHARE) / (
+                        1.0 + math.exp(-(advantage - 0.10) / 0.10)
+                    )
 
                 if self.random.random() < p_ext:
                     ext.collect_revenue(sector_spend)
@@ -378,12 +419,37 @@ class ColonyV0Model(Model):
             else:
                 c.months_unemployed += 1
 
+    def _external_exports(self):
+        """External buyers purchase from local firms — money flows INTO the colony.
+        Export demand decays as external automation rises (automation competes
+        with the colony's export markets too, not just its import markets)."""
+        avg_a = sum(self.external_firms[s].automation for s in SECTORS) / len(SECTORS)
+        decay = max(0.0, 1.0 - avg_a * EXPORT_DECAY)
+        for sector in SECTORS:
+            firm = self.local_firms[sector]
+            # Only firms with workers can produce exports
+            if not firm.workers:
+                continue
+            # Scale export demand by remaining workforce vs initial allocation,
+            # so a partially-laid-off firm produces less
+            scale = min(1.0, len(firm.workers) / max(1, self._initial_worker_count[sector]))
+            export_rev = EXPORT_BASELINE[sector] * decay * scale
+            if export_rev <= 0:
+                continue
+            firm.balance += export_rev
+            firm.revenue_this_month += export_rev
+            self.money_returned_total += export_rev
+            self.exports_this_step += export_rev
+
     def step(self):
         # Mesa 3.x auto-increments self.steps in the base Model.step machinery,
         # so we must NOT increment it manually here (it would double-count).
+        self.imports_this_step = 0.0
+        self.exports_this_step = 0.0
         self._ramp_automation()
         self._pay_wages()
         self._citizens_consume()
+        self._external_exports()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])
