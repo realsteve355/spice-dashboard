@@ -179,6 +179,20 @@ def run_colony_v0(cfg):
         "tax_drained_cum": model.income_tax_drained_cumulative + model.sales_tax_drained_cumulative,
         "tax_local_cum": model.income_tax_local_cumulative + model.sales_tax_local_cumulative,
     })
+    # Bank / Landlord — holds mortgages + rentals
+    bk = model.bank
+    firms.append({
+        "name": "Bank / Landlord",
+        "type": "bank",
+        "sector": "—",
+        "workers": 0,
+        "balance": bk.balance,
+        "mortgage_int_cum": bk.mortgage_interest_cumulative,
+        "rent_cum": bk.rent_cumulative,
+        "local_cum": bk.local_share_cumulative,
+        "drained_cum": bk.drained_cumulative,
+        "outstanding_mortgages": bk.outstanding_mortgages,
+    })
 
     return {
         "trajectory":     rows,

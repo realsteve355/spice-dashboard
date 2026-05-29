@@ -91,6 +91,17 @@ INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
 SALES_TAX_RATE        = 0.07   # state + local sales tax combined
 SALES_TAX_LOCAL_PCT   = 0.30   # of sales tax, this fraction stays in colony
 
+# Property + housing structure (Phase 1 of wealth-modelling).
+HOMEOWNERSHIP_RATE    = 0.65   # US avg ~65%
+PROP_VALUE_MIN        = 30000.0
+PROP_VALUE_MAX        = 100000.0
+INITIAL_LTV_MAX       = 0.80   # max loan-to-value at init
+PROPERTY_TAX_RATE     = 0.012  # 1.2% annual, on property value
+MORTGAGE_RATE_ANNUAL  = 0.065  # interest-only approximation
+MONTHLY_RENT          = 350.0  # flat rent for renters
+HOUSING_LOCAL_PCT     = 0.20   # of mortgage interest + rent, this fraction stays local
+                                # (small local banks, local landlords)
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
 # monthly_external_transfers so the total inflow approximately matches the
@@ -107,11 +118,23 @@ class Citizen(Agent):
     def __init__(self, model, productivity, initial_savings, dependents=0):
         super().__init__(model)
         self.productivity = productivity
-        self.savings = initial_savings
+        self.savings = initial_savings   # liquid savings (cash + bank deposits)
         self.dependents = dependents     # number of children in household
         self.employer = None             # LocalFirm | ChainBranch | PublicSector | None
         self.last_income = 0.0
         self.months_unemployed = 0
+        # Wealth — Phase 1 of the wealth structure. property_value=0 means renter.
+        self.property_value = 0.0
+        self.mortgage_balance = 0.0
+        self.other_debt = 0.0             # personal loans / credit card (Phase 2)
+
+    @property
+    def net_worth(self):
+        return self.savings + self.property_value - self.mortgage_balance - self.other_debt
+
+    @property
+    def is_homeowner(self):
+        return self.property_value > 0
 
     @property
     def employed(self):
@@ -271,6 +294,49 @@ class PublicSector(Agent):
         pass
 
 
+class BankLandlord(Agent):
+    """Holds mortgages and rental properties.  Most income drains externally
+    (national banks, out-of-town landlords); a fraction stays local (small
+    community banks, local property owners).  Phase 1 treats this as a single
+    aggregated entity; Phase 2 will split out savings/loans interest."""
+    def __init__(self, model):
+        super().__init__(model)
+        self.kind = "bank"
+        self.balance = 0.0
+        self.mortgage_interest_this_step = 0.0
+        self.mortgage_interest_cumulative = 0.0
+        self.rent_this_step = 0.0
+        self.rent_cumulative = 0.0
+        self.local_share_cumulative = 0.0
+        self.drained_cumulative = 0.0
+        self.outstanding_mortgages = 0.0   # snapshot, recomputed each step
+
+    def collect_mortgage_interest(self, amount):
+        self.mortgage_interest_this_step += amount
+        self.mortgage_interest_cumulative += amount
+        local = amount * HOUSING_LOCAL_PCT
+        drained = amount - local
+        self.balance += local
+        self.local_share_cumulative += local
+        self.model.money_drained_total += drained
+        self.model.imports_this_step += drained
+        self.drained_cumulative += drained
+
+    def collect_rent(self, amount):
+        self.rent_this_step += amount
+        self.rent_cumulative += amount
+        local = amount * HOUSING_LOCAL_PCT
+        drained = amount - local
+        self.balance += local
+        self.local_share_cumulative += local
+        self.model.money_drained_total += drained
+        self.model.imports_this_step += drained
+        self.drained_cumulative += drained
+
+    def step(self):
+        pass
+
+
 class PureImport(Agent):
     """Amazon-style. No local presence. Citizens spend → money drains."""
     def __init__(self, model, sector):
@@ -350,6 +416,8 @@ class ColonyV0Model(Model):
         self.sales_tax_local_cumulative = 0.0
         # Track total exports so we can show a dedicated "external buyers" row
         self.exports_cumulative = 0.0
+        # Property tax tracking (stays local — public sector receives)
+        self.property_tax_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
 
@@ -372,6 +440,15 @@ class ColonyV0Model(Model):
         avg_p = sum(c.productivity for c in self.citizens) / len(self.citizens)
         self.total_dependents = sum(c.dependents for c in self.citizens)
         self.total_population = n_citizens + self.total_dependents
+
+        # Assign property + mortgage at init.
+        # ~65% homeowners with property values $30k-$100k and mortgages up to 80% LTV;
+        # 35% renters (property_value=0).
+        for c in self.citizens:
+            if self.random.random() < HOMEOWNERSHIP_RATE:
+                c.property_value = self.random.uniform(PROP_VALUE_MIN, PROP_VALUE_MAX)
+                ltv = self.random.uniform(0.0, INITIAL_LTV_MAX)
+                c.mortgage_balance = c.property_value * ltv
 
         # Reserve some citizens for the public sector (real US public-sector
         # employment is ~22-25% of total workforce). These are pre-allocated;
@@ -471,6 +548,7 @@ class ColonyV0Model(Model):
         self.pure_imports: dict[str, PureImport] = {
             s: PureImport(self, s) for s in SECTORS
         }
+        self.bank = BankLandlord(self)
 
         # Bootstrap citizens' last_income from expected wage. Without this,
         # month-1 consumption is just subsistence (since last_income would be
@@ -523,6 +601,17 @@ class ColonyV0Model(Model):
                 "sales_tax_cum":     lambda m: m.sales_tax_cumulative,
                 "tax_drained_cum":   lambda m: m.income_tax_drained_cumulative + m.sales_tax_drained_cumulative,
                 "tax_local_cum":     lambda m: m.income_tax_local_cumulative + m.sales_tax_local_cumulative,
+                "property_tax_cum":  lambda m: m.property_tax_cumulative,
+                # Wealth
+                "liquid_wealth":     lambda m: m.total_liquid_wealth(),
+                "property_wealth":   lambda m: m.total_property_wealth(),
+                "mortgage_debt":     lambda m: m.total_mortgage_debt(),
+                "net_worth":         lambda m: m.total_net_worth(),
+                "n_homeowners":      lambda m: m.n_homeowners(),
+                # Housing flows
+                "mortgage_int_step": lambda m: m.bank.mortgage_interest_this_step,
+                "rent_step":         lambda m: m.bank.rent_this_step,
+                "bank_balance":      lambda m: m.bank.balance,
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -555,7 +644,23 @@ class ColonyV0Model(Model):
             + sum(f.balance for f in self.local_firms.values())
             + sum(f.balance for f in self.chain_branches.values())
             + self.public_sector.balance
+            + self.bank.balance
         )
+
+    def total_property_wealth(self):
+        return sum(c.property_value for c in self.citizens)
+
+    def total_mortgage_debt(self):
+        return sum(c.mortgage_balance for c in self.citizens)
+
+    def total_liquid_wealth(self):
+        return sum(c.savings for c in self.citizens)
+
+    def total_net_worth(self):
+        return sum(c.net_worth for c in self.citizens)
+
+    def n_homeowners(self):
+        return sum(1 for c in self.citizens if c.is_homeowner)
 
     def basket_cost_avg(self):
         """Average basket cost weighted by where citizens actually shop."""
@@ -616,6 +721,37 @@ class ColonyV0Model(Model):
                 ch.workers.sort(key=lambda c: c.productivity)  # cut lowest-productivity first
                 victim = ch.workers[0]
                 ch.fire(victim)
+
+    def _housing_payments(self):
+        """Homeowners pay mortgage interest + property tax. Renters pay rent.
+        Mortgage interest and rent flow to the Bank/Landlord; property tax
+        flows to the Public sector."""
+        self.bank.mortgage_interest_this_step = 0.0
+        self.bank.rent_this_step = 0.0
+        for c in self.citizens:
+            if c.is_homeowner:
+                # Mortgage interest (monthly, simple)
+                if c.mortgage_balance > 0:
+                    interest = c.mortgage_balance * MORTGAGE_RATE_ANNUAL / 12.0
+                    interest = min(interest, c.savings)
+                    if interest > 0:
+                        c.savings -= interest
+                        self.bank.collect_mortgage_interest(interest)
+                # Property tax
+                prop_tax = c.property_value * PROPERTY_TAX_RATE / 12.0
+                prop_tax = min(prop_tax, c.savings)
+                if prop_tax > 0:
+                    c.savings -= prop_tax
+                    self.public_sector.balance += prop_tax
+                    self.property_tax_cumulative += prop_tax
+            else:
+                # Renter pays flat rent
+                rent = min(MONTHLY_RENT, c.savings)
+                if rent > 0:
+                    c.savings -= rent
+                    self.bank.collect_rent(rent)
+        # Recompute outstanding mortgages for the snapshot
+        self.bank.outstanding_mortgages = sum(c.mortgage_balance for c in self.citizens)
 
     def _withhold_income_tax(self):
         """Federal/state/FICA income tax on wages.
@@ -841,6 +977,7 @@ class ColonyV0Model(Model):
         self._external_transfers()
         self._pay_wages()
         self._withhold_income_tax()
+        self._housing_payments()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])

@@ -207,6 +207,18 @@ function renderSnapshot(data) {
       sub: `transactions $${fmt(last.transactions)}/mo · basket $${fmt(last.basket_cost_avg)}`,
       color: last.velocity_annual > 1.5 ? 'var(--ok)' : (last.velocity_annual > 0.5 ? 'var(--warn)' : 'var(--crit)'),
     },
+    {
+      lbl: 'Total citizen net worth',
+      val: '$' + fmt(last.net_worth || 0),
+      sub: `liquid $${fmt(last.liquid_wealth || 0)} + property $${fmt(last.property_wealth || 0)} − mortgages $${fmt(last.mortgage_debt || 0)}`,
+      color: 'var(--ok)',
+    },
+    {
+      lbl: 'Homeowners / renters',
+      val: `${last.n_homeowners || 0} / ${(last.n_adults || 0) - (last.n_homeowners || 0)}`,
+      sub: `${last.n_adults} adults total`,
+      color: 'var(--ok)',
+    },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
     <div class="stat" style="border-left-color:${c.color}">
@@ -227,6 +239,7 @@ function renderFirmsTable(firms) {
     public:  '#7aa2ff',
     exports: '#a8e6a8',
     tax:     '#cfa340',
+    bank:    '#c08838',
   };
   tbody.innerHTML = firms.map(f => {
     const color = TYPE_COLOR[f.type] || 'var(--dim)';
@@ -243,6 +256,8 @@ function renderFirmsTable(firms) {
       flow = `+$${fmt(f.exports_cum || 0)} cum. external earnings INTO colony`;
     } else if (f.type === 'tax') {
       flow = `−$${fmt(f.tax_drained_cum || 0)} drained · +$${fmt(f.tax_local_cum || 0)} stayed local`;
+    } else if (f.type === 'bank') {
+      flow = `mortgages: $${fmt(f.outstanding_mortgages || 0)} outstanding · −$${fmt(f.drained_cum || 0)} drained ext.`;
     }
     let revMonth = '—', revCum = '—', wagesCum = '—', txnMonth = '—', txnCum = '—';
     if (f.revenue_month !== undefined) revMonth = '$' + fmt(f.revenue_month);
@@ -256,6 +271,9 @@ function renderFirmsTable(firms) {
     }
     if (f.type === 'tax') {
       revCum = '$' + fmt((f.income_tax_cum || 0) + (f.sales_tax_cum || 0));
+    }
+    if (f.type === 'bank') {
+      revCum = '$' + fmt((f.mortgage_int_cum || 0) + (f.rent_cum || 0));
     }
     return `<tr style="border-bottom:1px solid #14171f;">
       <td style="padding:6px 8px; color:var(--headline);">${f.name}</td>
