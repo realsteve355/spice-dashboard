@@ -210,13 +210,13 @@ function renderSnapshot(data) {
     {
       lbl: 'Total citizen net worth',
       val: '$' + fmt(last.net_worth || 0),
-      sub: `liquid $${fmt(last.liquid_wealth || 0)} + property $${fmt(last.property_wealth || 0)} − mortgages $${fmt(last.mortgage_debt || 0)}`,
-      color: 'var(--ok)',
+      sub: `${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt(last.net_worth - first.net_worth)} vs start · liquid $${fmt(last.liquid_wealth || 0)} + property $${fmt(last.property_wealth || 0)} − debt $${fmt(last.mortgage_debt || 0)}`,
+      color: (last.net_worth >= first.net_worth) ? 'var(--ok)' : 'var(--warn)',
     },
     {
       lbl: 'Homeowners / renters',
       val: `${last.n_homeowners || 0} / ${(last.n_adults || 0) - (last.n_homeowners || 0)}`,
-      sub: `${last.n_adults} adults total`,
+      sub: `mortgage interest cum. $${fmt(last.mortgage_int_step ? (last.mortgage_int_step * data.months) : 0)} (mostly drained externally)`,
       color: 'var(--ok)',
     },
   ];

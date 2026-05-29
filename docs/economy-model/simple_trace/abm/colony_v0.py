@@ -91,16 +91,21 @@ INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
 SALES_TAX_RATE        = 0.07   # state + local sales tax combined
 SALES_TAX_LOCAL_PCT   = 0.30   # of sales tax, this fraction stays in colony
 
-# Property + housing structure (Phase 1 of wealth-modelling).
-HOMEOWNERSHIP_RATE    = 0.65   # US avg ~65%
-PROP_VALUE_MIN        = 30000.0
-PROP_VALUE_MAX        = 100000.0
-INITIAL_LTV_MAX       = 0.80   # max loan-to-value at init
-PROPERTY_TAX_RATE     = 0.012  # 1.2% annual, on property value
-MORTGAGE_RATE_ANNUAL  = 0.065  # interest-only approximation
-MONTHLY_RENT          = 350.0  # flat rent for renters
-HOUSING_LOCAL_PCT     = 0.20   # of mortgage interest + rent, this fraction stays local
-                                # (small local banks, local landlords)
+# Property + housing structure.
+HOMEOWNERSHIP_RATE        = 0.65   # US avg ~65%
+PROP_VALUE_MIN            = 15000.0
+PROP_VALUE_MAX            = 45000.0
+INITIAL_LTV_MAX           = 0.60   # max loan-to-value at init
+PROPERTY_TAX_RATE         = 0.012  # 1.2% annual, on property value
+MORTGAGE_RATE_ANNUAL      = 0.065  # nominal mortgage rate
+SAVINGS_RATE_ANNUAL       = 0.04   # national-bank savings rate
+PROP_APPRECIATION_ANNUAL  = 0.04   # ~4%/yr property appreciation
+                                    # ("land doesn't deflate" — key AXION point)
+MORTGAGE_TERM_MIN_MONTHS  = 60      # remaining-term at init: 5-25 years
+MORTGAGE_TERM_MAX_MONTHS  = 300
+MONTHLY_RENT              = 150.0   # flat rent for renters (smaller scale)
+HOUSING_LOCAL_PCT         = 0.20   # of mortgage interest + rent, fraction stays local
+                                    # (small local banks, local landlords)
 
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
@@ -123,10 +128,12 @@ class Citizen(Agent):
         self.employer = None             # LocalFirm | ChainBranch | PublicSector | None
         self.last_income = 0.0
         self.months_unemployed = 0
-        # Wealth — Phase 1 of the wealth structure. property_value=0 means renter.
+        # Wealth — property + mortgage + debt. property_value=0 means renter.
         self.property_value = 0.0
         self.mortgage_balance = 0.0
-        self.other_debt = 0.0             # personal loans / credit card (Phase 2)
+        self.mortgage_payment = 0.0       # monthly amortized payment (int + principal)
+        self.mortgage_term_remaining = 0  # months remaining
+        self.other_debt = 0.0             # personal loans / credit card (Phase 3+)
 
     @property
     def net_worth(self):
@@ -383,7 +390,7 @@ class ColonyV0Model(Model):
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
-        monthly_external_transfers: float = 4500.0,  # public-sector + federal redistribution inflow
+        monthly_external_transfers: float = 5200.0,  # public + federal redistribution inflow
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -418,6 +425,9 @@ class ColonyV0Model(Model):
         self.exports_cumulative = 0.0
         # Property tax tracking (stays local — public sector receives)
         self.property_tax_cumulative = 0.0
+        # Savings interest paid by national banks (external inflow)
+        self.savings_interest_paid_this_step = 0.0
+        self.savings_interest_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
 
@@ -441,14 +451,25 @@ class ColonyV0Model(Model):
         self.total_dependents = sum(c.dependents for c in self.citizens)
         self.total_population = n_citizens + self.total_dependents
 
-        # Assign property + mortgage at init.
-        # ~65% homeowners with property values $30k-$100k and mortgages up to 80% LTV;
-        # 35% renters (property_value=0).
+        # Assign property + mortgage at init. ~65% homeowners with property
+        # values $15k-$45k and mortgages up to 60% LTV with random remaining
+        # term (5-25 years). Monthly amortized payment computed once.
+        m_rate = MORTGAGE_RATE_ANNUAL / 12.0
         for c in self.citizens:
             if self.random.random() < HOMEOWNERSHIP_RATE:
                 c.property_value = self.random.uniform(PROP_VALUE_MIN, PROP_VALUE_MAX)
                 ltv = self.random.uniform(0.0, INITIAL_LTV_MAX)
                 c.mortgage_balance = c.property_value * ltv
+                if c.mortgage_balance > 0:
+                    c.mortgage_term_remaining = self.random.randint(
+                        MORTGAGE_TERM_MIN_MONTHS, MORTGAGE_TERM_MAX_MONTHS
+                    )
+                    n = c.mortgage_term_remaining
+                    # Standard amortization formula
+                    c.mortgage_payment = (
+                        c.mortgage_balance * m_rate * (1 + m_rate) ** n
+                        / ((1 + m_rate) ** n - 1)
+                    )
 
         # Reserve some citizens for the public sector (real US public-sector
         # employment is ~22-25% of total workforce). These are pre-allocated;
@@ -612,6 +633,8 @@ class ColonyV0Model(Model):
                 "mortgage_int_step": lambda m: m.bank.mortgage_interest_this_step,
                 "rent_step":         lambda m: m.bank.rent_this_step,
                 "bank_balance":      lambda m: m.bank.balance,
+                "savings_int_step":  lambda m: m.savings_interest_paid_this_step,
+                "savings_int_cum":   lambda m: m.savings_interest_cumulative,
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -723,21 +746,35 @@ class ColonyV0Model(Model):
                 ch.fire(victim)
 
     def _housing_payments(self):
-        """Homeowners pay mortgage interest + property tax. Renters pay rent.
-        Mortgage interest and rent flow to the Bank/Landlord; property tax
-        flows to the Public sector."""
+        """Homeowners pay amortized mortgage payment (interest + principal) +
+        property tax. Renters pay rent.
+          - Mortgage INTEREST -> Bank (mostly drains externally to national bank)
+          - Mortgage PRINCIPAL -> reduces mortgage_balance (citizen equity grows)
+          - Property tax -> Public sector (stays local)
+          - Rent -> Bank (mostly drains, some local landlord retention)
+        Principal paydown is the wealth-building mechanism."""
         self.bank.mortgage_interest_this_step = 0.0
         self.bank.rent_this_step = 0.0
+        m_rate = MORTGAGE_RATE_ANNUAL / 12.0
         for c in self.citizens:
             if c.is_homeowner:
-                # Mortgage interest (monthly, simple)
-                if c.mortgage_balance > 0:
-                    interest = c.mortgage_balance * MORTGAGE_RATE_ANNUAL / 12.0
-                    interest = min(interest, c.savings)
-                    if interest > 0:
-                        c.savings -= interest
-                        self.bank.collect_mortgage_interest(interest)
-                # Property tax
+                if c.mortgage_balance > 0 and c.mortgage_term_remaining > 0:
+                    # Amortized payment: interest first, then principal
+                    interest = c.mortgage_balance * m_rate
+                    payment = min(c.mortgage_payment, c.savings)
+                    if payment > 0:
+                        c.savings -= payment
+                        interest_paid = min(interest, payment)
+                        principal_paid = payment - interest_paid
+                        self.bank.collect_mortgage_interest(interest_paid)
+                        c.mortgage_balance -= principal_paid
+                        c.mortgage_balance = max(0.0, c.mortgage_balance)
+                        c.mortgage_term_remaining -= 1
+                        if c.mortgage_balance <= 0.01:
+                            c.mortgage_balance = 0
+                            c.mortgage_payment = 0
+                            c.mortgage_term_remaining = 0
+                # Property tax (always paid by homeowner)
                 prop_tax = c.property_value * PROPERTY_TAX_RATE / 12.0
                 prop_tax = min(prop_tax, c.savings)
                 if prop_tax > 0:
@@ -745,13 +782,35 @@ class ColonyV0Model(Model):
                     self.public_sector.balance += prop_tax
                     self.property_tax_cumulative += prop_tax
             else:
-                # Renter pays flat rent
                 rent = min(MONTHLY_RENT, c.savings)
                 if rent > 0:
                     c.savings -= rent
                     self.bank.collect_rent(rent)
-        # Recompute outstanding mortgages for the snapshot
         self.bank.outstanding_mortgages = sum(c.mortgage_balance for c in self.citizens)
+
+    def _pay_savings_interest(self):
+        """National banks pay interest on liquid savings deposits.
+        External inflow — counted as BoP credit."""
+        if SAVINGS_RATE_ANNUAL <= 0: return
+        rate = SAVINGS_RATE_ANNUAL / 12.0
+        for c in self.citizens:
+            if c.savings > 0:
+                interest = c.savings * rate
+                c.savings += interest
+                self.savings_interest_paid_this_step += interest
+                self.savings_interest_cumulative += interest
+                self.money_returned_total += interest
+                self.exports_this_step += interest
+
+    def _appreciate_property(self):
+        """Property appreciates monthly. Wealth accrues to homeowners
+        without any cash flow — the 'land doesn't deflate' point that
+        the AXION narrative leans on."""
+        if PROP_APPRECIATION_ANNUAL <= 0: return
+        rate = PROP_APPRECIATION_ANNUAL / 12.0
+        for c in self.citizens:
+            if c.is_homeowner:
+                c.property_value *= (1 + rate)
 
     def _withhold_income_tax(self):
         """Federal/state/FICA income tax on wages.
@@ -978,6 +1037,9 @@ class ColonyV0Model(Model):
         self._pay_wages()
         self._withhold_income_tax()
         self._housing_payments()
+        self.savings_interest_paid_this_step = 0.0
+        self._pay_savings_interest()
+        self._appreciate_property()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])
