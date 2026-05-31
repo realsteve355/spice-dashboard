@@ -96,7 +96,8 @@ def run_colony_v0(cfg):
         firm_initial_float          = float(cfg.get("firm_initial_float", 3000)),
         automation_end              = float(cfg.get("automation_end", 0.0)),
         automation_months           = int(cfg.get("automation_months", 60)),
-        monthly_external_transfers  = float(cfg.get("monthly_external_transfers", 5200)),
+        monthly_external_transfers  = float(cfg.get("monthly_external_transfers", 2800)),
+        pension_per_inactive        = float(cfg.get("pension_per_inactive", 400)),
         mac_rate                    = float(cfg.get("mac_rate", 0.22)),
     )
     for _ in range(months):

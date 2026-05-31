@@ -1,7 +1,7 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'monthly_external_transfers', 'mac_rate', 'automation_end', 'automation_months', 'seed'];
+const INPUTS = ['months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'automation_end', 'automation_months', 'seed'];
 const STORAGE_KEY = 'axion_colony_v0_v1';
 
 function readNum(id, def) {
@@ -23,7 +23,8 @@ function setStatus(msg, err = false) {
 async function fetchRun() {
   const cfg = {
     months:                     readNum('months', 60),
-    monthly_external_transfers: readNum('monthly_external_transfers', 5200),
+    monthly_external_transfers: readNum('monthly_external_transfers', 2800),
+    pension_per_inactive:       readNum('pension_per_inactive', 400),
     mac_rate:                   readNum('mac_rate', 0.22),
     automation_end:             readNum('automation_end', 0),
     automation_months:          readNum('automation_months', 240),
@@ -185,13 +186,13 @@ function renderSnapshot(data) {
     {
       lbl: 'Population',
       val: `${last.n_total_pop}`,
-      sub: `${last.n_adults} adults + ${last.n_dependents} children`,
+      sub: `${last.n_adults} adults (${last.n_workforce} workforce + ${last.n_inactive} inactive) + ${last.n_dependents} kids`,
       color: 'var(--ok)',
     },
     {
-      lbl: 'Employment rate', val: pct(last.employment_rate),
-      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public}`,
-      color: last.employment_rate < 0.5 ? 'var(--crit)' : (last.employment_rate < 0.85 ? 'var(--warn)' : 'var(--ok)'),
+      lbl: 'Employment (of adults)', val: pct(last.employment_rate),
+      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate_workforce)} of workforce`,
+      color: last.employment_rate < 0.3 ? 'var(--crit)' : (last.employment_rate < 0.45 ? 'var(--warn)' : 'var(--ok)'),
     },
     {
       lbl: 'Money supply', val: '$' + fmt(last.money_supply),

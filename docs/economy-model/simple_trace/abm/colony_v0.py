@@ -71,6 +71,15 @@ P_HAS_CHILD       = 0.30          # prob an adult has at least one dependent
 P_HAS_SECOND      = 0.05          # conditional prob of a second
 CHILD_CONSUMPTION = 0.30          # each child adds this fraction to adult target spending
 
+# Population structure. About 47% of adults are in the labour force; the
+# other 53% are retirees, students, caregivers, disabled, etc — they still
+# consume, but earn pensions / social security / family support instead
+# of wages. Matches US BLS employment-to-adult-population ratio.
+WORKFORCE_RATE        = 0.47
+PENSION_PER_INACTIVE  = 400.0   # monthly Social Security / pension / family
+                                 # support, paid by federal/state to each
+                                 # non-workforce adult (BoP credit inflow)
+
 # Public sector — modelled as a single employer. Funded by external transfers
 # (federal/state money — Social Security, Medicare, federal jobs, state
 # contracts, etc. — which are massive money inflows to real US small towns).
@@ -131,11 +140,12 @@ EXPORT_DECAY = 0.90            # at A=1, export demand → 10% of baseline
 
 # ── Agents ───────────────────────────────────────────────────────────────
 class Citizen(Agent):
-    def __init__(self, model, productivity, initial_savings, dependents=0):
+    def __init__(self, model, productivity, initial_savings, dependents=0, in_workforce=True):
         super().__init__(model)
         self.productivity = productivity
         self.savings = initial_savings   # liquid savings (cash + bank deposits)
         self.dependents = dependents     # number of children in household
+        self.in_workforce = in_workforce  # False = retiree/student/caregiver/disabled
         self.employer = None             # LocalFirm | ChainBranch | PublicSector | None
         self.last_income = 0.0
         self.months_unemployed = 0
@@ -176,6 +186,10 @@ class Citizen(Agent):
         return 1 + self.dependents
 
     def receive_wage(self, amount):
+        self.savings += amount
+        self.last_income = amount
+
+    def receive_pension(self, amount):
         self.savings += amount
         self.last_income = amount
 
@@ -406,7 +420,8 @@ class ColonyV0Model(Model):
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
-        monthly_external_transfers: float = 5200.0,  # public + federal redistribution inflow
+        monthly_external_transfers: float = 2800.0,  # public sector payroll inflow only
+        pension_per_inactive: float = PENSION_PER_INACTIVE,  # per non-workforce adult / month
         mac_rate: float = MAC_RATE,                  # Market Access Charge — k of profit
         seed=None,
     ):
@@ -445,6 +460,9 @@ class ColonyV0Model(Model):
         # Savings interest paid by national banks (external inflow)
         self.savings_interest_paid_this_step = 0.0
         self.savings_interest_cumulative = 0.0
+        # Pension / SS / family-support payments to non-workforce adults
+        self.pension_paid_this_step = 0.0
+        self.pension_cumulative = 0.0
         # MAC + UBI (the AXION mechanism)
         self.mac_rate = MAC_RATE
         self.mac_pool = 0.0
@@ -454,6 +472,7 @@ class ColonyV0Model(Model):
         self.ubi_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
+        self.pension_per_inactive = pension_per_inactive
         self.mac_rate = mac_rate
 
         # Spawn citizens — adults with Pareto productivity, some have child
@@ -469,9 +488,14 @@ class ColonyV0Model(Model):
                 n_kids = 1
                 if self.random.random() < P_HAS_SECOND:
                     n_kids = 2
+            # Workforce participation: ~47% of adults are workforce-active.
+            # The other 53% (retirees, students, caregivers, disabled) consume
+            # and receive pensions/benefits but don't work.
+            in_workforce = self.random.random() < WORKFORCE_RATE
             self.citizens.append(Citizen(self, productivity=p,
                                           initial_savings=initial_savings,
-                                          dependents=n_kids))
+                                          dependents=n_kids,
+                                          in_workforce=in_workforce))
         avg_p = sum(c.productivity for c in self.citizens) / len(self.citizens)
         self.total_dependents = sum(c.dependents for c in self.citizens)
         self.total_population = n_citizens + self.total_dependents
@@ -496,11 +520,11 @@ class ColonyV0Model(Model):
                         / ((1 + m_rate) ** n - 1)
                     )
 
-        # Reserve some citizens for the public sector (real US public-sector
-        # employment is ~22-25% of total workforce). These are pre-allocated;
-        # the remainder fills private firms.
-        n_public_target = max(1, round(n_citizens * PUBLIC_TARGET_WORKERS_PCT))
-        n_private = n_citizens - n_public_target
+        # Workforce-active subset only — non-workforce citizens never get hired.
+        workforce_pool = [c for c in self.citizens if c.in_workforce]
+        n_workforce = len(workforce_pool)
+        n_public_target = max(0, round(n_workforce * PUBLIC_TARGET_WORKERS_PCT))
+        n_private = n_workforce - n_public_target
 
         # Workforce allocation for PRIVATE firms — based on sustainable wage
         # budgets (chain branches keep 30% of revenue for wages; local firms
@@ -544,9 +568,9 @@ class ColonyV0Model(Model):
                 per_firm_capacity[key] = n
                 allocated += n
 
-        # Round-robin citizens (sorted by productivity desc) — first n_public_target
-        # workers go to the public sector, then the rest fill private firms.
-        by_p_desc = sorted(self.citizens, key=lambda c: c.productivity, reverse=True)
+        # Sort workforce-active citizens by productivity desc; allocate first
+        # n_public_target to public sector, then the rest fill private firms.
+        by_p_desc = sorted(workforce_pool, key=lambda c: c.productivity, reverse=True)
         public_workers = by_p_desc[:n_public_target]
         private_pool   = by_p_desc[n_public_target:]
 
@@ -596,13 +620,14 @@ class ColonyV0Model(Model):
         }
         self.bank = BankLandlord(self)
 
-        # Bootstrap citizens' last_income from expected wage. Without this,
-        # month-1 consumption is just subsistence (since last_income would be
-        # zero), and firms get no revenue to pay payroll → mass layoffs.
-        # The bootstrap represents "they were earning before the sim started."
+        # Bootstrap citizens' last_income so month-1 consumption isn't just
+        # subsistence. Workforce employees use their expected wage; non-
+        # workforce adults use their pension amount.
         for c in self.citizens:
             if c.employed:
                 c.last_income = c.wage_if_hired
+            elif not c.in_workforce:
+                c.last_income = self.pension_per_inactive
 
         # Per-citizen history
         self.savings_history: list[list[float]] = [[c.savings for c in self.citizens]]
@@ -636,6 +661,14 @@ class ColonyV0Model(Model):
                 "n_adults":          lambda m: len(m.citizens),
                 "n_dependents":      lambda m: m.total_dependents,
                 "n_total_pop":       lambda m: m.total_population,
+                "n_workforce":       lambda m: sum(1 for c in m.citizens if c.in_workforce),
+                "n_inactive":        lambda m: sum(1 for c in m.citizens if not c.in_workforce),
+                "employment_rate_workforce": lambda m: (
+                    sum(1 for c in m.citizens if c.employed)
+                    / max(1, sum(1 for c in m.citizens if c.in_workforce))
+                ),
+                "pension_paid_step": lambda m: m.pension_paid_this_step,
+                "pension_cum":       lambda m: m.pension_cumulative,
                 # Public sector financials
                 "public_balance":    lambda m: m.public_sector.balance,
                 "transfers_in":      lambda m: m.public_sector.transfers_received_this_step,
@@ -941,16 +974,16 @@ class ColonyV0Model(Model):
                 self.income_tax_cumulative += tax
 
     def _external_transfers(self):
-        """Federal / state money flowing into the colony. Two channels:
+        """Federal / state money flowing into the colony. Three channels:
         (a) bulk transfers to the public sector — funds public payroll
-        (b) per-child transfers directly to households — covers the
-            extra consumption that dependents create
-        Both are BoP credits. In real small towns these inflows are huge."""
+        (b) per-child transfers directly to households
+        (c) pensions / social security to non-workforce adults
+        All BoP credits. In real small towns these inflows are huge."""
         self.public_sector.transfers_received_this_step = 0.0
         self.child_transfers_this_step = 0.0
+        self.pension_paid_this_step = 0.0
         if self.monthly_external_transfers > 0:
             self.public_sector.receive_transfer(self.monthly_external_transfers)
-        # Per-child transfers go straight to the household's adult
         for c in self.citizens:
             if c.dependents > 0:
                 amt = c.dependents * CHILD_TRANSFER
@@ -958,6 +991,15 @@ class ColonyV0Model(Model):
                 self.child_transfers_this_step += amt
                 self.money_returned_total += amt
                 self.exports_this_step += amt
+        if self.pension_per_inactive > 0:
+            for c in self.citizens:
+                if not c.in_workforce:
+                    amt = self.pension_per_inactive
+                    c.receive_pension(amt)
+                    self.pension_paid_this_step += amt
+                    self.pension_cumulative += amt
+                    self.money_returned_total += amt
+                    self.exports_this_step += amt
 
     def _pay_wages(self):
         all_employers = (
@@ -1085,8 +1127,9 @@ class ColonyV0Model(Model):
 
     def _firm_workforce_adjust(self):
         """Revenue-driven hire/fire for both local and chain firms.
-        Chain HQ-driven downsizing already happened earlier in the step."""
-        unemployed = [c for c in self.citizens if not c.employed]
+        Chain HQ-driven downsizing already happened earlier in the step.
+        Only workforce-active citizens can be hired."""
+        unemployed = [c for c in self.citizens if not c.employed and c.in_workforce]
         unemployed.sort(key=lambda c: c.productivity, reverse=True)
 
         all_firms = []
