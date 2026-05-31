@@ -107,6 +107,8 @@
       <label>Public-sector transfers ($/mo) <input type="number" id="monthly_external_transfers" value="2800" min="0" step="100"></label>
       <label>Pension / SS per inactive adult ($/mo) <input type="number" id="pension_per_inactive" value="400" min="0" step="50"></label>
       <label>Market Access Charge rate k <input type="number" id="mac_rate" value="0.22" min="0" max="0.50" step="0.01"></label>
+      <label>AXION tax mode (MCC) <input type="checkbox" id="mcc_mode"></label>
+      <label>MCC rate (if AXION) <input type="number" id="mcc_rate" value="0.10" min="0" max="0.30" step="0.01"></label>
       <label>Automation end (A_max) <input type="number" id="automation_end" value="0" min="0" max="1" step="0.05"></label>
       <label>Automation ramp (months) <input type="number" id="automation_months" value="240" min="12" max="360" step="12"></label>
       <label>Seed <input type="number" id="seed" value="42" min="1" max="9999" step="1"></label>
@@ -134,6 +136,22 @@
       <svg id="ch-money"      class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
       <svg id="ch-gini"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
       <svg id="ch-basket"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>AXION mechanism — MAC pool, UBI trajectory</h3>
+    <div class="sub">
+      <span style="color:#b48ee6;">●</span> UBI per adult / month — Grok's headline metric.
+      The MAC split chart shows where the pool is coming from:
+      <span style="color:#b48ee6;">●</span> national/frontier-tech firms (Amazon HQ, Apple,
+      Google etc. paying MAC for market access) — the dominant and growing share,
+      vs <span style="color:#cfa340;">●</span> local-firm contribution (chains, indies,
+      bank) which is smaller and shrinks with automation.
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-ubi"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-mac-split" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
   </div>
 

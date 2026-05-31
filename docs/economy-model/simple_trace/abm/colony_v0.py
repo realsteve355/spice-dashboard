@@ -100,6 +100,17 @@ INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
 SALES_TAX_RATE        = 0.07   # state + local sales tax combined
 SALES_TAX_LOCAL_PCT   = 0.30   # of sales tax, this fraction stays in colony
 
+# AXION MCC (MaryFontaine Colony Company) charge — replaces the bundle of
+# federal income tax + state income tax + FICA + most of sales tax in AXION
+# mode. A SINGLE charge that covers local services (replacing the part of
+# federal taxation that comes back as transfers) plus a small federal
+# pass-through. Net citizen burden is lower than today's combined
+# tax burden (15% income + 7% sales = ~21% effective) because the MAC pool
+# also funds the public sector indirectly.
+MCC_RATE                  = 0.10   # 10% of wages — lower than today's effective
+MCC_FEDERAL_PASS_PCT      = 0.20   # of MCC, this fraction drains to federal
+                                    # (the small federal pass-through portion)
+
 # Property + housing structure.
 HOMEOWNERSHIP_RATE        = 0.65   # US avg ~65%
 PROP_VALUE_MIN            = 15000.0
@@ -181,6 +192,11 @@ class Citizen(Agent):
         self.other_debt = 0.0             # personal loans / credit card (Phase 3+)
         self.ubi_received_cumulative = 0.0
         self.ubi_pending = 0.0            # UBI not yet spent (carries into next consume)
+        # MOND balance — denomination of the citizen's UBI-derived savings.
+        # AXION's local currency. Tracks how much of the citizen's holdings
+        # are MOND-denominated (i.e., would convert at boundary if spent
+        # externally). Per Grok's spec, conversion is free for residents.
+        self.mond_balance = 0.0
 
     @property
     def net_worth(self):
@@ -448,6 +464,8 @@ class ColonyV0Model(Model):
         monthly_external_transfers: float = 2800.0,  # public sector payroll inflow only
         pension_per_inactive: float = PENSION_PER_INACTIVE,  # per non-workforce adult / month
         mac_rate: float = MAC_RATE,                  # Market Access Charge — k of profit
+        mcc_mode: bool = False,                      # AXION tax structure on/off
+        mcc_rate: float = MCC_RATE,                  # MCC charge rate when mcc_mode on
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -498,10 +516,18 @@ class ColonyV0Model(Model):
         self.mac_national_cumulative = 0.0
         self.ubi_paid_this_step = 0.0
         self.ubi_cumulative = 0.0
+        # MOND (AXION local currency) tracking
+        self.mond_minted_cumulative = 0.0
+        self.mond_retired_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
         self.pension_per_inactive = pension_per_inactive
         self.mac_rate = mac_rate
+        self.mcc_mode = mcc_mode
+        self.mcc_rate = mcc_rate
+        # MCC tracking
+        self.mcc_charge_this_step = 0.0
+        self.mcc_charge_cumulative = 0.0
 
         # Spawn citizens — adults with Pareto productivity, some have child
         # dependents. Children aren't separate agents; they're counted on the
@@ -709,6 +735,8 @@ class ColonyV0Model(Model):
                 "tax_drained_cum":   lambda m: m.income_tax_drained_cumulative + m.sales_tax_drained_cumulative,
                 "tax_local_cum":     lambda m: m.income_tax_local_cumulative + m.sales_tax_local_cumulative,
                 "property_tax_cum":  lambda m: m.property_tax_cumulative,
+                "mcc_mode":          lambda m: 1 if m.mcc_mode else 0,
+                "mcc_charge_cum":    lambda m: m.mcc_charge_cumulative,
                 # Wealth
                 "liquid_wealth":     lambda m: m.total_liquid_wealth(),
                 "property_wealth":   lambda m: m.total_property_wealth(),
@@ -730,6 +758,9 @@ class ColonyV0Model(Model):
                 "ubi_step":          lambda m: m.ubi_paid_this_step,
                 "ubi_cum":           lambda m: m.ubi_cumulative,
                 "ubi_per_adult_mo":  lambda m: m.ubi_paid_this_step / max(1, len(m.citizens)),
+                "mond_minted_cum":   lambda m: m.mond_minted_cumulative,
+                "mond_retired_cum":  lambda m: m.mond_retired_cumulative,
+                "mond_outstanding":  lambda m: sum(c.mond_balance for c in m.citizens),
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -1008,8 +1039,10 @@ class ColonyV0Model(Model):
             c.savings += per_adult
             c.ubi_received_cumulative += per_adult
             c.ubi_pending += per_adult
+            c.mond_balance += per_adult       # UBI is minted as MOND
         self.ubi_paid_this_step = self.mac_pool
         self.ubi_cumulative += self.mac_pool
+        self.mond_minted_cumulative += self.mac_pool
         self.mac_pool = 0.0   # fully distributed each month
 
     def _appreciate_property(self):
@@ -1023,25 +1056,46 @@ class ColonyV0Model(Model):
                 c.property_value *= (1 + rate)
 
     def _withhold_income_tax(self):
-        """Federal/state/FICA income tax on wages.
-        Most drains to external (Washington, Columbus, FICA trust funds);
-        the local-share % stays in colony as local payroll / income tax,
-        going to the public sector balance."""
+        """Income tax phase. Two modes:
+        - DEFAULT: federal/state/FICA income tax (15%, mostly drains)
+        - MCC MODE (AXION): single MCC charge (10%, mostly stays local)"""
         self.income_tax_this_step = 0.0
-        for c in self.citizens:
-            if c.last_income > 0:
-                tax = c.last_income * INCOME_TAX_RATE
-                tax = min(tax, c.savings)  # can't pay tax from negative balance
-                c.savings -= tax
-                local_share = tax * INCOME_TAX_LOCAL_PCT
-                drained    = tax - local_share
-                self.public_sector.balance += local_share
-                self.income_tax_local_cumulative += local_share
-                self.money_drained_total += drained
-                self.imports_this_step    += drained
-                self.income_tax_drained_cumulative += drained
-                self.income_tax_this_step += tax
-                self.income_tax_cumulative += tax
+        self.mcc_charge_this_step = 0.0
+        if self.mcc_mode:
+            rate = self.mcc_rate
+            local_pct = 1.0 - MCC_FEDERAL_PASS_PCT  # most stays local
+            for c in self.citizens:
+                if c.last_income > 0:
+                    charge = c.last_income * rate
+                    charge = min(charge, c.savings)
+                    c.savings -= charge
+                    local_share = charge * local_pct
+                    drained     = charge - local_share
+                    self.public_sector.balance += local_share
+                    self.money_drained_total += drained
+                    self.imports_this_step    += drained
+                    self.mcc_charge_this_step += charge
+                    self.mcc_charge_cumulative += charge
+                    # Track as income-tax-equivalent for chart compatibility
+                    self.income_tax_this_step += charge
+                    self.income_tax_cumulative += charge
+                    self.income_tax_local_cumulative += local_share
+                    self.income_tax_drained_cumulative += drained
+        else:
+            for c in self.citizens:
+                if c.last_income > 0:
+                    tax = c.last_income * INCOME_TAX_RATE
+                    tax = min(tax, c.savings)
+                    c.savings -= tax
+                    local_share = tax * INCOME_TAX_LOCAL_PCT
+                    drained    = tax - local_share
+                    self.public_sector.balance += local_share
+                    self.income_tax_local_cumulative += local_share
+                    self.money_drained_total += drained
+                    self.imports_this_step    += drained
+                    self.income_tax_drained_cumulative += drained
+                    self.income_tax_this_step += tax
+                    self.income_tax_cumulative += tax
 
     def _external_transfers(self):
         """Federal / state money flowing into the colony. Three channels:
@@ -1132,6 +1186,12 @@ class ColonyV0Model(Model):
             spend = min(target, c.savings)
             # Mark UBI as processed (whether spent or not)
             c.ubi_pending = 0.0
+            # MOND retires as it's spent — use up MOND first since it's the
+            # AXION local-currency portion of the citizen's balance.
+            if spend > 0 and c.mond_balance > 0:
+                mond_used = min(spend, c.mond_balance)
+                c.mond_balance -= mond_used
+                self.mond_retired_cumulative += mond_used
             if spend <= 0: continue
 
             for sector in SECTORS:
@@ -1151,8 +1211,10 @@ class ColonyV0Model(Model):
                 if chosen is None:
                     chosen = "local"
                 # Sales tax — citizen's payment splits: most to the provider,
-                # SALES_TAX_RATE portion to the tax authority.
-                tax = sector_spend * SALES_TAX_RATE
+                # SALES_TAX_RATE portion to the tax authority. In AXION/MCC
+                # mode, sales tax is folded into the MCC charge (rate=0 here).
+                sales_rate = 0.0 if self.mcc_mode else SALES_TAX_RATE
+                tax = sector_spend * sales_rate
                 to_provider = sector_spend - tax
                 local_tax_share = tax * SALES_TAX_LOCAL_PCT
                 drained_tax     = tax - local_tax_share

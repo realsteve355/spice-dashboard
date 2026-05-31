@@ -1,7 +1,7 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'automation_end', 'automation_months', 'seed'];
+const INPUTS = ['months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'mcc_rate', 'automation_end', 'automation_months', 'seed'];
 const STORAGE_KEY = 'axion_colony_v0_v1';
 
 function readNum(id, def) {
@@ -26,6 +26,8 @@ async function fetchRun() {
     monthly_external_transfers: readNum('monthly_external_transfers', 2800),
     pension_per_inactive:       readNum('pension_per_inactive', 400),
     mac_rate:                   readNum('mac_rate', 0.22),
+    mcc_mode:                   document.getElementById('mcc_mode').checked,
+    mcc_rate:                   readNum('mcc_rate', 0.10),
     automation_end:             readNum('automation_end', 0),
     automation_months:          readNum('automation_months', 240),
     seed:                       readNum('seed', 42),
@@ -52,11 +54,11 @@ function renderChart(svgId, traj, series, opts = {}) {
   const innerW = W - pad.l - pad.r, innerH = H - pad.t - pad.b;
   const months = traj.length - 1;
 
-  // Y domain
+  // Y domain — fn may be called as fn(p) or fn(p, i)
   let yMin = Infinity, yMax = -Infinity;
   for (const s of series) {
-    for (const p of traj) {
-      const v = s.fn(p);
+    for (let i = 0; i < traj.length; i++) {
+      const v = s.fn(traj[i], i);
       if (v < yMin) yMin = v;
       if (v > yMax) yMax = v;
     }
@@ -86,7 +88,7 @@ function renderChart(svgId, traj, series, opts = {}) {
   let lines = '';
   for (const s of series) {
     const d = traj.map((p, i) =>
-      `${i === 0 ? 'M' : 'L'} ${xScale(i).toFixed(1)} ${yScale(s.fn(p)).toFixed(1)}`).join(' ');
+      `${i === 0 ? 'M' : 'L'} ${xScale(i).toFixed(1)} ${yScale(s.fn(p, i)).toFixed(1)}`).join(' ');
     lines += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2"${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}/>`;
   }
 
@@ -338,6 +340,26 @@ async function refresh() {
       { fn: p => p.velocity_annual, color: '#cfa340', label: 'V annual (MV=PY)' },
       { fn: p => p.velocity_monthly, color: '#a05a30', label: 'V monthly', dash: '3 3' },
     ], { title: 'Money velocity (transactions ÷ supply)' });
+
+    // AXION mechanism chart — UBI trajectory
+    renderChart('ch-ubi', t, [
+      { fn: p => p.ubi_per_adult_mo, color: '#b48ee6', label: 'UBI per adult / mo' },
+    ], { dollar: true, title: 'UBI per adult per month' });
+
+    // MAC split chart — local vs national over time. Monthly deltas from cumulative.
+    let prevLocal = 0, prevNational = 0;
+    const localSteps = [], nationalSteps = [];
+    for (const p of t) {
+      const lc = p.mac_local_cum || 0;
+      const nc = p.mac_national_cum || 0;
+      localSteps.push(lc - prevLocal);
+      nationalSteps.push(nc - prevNational);
+      prevLocal = lc; prevNational = nc;
+    }
+    renderChart('ch-mac-split', t, [
+      { fn: (_, i) => nationalSteps[i] || 0, color: '#b48ee6', label: 'national (frontier-tech)' },
+      { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
+    ], { dollar: true, title: 'MAC contribution by source (monthly)' });
 
     renderHeatmap(data.savings_grid, data.productivities, data.employed_grid);
     renderSnapshot(data);
