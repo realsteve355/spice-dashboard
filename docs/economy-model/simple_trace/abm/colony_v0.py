@@ -207,6 +207,9 @@ class Citizen(Agent):
         self.other_debt = 0.0             # personal loans / credit card (Phase 3+)
         self.ubi_received_cumulative = 0.0
         self.ubi_pending = 0.0            # UBI not yet spent (carries into next consume)
+        # External investments — 401(k), IRA, brokerage. Citizen-owned wealth
+        # held outside the colony money supply. Counted in net worth.
+        self.external_invested = 0.0
         # MOND balance — denomination of the citizen's UBI-derived savings.
         # AXION's local currency. Tracks how much of the citizen's holdings
         # are MOND-denominated (i.e., would convert at boundary if spent
@@ -215,7 +218,10 @@ class Citizen(Agent):
 
     @property
     def net_worth(self):
-        return self.savings + self.property_value - self.mortgage_balance - self.other_debt
+        # Include externally-invested wealth — it's citizen-owned even though
+        # held outside the colony money supply (401k, IRA, brokerage).
+        return (self.savings + self.external_invested + self.property_value
+                - self.mortgage_balance - self.other_debt)
 
     @property
     def is_homeowner(self):
@@ -785,6 +791,18 @@ class ColonyV0Model(Model):
                 "mond_outstanding":  lambda m: sum(c.mond_balance for c in m.citizens),
                 "ext_savings_step":  lambda m: m.external_savings_this_step,
                 "ext_savings_cum":   lambda m: m.external_savings_cumulative,
+                "external_invested_total": lambda m: sum(c.external_invested for c in m.citizens),
+                "saved_wealth_per_adult": lambda m: (
+                    (sum(c.savings + c.external_invested for c in m.citizens)
+                     + sum(max(0, c.property_value - c.mortgage_balance) for c in m.citizens))
+                    / max(1, len(m.citizens))
+                ),
+                "liquid_per_adult":      lambda m: sum(c.savings for c in m.citizens) / max(1, len(m.citizens)),
+                "external_per_adult":    lambda m: sum(c.external_invested for c in m.citizens) / max(1, len(m.citizens)),
+                "property_equity_per_adult": lambda m: (
+                    sum(max(0, c.property_value - c.mortgage_balance) for c in m.citizens)
+                    / max(1, len(m.citizens))
+                ),
                 # New: corporate profit, productivity, unemployment, tax share
                 "corp_profit_step":  lambda m: m.corporate_profit_this_step,
                 "productivity_idx":  lambda m: (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (m.steps / 12.0),
@@ -1147,6 +1165,7 @@ class ColonyV0Model(Model):
             invest = excess * EXTERNAL_INVESTMENT_PCT
             if invest > 0.5:
                 c.savings -= invest
+                c.external_invested += invest
                 self.external_savings_this_step += invest
                 self.external_savings_cumulative += invest
                 # Money exits colony as capital outflow

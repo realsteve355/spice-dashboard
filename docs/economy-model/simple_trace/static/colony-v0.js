@@ -273,6 +273,12 @@ function renderSnapshot(data) {
       sub: `k=${((last.mac_rate || 0) * 100).toFixed(0)}% · MAC pool cum. $${fmt(last.mac_cum || 0)}`,
       color: 'var(--ok)',
     },
+    {
+      lbl: 'Saved wealth / adult',
+      val: '$' + fmt(last.saved_wealth_per_adult || 0),
+      sub: `liquid $${fmt(last.liquid_per_adult || 0)} + external $${fmt(last.external_per_adult || 0)} + property equity $${fmt(last.property_equity_per_adult || 0)}`,
+      color: 'var(--ok)',
+    },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
     <div class="stat" style="border-left-color:${c.color}">
@@ -409,6 +415,14 @@ async function refresh() {
       { fn: (_, i) => nationalSteps[i] || 0, color: '#b48ee6', label: 'national (frontier-tech)' },
       { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
     ], { dollar: true, title: 'MAC contribution by source (monthly)' });
+
+    // Saved wealth chart (single wide chart, three components)
+    renderChart('ch-wealth', t, [
+      { fn: p => p.saved_wealth_per_adult, color: '#cfa340', label: 'total saved wealth' },
+      { fn: p => p.liquid_per_adult, color: '#a8e6a8', label: 'liquid (colony)', dash: '4 3' },
+      { fn: p => p.external_per_adult, color: '#ffb86c', label: 'external investments', dash: '4 3' },
+      { fn: p => p.property_equity_per_adult, color: '#7aa2ff', label: 'property equity', dash: '4 3' },
+    ], { dollar: true, title: 'Saved wealth per adult ($)' });
 
     // Detailed metrics — basket cost broken out by channel + weighted
     renderChart('ch-basket', t, [
