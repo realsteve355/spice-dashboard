@@ -519,6 +519,10 @@ class ColonyV0Model(Model):
         # MOND (AXION local currency) tracking
         self.mond_minted_cumulative = 0.0
         self.mond_retired_cumulative = 0.0
+        # Corporate profit aggregate — sum of firm profits + national share
+        # per step. Surface for the dashboard 'profits' chart.
+        self.corporate_profit_this_step = 0.0
+        self.total_wages_this_step = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
         self.pension_per_inactive = pension_per_inactive
@@ -761,6 +765,16 @@ class ColonyV0Model(Model):
                 "mond_minted_cum":   lambda m: m.mond_minted_cumulative,
                 "mond_retired_cum":  lambda m: m.mond_retired_cumulative,
                 "mond_outstanding":  lambda m: sum(c.mond_balance for c in m.citizens),
+                # New: corporate profit, productivity, unemployment, tax share
+                "corp_profit_step":  lambda m: m.corporate_profit_this_step,
+                "productivity_idx":  lambda m: (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (m.steps / 12.0),
+                "unemployment_rate": lambda m: 1.0 - m.employment_rate_workforce_internal(),
+                "wages_step":        lambda m: m.total_wages_this_step,
+                "tax_step":          lambda m: m.income_tax_this_step + m.sales_tax_this_step,
+                "tax_per_adult_step":lambda m: (
+                    (m.income_tax_this_step + m.sales_tax_this_step) /
+                    max(1, len(m.citizens))
+                ),
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -786,6 +800,11 @@ class ColonyV0Model(Model):
     def employment_rate(self):
         if not self.citizens: return 0.0
         return sum(1 for c in self.citizens if c.employed) / len(self.citizens)
+
+    def employment_rate_workforce_internal(self):
+        wf = sum(1 for c in self.citizens if c.in_workforce)
+        if wf == 0: return 0.0
+        return sum(1 for c in self.citizens if c.employed) / wf
 
     def money_supply_internal(self):
         return (
@@ -935,7 +954,21 @@ class ColonyV0Model(Model):
         DOES grant them market access; the charge stays in the colony instead
         of fully draining). Public sector is exempt."""
         self.mac_collected_this_step = 0.0
+        self.corporate_profit_this_step = 0.0
         if self.mac_rate <= 0:
+            # Still calculate corporate profit even with mac off, for the chart
+            productivity = (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (self.steps / 12.0)
+            for f in self.local_firms.values():
+                wc = sum(w.wage_if_hired for w in f.workers)
+                self.corporate_profit_this_step += max(0.0, f.revenue_this_month * productivity - wc)
+            for f in self.chain_branches.values():
+                wc = sum(w.wage_if_hired for w in f.workers)
+                self.corporate_profit_this_step += max(0.0, f.revenue_this_month * productivity * (1 - CHAIN_CORP_FEE_RATE) - wc)
+            for f in self.pure_imports.values():
+                self.corporate_profit_this_step += f.revenue_this_month * 0.60 * productivity
+            bank_rev = self.bank.mortgage_interest_this_step + self.bank.rent_this_step
+            self.corporate_profit_this_step += bank_rev * 0.50
+            self.corporate_profit_this_step += (NATIONAL_PROFIT_PER_ADULT_ANNUAL / 12.0) * productivity * len(self.citizens)
             return
         # Productivity factor — compounds 3.7%/yr per Grok's spec. Raises
         # effective firm profit (and thus MAC pool) over time even when
@@ -946,6 +979,7 @@ class ColonyV0Model(Model):
         for f in self.local_firms.values():
             wage_cost = sum(w.wage_if_hired for w in f.workers)
             profit = max(0.0, f.revenue_this_month * productivity - wage_cost)
+            self.corporate_profit_this_step += profit
             charge = profit * self.mac_rate
             if charge > 0:
                 from_balance = min(charge, f.balance)
@@ -963,6 +997,7 @@ class ColonyV0Model(Model):
             retained = f.revenue_this_month * productivity * (1 - CHAIN_CORP_FEE_RATE)
             wage_cost = sum(w.wage_if_hired for w in f.workers)
             profit = max(0.0, retained - wage_cost)
+            self.corporate_profit_this_step += profit
             charge = profit * self.mac_rate
             if charge > 0:
                 from_balance = min(charge, f.balance)
@@ -980,6 +1015,7 @@ class ColonyV0Model(Model):
         for f in self.pure_imports.values():
             # Pure imports have no local employees: profit = revenue × 60% × productivity
             profit = f.revenue_this_month * 0.60 * productivity
+            self.corporate_profit_this_step += profit
             charge = profit * self.mac_rate
             if charge > 0:
                 f.mac_paid_cumulative += charge
@@ -992,6 +1028,7 @@ class ColonyV0Model(Model):
         # Bank: implied 50% margin on mortgage interest + rent (very profitable)
         bank_rev = self.bank.mortgage_interest_this_step + self.bank.rent_this_step
         implied_profit = bank_rev * IMPLIED_MARGIN_BANK
+        self.corporate_profit_this_step += implied_profit
         charge = implied_profit * self.mac_rate
         if charge > 0:
             self.bank.mac_paid_cumulative += charge
@@ -1016,6 +1053,7 @@ class ColonyV0Model(Model):
         # Productivity-scaled to capture abundance-era growth.
         n_profit_per_adult = (NATIONAL_PROFIT_PER_ADULT_ANNUAL / 12.0) * productivity
         total_national_profit = n_profit_per_adult * len(self.citizens)
+        self.corporate_profit_this_step += total_national_profit
         national_charge = total_national_profit * self.mac_rate
         if national_charge > 0:
             self.mac_pool += national_charge
@@ -1131,12 +1169,14 @@ class ColonyV0Model(Model):
             + list(self.chain_branches.values())
             + [self.public_sector]
         )
+        self.total_wages_this_step = 0.0
         for firm in all_employers:
             for worker in list(firm.workers):
                 w = worker.wage_if_hired
                 if firm.balance >= w:
                     firm.balance -= w
                     worker.receive_wage(w)
+                    self.total_wages_this_step += w
                     if hasattr(firm, "wages_paid_cumulative"):
                         firm.wages_paid_cumulative += w
                 else:

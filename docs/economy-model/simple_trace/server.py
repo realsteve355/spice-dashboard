@@ -87,7 +87,7 @@ def run_colony_v0(cfg):
     seed = int(cfg.get("seed", 42))
     model = ColonyV0Model(
         seed=seed,
-        n_citizens                  = int(cfg.get("n_citizens", 30)),
+        n_citizens                  = int(cfg.get("n_citizens", 100)),
         pareto_alpha                = float(cfg.get("pareto_alpha", 1.6)),
         initial_savings             = float(cfg.get("initial_savings", 1500)),
         base_wage                   = float(cfg.get("base_wage", 400)),

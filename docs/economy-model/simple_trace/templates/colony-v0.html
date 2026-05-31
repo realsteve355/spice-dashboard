@@ -103,6 +103,7 @@
   <div class="card">
     <h3>Controls</h3>
     <div class="controls">
+      <label>Adults (population) <input type="number" id="n_citizens" value="100" min="30" max="500" step="10"></label>
       <label>Months <input type="number" id="months" value="240" min="12" max="360" step="12"></label>
       <label>Public-sector transfers ($/mo) <input type="number" id="monthly_external_transfers" value="2800" min="0" step="100"></label>
       <label>Pension / SS per inactive adult ($/mo) <input type="number" id="pension_per_inactive" value="400" min="0" step="50"></label>
@@ -174,6 +175,22 @@
     <div class="chart-grid">
       <svg id="ch-ubi"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
       <svg id="ch-mac-split" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Detailed metrics — basket, productivity, profits, tax</h3>
+    <div class="sub">
+      <span style="color:#7aa2ff;">●</span> avg basket cost (consumer-weighted) ·
+      <span style="color:#a8e6a8;">●</span> productivity index (compounds 3.7%/yr) ·
+      <span style="color:#cfa340;">●</span> total corporate profit / mo (sum of firm + national-economy) ·
+      <span style="color:#ef4444;">●</span> tax burden per adult per month.
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-basket"  class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-prod"    class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-profits" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-taxsh"   class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
   </div>
 

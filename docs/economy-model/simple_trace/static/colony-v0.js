@@ -1,8 +1,8 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'mcc_rate', 'automation_end', 'automation_months', 'seed'];
-const STORAGE_KEY = 'axion_colony_v0_v2';   // bump to invalidate v1 saves with old defaults
+const INPUTS = ['n_citizens', 'months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'mcc_rate', 'automation_end', 'automation_months', 'seed'];
+const STORAGE_KEY = 'axion_colony_v0_v3';   // bump on schema changes
 
 function readNum(id, def) {
   const v = parseFloat(document.getElementById(id).value);
@@ -26,7 +26,7 @@ function renderComparison(tradData, axionData) {
   const t = tradData.trajectory[tradData.trajectory.length - 1];
   const a = axionData.trajectory[axionData.trajectory.length - 1];
   const rows = [
-    { label: 'Employment (of workforce)', t: t.employment_rate_workforce, a: a.employment_rate_workforce, fmt: pct, important: true, note: '% of workforce-active adults employed (excludes retirees, students, caregivers)' },
+    { label: 'Unemployment rate (of workforce)', t: 1 - t.employment_rate_workforce, a: 1 - a.employment_rate_workforce, fmt: pct, important: true, sign: -1, note: 'traditional definition: % of workforce-active adults seeking work but not employed' },
     { label: 'UBI per adult / mo', t: t.ubi_per_adult_mo, a: a.ubi_per_adult_mo, fmt: v => '$' + fmt(v), important: true, note: 'driven primarily by MAC, similar across modes' },
     { label: 'Citizen liquid wealth', t: t.liquid_wealth, a: a.liquid_wealth, fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits — the headline citizen-impact metric' },
     { label: 'Total citizen net worth', t: t.net_worth, a: a.net_worth, fmt: v => '$' + fmt(v), important: true, note: 'liquid + property − mortgages' },
@@ -56,6 +56,7 @@ function renderComparison(tradData, axionData) {
 
 function readCfg() {
   return {
+    n_citizens:                 readNum('n_citizens', 100),
     months:                     readNum('months', 240),
     monthly_external_transfers: readNum('monthly_external_transfers', 2800),
     pension_per_inactive:       readNum('pension_per_inactive', 400),
@@ -232,9 +233,9 @@ function renderSnapshot(data) {
       color: 'var(--ok)',
     },
     {
-      lbl: 'Employment (of workforce)', val: pct(last.employment_rate_workforce),
-      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate)} of all adults`,
-      color: last.employment_rate_workforce < 0.6 ? 'var(--crit)' : (last.employment_rate_workforce < 0.9 ? 'var(--warn)' : 'var(--ok)'),
+      lbl: 'Unemployment (of workforce)', val: pct(1 - last.employment_rate_workforce),
+      sub: `${pct(last.employment_rate_workforce)} employed of workforce · local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate)} of all adults`,
+      color: last.employment_rate_workforce > 0.9 ? 'var(--ok)' : (last.employment_rate_workforce > 0.6 ? 'var(--warn)' : 'var(--crit)'),
     },
     {
       lbl: 'Money supply', val: '$' + fmt(last.money_supply),
@@ -409,6 +410,23 @@ async function refresh() {
       { fn: (_, i) => nationalSteps[i] || 0, color: '#b48ee6', label: 'national (frontier-tech)' },
       { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
     ], { dollar: true, title: 'MAC contribution by source (monthly)' });
+
+    // Detailed metrics — basket / productivity / profits / tax share
+    renderChart('ch-basket', t, [
+      { fn: p => p.basket_cost_avg, color: '#7aa2ff', label: 'basket cost' },
+    ], { dollar: true, title: 'Avg basket cost (consumer-weighted)' });
+
+    renderChart('ch-prod', t, [
+      { fn: p => p.productivity_idx, color: '#a8e6a8', label: 'productivity index' },
+    ], { title: 'Productivity index (1.0 = Y0)' });
+
+    renderChart('ch-profits', t, [
+      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'total profit / mo' },
+    ], { dollar: true, title: 'Corporate profits / month' });
+
+    renderChart('ch-taxsh', t, [
+      { fn: p => p.tax_per_adult_step, color: '#ef4444', label: 'tax / adult / mo' },
+    ], { dollar: true, title: 'Tax burden per adult per month' });
 
     renderSnapshot(data);
     renderFirmsTable(data.firms || []);
