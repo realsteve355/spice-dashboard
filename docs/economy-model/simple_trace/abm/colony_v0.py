@@ -140,6 +140,17 @@ CONSUMPTION_PROP_PENSION  = 0.95   # of pension spent — retirees have low save
 # the UBI pool grows even when employment is dropping.
 PRODUCTIVITY_GROWTH_ANNUAL = 0.037
 
+# National-economy profit attributable per colony adult per year.
+# This is Steve's key point on MAC scope: Amazon HQ, Apple, Google, Pfizer,
+# banks, telecom — they ALL make profit from MF residents via market access
+# (online sales, subscriptions, ad attention, deposits, drugs, insurance, etc.)
+# regardless of where they're physically based. MAC is charged on the
+# colony's pro-rata share of national corporate profit. Grok's V8.3 Y0 spec
+# implies $7,500/adult/year for MaryFontaine (180k adults × $7,500 = $1.35b
+# total profit, matches his Y0 figure exactly). US economy-wide reality is
+# closer to $13,500/adult/yr but Grok uses the more conservative MF-specific.
+NATIONAL_PROFIT_PER_ADULT_ANNUAL = 7500.0
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
 # monthly_external_transfers so the total inflow approximately matches the
@@ -482,6 +493,9 @@ class ColonyV0Model(Model):
         self.mac_pool = 0.0
         self.mac_collected_this_step = 0.0
         self.mac_cumulative = 0.0
+        # Split tracking — local firm MAC vs national-economy share
+        self.mac_local_cumulative = 0.0
+        self.mac_national_cumulative = 0.0
         self.ubi_paid_this_step = 0.0
         self.ubi_cumulative = 0.0
 
@@ -711,6 +725,8 @@ class ColonyV0Model(Model):
                 "mac_rate":          lambda m: m.mac_rate,
                 "mac_step":          lambda m: m.mac_collected_this_step,
                 "mac_cum":           lambda m: m.mac_cumulative,
+                "mac_national_cum":  lambda m: m.mac_national_cumulative,
+                "mac_local_cum":     lambda m: m.mac_local_cumulative,
                 "ubi_step":          lambda m: m.ubi_paid_this_step,
                 "ubi_cum":           lambda m: m.ubi_cumulative,
                 "ubi_per_adult_mo":  lambda m: m.ubi_paid_this_step / max(1, len(m.citizens)),
@@ -951,11 +967,34 @@ class ColonyV0Model(Model):
             self.mac_pool += charge
             self.mac_collected_this_step += charge
             self.mac_cumulative += charge
-            # Same logic — most bank revenue drained externally
+            self.mac_local_cumulative += charge
             drain_refund = charge * (1 - HOUSING_LOCAL_PCT)
             self.money_drained_total -= drain_refund
             self.imports_this_step    -= drain_refund
             self.money_returned_total += drain_refund
+        # The local-firm portions above also count as 'local' MAC
+        # (LocalFirm, Chain, PureImport charges already added to mac_pool;
+        # tracking them separately here is approximate — add to local total
+        # after subtracting the national share computed below).
+
+        # National-economy MAC — Steve's point. Any firm with market access
+        # to the colony pays MAC on profit derived from that access,
+        # regardless of physical location. Amazon HQ, Apple, Google, Pfizer,
+        # banks, telecom, streaming, SaaS — all pro-rata share of US
+        # corporate profit attributable to this colony's adults.
+        # Productivity-scaled to capture abundance-era growth.
+        n_profit_per_adult = (NATIONAL_PROFIT_PER_ADULT_ANNUAL / 12.0) * productivity
+        total_national_profit = n_profit_per_adult * len(self.citizens)
+        national_charge = total_national_profit * self.mac_rate
+        if national_charge > 0:
+            self.mac_pool += national_charge
+            self.mac_collected_this_step += national_charge
+            self.mac_cumulative += national_charge
+            self.mac_national_cumulative += national_charge
+            # Represents abundance value flowing from external corporate
+            # profits → BoP credit
+            self.money_returned_total += national_charge
+            self.exports_this_step    += national_charge
 
     def _distribute_ubi(self):
         """Distribute MAC pool equally to all adult citizens as Universal UBI.
