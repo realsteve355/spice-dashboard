@@ -232,9 +232,9 @@ function renderSnapshot(data) {
       color: 'var(--ok)',
     },
     {
-      lbl: 'Employment (of adults)', val: pct(last.employment_rate),
-      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate_workforce)} of workforce`,
-      color: last.employment_rate < 0.3 ? 'var(--crit)' : (last.employment_rate < 0.45 ? 'var(--warn)' : 'var(--ok)'),
+      lbl: 'Employment (of workforce)', val: pct(last.employment_rate_workforce),
+      sub: `local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate)} of all adults`,
+      color: last.employment_rate_workforce < 0.6 ? 'var(--crit)' : (last.employment_rate_workforce < 0.9 ? 'var(--warn)' : 'var(--ok)'),
     },
     {
       lbl: 'Money supply', val: '$' + fmt(last.money_supply),
