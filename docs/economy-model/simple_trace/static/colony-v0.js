@@ -26,7 +26,7 @@ function renderComparison(tradData, axionData) {
   const t = tradData.trajectory[tradData.trajectory.length - 1];
   const a = axionData.trajectory[axionData.trajectory.length - 1];
   const rows = [
-    { label: 'Employment rate', t: t.employment_rate, a: a.employment_rate, fmt: pct, important: true, note: '% of all adults working' },
+    { label: 'Employment (of workforce)', t: t.employment_rate_workforce, a: a.employment_rate_workforce, fmt: pct, important: true, note: '% of workforce-active adults employed (excludes retirees, students, caregivers)' },
     { label: 'UBI per adult / mo', t: t.ubi_per_adult_mo, a: a.ubi_per_adult_mo, fmt: v => '$' + fmt(v), important: true, note: 'driven primarily by MAC, similar across modes' },
     { label: 'Citizen liquid wealth', t: t.liquid_wealth, a: a.liquid_wealth, fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits — the headline citizen-impact metric' },
     { label: 'Total citizen net worth', t: t.net_worth, a: a.net_worth, fmt: v => '$' + fmt(v), important: true, note: 'liquid + property − mortgages' },
@@ -56,13 +56,13 @@ function renderComparison(tradData, axionData) {
 
 function readCfg() {
   return {
-    months:                     readNum('months', 60),
+    months:                     readNum('months', 240),
     monthly_external_transfers: readNum('monthly_external_transfers', 2800),
     pension_per_inactive:       readNum('pension_per_inactive', 400),
     mac_rate:                   readNum('mac_rate', 0.22),
     mcc_mode:                   document.getElementById('mcc_mode').checked,
     mcc_rate:                   readNum('mcc_rate', 0.10),
-    automation_end:             readNum('automation_end', 0),
+    automation_end:             readNum('automation_end', 0.85),
     automation_months:          readNum('automation_months', 240),
     seed:                       readNum('seed', 42),
   };
@@ -410,7 +410,6 @@ async function refresh() {
       { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
     ], { dollar: true, title: 'MAC contribution by source (monthly)' });
 
-    renderHeatmap(data.savings_grid, data.productivities, data.employed_grid);
     renderSnapshot(data);
     renderFirmsTable(data.firms || []);
 
