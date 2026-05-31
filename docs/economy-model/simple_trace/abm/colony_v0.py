@@ -40,7 +40,12 @@ from mesa.datacollection import DataCollector
 # ── Sectors and structure ────────────────────────────────────────────────
 SECTORS = ["food", "goods", "services"]
 BASKET_WEIGHTS = {"food": 0.25, "goods": 0.35, "services": 0.40}
-INITIAL_LOCAL_PRICES = {"food": 80.0, "goods": 100.0, "services": 120.0}
+INITIAL_LOCAL_PRICES = {"food": 240.0, "goods": 300.0, "services": 360.0}
+# Basket cost at Y0 (consumer-weighted) ≈ $309/adult/mo — matches Grok's
+# 'moderate basket of 4 = $1,050-1,400/mo' implying ~$263-350/adult.
+# These are purely display values: model dynamics depend on RELATIVE prices
+# (provider choice), not absolute levels. Citizens' consumption budget is
+# determined by income, not basket price.
 
 # Baseline provider shares per sector (at A=0, equal prices). Reflects modern
 # US small-town chain dominance — Walmart owns most retail, indy services
@@ -152,6 +157,14 @@ CONSUMPTION_PROP_PENSION  = 0.95   # of pension spent — retirees have low save
 PRODUCTIVITY_GROWTH_ANNUAL = 0.078    # Grok's implied rate from his Y0->Y20
                                        # profit-per-employee growth (4.6x over
                                        # 20 years). 3.7% only gives 2.06x.
+
+# External savings investment — citizens with excess liquid invest the
+# overflow externally (401k, IRA, brokerage holding national stocks).
+# Wealth stays citizen-owned; just held outside colony money supply.
+# Without this, money supply grows unboundedly (national MAC inflow
+# outpaces drainage), driving velocity to unrealistic lows.
+EXTERNAL_INVESTMENT_PCT = 0.08   # 8% of excess invested externally each month
+TARGET_LIQUID_MONTHS    = 6      # citizens keep ~6 months of basket as liquid
 
 # National-economy profit attributable per colony adult per year.
 # This is Steve's key point on MAC scope: Amazon HQ, Apple, Google, Pfizer,
@@ -521,6 +534,9 @@ class ColonyV0Model(Model):
         # MOND (AXION local currency) tracking
         self.mond_minted_cumulative = 0.0
         self.mond_retired_cumulative = 0.0
+        # External savings (capital outflow to 401k / IRAs etc)
+        self.external_savings_this_step = 0.0
+        self.external_savings_cumulative = 0.0
         # Corporate profit aggregate — sum of firm profits + national share
         # per step. Surface for the dashboard 'profits' chart.
         self.corporate_profit_this_step = 0.0
@@ -767,6 +783,8 @@ class ColonyV0Model(Model):
                 "mond_minted_cum":   lambda m: m.mond_minted_cumulative,
                 "mond_retired_cum":  lambda m: m.mond_retired_cumulative,
                 "mond_outstanding":  lambda m: sum(c.mond_balance for c in m.citizens),
+                "ext_savings_step":  lambda m: m.external_savings_this_step,
+                "ext_savings_cum":   lambda m: m.external_savings_cumulative,
                 # New: corporate profit, productivity, unemployment, tax share
                 "corp_profit_step":  lambda m: m.corporate_profit_this_step,
                 "productivity_idx":  lambda m: (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (m.steps / 12.0),
@@ -1115,6 +1133,26 @@ class ColonyV0Model(Model):
         self.mond_minted_cumulative += self.mac_pool
         self.mac_pool = 0.0   # fully distributed each month
 
+    def _external_savings_drain(self):
+        """Citizens invest excess liquid (above ~6 months consumption) outside
+        the colony — 401(k), IRA, brokerage holding national-economy stocks.
+        Wealth stays citizen-owned but exits colony money supply. Without
+        this, MAC inflow + transfers outpace drainage forever and velocity
+        collapses."""
+        self.external_savings_this_step = 0.0
+        if EXTERNAL_INVESTMENT_PCT <= 0: return
+        for c in self.citizens:
+            target = self.subsistence_floor * TARGET_LIQUID_MONTHS * c.household_size
+            excess = max(0.0, c.savings - target)
+            invest = excess * EXTERNAL_INVESTMENT_PCT
+            if invest > 0.5:
+                c.savings -= invest
+                self.external_savings_this_step += invest
+                self.external_savings_cumulative += invest
+                # Money exits colony as capital outflow
+                self.money_drained_total += invest
+                self.imports_this_step    += invest
+
     def _appreciate_property(self):
         """Property appreciates monthly. Wealth accrues to homeowners
         without any cash flow — the 'land doesn't deflate' point that
@@ -1411,6 +1449,7 @@ class ColonyV0Model(Model):
         self._appreciate_property()
         self._collect_mac()
         self._distribute_ubi()
+        self._external_savings_drain()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])
