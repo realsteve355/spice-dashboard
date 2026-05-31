@@ -380,14 +380,12 @@ async function refresh() {
       { fn: p => p.money_returned, color: '#7aa2ff', label: 'cumulative exports', dash: '4 3' },
     ], { dollar: true, title: 'Money supply + cumulative trade' });
 
-    renderChart('ch-gini', t, [
+    renderChart('ch-bop', t, [
       { fn: p => p.imports_step,        color: '#ef4444', label: 'imports / mo' },
       { fn: p => p.exports_step,        color: '#a8e6a8', label: 'exports / mo' },
     ], { dollar: true, title: 'Balance of payments (monthly)' });
 
-    // Velocity replaces basket cost (the local-only basket line was meaningless —
-    // citizens always buy a mix; basket cost is now in the snapshot tile).
-    renderChart('ch-basket', t, [
+    renderChart('ch-velocity', t, [
       { fn: p => p.velocity_annual, color: '#cfa340', label: 'V annual (MV=PY)' },
       { fn: p => p.velocity_monthly, color: '#a05a30', label: 'V monthly', dash: '3 3' },
     ], { title: 'Money velocity (transactions ÷ supply)' });
@@ -425,12 +423,17 @@ async function refresh() {
     ], { title: 'Productivity index (1.0 = Y0)', noZero: true });
 
     renderChart('ch-profits', t, [
-      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'profit / mo (this colony)' },
-    ], { dollar: true, title: 'Corporate profits / month (this colony, $) — local + national share' });
+      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'corporate profit / mo' },
+      { fn: p => p.mac_step, color: '#b48ee6', label: 'MAC collected / mo', dash: '4 3' },
+    ], { dollar: true, title: 'Corporate profits + MAC collected (this colony, $)' });
 
-    renderChart('ch-taxsh', t, [
-      { fn: p => p.tax_per_adult_step, color: '#ef4444', label: 'tax / adult / mo' },
-    ], { dollar: true, title: 'Tax burden per adult per month' });
+    // Tax chart shows BOTH modes so the AXION reduction is visible regardless
+    // of which mode is currently selected.
+    const tradT = tradData.trajectory, axionT = axionData.trajectory;
+    renderChart('ch-taxsh', tradT, [
+      { fn: (_, i) => tradT[i] ? tradT[i].tax_per_adult_step : 0, color: '#ef4444', label: 'Traditional / adult / mo' },
+      { fn: (_, i) => axionT[i] ? axionT[i].tax_per_adult_step : 0, color: '#a8e6a8', label: 'AXION MCC / adult / mo' },
+    ], { dollar: true, title: 'Tax burden per adult / month — Traditional vs AXION' });
 
     renderSnapshot(data);
     renderFirmsTable(data.firms || []);
