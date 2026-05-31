@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE))
 from sim import run as run_sim
 from trajectory import run as run_trajectory
 from forecasts import get_forecasts
+from grok_v83 import run as run_grok_v83
 
 
 def run_abm(cfg):
@@ -276,6 +277,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "abm.html", "text/html; charset=utf-8")
         elif p == "/colony-v0":
             self._send_file(self.templates_dir / "colony-v0.html", "text/html; charset=utf-8")
+        elif p == "/grok-projection":
+            self._send_file(self.templates_dir / "grok-projection.html", "text/html; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
@@ -291,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         p = urlparse(self.path).path
-        if p in ("/api/run", "/api/trajectory", "/api/abm", "/api/colony-v0"):
+        if p in ("/api/run", "/api/trajectory", "/api/abm", "/api/colony-v0", "/api/grok-projection"):
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
             try:
@@ -301,10 +304,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 runner = {
-                    "/api/run":        run_sim,
-                    "/api/trajectory": run_trajectory,
-                    "/api/abm":        run_abm,
-                    "/api/colony-v0":  run_colony_v0,
+                    "/api/run":             run_sim,
+                    "/api/trajectory":      run_trajectory,
+                    "/api/abm":             run_abm,
+                    "/api/colony-v0":       run_colony_v0,
+                    "/api/grok-projection": run_grok_v83,
                 }[p]
                 result = runner(cfg)
                 self._send_json(200, result)

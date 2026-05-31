@@ -25,6 +25,9 @@
     { label: 'Pre-AXION baseline', items: [
       { path: '/colony-v0',      label: 'Colony v0' },
     ]},
+    { label: 'Grok V8.3', items: [
+      { path: '/grok-projection', label: 'Reference projection' },
+    ]},
   ];
 
   const current = window.location.pathname.replace(/\/$/, '') || '/';
