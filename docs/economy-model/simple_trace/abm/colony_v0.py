@@ -127,6 +127,19 @@ IMPLIED_MARGIN_CHAIN      = 0.08   # chain branches — post-corp-fee retained m
 IMPLIED_MARGIN_IMPORT     = 0.15   # online retail / SaaS-style margins
 IMPLIED_MARGIN_BANK       = 0.50   # mortgage interest spread (very high implied margin)
 
+# Consumption propensities per Grok V8.3 Section 3.
+# Citizens save a portion of each income source; high UBI propensity is the
+# load-bearing assumption that makes UBI sustain demand in the abundance era.
+CONSUMPTION_PROP_WAGES    = 0.75   # of post-tax wage spent (rest saved)
+CONSUMPTION_PROP_UBI      = 0.85   # of UBI spent (rest saved) — Grok's headline
+CONSUMPTION_PROP_PENSION  = 0.95   # of pension spent — retirees have low save rate
+
+# Productivity growth (Grok V8.3) — automation creates value above what's
+# collected as revenue. Modelled as an exogenous lift to profit at MAC
+# collection time, paid for from "abundance" (treated as BoP credit) so
+# the UBI pool grows even when employment is dropping.
+PRODUCTIVITY_GROWTH_ANNUAL = 0.037
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
 # monthly_external_transfers so the total inflow approximately matches the
@@ -156,6 +169,7 @@ class Citizen(Agent):
         self.mortgage_term_remaining = 0  # months remaining
         self.other_debt = 0.0             # personal loans / credit card (Phase 3+)
         self.ubi_received_cumulative = 0.0
+        self.ubi_pending = 0.0            # UBI not yet spent (carries into next consume)
 
     @property
     def net_worth(self):
@@ -876,41 +890,55 @@ class ColonyV0Model(Model):
         self.mac_collected_this_step = 0.0
         if self.mac_rate <= 0:
             return
-        # LocalFirms: profit = revenue - wages
+        # Productivity factor — compounds 3.7%/yr per Grok's spec. Raises
+        # effective firm profit (and thus MAC pool) over time even when
+        # revenue is flat. The extra above firm balance is paid from
+        # 'abundance' (BoP credit).
+        productivity = (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (self.steps / 12.0)
+        # LocalFirms: profit = revenue × productivity - wages
         for f in self.local_firms.values():
             wage_cost = sum(w.wage_if_hired for w in f.workers)
-            profit = max(0.0, f.revenue_this_month - wage_cost)
+            profit = max(0.0, f.revenue_this_month * productivity - wage_cost)
             charge = profit * self.mac_rate
-            if charge > 0 and f.balance >= charge:
-                f.balance -= charge
+            if charge > 0:
+                from_balance = min(charge, f.balance)
+                from_abundance = charge - from_balance
+                f.balance -= from_balance
                 f.mac_paid_cumulative += charge
                 self.mac_pool += charge
                 self.mac_collected_this_step += charge
                 self.mac_cumulative += charge
-        # ChainBranches: profit = (revenue * (1-corp_fee)) - wages
+                if from_abundance > 0:
+                    self.money_returned_total += from_abundance
+                    self.exports_this_step += from_abundance
+        # ChainBranches: profit = (revenue × productivity × (1-corp_fee)) - wages
         for f in self.chain_branches.values():
-            retained = f.revenue_this_month * (1 - CHAIN_CORP_FEE_RATE)
+            retained = f.revenue_this_month * productivity * (1 - CHAIN_CORP_FEE_RATE)
             wage_cost = sum(w.wage_if_hired for w in f.workers)
             profit = max(0.0, retained - wage_cost)
             charge = profit * self.mac_rate
-            if charge > 0 and f.balance >= charge:
-                f.balance -= charge
+            if charge > 0:
+                from_balance = min(charge, f.balance)
+                from_abundance = charge - from_balance
+                f.balance -= from_balance
                 f.mac_paid_cumulative += charge
                 self.mac_pool += charge
                 self.mac_collected_this_step += charge
                 self.mac_cumulative += charge
+                if from_abundance > 0:
+                    self.money_returned_total += from_abundance
+                    self.exports_this_step += from_abundance
         # PureImports: implied 15% margin. Since they're external, the charge
         # comes off what would have drained — money stays in the colony instead.
         for f in self.pure_imports.values():
-            # Pure imports have no local employees: profit = revenue × 60% margin
-            profit = f.revenue_this_month * 0.60
+            # Pure imports have no local employees: profit = revenue × 60% × productivity
+            profit = f.revenue_this_month * 0.60 * productivity
             charge = profit * self.mac_rate
             if charge > 0:
                 f.mac_paid_cumulative += charge
                 self.mac_pool += charge
                 self.mac_collected_this_step += charge
                 self.mac_cumulative += charge
-                # Refund the BoP — this charge would have drained externally
                 self.money_drained_total -= charge
                 self.imports_this_step    -= charge
                 self.money_returned_total += charge
@@ -930,7 +958,9 @@ class ColonyV0Model(Model):
             self.money_returned_total += drain_refund
 
     def _distribute_ubi(self):
-        """Distribute MAC pool equally to all adult citizens as Universal UBI."""
+        """Distribute MAC pool equally to all adult citizens as Universal UBI.
+        The UBI is parked in ubi_pending so that next month's consume phase
+        can route CONSUMPTION_PROP_UBI of it (Grok's 85%) into spending."""
         self.ubi_paid_this_step = 0.0
         if self.mac_pool <= 0 or not self.citizens:
             return
@@ -938,6 +968,7 @@ class ColonyV0Model(Model):
         for c in self.citizens:
             c.savings += per_adult
             c.ubi_received_cumulative += per_adult
+            c.ubi_pending += per_adult
         self.ubi_paid_this_step = self.mac_pool
         self.ubi_cumulative += self.mac_pool
         self.mac_pool = 0.0   # fully distributed each month
@@ -1043,17 +1074,25 @@ class ColonyV0Model(Model):
 
         for c in order:
             if c.savings <= 0: continue
-            # Citizens spend disposable (post-income-tax) income, scaled up
-            # for dependents (kids consume from household budget). Sales tax
-            # is deducted at point of purchase, so it comes from this spending.
+            # Per Grok V8.3: different consumption propensities for different
+            # income sources. Wages: 75% (citizens save 25%). UBI: 85%
+            # (less saving — UBI is "use it or lose it" by design). Pension:
+            # 95% (retirees consume nearly all). Subsistence floor for the
+            # workforce-unemployed who have no recurring income.
             if c.employed:
                 disposable = c.last_income * (1 - INCOME_TAX_RATE)
-                base_target = disposable * self.target_spend_pct
+                base_target = disposable * CONSUMPTION_PROP_WAGES
+            elif not c.in_workforce:
+                base_target = c.last_income * CONSUMPTION_PROP_PENSION
             else:
                 base_target = self.subsistence_floor
-            target = base_target * (1 + c.dependents * CHILD_CONSUMPTION)
+            # UBI contribution to spending — Grok's headline mechanism
+            ubi_target = c.ubi_pending * CONSUMPTION_PROP_UBI
+            target = (base_target + ubi_target) * (1 + c.dependents * CHILD_CONSUMPTION)
             target = max(target, self.subsistence_floor * (1 + c.dependents * CHILD_CONSUMPTION))
             spend = min(target, c.savings)
+            # Mark UBI as processed (whether spent or not)
+            c.ubi_pending = 0.0
             if spend <= 0: continue
 
             for sector in SECTORS:
