@@ -2,7 +2,7 @@
 // + the per-citizen wealth heatmap.
 
 const INPUTS = ['months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'mcc_rate', 'automation_end', 'automation_months', 'seed'];
-const STORAGE_KEY = 'axion_colony_v0_v1';
+const STORAGE_KEY = 'axion_colony_v0_v2';   // bump to invalidate v1 saves with old defaults
 
 function readNum(id, def) {
   const v = parseFloat(document.getElementById(id).value);
@@ -422,7 +422,11 @@ async function refresh() {
 function saveInputs() {
   try {
     const o = {};
-    for (const id of INPUTS) o[id] = document.getElementById(id).value;
+    for (const id of INPUTS) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      o[id] = el.type === 'checkbox' ? el.checked : el.value;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(o));
   } catch (e) {}
 }
@@ -433,7 +437,9 @@ function restoreInputs() {
     const o = JSON.parse(raw);
     for (const [id, v] of Object.entries(o)) {
       const el = document.getElementById(id);
-      if (el && v) el.value = v;
+      if (!el) continue;
+      if (el.type === 'checkbox') el.checked = !!v;
+      else if (v !== undefined && v !== null && v !== '') el.value = v;
     }
   } catch (e) {}
 }
