@@ -95,7 +95,8 @@ def run_colony_v0(cfg):
         firm_initial_float          = float(cfg.get("firm_initial_float", 3000)),
         automation_end              = float(cfg.get("automation_end", 0.0)),
         automation_months           = int(cfg.get("automation_months", 60)),
-        monthly_external_transfers  = float(cfg.get("monthly_external_transfers", 2800)),
+        monthly_external_transfers  = float(cfg.get("monthly_external_transfers", 5200)),
+        mac_rate                    = float(cfg.get("mac_rate", 0.22)),
     )
     for _ in range(months):
         model.step()
@@ -121,6 +122,7 @@ def run_colony_v0(cfg):
             "balance": f.balance,
             "txns_month": f.txns_this_month,
             "txns_cum": f.txns_cumulative,
+            "mac_paid_cum": f.mac_paid_cumulative,
         })
         c = model.chain_branches[s]
         firms.append({
@@ -136,6 +138,7 @@ def run_colony_v0(cfg):
             "balance": c.balance,
             "txns_month": c.txns_this_month,
             "txns_cum": c.txns_cumulative,
+            "mac_paid_cum": c.mac_paid_cumulative,
         })
         p = model.pure_imports[s]
         firms.append({
@@ -148,6 +151,7 @@ def run_colony_v0(cfg):
             "revenue_cum": p.revenue_cumulative,
             "txns_month": p.txns_this_month,
             "txns_cum": p.txns_cumulative,
+            "mac_paid_cum": p.mac_paid_cumulative,
         })
     pub = model.public_sector
     firms.append({
@@ -179,6 +183,16 @@ def run_colony_v0(cfg):
         "tax_drained_cum": model.income_tax_drained_cumulative + model.sales_tax_drained_cumulative,
         "tax_local_cum": model.income_tax_local_cumulative + model.sales_tax_local_cumulative,
     })
+    # AXION mechanism: MAC pool + UBI distribution
+    firms.append({
+        "name": "MAC pool → Universal UBI",
+        "type": "ubi",
+        "sector": "—",
+        "workers": 0,
+        "mac_cum": model.mac_cumulative,
+        "ubi_cum": model.ubi_cumulative,
+        "mac_rate": model.mac_rate,
+    })
     # Bank / Landlord — holds mortgages + rentals
     bk = model.bank
     firms.append({
@@ -192,6 +206,7 @@ def run_colony_v0(cfg):
         "local_cum": bk.local_share_cumulative,
         "drained_cum": bk.drained_cumulative,
         "outstanding_mortgages": bk.outstanding_mortgages,
+        "mac_paid_cum": bk.mac_paid_cumulative,
     })
 
     return {

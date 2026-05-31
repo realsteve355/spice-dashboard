@@ -1,7 +1,7 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'monthly_external_transfers', 'seed'];
+const INPUTS = ['months', 'monthly_external_transfers', 'mac_rate', 'seed'];
 const STORAGE_KEY = 'axion_colony_v0_v1';
 
 function readNum(id, def) {
@@ -23,7 +23,8 @@ function setStatus(msg, err = false) {
 async function fetchRun() {
   const cfg = {
     months:                     readNum('months', 60),
-    monthly_external_transfers: readNum('monthly_external_transfers', 2800),
+    monthly_external_transfers: readNum('monthly_external_transfers', 5200),
+    mac_rate:                   readNum('mac_rate', 0.22),
     seed:                       readNum('seed', 42),
   };
   setStatus('running…');
@@ -219,6 +220,12 @@ function renderSnapshot(data) {
       sub: `mortgage interest cum. $${fmt(last.mortgage_int_step ? (last.mortgage_int_step * data.months) : 0)} (mostly drained externally)`,
       color: 'var(--ok)',
     },
+    {
+      lbl: 'UBI per adult (mo)',
+      val: '$' + fmt(last.ubi_per_adult_mo || 0),
+      sub: `k=${((last.mac_rate || 0) * 100).toFixed(0)}% · MAC pool cum. $${fmt(last.mac_cum || 0)}`,
+      color: 'var(--ok)',
+    },
   ];
   document.getElementById('snapshot').innerHTML = cells.map(c => `
     <div class="stat" style="border-left-color:${c.color}">
@@ -240,6 +247,7 @@ function renderFirmsTable(firms) {
     exports: '#a8e6a8',
     tax:     '#cfa340',
     bank:    '#c08838',
+    ubi:     '#b48ee6',
   };
   tbody.innerHTML = firms.map(f => {
     const color = TYPE_COLOR[f.type] || 'var(--dim)';
@@ -258,6 +266,8 @@ function renderFirmsTable(firms) {
       flow = `−$${fmt(f.tax_drained_cum || 0)} drained · +$${fmt(f.tax_local_cum || 0)} stayed local`;
     } else if (f.type === 'bank') {
       flow = `mortgages: $${fmt(f.outstanding_mortgages || 0)} outstanding · −$${fmt(f.drained_cum || 0)} drained ext.`;
+    } else if (f.type === 'ubi') {
+      flow = `k=${(f.mac_rate * 100).toFixed(0)}% · +$${fmt(f.ubi_cum || 0)} cum. UBI to all citizens`;
     }
     let revMonth = '—', revCum = '—', wagesCum = '—', txnMonth = '—', txnCum = '—';
     if (f.revenue_month !== undefined) revMonth = '$' + fmt(f.revenue_month);
@@ -275,6 +285,10 @@ function renderFirmsTable(firms) {
     if (f.type === 'bank') {
       revCum = '$' + fmt((f.mortgage_int_cum || 0) + (f.rent_cum || 0));
     }
+    if (f.type === 'ubi') {
+      revCum = '$' + fmt(f.mac_cum || 0);
+    }
+    const macPaid = f.mac_paid_cum !== undefined ? '$' + fmt(f.mac_paid_cum) : '—';
     return `<tr style="border-bottom:1px solid #14171f;">
       <td style="padding:6px 8px; color:var(--headline);">${f.name}</td>
       <td style="padding:6px 8px;"><span style="color:${color}">●</span> ${f.type}</td>
@@ -285,6 +299,7 @@ function renderFirmsTable(firms) {
       <td style="padding:6px 8px; text-align:right; color:var(--txt); font-variant-numeric:tabular-nums;">${revMonth}</td>
       <td style="padding:6px 8px; text-align:right; color:var(--dim); font-variant-numeric:tabular-nums;">${revCum}</td>
       <td style="padding:6px 8px; text-align:right; color:var(--txt); font-variant-numeric:tabular-nums;">${wagesCum}</td>
+      <td style="padding:6px 8px; text-align:right; color:#b48ee6; font-variant-numeric:tabular-nums;">${macPaid}</td>
       <td style="padding:6px 8px; color:var(--dim); font-size:10px;">${flow}</td>
     </tr>`;
   }).join('');

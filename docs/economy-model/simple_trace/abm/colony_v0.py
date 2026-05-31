@@ -107,6 +107,17 @@ MONTHLY_RENT              = 150.0   # flat rent for renters (smaller scale)
 HOUSING_LOCAL_PCT         = 0.20   # of mortgage interest + rent, fraction stays local
                                     # (small local banks, local landlords)
 
+# Market Access Charge (MAC) — the AXION-era mechanism per Grok 31-May-2026 doc.
+# Charge_i = k × profit_i, paid by firms that extract margin from the colony's
+# market. Pooled and distributed as Universal UBI to all adults.
+# Profit is proxied by revenue × type-specific implied margin since the model
+# doesn't track full cost structure. Set MAC_RATE = 0 to disable.
+MAC_RATE                  = 0.22   # k, Grok's base; user can scrub 0.05 - 0.50
+IMPLIED_MARGIN_LOCAL      = 0.05   # truly-local indy firms — small margin, lots of labour
+IMPLIED_MARGIN_CHAIN      = 0.08   # chain branches — post-corp-fee retained margin
+IMPLIED_MARGIN_IMPORT     = 0.15   # online retail / SaaS-style margins
+IMPLIED_MARGIN_BANK       = 0.50   # mortgage interest spread (very high implied margin)
+
 # Exports (truly local firms only — chain branches don't export, they ARE
 # the external HQ's branch into the colony). Calibrated together with
 # monthly_external_transfers so the total inflow approximately matches the
@@ -134,6 +145,7 @@ class Citizen(Agent):
         self.mortgage_payment = 0.0       # monthly amortized payment (int + principal)
         self.mortgage_term_remaining = 0  # months remaining
         self.other_debt = 0.0             # personal loans / credit card (Phase 3+)
+        self.ubi_received_cumulative = 0.0
 
     @property
     def net_worth(self):
@@ -186,6 +198,7 @@ class LocalFirm(Agent):
         self.wages_paid_cumulative = 0.0
         self.txns_this_month = 0
         self.txns_cumulative = 0
+        self.mac_paid_cumulative = 0.0
 
         for c in initial_workers:
             c.employer = self
@@ -226,6 +239,7 @@ class ChainBranch(Agent):
         self.wages_paid_cumulative = 0.0
         self.txns_this_month = 0
         self.txns_cumulative = 0
+        self.mac_paid_cumulative = 0.0
         self.automation = 0.0
 
         for c in initial_workers:
@@ -317,6 +331,7 @@ class BankLandlord(Agent):
         self.local_share_cumulative = 0.0
         self.drained_cumulative = 0.0
         self.outstanding_mortgages = 0.0   # snapshot, recomputed each step
+        self.mac_paid_cumulative = 0.0
 
     def collect_mortgage_interest(self, amount):
         self.mortgage_interest_this_step += amount
@@ -356,6 +371,7 @@ class PureImport(Agent):
         self.revenue_cumulative = 0.0
         self.txns_this_month = 0
         self.txns_cumulative = 0
+        self.mac_paid_cumulative = 0.0
 
     def update_price(self):
         base = INITIAL_LOCAL_PRICES[self.sector]
@@ -391,6 +407,7 @@ class ColonyV0Model(Model):
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
         monthly_external_transfers: float = 5200.0,  # public + federal redistribution inflow
+        mac_rate: float = MAC_RATE,                  # Market Access Charge — k of profit
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -428,8 +445,16 @@ class ColonyV0Model(Model):
         # Savings interest paid by national banks (external inflow)
         self.savings_interest_paid_this_step = 0.0
         self.savings_interest_cumulative = 0.0
+        # MAC + UBI (the AXION mechanism)
+        self.mac_rate = MAC_RATE
+        self.mac_pool = 0.0
+        self.mac_collected_this_step = 0.0
+        self.mac_cumulative = 0.0
+        self.ubi_paid_this_step = 0.0
+        self.ubi_cumulative = 0.0
 
         self.monthly_external_transfers = monthly_external_transfers
+        self.mac_rate = mac_rate
 
         # Spawn citizens — adults with Pareto productivity, some have child
         # dependents. Children aren't separate agents; they're counted on the
@@ -635,6 +660,13 @@ class ColonyV0Model(Model):
                 "bank_balance":      lambda m: m.bank.balance,
                 "savings_int_step":  lambda m: m.savings_interest_paid_this_step,
                 "savings_int_cum":   lambda m: m.savings_interest_cumulative,
+                # MAC + UBI (the AXION mechanism)
+                "mac_rate":          lambda m: m.mac_rate,
+                "mac_step":          lambda m: m.mac_collected_this_step,
+                "mac_cum":           lambda m: m.mac_cumulative,
+                "ubi_step":          lambda m: m.ubi_paid_this_step,
+                "ubi_cum":           lambda m: m.ubi_cumulative,
+                "ubi_per_adult_mo":  lambda m: m.ubi_paid_this_step / max(1, len(m.citizens)),
                 # Revenue by channel (totals across sectors)
                 "rev_local":         lambda m: sum(f.revenue_this_month for f in m.local_firms.values()),
                 "rev_chain":         lambda m: sum(f.revenue_this_month for f in m.chain_branches.values()),
@@ -801,6 +833,77 @@ class ColonyV0Model(Model):
                 self.savings_interest_cumulative += interest
                 self.money_returned_total += interest
                 self.exports_this_step += interest
+
+    def _collect_mac(self):
+        """Market Access Charge. Per Grok 31-May-2026: each firm pays k × profit.
+        Profit is proxied by revenue × implied-margin since the model doesn't
+        track full cost structure. Pure imports get charged too (the colony
+        DOES grant them market access; the charge stays in the colony instead
+        of fully draining). Public sector is exempt."""
+        self.mac_collected_this_step = 0.0
+        if self.mac_rate <= 0:
+            return
+        # LocalFirms: implied 5% margin on revenue
+        for f in self.local_firms.values():
+            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_LOCAL
+            charge = implied_profit * self.mac_rate
+            if charge > 0 and f.balance >= charge:
+                f.balance -= charge
+                f.mac_paid_cumulative += charge
+                self.mac_pool += charge
+                self.mac_collected_this_step += charge
+                self.mac_cumulative += charge
+        # ChainBranches: implied 8% margin (after corp fee retained portion)
+        for f in self.chain_branches.values():
+            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_CHAIN
+            charge = implied_profit * self.mac_rate
+            if charge > 0 and f.balance >= charge:
+                f.balance -= charge
+                f.mac_paid_cumulative += charge
+                self.mac_pool += charge
+                self.mac_collected_this_step += charge
+                self.mac_cumulative += charge
+        # PureImports: implied 15% margin. Since they're external, the charge
+        # comes off what would have drained — money stays in the colony instead.
+        for f in self.pure_imports.values():
+            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_IMPORT
+            charge = implied_profit * self.mac_rate
+            if charge > 0:
+                f.mac_paid_cumulative += charge
+                self.mac_pool += charge
+                self.mac_collected_this_step += charge
+                self.mac_cumulative += charge
+                # Refund the BoP — this charge would have drained externally
+                self.money_drained_total -= charge
+                self.imports_this_step    -= charge
+                self.money_returned_total += charge
+        # Bank: implied 50% margin on mortgage interest + rent (very profitable)
+        bank_rev = self.bank.mortgage_interest_this_step + self.bank.rent_this_step
+        implied_profit = bank_rev * IMPLIED_MARGIN_BANK
+        charge = implied_profit * self.mac_rate
+        if charge > 0:
+            self.bank.mac_paid_cumulative += charge
+            self.mac_pool += charge
+            self.mac_collected_this_step += charge
+            self.mac_cumulative += charge
+            # Same logic — most bank revenue drained externally
+            drain_refund = charge * (1 - HOUSING_LOCAL_PCT)
+            self.money_drained_total -= drain_refund
+            self.imports_this_step    -= drain_refund
+            self.money_returned_total += drain_refund
+
+    def _distribute_ubi(self):
+        """Distribute MAC pool equally to all adult citizens as Universal UBI."""
+        self.ubi_paid_this_step = 0.0
+        if self.mac_pool <= 0 or not self.citizens:
+            return
+        per_adult = self.mac_pool / len(self.citizens)
+        for c in self.citizens:
+            c.savings += per_adult
+            c.ubi_received_cumulative += per_adult
+        self.ubi_paid_this_step = self.mac_pool
+        self.ubi_cumulative += self.mac_pool
+        self.mac_pool = 0.0   # fully distributed each month
 
     def _appreciate_property(self):
         """Property appreciates monthly. Wealth accrues to homeowners
@@ -1040,6 +1143,8 @@ class ColonyV0Model(Model):
         self.savings_interest_paid_this_step = 0.0
         self._pay_savings_interest()
         self._appreciate_property()
+        self._collect_mac()
+        self._distribute_ubi()
         self._firm_workforce_adjust()
         self._track_unemployment()
         self.savings_history.append([c.savings for c in self.citizens])
