@@ -222,6 +222,72 @@
   </div>
 
 
+  <div class="card">
+    <h3>What's in the basket</h3>
+    <div class="sub">
+      Three consumption categories. Each citizen allocates monthly spending
+      across them by the basket weight. The provider mix (local indy / chain /
+      pure import) varies by sector and shifts as automation makes
+      chain &amp; import cheaper.
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; font-size:11px;">
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #7eb24f; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Food — 25% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Groceries + meals</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Groceries (meat, dairy, produce, staples)</li>
+          <li>Fast-food / quick-service restaurants</li>
+          <li>Cafés &amp; coffee shops</li>
+          <li>Sit-down restaurants &amp; takeaway</li>
+          <li>Bakery / specialty food</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 60% chain (Walmart, Kroger, McDonald's), 35% local indy (independent grocer, local restaurant), 5% import (Amazon Fresh, meal kits)
+        </div>
+      </div>
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #ffb86c; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Goods — 35% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Physical &amp; durable items</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Clothing &amp; footwear</li>
+          <li>Electronics (phones, laptops, TVs)</li>
+          <li>Home furniture &amp; furnishings</li>
+          <li>Appliances &amp; tools</li>
+          <li>Auto parts &amp; transport equipment</li>
+          <li>Personal care products, household supplies</li>
+          <li>Books, toys, hobby goods</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 65% chain (Walmart, Target, Best Buy, Home Depot), 15% local indy (hardware, boutique), 20% import (Amazon online)
+        </div>
+      </div>
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #7aa2ff; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Services — 40% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Healthcare, utilities, professional, recreation</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Healthcare (doctor, dentist, prescriptions)</li>
+          <li>Personal care (haircut, salon, gym)</li>
+          <li>Utilities (electricity, gas, water, internet, phone)</li>
+          <li>Insurance (auto, health, home)</li>
+          <li>Professional (legal, accounting, tax prep)</li>
+          <li>Childcare &amp; education extras</li>
+          <li>Auto repair &amp; maintenance</li>
+          <li>Recreation (cinema, gym, events)</li>
+          <li>Streaming &amp; subscriptions (Netflix, Spotify, SaaS)</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 30% chain (chain gym, chain banks), 60% local indy (your dentist, accountant, mechanic), 10% import (streaming, online insurance, SaaS)
+        </div>
+      </div>
+    </div>
+    <div style="font-size:10px; color:var(--dim); margin-top:10px; line-height:1.5;">
+      <strong>Note:</strong> housing (rent, mortgage interest, property tax) is modelled separately from
+      the basket — those flows go via the Bank/Landlord entity and the public sector,
+      not via the three consumption sectors. Federal/state income tax is also separate.
+      The basket here is the post-tax, post-housing consumption pie.
+    </div>
+  </div>
+
 </main>
 
 <script src="/static/nav.js"></script>
