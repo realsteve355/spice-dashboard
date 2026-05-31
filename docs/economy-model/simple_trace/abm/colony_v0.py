@@ -843,20 +843,23 @@ class ColonyV0Model(Model):
         self.mac_collected_this_step = 0.0
         if self.mac_rate <= 0:
             return
-        # LocalFirms: implied 5% margin on revenue
+        # LocalFirms: profit = revenue - wages
         for f in self.local_firms.values():
-            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_LOCAL
-            charge = implied_profit * self.mac_rate
+            wage_cost = sum(w.wage_if_hired for w in f.workers)
+            profit = max(0.0, f.revenue_this_month - wage_cost)
+            charge = profit * self.mac_rate
             if charge > 0 and f.balance >= charge:
                 f.balance -= charge
                 f.mac_paid_cumulative += charge
                 self.mac_pool += charge
                 self.mac_collected_this_step += charge
                 self.mac_cumulative += charge
-        # ChainBranches: implied 8% margin (after corp fee retained portion)
+        # ChainBranches: profit = (revenue * (1-corp_fee)) - wages
         for f in self.chain_branches.values():
-            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_CHAIN
-            charge = implied_profit * self.mac_rate
+            retained = f.revenue_this_month * (1 - CHAIN_CORP_FEE_RATE)
+            wage_cost = sum(w.wage_if_hired for w in f.workers)
+            profit = max(0.0, retained - wage_cost)
+            charge = profit * self.mac_rate
             if charge > 0 and f.balance >= charge:
                 f.balance -= charge
                 f.mac_paid_cumulative += charge
@@ -866,8 +869,9 @@ class ColonyV0Model(Model):
         # PureImports: implied 15% margin. Since they're external, the charge
         # comes off what would have drained — money stays in the colony instead.
         for f in self.pure_imports.values():
-            implied_profit = f.revenue_this_month * IMPLIED_MARGIN_IMPORT
-            charge = implied_profit * self.mac_rate
+            # Pure imports have no local employees: profit = revenue × 60% margin
+            profit = f.revenue_this_month * 0.60
+            charge = profit * self.mac_rate
             if charge > 0:
                 f.mac_paid_cumulative += charge
                 self.mac_pool += charge

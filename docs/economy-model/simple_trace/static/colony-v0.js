@@ -1,7 +1,7 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['months', 'monthly_external_transfers', 'mac_rate', 'seed'];
+const INPUTS = ['months', 'monthly_external_transfers', 'mac_rate', 'automation_end', 'automation_months', 'seed'];
 const STORAGE_KEY = 'axion_colony_v0_v1';
 
 function readNum(id, def) {
@@ -25,6 +25,8 @@ async function fetchRun() {
     months:                     readNum('months', 60),
     monthly_external_transfers: readNum('monthly_external_transfers', 5200),
     mac_rate:                   readNum('mac_rate', 0.22),
+    automation_end:             readNum('automation_end', 0),
+    automation_months:          readNum('automation_months', 240),
     seed:                       readNum('seed', 42),
   };
   setStatus('running…');
