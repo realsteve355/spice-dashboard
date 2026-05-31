@@ -149,7 +149,9 @@ CONSUMPTION_PROP_PENSION  = 0.95   # of pension spent — retirees have low save
 # collected as revenue. Modelled as an exogenous lift to profit at MAC
 # collection time, paid for from "abundance" (treated as BoP credit) so
 # the UBI pool grows even when employment is dropping.
-PRODUCTIVITY_GROWTH_ANNUAL = 0.037
+PRODUCTIVITY_GROWTH_ANNUAL = 0.078    # Grok's implied rate from his Y0->Y20
+                                       # profit-per-employee growth (4.6x over
+                                       # 20 years). 3.7% only gives 2.06x.
 
 # National-economy profit attributable per colony adult per year.
 # This is Steve's key point on MAC scope: Amazon HQ, Apple, Google, Pfizer,
@@ -783,6 +785,9 @@ class ColonyV0Model(Model):
                 "automation":        lambda m: m.pure_imports["food"].automation,
                 # Basket cost (citizen-weighted across the actual mix)
                 "basket_cost_avg":   lambda m: m.basket_cost_avg(),
+                "basket_cost_local": lambda m: sum(m.local_firms[s].price * BASKET_WEIGHTS[s] for s in SECTORS),
+                "basket_cost_chain": lambda m: sum(m.chain_branches[s].price * BASKET_WEIGHTS[s] for s in SECTORS),
+                "basket_cost_import":lambda m: sum(m.pure_imports[s].price * BASKET_WEIGHTS[s] for s in SECTORS),
                 # Money velocity (Fisher MV = PY). Monthly velocity = consumption
                 # transactions per dollar of money supply, per month.
                 "transactions":      lambda m: m.transactions_this_step,
@@ -880,15 +885,42 @@ class ColonyV0Model(Model):
             self.chain_branches[sector].update_price()
 
     def _chain_hq_workforce_reduction(self):
-        """ChainBranches forcibly reduce workforce per HQ's automation rollout,
-        regardless of revenue. This is the primary job-loss mechanism."""
+        """All firms automate down with rising A — chains, local indy, and
+        even public sector. At A=1 target workforce drops to (1-CHAIN_LAYOFF_RATE)
+        of initial. Primary job-loss mechanism in the abundance era."""
+        avg_a = sum(self.pure_imports[s].automation for s in SECTORS) / len(SECTORS)
+        factor = max(0.0, 1.0 - avg_a * CHAIN_LAYOFF_RATE)
+
+        # Chains (existing HQ-driven, but now uses uniform factor)
         for sector in SECTORS:
             ch = self.chain_branches[sector]
-            target = ch.target_workforce(self._initial_chain_workforce[sector])
+            initial = self._initial_chain_workforce[sector]
+            target = max(0, int(round(initial * factor)))
             while len(ch.workers) > target:
-                ch.workers.sort(key=lambda c: c.productivity)  # cut lowest-productivity first
-                victim = ch.workers[0]
-                ch.fire(victim)
+                ch.workers.sort(key=lambda c: c.productivity)
+                ch.fire(ch.workers[0])
+
+        # Local indy firms — automation hits them too. Local restaurants
+        # use kitchen robots; local stores use self-checkout. Slower
+        # automation than chains but still real.
+        for sector in SECTORS:
+            f = self.local_firms[sector]
+            initial = self._initial_local_workforce[sector]
+            # Locals automate at 80% of chain rate (slower adoption)
+            local_factor = max(0.0, 1.0 - avg_a * CHAIN_LAYOFF_RATE * 0.80)
+            target = max(0, int(round(initial * local_factor)))
+            while len(f.workers) > target:
+                f.workers.sort(key=lambda c: c.productivity)
+                f.fire(f.workers[0])
+
+        # Public sector — government automates too (chatbots replace clerks,
+        # AI tutors replace teachers, etc). Slower than private (60% of chain).
+        initial = self._initial_public_workforce
+        pub_factor = max(0.0, 1.0 - avg_a * CHAIN_LAYOFF_RATE * 0.60)
+        target = max(1, int(round(initial * pub_factor)))
+        while len(self.public_sector.workers) > target:
+            self.public_sector.workers.sort(key=lambda c: c.productivity)
+            self.public_sector.fire(self.public_sector.workers[0])
 
     def _housing_payments(self):
         """Homeowners pay amortized mortgage payment (interest + principal) +
@@ -1337,11 +1369,18 @@ class ColonyV0Model(Model):
                 victim = firm.workers[0]
                 firm.fire(victim)
             elif ratio > self.hire_threshold and unemployed:
-                # Chains won't hire above HQ target
+                # All firms now have automation caps — don't hire above the
+                # current-A target so firms don't undo the automation downsize.
+                avg_a = sum(self.pure_imports[s].automation for s in SECTORS) / len(SECTORS)
                 if kind == "chain":
-                    cap = firm.target_workforce(self._initial_chain_workforce[sector])
-                    if len(firm.workers) >= cap:
-                        continue
+                    initial = self._initial_chain_workforce[sector]
+                    factor = max(0.0, 1.0 - avg_a * CHAIN_LAYOFF_RATE)
+                else:  # local
+                    initial = self._initial_local_workforce[sector]
+                    factor = max(0.0, 1.0 - avg_a * CHAIN_LAYOFF_RATE * 0.80)
+                cap = max(0, int(round(initial * factor)))
+                if len(firm.workers) >= cap:
+                    continue
                 new_hire = unemployed.pop(0)
                 new_hire.employer = firm
                 firm.workers.append(new_hire)

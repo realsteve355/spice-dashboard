@@ -105,7 +105,8 @@ function renderChart(svgId, traj, series, opts = {}) {
     }
   }
   if (!isFinite(yMin) || !isFinite(yMax)) { yMin = 0; yMax = 1; }
-  if (yMin > 0) yMin = 0;
+  if (yMin > 0 && !opts.noZero) yMin = 0;
+  if (opts.noZero) yMin = yMin * 0.95;   // shrink baseline so range fits
   yMax = yMax * 1.05 + 0.0001;
 
   const xScale = m => pad.l + (m / months) * innerW;
@@ -411,18 +412,21 @@ async function refresh() {
       { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
     ], { dollar: true, title: 'MAC contribution by source (monthly)' });
 
-    // Detailed metrics — basket / productivity / profits / tax share
+    // Detailed metrics — basket cost broken out by channel + weighted
     renderChart('ch-basket', t, [
-      { fn: p => p.basket_cost_avg, color: '#7aa2ff', label: 'basket cost' },
-    ], { dollar: true, title: 'Avg basket cost (consumer-weighted)' });
+      { fn: p => p.basket_cost_local, color: '#7eb24f', label: 'local indy' },
+      { fn: p => p.basket_cost_chain, color: '#ffb86c', label: 'chain', dash: '4 3' },
+      { fn: p => p.basket_cost_import, color: '#ef4444', label: 'import', dash: '4 3' },
+      { fn: p => p.basket_cost_avg, color: '#a8e6a8', label: 'consumer-weighted' },
+    ], { dollar: true, title: 'Basket cost by channel' });
 
     renderChart('ch-prod', t, [
       { fn: p => p.productivity_idx, color: '#a8e6a8', label: 'productivity index' },
-    ], { title: 'Productivity index (1.0 = Y0)' });
+    ], { title: 'Productivity index (1.0 = Y0)', noZero: true });
 
     renderChart('ch-profits', t, [
-      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'total profit / mo' },
-    ], { dollar: true, title: 'Corporate profits / month' });
+      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'profit / mo (this colony)' },
+    ], { dollar: true, title: 'Corporate profits / month (this colony, $) — local + national share' });
 
     renderChart('ch-taxsh', t, [
       { fn: p => p.tax_per_adult_step, color: '#ef4444', label: 'tax / adult / mo' },
