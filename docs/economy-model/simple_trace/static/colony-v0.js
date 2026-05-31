@@ -20,8 +20,42 @@ function setStatus(msg, err = false) {
   el.className = err ? 'status err' : 'status';
 }
 
-async function fetchRun() {
-  const cfg = {
+function renderComparison(tradData, axionData) {
+  const tbody = document.querySelector('#compare-table tbody');
+  if (!tbody) return;
+  const t = tradData.trajectory[tradData.trajectory.length - 1];
+  const a = axionData.trajectory[axionData.trajectory.length - 1];
+  const rows = [
+    { label: 'Employment rate', t: t.employment_rate, a: a.employment_rate, fmt: pct, important: true, note: '% of all adults working' },
+    { label: 'UBI per adult / mo', t: t.ubi_per_adult_mo, a: a.ubi_per_adult_mo, fmt: v => '$' + fmt(v), important: true, note: 'driven primarily by MAC, similar across modes' },
+    { label: 'Citizen liquid wealth', t: t.liquid_wealth, a: a.liquid_wealth, fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits — the headline citizen-impact metric' },
+    { label: 'Total citizen net worth', t: t.net_worth, a: a.net_worth, fmt: v => '$' + fmt(v), important: true, note: 'liquid + property − mortgages' },
+    { label: 'Cumulative tax paid', t: t.income_tax_cum + (t.sales_tax_cum || 0), a: a.mcc_charge_cum || a.income_tax_cum, fmt: v => '$' + fmt(v), important: true, sign: -1, note: 'AXION should be lower — that\'s the citizen win' },
+    { label: 'Money supply (colony)', t: t.money_supply, a: a.money_supply, fmt: v => '$' + fmt(v), note: 'higher = more capital retained locally' },
+    { label: 'MOND outstanding', t: t.mond_outstanding || 0, a: a.mond_outstanding || 0, fmt: v => '$' + fmt(v), note: 'AXION local-currency portion of citizen savings' },
+    { label: 'MAC cumulative', t: t.mac_cum, a: a.mac_cum, fmt: v => '$' + fmt(v), note: 'total MAC pool collected over the run' },
+    { label: 'Pension cumulative', t: t.pension_cum, a: a.pension_cum, fmt: v => '$' + fmt(v), note: 'social-security inflow to non-workforce' },
+  ];
+  tbody.innerHTML = rows.map(r => {
+    const delta = r.a - r.t;
+    const sign = r.sign || 1;
+    const winning = (sign * delta) > 0;
+    const deltaColor = delta === 0 ? 'var(--dim)' : (winning ? 'var(--ok)' : 'var(--crit)');
+    const sym = delta >= 0 ? '+' : '';
+    const dStr = r.fmt === pct ? sym + pct(delta) : sym + (r.fmt(Math.abs(delta)).replace('$', delta < 0 ? '-$' : '$'));
+    const label = r.important ? `<strong>${r.label}</strong>` : r.label;
+    return `<tr style="border-bottom:1px solid #14171f;">
+      <td style="padding:6px 8px; color:var(--headline);">${label}</td>
+      <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">${r.fmt(r.t)}</td>
+      <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">${r.fmt(r.a)}</td>
+      <td style="padding:6px 8px; text-align:right; color:${deltaColor}; font-variant-numeric:tabular-nums;">${dStr}</td>
+      <td style="padding:6px 8px; color:var(--dim); font-size:10px;">${r.note}</td>
+    </tr>`;
+  }).join('');
+}
+
+function readCfg() {
+  return {
     months:                     readNum('months', 60),
     monthly_external_transfers: readNum('monthly_external_transfers', 2800),
     pension_per_inactive:       readNum('pension_per_inactive', 400),
@@ -32,7 +66,9 @@ async function fetchRun() {
     automation_months:          readNum('automation_months', 240),
     seed:                       readNum('seed', 42),
   };
-  setStatus('running…');
+}
+
+async function fetchRunWithCfg(cfg) {
   const r = await fetch('/api/colony-v0', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -43,6 +79,10 @@ async function fetchRun() {
     throw new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`);
   }
   return r.json();
+}
+
+async function fetchRun() {
+  return fetchRunWithCfg(readCfg());
 }
 
 // ── Generic line-chart renderer (multiple series allowed) ──────────────
@@ -313,7 +353,16 @@ function renderFirmsTable(firms) {
 async function refresh() {
   try {
     saveInputs();
-    const data = await fetchRun();
+    // Fetch current mode AND the opposite tax mode in parallel for the
+    // Traditional vs AXION MCC comparison.
+    const cfg = readCfg();
+    setStatus('running both tax modes…');
+    const [tradData, axionData] = await Promise.all([
+      fetchRunWithCfg({ ...cfg, mcc_mode: false }),
+      fetchRunWithCfg({ ...cfg, mcc_mode: true }),
+    ]);
+    renderComparison(tradData, axionData);
+    const data = cfg.mcc_mode ? axionData : tradData;
     const t = data.trajectory;
 
     renderChart('ch-employment', t, [
