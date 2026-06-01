@@ -112,10 +112,15 @@ function renderChart(svgId, traj, series, opts = {}) {
   const yScale = v => pad.t + innerH - ((v - yMin) / (yMax - yMin)) * innerH;
 
   let grid = '';
-  const xStep = months >= 36 ? 6 : 3;
+  // Adaptive label density and format. For long horizons (≥120mo) label every
+  // 24 months and show as Y0/Y2/... year labels; for medium show every 6mo;
+  // for short show every 3mo.
+  const xStep = months >= 120 ? 24 : (months >= 36 ? 12 : 3);
+  const yearLabels = months >= 60;
   for (let m = 0; m <= months; m += xStep) {
     grid += `<line x1="${xScale(m)}" y1="${pad.t}" x2="${xScale(m)}" y2="${pad.t + innerH}" stroke="#14171f"/>`;
-    grid += `<text x="${xScale(m)}" y="${H - 10}" fill="#5a6373" font-size="10" text-anchor="middle">M${m}</text>`;
+    const lbl = yearLabels ? `Y${Math.round(m / 12)}` : `M${m}`;
+    grid += `<text x="${xScale(m)}" y="${H - 10}" fill="#5a6373" font-size="10" text-anchor="middle">${lbl}</text>`;
   }
   for (let i = 0; i <= 4; i++) {
     const yPx = pad.t + (innerH * i / 4);
@@ -243,18 +248,6 @@ function renderSnapshot(data) {
       color: Math.abs(moneyDelta) / Math.max(1, first.money_supply) < 0.20 ? 'var(--ok)' : 'var(--warn)',
     },
     {
-      lbl: 'Net BoP (monthly)',
-      val: (netBoP >= 0 ? '+' : '') + '$' + fmt(netBoP) + ' / mo',
-      sub: `imports $${fmt(last.imports_step)} · exports + transfers $${fmt(last.exports_step)}`,
-      color: Math.abs(netBoP) < 500 ? 'var(--ok)' : (netBoP < -2000 ? 'var(--crit)' : 'var(--warn)'),
-    },
-    {
-      lbl: 'Money velocity (annual)',
-      val: last.velocity_annual.toFixed(2) + ' / yr',
-      sub: `transactions $${fmt(last.transactions)}/mo · basket $${fmt(last.basket_cost_avg)}`,
-      color: last.velocity_annual > 1.5 ? 'var(--ok)' : (last.velocity_annual > 0.5 ? 'var(--warn)' : 'var(--crit)'),
-    },
-    {
       lbl: 'Total citizen net worth',
       val: '$' + fmt(last.net_worth || 0),
       sub: `${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt(last.net_worth - first.net_worth)} vs start · liquid $${fmt(last.liquid_wealth || 0)} + property $${fmt(last.property_wealth || 0)} − debt $${fmt(last.mortgage_debt || 0)}`,
@@ -373,29 +366,34 @@ async function refresh() {
     const t = data.trajectory;
 
     renderChart('ch-employment', t, [
-      { fn: p => p.workers_local + p.workers_chain + p.workers_public, color: '#a8e6a8', label: 'total jobs' },
-      { fn: p => p.workers_local, color: '#7eb24f', label: 'truly-local', dash: '4 3' },
-      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain-branch', dash: '4 3' },
-      { fn: p => p.workers_public, color: '#7aa2ff', label: 'public sector', dash: '4 3' },
-    ], { title: 'Employment by firm type (adult citizens)' });
+      { fn: p => p.workers_local + p.workers_chain + p.workers_public, color: '#a8e6a8', label: 'total' },
+      { fn: p => p.workers_local, color: '#7eb24f', label: 'local', dash: '4 3' },
+      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain', dash: '4 3' },
+      { fn: p => p.workers_public, color: '#7aa2ff', label: 'public', dash: '4 3' },
+    ], { title: 'Employment by firm type' });
 
+    // Mond circulation: cumulative minted (= total UBI ever distributed) vs
+    // currently outstanding in citizen wallets. Difference = Mond that's been
+    // spent (retired by transactions).
     renderChart('ch-mond', t, [
-      { fn: p => p.mond_outstanding, color: '#b48ee6', label: 'Mond outstanding' },
-    ], { dollar: true, title: 'Mond outstanding (USD-pegged stablecoin)' });
+      { fn: p => p.mond_minted_cum, color: '#b48ee6', label: 'cum. minted (= UBI distributed)' },
+      { fn: p => p.mond_outstanding, color: '#cfa340', label: 'currently in wallets', dash: '4 3' },
+    ], { dollar: true, title: 'Mond circulation (USD-pegged stablecoin)' });
 
-    // Total monthly income flowing to citizens: wages + UBI + pensions + child credits
+    // Average citizen income by source, per adult per month
+    const nA = data.productivities.length || 1;
     renderChart('ch-income', t, [
-      { fn: p => (p.wages_step || 0) + (p.ubi_step || 0) + (p.pension_paid_step || 0) + (p.child_transfers || 0),
-        color: '#a8e6a8', label: 'total citizen income / mo' },
-      { fn: p => p.wages_step || 0,            color: '#7eb24f', label: 'wages', dash: '3 3' },
-      { fn: p => p.ubi_step || 0,              color: '#b48ee6', label: 'UBI', dash: '3 3' },
-      { fn: p => p.pension_paid_step || 0,     color: '#ffb86c', label: 'pensions', dash: '3 3' },
-    ], { dollar: true, title: 'Citizen income by source (monthly)' });
+      { fn: p => ((p.wages_step || 0) + (p.ubi_step || 0) + (p.pension_paid_step || 0) + (p.child_transfers || 0)) / nA,
+        color: '#a8e6a8', label: 'total / adult / mo' },
+      { fn: p => (p.wages_step || 0) / nA,            color: '#7eb24f', label: 'wages', dash: '3 3' },
+      { fn: p => (p.ubi_step || 0) / nA,              color: '#b48ee6', label: 'UBI', dash: '3 3' },
+      { fn: p => (p.pension_paid_step || 0) / nA,     color: '#ffb86c', label: 'pensions', dash: '3 3' },
+    ], { dollar: true, title: 'Citizen income per adult per month' });
 
+    // MAC pool monthly trajectory (replaces velocity in the macro grid)
     renderChart('ch-velocity', t, [
-      { fn: p => p.velocity_annual, color: '#cfa340', label: 'V annual (MV=PY)' },
-      { fn: p => p.velocity_monthly, color: '#a05a30', label: 'V monthly', dash: '3 3' },
-    ], { title: 'Money velocity (transactions ÷ supply)' });
+      { fn: p => p.mac_step || 0, color: '#cfa340', label: 'MAC pool / mo' },
+    ], { dollar: true, title: 'MAC pool collected per month' });
 
     // AXION mechanism chart — UBI trajectory
     renderChart('ch-ubi', t, [
