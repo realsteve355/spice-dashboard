@@ -228,8 +228,8 @@ function renderHeatmap(savingsGrid, productivities, employedGrid) {
 function renderSnapshot(data) {
   const last = data.trajectory[data.trajectory.length - 1];
   const first = data.trajectory[0];
-  const moneyDelta = last.money_supply - first.money_supply;
-  const netBoP = last.net_bop_step;
+  const endYear = Math.round((data.trajectory.length - 1) / 12);
+  const endTag = `at Y${endYear}`;
   const cells = [
     {
       lbl: 'Population',
@@ -238,35 +238,30 @@ function renderSnapshot(data) {
       color: 'var(--ok)',
     },
     {
-      lbl: 'Unemployment (of workforce)', val: pct(1 - last.employment_rate_workforce),
-      sub: `${pct(last.employment_rate_workforce)} employed of workforce · local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public} · ${pct(last.employment_rate)} of all adults`,
+      lbl: `Unemployment ${endTag}`, val: pct(1 - last.employment_rate_workforce),
+      sub: `${pct(last.employment_rate_workforce)} of workforce employed · local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public}`,
       color: last.employment_rate_workforce > 0.9 ? 'var(--ok)' : (last.employment_rate_workforce > 0.6 ? 'var(--warn)' : 'var(--crit)'),
     },
     {
-      lbl: 'Money supply', val: '$' + fmt(last.money_supply),
-      sub: `${moneyDelta >= 0 ? '+' : ''}$${fmt(moneyDelta)} vs start · transfers in $${fmt(last.transfers_in + (last.child_transfers || 0))}/mo`,
-      color: Math.abs(moneyDelta) / Math.max(1, first.money_supply) < 0.20 ? 'var(--ok)' : 'var(--warn)',
-    },
-    {
-      lbl: 'Net worth / adult',
+      lbl: `Net worth / adult ${endTag}`,
       val: '$' + fmt((last.net_worth || 0) / Math.max(1, last.n_adults)),
-      sub: `colony total $${fmt(last.net_worth || 0)} · ${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt((last.net_worth - first.net_worth) / Math.max(1, last.n_adults))} per adult vs start`,
+      sub: `colony total $${fmt(last.net_worth || 0)} · ${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt((last.net_worth - first.net_worth) / Math.max(1, last.n_adults))} per adult vs Y0`,
       color: (last.net_worth >= first.net_worth) ? 'var(--ok)' : 'var(--warn)',
     },
     {
       lbl: 'Homeowners / renters',
       val: `${last.n_homeowners || 0} / ${(last.n_adults || 0) - (last.n_homeowners || 0)}`,
-      sub: `mortgage interest cum. $${fmt(last.mortgage_int_step ? (last.mortgage_int_step * data.months) : 0)} (mostly drained externally)`,
+      sub: `mortgage interest cum. $${fmt(last.mortgage_int_step ? (last.mortgage_int_step * data.months) : 0)}`,
       color: 'var(--ok)',
     },
     {
-      lbl: 'UBI per adult (mo)',
+      lbl: `UBI per adult / mo ${endTag}`,
       val: '$' + fmt(last.ubi_per_adult_mo || 0),
-      sub: `k=${((last.mac_rate || 0) * 100).toFixed(0)}% · MAC pool cum. $${fmt(last.mac_cum || 0)}`,
+      sub: `k=${((last.mac_rate || 0) * 100).toFixed(0)}% · MAC pool cum. $${fmt(last.mac_cum || 0)} · started at $0`,
       color: 'var(--ok)',
     },
     {
-      lbl: 'Saved wealth / adult',
+      lbl: `Saved wealth / adult ${endTag}`,
       val: '$' + fmt(last.saved_wealth_per_adult || 0),
       sub: `liquid $${fmt(last.liquid_per_adult || 0)} + external $${fmt(last.external_per_adult || 0)} + property equity $${fmt(last.property_equity_per_adult || 0)}`,
       color: 'var(--ok)',
