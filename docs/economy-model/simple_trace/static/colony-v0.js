@@ -28,8 +28,8 @@ function renderComparison(tradData, axionData) {
   const rows = [
     { label: 'Unemployment rate (of workforce)', t: 1 - t.employment_rate_workforce, a: 1 - a.employment_rate_workforce, fmt: pct, important: true, sign: -1, note: 'traditional definition: % of workforce-active adults seeking work but not employed' },
     { label: 'UBI per adult / mo', t: t.ubi_per_adult_mo, a: a.ubi_per_adult_mo, fmt: v => '$' + fmt(v), important: true, note: 'driven primarily by MAC, similar across modes' },
-    { label: 'Citizen liquid wealth', t: t.liquid_wealth, a: a.liquid_wealth, fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits — the headline citizen-impact metric' },
-    { label: 'Total citizen net worth', t: t.net_worth, a: a.net_worth, fmt: v => '$' + fmt(v), important: true, note: 'liquid + property − mortgages' },
+    { label: 'Liquid wealth / adult', t: t.liquid_wealth / Math.max(1, t.n_adults), a: a.liquid_wealth / Math.max(1, a.n_adults), fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits per adult' },
+    { label: 'Net worth / adult', t: t.net_worth / Math.max(1, t.n_adults), a: a.net_worth / Math.max(1, a.n_adults), fmt: v => '$' + fmt(v), important: true, note: 'liquid + external investments + property equity, per adult' },
     { label: 'Cumulative tax paid', t: t.income_tax_cum + (t.sales_tax_cum || 0), a: a.mcc_charge_cum || a.income_tax_cum, fmt: v => '$' + fmt(v), important: true, sign: -1, note: 'AXION should be lower — that\'s the citizen win' },
     { label: 'Money supply (colony)', t: t.money_supply, a: a.money_supply, fmt: v => '$' + fmt(v), note: 'higher = more capital retained locally' },
     { label: 'MOND outstanding', t: t.mond_outstanding || 0, a: a.mond_outstanding || 0, fmt: v => '$' + fmt(v), note: 'AXION local-currency portion of citizen savings' },
@@ -248,9 +248,9 @@ function renderSnapshot(data) {
       color: Math.abs(moneyDelta) / Math.max(1, first.money_supply) < 0.20 ? 'var(--ok)' : 'var(--warn)',
     },
     {
-      lbl: 'Total citizen net worth',
-      val: '$' + fmt(last.net_worth || 0),
-      sub: `${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt(last.net_worth - first.net_worth)} vs start · liquid $${fmt(last.liquid_wealth || 0)} + property $${fmt(last.property_wealth || 0)} − debt $${fmt(last.mortgage_debt || 0)}`,
+      lbl: 'Net worth / adult',
+      val: '$' + fmt((last.net_worth || 0) / Math.max(1, last.n_adults)),
+      sub: `colony total $${fmt(last.net_worth || 0)} · ${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt((last.net_worth - first.net_worth) / Math.max(1, last.n_adults))} per adult vs start`,
       color: (last.net_worth >= first.net_worth) ? 'var(--ok)' : 'var(--warn)',
     },
     {
