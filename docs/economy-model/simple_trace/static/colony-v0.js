@@ -1,8 +1,8 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['n_citizens', 'months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'mcc_rate', 'automation_end', 'automation_months', 'seed'];
-const STORAGE_KEY = 'axion_colony_v0_v3';   // bump on schema changes
+const INPUTS = ['n_citizens', 'months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'automation_end', 'automation_months', 'seed'];
+const STORAGE_KEY = 'axion_colony_v0_v4';   // bump on schema changes
 
 function readNum(id, def) {
   const v = parseFloat(document.getElementById(id).value);
@@ -62,7 +62,6 @@ function readCfg() {
     pension_per_inactive:       readNum('pension_per_inactive', 400),
     mac_rate:                   readNum('mac_rate', 0.22),
     mcc_mode:                   document.getElementById('mcc_mode').checked,
-    mcc_rate:                   readNum('mcc_rate', 0.10),
     automation_end:             readNum('automation_end', 0.85),
     automation_months:          readNum('automation_months', 240),
     seed:                       readNum('seed', 42),
@@ -380,16 +379,18 @@ async function refresh() {
       { fn: p => p.workers_public, color: '#7aa2ff', label: 'public sector', dash: '4 3' },
     ], { title: 'Employment by firm type (adult citizens)' });
 
-    renderChart('ch-money', t, [
-      { fn: p => p.money_supply, color: '#a8e6a8', label: 'money supply' },
-      { fn: p => p.money_drained, color: '#ef4444', label: 'cumulative imports', dash: '4 3' },
-      { fn: p => p.money_returned, color: '#7aa2ff', label: 'cumulative exports', dash: '4 3' },
-    ], { dollar: true, title: 'Money supply + cumulative trade' });
+    renderChart('ch-mond', t, [
+      { fn: p => p.mond_outstanding, color: '#b48ee6', label: 'Mond outstanding' },
+    ], { dollar: true, title: 'Mond outstanding (USD-pegged stablecoin)' });
 
-    renderChart('ch-bop', t, [
-      { fn: p => p.imports_step,        color: '#ef4444', label: 'imports / mo' },
-      { fn: p => p.exports_step,        color: '#a8e6a8', label: 'exports / mo' },
-    ], { dollar: true, title: 'Balance of payments (monthly)' });
+    // Total monthly income flowing to citizens: wages + UBI + pensions + child credits
+    renderChart('ch-income', t, [
+      { fn: p => (p.wages_step || 0) + (p.ubi_step || 0) + (p.pension_paid_step || 0) + (p.child_transfers || 0),
+        color: '#a8e6a8', label: 'total citizen income / mo' },
+      { fn: p => p.wages_step || 0,            color: '#7eb24f', label: 'wages', dash: '3 3' },
+      { fn: p => p.ubi_step || 0,              color: '#b48ee6', label: 'UBI', dash: '3 3' },
+      { fn: p => p.pension_paid_step || 0,     color: '#ffb86c', label: 'pensions', dash: '3 3' },
+    ], { dollar: true, title: 'Citizen income by source (monthly)' });
 
     renderChart('ch-velocity', t, [
       { fn: p => p.velocity_annual, color: '#cfa340', label: 'V annual (MV=PY)' },
@@ -446,8 +447,8 @@ async function refresh() {
     const tradT = tradData.trajectory, axionT = axionData.trajectory;
     renderChart('ch-taxsh', tradT, [
       { fn: (_, i) => tradT[i] ? tradT[i].tax_per_adult_step : 0, color: '#ef4444', label: 'Traditional / adult / mo' },
-      { fn: (_, i) => axionT[i] ? axionT[i].tax_per_adult_step : 0, color: '#a8e6a8', label: 'AXION MCC / adult / mo' },
-    ], { dollar: true, title: 'Tax burden per adult / month — Traditional vs AXION' });
+      { fn: (_, i) => axionT[i] ? axionT[i].tax_per_adult_step : 0, color: '#a8e6a8', label: 'AXION Colony Bill / adult / mo' },
+    ], { dollar: true, title: 'Tax burden per adult / month — Traditional vs AXION Colony Bill' });
 
     renderSnapshot(data);
     renderFirmsTable(data.firms || []);

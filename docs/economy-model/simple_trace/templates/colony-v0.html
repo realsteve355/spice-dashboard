@@ -108,8 +108,7 @@
       <label>Public-sector transfers ($/mo) <input type="number" id="monthly_external_transfers" value="2800" min="0" step="100"></label>
       <label>Pension / SS per inactive adult ($/mo) <input type="number" id="pension_per_inactive" value="400" min="0" step="50"></label>
       <label>Market Access Charge rate k <input type="number" id="mac_rate" value="0.22" min="0" max="0.50" step="0.01"></label>
-      <label>AXION tax mode (MCC) <input type="checkbox" id="mcc_mode"></label>
-      <label>MCC rate (if AXION) <input type="number" id="mcc_rate" value="0.10" min="0" max="0.30" step="0.01"></label>
+      <label>AXION Colony Bill mode <input type="checkbox" id="mcc_mode"></label>
       <label>Automation end (A_max) <input type="number" id="automation_end" value="0.85" min="0" max="1" step="0.05"></label>
       <label>Automation ramp (months) <input type="number" id="automation_months" value="240" min="12" max="360" step="12"></label>
       <label>Seed <input type="number" id="seed" value="42" min="1" max="9999" step="1"></label>
@@ -122,11 +121,12 @@
   </div>
 
   <div class="card">
-    <h3>Traditional vs AXION MCC — end-of-run comparison</h3>
+    <h3>Traditional vs AXION Colony Bill — end-of-run comparison</h3>
     <div class="sub">
       Both runs use the same parameters (population, automation, seed) and only
       differ on tax structure. Traditional = 15% income tax + 7% sales tax (today's US).
-      AXION MCC = 10% MCC charge (sales tax bundled in), 80% stays local.
+      AXION Colony Bill = $42/mo utilities + 0.35% LVT (exempt for UBI-only homes &lt;$450k)
+      + $18.50/mo federal contribution. 0% sales, 0% income, 0% corporate. Per Grok V9.13.
       Key citizen-impact metrics are bolded.
     </div>
     <table style="width:100%; border-collapse:collapse; font-size:11px;" id="compare-table">
@@ -134,7 +134,7 @@
         <tr style="border-bottom:1px solid var(--line-hot); color:var(--dim);">
           <th style="padding:6px 8px; text-align:left;">Metric (end of run)</th>
           <th style="padding:6px 8px; text-align:right;">Traditional</th>
-          <th style="padding:6px 8px; text-align:right;">AXION MCC</th>
+          <th style="padding:6px 8px; text-align:right;">AXION Colony</th>
           <th style="padding:6px 8px; text-align:right;">Δ</th>
           <th style="padding:6px 8px;">Notes</th>
         </tr>
@@ -151,13 +151,14 @@
   <div class="card">
     <h3>Macro trajectories</h3>
     <div class="sub">
-      Top-left: employment by firm type · Top-right: money supply + cumulative trade ·
-      Bottom-left: balance of payments (imports vs exports per month) · Bottom-right: money velocity (Fisher MV=PY).
+      Top-left: employment by firm type · Top-right: total Mond outstanding (USD-pegged stablecoin, citizen-held) ·
+      Bottom-left: total citizen income flows (wages + UBI + pensions + child credits) ·
+      Bottom-right: money velocity (transactions ÷ supply).
     </div>
     <div class="chart-grid">
       <svg id="ch-employment" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-      <svg id="ch-money"      class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-      <svg id="ch-bop"        class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-mond"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-income"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
       <svg id="ch-velocity"   class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
   </div>
@@ -236,12 +237,12 @@
 
 
   <div class="card">
-    <h3>What's in the basket</h3>
+    <h3>What's in the basket (Grok V9.13 Y20 reference)</h3>
     <div class="sub">
-      Three consumption categories. Each citizen allocates monthly spending
-      across them by the basket weight. The provider mix (local indy / chain /
-      pure import) varies by sector and shifts as automation makes
-      chain &amp; import cheaper.
+      Three consumption categories in our model (food / goods / services) map
+      to Grok's seven-category moderate basket. Grok V9.13 Y20 family-of-4
+      total: <strong>$655-950 Mond/month</strong>. UBI for a family of 4 = ~$783/month
+      → comfortable surplus after the Colony Bill (utilities/LVT/Fed line).
     </div>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; font-size:11px;">
       <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #7eb24f; padding:12px 14px;">

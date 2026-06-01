@@ -100,7 +100,6 @@ def run_colony_v0(cfg):
         pension_per_inactive        = float(cfg.get("pension_per_inactive", 400)),
         mac_rate                    = float(cfg.get("mac_rate", 0.22)),
         mcc_mode                    = bool(cfg.get("mcc_mode", False)),
-        mcc_rate                    = float(cfg.get("mcc_rate", 0.10)),
     )
     for _ in range(months):
         model.step()

@@ -105,16 +105,20 @@ INCOME_TAX_LOCAL_PCT  = 0.15   # of income tax, this fraction stays in colony
 SALES_TAX_RATE        = 0.07   # state + local sales tax combined
 SALES_TAX_LOCAL_PCT   = 0.30   # of sales tax, this fraction stays in colony
 
-# AXION MCC (MaryFontaine Colony Company) charge — replaces the bundle of
-# federal income tax + state income tax + FICA + most of sales tax in AXION
-# mode. A SINGLE charge that covers local services (replacing the part of
-# federal taxation that comes back as transfers) plus a small federal
-# pass-through. Net citizen burden is lower than today's combined
-# tax burden (15% income + 7% sales = ~21% effective) because the MAC pool
-# also funds the public sector indirectly.
-MCC_RATE                  = 0.10   # 10% of wages — lower than today's effective
-MCC_FEDERAL_PASS_PCT      = 0.20   # of MCC, this fraction drains to federal
-                                    # (the small federal pass-through portion)
+# AXION Colony Bill (per Grok V9.13 §2). In AXION mode, citizens pay a single
+# monthly bill from The Fisc rather than income/sales tax. Three line items:
+#   - Utilities & infrastructure (electricity, water, internet, waste) — stays
+#     local, funds public services
+#   - Land Value Tax (0.35%/yr on property value, full exemption for UBI-only
+#     primary homes under $450k threshold) — stays local
+#   - Federal/State contribution — small fixed line, drains to federal
+# Sales tax, income tax, and corporate tax are all 0% in this mode.
+# Total burden ramps from ~18% at Y0 down to ~2.8% at Y20 as the federal
+# share shrinks and basket deflation increases real purchasing power.
+COLONY_BILL_UTILITIES         = 42.0    # $/adult/mo, fixed
+LVT_RATE_ANNUAL               = 0.0035   # 0.35%/yr on property value
+LVT_EXEMPTION_PROPERTY_MAX    = 450_000  # exemption threshold for UBI-only primary homes
+FEDERAL_STATE_CONTRIBUTION    = 18.50    # $/adult/mo, fixed
 
 # Property + housing structure.
 HOMEOWNERSHIP_RATE        = 0.65   # US avg ~65%
@@ -154,9 +158,9 @@ CONSUMPTION_PROP_PENSION  = 0.95   # of pension spent — retirees have low save
 # collected as revenue. Modelled as an exogenous lift to profit at MAC
 # collection time, paid for from "abundance" (treated as BoP credit) so
 # the UBI pool grows even when employment is dropping.
-PRODUCTIVITY_GROWTH_ANNUAL = 0.078    # Grok's implied rate from his Y0->Y20
-                                       # profit-per-employee growth (4.6x over
-                                       # 20 years). 3.7% only gives 2.06x.
+PRODUCTIVITY_GROWTH_ANNUAL = 0.054    # Grok V9.13 implied rate.
+                                       # Y0 profit $750m → Y20 $2,150m = 2.87x
+                                       # → 5.4%/yr compound. (V8.3 was 7.8%.)
 
 # External savings investment — citizens with excess liquid invest the
 # overflow externally (401k, IRA, brokerage holding national stocks).
@@ -486,7 +490,6 @@ class ColonyV0Model(Model):
         pension_per_inactive: float = PENSION_PER_INACTIVE,  # per non-workforce adult / month
         mac_rate: float = MAC_RATE,                  # Market Access Charge — k of profit
         mcc_mode: bool = False,                      # AXION tax structure on/off
-        mcc_rate: float = MCC_RATE,                  # MCC charge rate when mcc_mode on
         seed=None,
     ):
         super().__init__(seed=seed)
@@ -552,7 +555,6 @@ class ColonyV0Model(Model):
         self.pension_per_inactive = pension_per_inactive
         self.mac_rate = mac_rate
         self.mcc_mode = mcc_mode
-        self.mcc_rate = mcc_rate
         # MCC tracking
         self.mcc_charge_this_step = 0.0
         self.mcc_charge_cumulative = 0.0
@@ -1183,31 +1185,41 @@ class ColonyV0Model(Model):
                 c.property_value *= (1 + rate)
 
     def _withhold_income_tax(self):
-        """Income tax phase. Two modes:
+        """Tax phase. Two modes:
         - DEFAULT: federal/state/FICA income tax (15%, mostly drains)
-        - MCC MODE (AXION): single MCC charge (10%, mostly stays local)"""
+        - AXION MODE: The Fisc's Colony Bill — utilities + LVT + Fed/State
+          contribution. No income tax, no sales tax. Per Grok V9.13."""
         self.income_tax_this_step = 0.0
         self.mcc_charge_this_step = 0.0
         if self.mcc_mode:
-            rate = self.mcc_rate
-            local_pct = 1.0 - MCC_FEDERAL_PASS_PCT  # most stays local
             for c in self.citizens:
-                if c.last_income > 0:
-                    charge = c.last_income * rate
-                    charge = min(charge, c.savings)
-                    c.savings -= charge
-                    local_share = charge * local_pct
-                    drained     = charge - local_share
-                    self.public_sector.balance += local_share
-                    self.money_drained_total += drained
-                    self.imports_this_step    += drained
-                    self.mcc_charge_this_step += charge
-                    self.mcc_charge_cumulative += charge
-                    # Track as income-tax-equivalent for chart compatibility
-                    self.income_tax_this_step += charge
-                    self.income_tax_cumulative += charge
-                    self.income_tax_local_cumulative += local_share
-                    self.income_tax_drained_cumulative += drained
+                # All adults pay utilities + federal/state contribution
+                utilities = COLONY_BILL_UTILITIES
+                fed_state = FEDERAL_STATE_CONTRIBUTION
+                # LVT: 0.35%/yr on property, exempt for UBI-only primary homes < $450k.
+                # 'UBI-only' = not employed (only UBI + transfers as income).
+                lvt = 0.0
+                if c.property_value > 0:
+                    exempt = (not c.employed) and (c.property_value < LVT_EXEMPTION_PROPERTY_MAX)
+                    if not exempt:
+                        lvt = c.property_value * LVT_RATE_ANNUAL / 12.0
+                total_bill = utilities + fed_state + lvt
+                total_bill = min(total_bill, c.savings)
+                if total_bill <= 0: continue
+                c.savings -= total_bill
+                # Federal share drains; utilities + LVT stay local
+                drained = fed_state * (total_bill / max(0.01, utilities + fed_state + lvt))
+                local_share = total_bill - drained
+                self.public_sector.balance += local_share
+                self.money_drained_total += drained
+                self.imports_this_step    += drained
+                self.mcc_charge_this_step += total_bill
+                self.mcc_charge_cumulative += total_bill
+                # Track as income-tax-equivalent for chart compatibility
+                self.income_tax_this_step += total_bill
+                self.income_tax_cumulative += total_bill
+                self.income_tax_local_cumulative += local_share
+                self.income_tax_drained_cumulative += drained
         else:
             for c in self.citizens:
                 if c.last_income > 0:
