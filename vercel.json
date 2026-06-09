@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js vercel.json",
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
