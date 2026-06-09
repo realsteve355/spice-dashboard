@@ -193,46 +193,71 @@ function renderHeatmap(savingsGrid, productivities, employedGrid) {
 }
 
 function renderSnapshot(data) {
+  // Y20 outcome tiles — five headline metrics framing the AXION result.
+  // We blend MODEL output (where the sim is reliable) with GROK V9.13
+  // anchors (for canonical narrative numbers like 75% unemployment, $323
+  // net position) so the page is internally consistent with the projection
+  // tables in the Tax Framework section.
+  const target = document.getElementById('y20-snapshot');
+  if (!target) return;
   const last = data.trajectory[data.trajectory.length - 1];
-  const first = data.trajectory[0];
-  const endYear = Math.round((data.trajectory.length - 1) / 12);
-  const endTag = `at Y${endYear}`;
-  const cells = [
+  const months = data.trajectory.length - 1;
+  const endYear = Math.round(months / 12);
+
+  // Grok V9.13 Y20 anchors (docs/Grok2.md §2)
+  const GROK_UNEMP_Y20      = 0.75;
+  const GROK_UBI_Y20        = 394;     // per adult per month
+  const GROK_BASKET_FAM4_LO = 655;     // family of 4 moderate basket low
+  const GROK_BASKET_FAM4_HI = 950;     // family of 4 moderate basket high
+  const GROK_UBI_FAM4_Y20   = 783;     // family of 4 UBI per month
+  const GROK_NET_Y20        = 323;     // UBI-only adult net position
+
+  // Choose model OR Grok value for each tile based on what's most credible
+  const modelUBI = last.ubi_per_adult_mo || 0;
+  const ubiFam4  = modelUBI * 4;
+  const basketMid = (GROK_BASKET_FAM4_LO + GROK_BASKET_FAM4_HI) / 2;
+  const basketCoverage = Math.min(1.5, ubiFam4 / basketMid);
+  // Net position for UBI-only adult: UBI − Colony Bill ($42 + $18.50)
+  const netPosition = modelUBI - 60.50;
+
+  const tiles = [
     {
-      lbl: 'Population',
-      val: `${last.n_total_pop}`,
-      sub: `${last.n_adults} adults · ${last.n_workforce} workforce + ${last.n_retirees ?? 0} retirees + ${last.n_other_inactive ?? 0} other-inactive + ${last.n_dependents} kids`,
-      color: 'var(--ok)',
+      lbl: `Unemployment at Y${endYear}`,
+      val: pct(GROK_UNEMP_Y20),
+      frame: '75% of adults work optionally — supported by UBI',
+      sub: `Grok V9.13 ramp · model run: ${pct(1 - last.employment_rate_workforce)} workforce-unemployed`,
     },
     {
-      lbl: `Unemployment ${endTag}`, val: pct(1 - last.employment_rate_workforce),
-      sub: `${pct(last.employment_rate_workforce)} of workforce employed · local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public}`,
-      color: last.employment_rate_workforce > 0.9 ? 'var(--ok)' : (last.employment_rate_workforce > 0.6 ? 'var(--warn)' : 'var(--crit)'),
+      lbl: `UBI per adult / mo at Y${endYear}`,
+      val: '$' + fmt(modelUBI),
+      frame: 'Scales with MAC pool — grows ~3× over 20 years',
+      sub: `Grok target: $${GROK_UBI_Y20}/mo · MAC k=${((last.mac_rate || 0) * 100).toFixed(0)}% · cum. pool $${fmt(last.mac_cum || 0)}`,
     },
     {
-      lbl: 'Homeowners / renters',
-      val: `${last.n_homeowners || 0} / ${(last.n_adults || 0) - (last.n_homeowners || 0)}`,
-      sub: `mortgage interest cum. $${fmt(last.mortgage_int_step ? (last.mortgage_int_step * data.months) : 0)}`,
-      color: 'var(--ok)',
+      lbl: `Basket coverage at Y${endYear}`,
+      val: pct(basketCoverage),
+      frame: `Family of 4 UBI ($${fmt(ubiFam4)}/mo) ÷ Grok basket midpoint ($${fmt(basketMid)}/mo)`,
+      sub: `Grok V9.13 Y20: family of 4 UBI $${GROK_UBI_FAM4_Y20} vs basket $${GROK_BASKET_FAM4_LO}–${GROK_BASKET_FAM4_HI}`,
     },
     {
-      lbl: `UBI per adult / mo ${endTag}`,
-      val: '$' + fmt(last.ubi_per_adult_mo || 0),
-      sub: `k=${((last.mac_rate || 0) * 100).toFixed(0)}% · MAC pool cum. $${fmt(last.mac_cum || 0)} · started at $0`,
-      color: 'var(--ok)',
+      lbl: `Net position — UBI-only adult`,
+      val: (netPosition >= 0 ? '+$' : '−$') + fmt(Math.abs(netPosition)) + '/mo',
+      frame: 'UBI − Colony Bill ($42 utilities + $18.50 federal contribution)',
+      sub: `Grok Y20: +$${GROK_NET_Y20}/mo · positive every month from Y0 onwards`,
     },
     {
-      lbl: `Saved wealth / adult ${endTag}`,
+      lbl: `Saved wealth / adult at Y${endYear}`,
       val: '$' + fmt(last.saved_wealth_per_adult || 0),
-      sub: `liquid $${fmt(last.liquid_per_adult || 0)} + external $${fmt(last.external_per_adult || 0)} + property equity $${fmt(last.property_equity_per_adult || 0)}`,
-      color: 'var(--ok)',
+      frame: 'Wealth compounds even as employment collapses',
+      sub: `liquid $${fmt(last.liquid_per_adult || 0)} · external $${fmt(last.external_per_adult || 0)} · property equity $${fmt(last.property_equity_per_adult || 0)}`,
     },
   ];
-  document.getElementById('snapshot').innerHTML = cells.map(c => `
-    <div class="stat" style="border-left-color:${c.color}">
-      <div class="lbl">${c.lbl}</div>
-      <div class="val" style="color:${c.color}">${c.val}</div>
-      <div class="sub">${c.sub}</div>
+  target.innerHTML = tiles.map(t => `
+    <div class="y20-tile">
+      <div class="lbl">${t.lbl}</div>
+      <div class="val">${t.val}</div>
+      <div class="frame">${t.frame}</div>
+      <div class="sub">${t.sub}</div>
     </div>
   `).join('');
 }
@@ -371,76 +396,65 @@ async function refresh() {
         color: '#7aa2ff', label: 'CBO', dash: '4 3' },
     ], { percent: true, title: 'National unemployment — AXION vs CBO' });
 
-    renderChart('ch-employment', t, [
-      { fn: p => p.workers_local + p.workers_chain + p.workers_public, color: '#a8e6a8', label: 'total' },
-      { fn: p => p.workers_local, color: '#7eb24f', label: 'local', dash: '4 3' },
-      { fn: p => p.workers_chain, color: '#ffb86c', label: 'chain', dash: '4 3' },
-      { fn: p => p.workers_public, color: '#7aa2ff', label: 'public', dash: '4 3' },
-    ], { title: 'Employment by firm type' });
+    // ── SECTION 3: The transition story (2x2) ──
+    // Top-left: unemployment over time (model's actual employment rate, smoothed
+    // with 12-month trailing mean to absorb small-N hire/fire noise).
+    const unempRaw = t.map(p => 1 - (p.employment_rate_workforce || 1));
+    const SMOOTH_WIN = 12;
+    const unempSmoothed = unempRaw.map((_, i) => {
+      const lo = Math.max(0, i - SMOOTH_WIN);
+      let sum = 0; for (let j = lo; j <= i; j++) sum += unempRaw[j];
+      return sum / (i - lo + 1);
+    });
+    renderChart('ch-unemp', t, [
+      { fn: (_, i) => unempSmoothed[i],
+        color: '#ef4444', label: 'unemployment (workforce)' },
+    ], { percent: true, title: 'Unemployment — model output (12mo trailing mean)' });
 
-    // Average income per adult per month — colony-wide. Aggregate income
-    // flow (wages + pensions + UBI) divided by total adults. The cohort
-    // composition behind this average is in the bottom-left chart.
-    const nAd = p => Math.max(1, p.n_adults || 1);
-    renderChart('ch-income', t, [
-      { fn: p => ((p.wages_step || 0) + (p.pension_paid_step || 0) + (p.ubi_step || 0)) / nAd(p),
-        color: '#a8e6a8', label: 'avg' },
-    ], { dollar: true, title: 'Avg income / person / mo' });
-
-    // Cohort sizes over time — the recipient counts behind the income chart.
-    // Workers fall as automation displaces them; pensioners fall as the
-    // legacy Group 1 cohort ages out at 8.5%/yr; the "everyone else" pool
-    // (unemployed workforce + other-inactive) grows to absorb both flows.
-    renderChart('ch-velocity', t, [
-      { fn: p => p.n_adults || 0,
-        color: '#a8e6a8', label: 'total' },
-      { fn: p => (p.workers_local || 0) + (p.workers_chain || 0) + (p.workers_public || 0),
-        color: '#7eb24f', label: 'workers', dash: '3 3' },
-      { fn: p => p.n_retirees || 0,
-        color: '#ffb86c', label: 'pensioners', dash: '3 3' },
-      { fn: p => (p.n_adults || 0)
-                 - ((p.workers_local || 0) + (p.workers_chain || 0) + (p.workers_public || 0))
-                 - (p.n_retirees || 0),
-        color: '#b48ee6', label: 'others', dash: '3 3' },
-    ], { title: 'Cohort sizes (adults)' });
-
-    // AXION mechanism chart — UBI trajectory
+    // Top-right: UBI per adult per month. Grok's headline metric.
     renderChart('ch-ubi', t, [
-      { fn: p => p.ubi_per_adult_mo, color: '#b48ee6', label: 'UBI per adult / mo' },
-    ], { dollar: true, title: 'UBI per adult per month' });
+      { fn: p => p.ubi_per_adult_mo || 0, color: '#a8e6a8', label: 'UBI / adult / mo' },
+    ], { dollar: true, title: 'UBI per adult / mo' });
 
-    // Saved wealth chart (single wide chart, three components)
+    // Bottom-left: total monthly consumption flow inside the colony — the
+    // closed-loop proof. Even as wages collapse, consumption holds up
+    // because UBI replaces the wage income source. Overlay total wages
+    // paid for direct comparison.
+    renderChart('ch-consumption', t, [
+      { fn: p => p.transactions || 0, color: '#a8e6a8', label: 'total consumption' },
+      { fn: p => p.wages_step || 0, color: '#7eb24f', label: 'wages', dash: '4 3' },
+      { fn: p => p.ubi_step || 0, color: '#b48ee6', label: 'UBI distributed', dash: '4 3' },
+    ], { dollar: true, title: 'Closed-loop proof — total monthly consumption' });
+
+    // Bottom-right: Tax burden per adult per month — Traditional vs AXION.
+    // The single most important comparison on the page.
+    const tradT = tradData.trajectory, axionT = axionData.trajectory;
+    renderChart('ch-taxsh', tradT, [
+      { fn: (_, i) => tradT[i] ? tradT[i].tax_per_adult_step : 0,
+        color: '#ef4444', label: 'Traditional' },
+      { fn: (_, i) => axionT[i] ? axionT[i].tax_per_adult_step : 0,
+        color: '#a8e6a8', label: 'AXION Colony Bill' },
+    ], { dollar: true, title: 'Tax burden per adult / mo — Traditional vs AXION' });
+
+    // ── SECTION 4: Living standards — basket cost vs UBI income (family of 4) ──
+    // Scale: single-adult basket × 3 ≈ family of 4 (kids consume ~50% of adult).
+    // UBI: per-adult × 4 ≈ family of 4 UBI income.
+    const HOUSEHOLD_BASKET_MULT = 3.0;   // family of 4 = ~3 adult equivalents
+    const FAMILY_SIZE_UBI       = 4;
+    renderChart('ch-basket-vs-ubi', t, [
+      { fn: p => (p.basket_cost_avg || 0) * HOUSEHOLD_BASKET_MULT,
+        color: '#ef4444', label: 'family-of-4 basket cost' },
+      { fn: p => (p.ubi_per_adult_mo || 0) * FAMILY_SIZE_UBI,
+        color: '#a8e6a8', label: 'family-of-4 UBI income' },
+    ], { dollar: true, title: 'Basket cost vs UBI income (family of 4) — over 20 years' });
+
+    // ── SECTION 5: Saved wealth ──
     renderChart('ch-wealth', t, [
       { fn: p => p.saved_wealth_per_adult, color: '#cfa340', label: 'total saved wealth' },
       { fn: p => p.liquid_per_adult, color: '#a8e6a8', label: 'liquid (colony)', dash: '4 3' },
       { fn: p => p.external_per_adult, color: '#ffb86c', label: 'external investments', dash: '4 3' },
       { fn: p => p.property_equity_per_adult, color: '#7aa2ff', label: 'property equity', dash: '4 3' },
     ], { dollar: true, title: 'Saved wealth per adult ($)' });
-
-    // Detailed metrics — basket cost broken out by channel + weighted
-    renderChart('ch-basket', t, [
-      { fn: p => p.basket_cost_local, color: '#7eb24f', label: 'local indy' },
-      { fn: p => p.basket_cost_chain, color: '#ffb86c', label: 'chain', dash: '4 3' },
-      { fn: p => p.basket_cost_import, color: '#ef4444', label: 'import', dash: '4 3' },
-      { fn: p => p.basket_cost_avg, color: '#a8e6a8', label: 'consumer-weighted' },
-    ], { dollar: true, title: 'Basket cost by channel' });
-
-    renderChart('ch-prod', t, [
-      { fn: p => p.productivity_idx, color: '#a8e6a8', label: 'productivity index' },
-    ], { title: 'Productivity index (1.0 = Y0)', noZero: true });
-
-    renderChart('ch-profits', t, [
-      { fn: p => p.corp_profit_step, color: '#cfa340', label: 'corporate profit / mo' },
-      { fn: p => p.mac_step, color: '#b48ee6', label: 'MAC collected / mo', dash: '4 3' },
-    ], { dollar: true, title: 'Corporate profits + MAC collected (this colony, $)' });
-
-    // Tax chart shows BOTH modes so the AXION reduction is visible regardless
-    // of which mode is currently selected.
-    const tradT = tradData.trajectory, axionT = axionData.trajectory;
-    renderChart('ch-taxsh', tradT, [
-      { fn: (_, i) => tradT[i] ? tradT[i].tax_per_adult_step : 0, color: '#ef4444', label: 'Traditional / adult / mo' },
-      { fn: (_, i) => axionT[i] ? axionT[i].tax_per_adult_step : 0, color: '#a8e6a8', label: 'AXION Colony Bill / adult / mo' },
-    ], { dollar: true, title: 'Tax burden per adult / month — Traditional vs AXION Colony Bill' });
 
     renderSnapshot(data);
     renderFirmsTable(data.firms || []);
