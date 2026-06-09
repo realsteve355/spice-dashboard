@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Colony v0 — pre-AXION baseline (Mesa ABM static snapshot)</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+  main.colony { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .preamble {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    border-left: 3px solid #ef4444;
+    padding: 14px 20px; margin-bottom: 18px;
+    font-size: 12px; color: var(--txt); line-height: 1.65;
+  }
+  .preamble strong { color: var(--headline); }
+  .snapshot-banner {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    border-left: 3px solid var(--warn);
+    padding: 12px 20px; margin-bottom: 18px;
+    font-size: 11px; color: var(--dim); line-height: 1.6;
+    display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .snapshot-banner strong { color: var(--headline); }
+  .snapshot-banner code {
+    color: var(--txt); background: #14171f; padding: 1px 5px; border-radius: 2px;
+    font-size: 10px;
+  }
+  .snapshot-banner .toggle {
+    display: inline-flex; gap: 8px; align-items: center;
+    font-size: 11px; color: var(--txt); text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .card {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    padding: 16px 20px; margin-bottom: 18px;
+  }
+  .card h3 {
+    font-size: 11px; color: var(--headline);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .card .sub { font-size: 11px; color: var(--dim); margin-bottom: 12px; }
+  .chart-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  svg.chart {
+    width: 100%; height: 240px;
+    background: #0b0d12; border: 1px solid var(--line-hot);
+  }
+  svg.heatmap {
+    width: 100%; height: 320px;
+    background: #0b0d12; border: 1px solid var(--line-hot);
+  }
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;
+    margin-top: 10px;
+  }
+  .stat {
+    background: #0b0d12; border: 1px solid var(--line-hot);
+    border-left: 3px solid #5a6373; padding: 12px 14px;
+  }
+  .stat .lbl {
+    font-size: 10px; color: var(--dim);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .stat .val {
+    font-size: 18px; color: var(--headline);
+    font-variant-numeric: tabular-nums; margin: 4px 0 2px;
+  }
+  .stat .sub { font-size: 10px; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Colony v0 — pre-AXION baseline</h1>
+  <div class="subtitle">
+    Mesa agent-based simulation · 100 citizens · 240 months · static snapshot
+    · <a href="/">back to zpc.finance</a>
+  </div>
+</header>
+
+<main class="colony">
+
+  <div class="preamble">
+    <strong>Step 1 — Maryfontaine today.</strong> 100 adult citizens
+    (with ~40 children as dependents) in a chain-dominated small town.
+    Each sector has three private providers: a <em>chain branch</em>
+    (Walmart / McDonald's — employs citizens at low wages, ~70% of revenue
+    drains to corporate HQ), a <em>truly-local indy</em> (the independent
+    shop, the artisan, the dentist — revenue stays local, better wages),
+    and <em>pure imports</em> (Amazon, streaming — no local jobs, all
+    revenue drains). Plus a <em>public sector</em> (~23% of workforce —
+    teachers, town-hall, healthcare workers) funded by federal/state
+    transfers. Households with kids get child-credit transfers matched
+    to their consumption boost. The colony's BoP is calibrated to balance:
+    chain corp fees + pure imports flow OUT; exports + federal transfers
+    + child credits flow IN.
+  </div>
+
+  <div class="snapshot-banner">
+    <div>
+      <strong>Static snapshot.</strong> This is a pre-baked Mesa run with
+      defaults: <code>n_citizens=100</code> · <code>months=240</code> ·
+      <code>automation_end=0.85</code> · <code>mac_rate=0.22</code> ·
+      <code>tech_growth_rate=5.4%/yr</code> · <code>seed=42</code>.
+      The interactive controls available in the local dev tool are not
+      exposed here — only the tax-mode toggle below.
+    </div>
+    <label class="toggle">
+      AXION Colony Bill mode
+      <input type="checkbox" id="mcc_mode">
+    </label>
+    <span class="status" id="status">loading…</span>
+  </div>
+
+  <div class="card">
+    <h3>National trajectories — macro context</h3>
+    <div class="sub">
+      The macro environment the colony exists within.
+      Top-left: <strong>conventional national-unemployment projection</strong>
+      (CBO/BLS baseline) — modest rise from ~4% over 20yr, the kind of
+      forecast policymakers use today. ·
+      Top-right: <strong>national AI &amp; robotics corporate profits</strong> —
+      $1T base × productivity index, compounding at 5.4%/yr. ·
+      Bottom: <strong>AXION-thesis national-unemployment scenario</strong> —
+      Grok V9.13's MaryFontaine projection (Y0=4.2%, Y5=18%, Y10=35%, Y15=55%,
+      Y20=75%), linearly interpolated to monthly resolution. Source:
+      <code>docs/Grok2.md</code> §2. The gap between top-left and bottom is
+      the AXION thesis in one picture.
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-nat-unemp-base" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-nat-profits"    class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <svg id="ch-nat-unemp-ai" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet" style="margin-top:14px;"></svg>
+  </div>
+
+  <div class="card">
+    <h3>Endpoint snapshot</h3>
+    <div class="stat-grid" id="snapshot"></div>
+  </div>
+
+  <div class="card">
+    <h3>Colony trajectories</h3>
+    <div class="sub">
+      Top-left: employment by firm type. ·
+      Top-right: UBI per adult per month — Grok's headline metric. Funded mostly
+      by the MAC pool charged on national/frontier-tech firms (Amazon HQ, Apple,
+      Google etc.) with a smaller and shrinking contribution from local firms as
+      automation reduces the local labour bill. ·
+      Bottom-left: cohort sizes over time — how many adults are in each group.
+      The transition story lives here: workers fall as automation displaces them,
+      pensioners fall as the legacy Group 1 cohort ages out (~21%→~5% over 20yr
+      per MF Pensions Policy v1.0), and the "everyone else" pool absorbs both flows
+      onto the UBI floor. ·
+      Bottom-right: average income per adult per month across the whole colony
+      — total wages + pensions + UBI, ÷ total adults. The cohort composition
+      behind this average is on the bottom-left.
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-employment" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-ubi"        class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-velocity"   class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-income"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Saved wealth per adult — by component</h3>
+    <div class="sub">
+      Citizen wealth held three ways:
+      <span style="color:#a8e6a8;">●</span> liquid (cash + bank deposits inside the colony) ·
+      <span style="color:#ffb86c;">●</span> external investments (401k, IRA, brokerage outside the colony but citizen-owned) ·
+      <span style="color:#7aa2ff;">●</span> property equity (home value minus mortgage balance).
+      Wealth GROWS even as employment collapses — the abundance-era wealth-building story.
+    </div>
+    <svg id="ch-wealth" class="chart" viewBox="0 0 1400 280" preserveAspectRatio="xMidYMid meet"
+         style="width:100%; height:280px; background:#0b0d12; border:1px solid var(--line-hot);"></svg>
+  </div>
+
+  <div class="card">
+    <h3>Detailed metrics — basket, productivity, profits, tax</h3>
+    <div class="sub">
+      <span style="color:#7aa2ff;">●</span> avg basket cost (consumer-weighted) ·
+      <span style="color:#a8e6a8;">●</span> productivity index (compounds 5.4%/yr) ·
+      <span style="color:#cfa340;">●</span> total corporate profit / mo (sum of firm + national-economy) ·
+      <span style="color:#ef4444;">●</span> tax burden per adult per month.
+    </div>
+    <div class="chart-grid">
+      <svg id="ch-basket"  class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-prod"    class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-profits" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-taxsh"   class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Per-business stats (end of run)</h3>
+    <div class="sub">
+      One row per business / organisation. Sectors split into truly-local indy,
+      chain-branch, and pure-import providers; public sector aggregates all
+      government employment.
+    </div>
+    <table id="firms-table" style="width:100%; border-collapse:collapse; font-size:11px;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--line-hot); color:var(--dim); text-align:left;">
+          <th style="padding:6px 8px;">Business</th>
+          <th style="padding:6px 8px;">Type</th>
+          <th style="padding:6px 8px;">Sector</th>
+          <th style="padding:6px 8px; text-align:right;">Workers</th>
+          <th style="padding:6px 8px; text-align:right;">Txns / mo</th>
+          <th style="padding:6px 8px; text-align:right;">Txns cum.</th>
+          <th style="padding:6px 8px; text-align:right;">Revenue / mo</th>
+          <th style="padding:6px 8px; text-align:right;">Revenue cum.</th>
+          <th style="padding:6px 8px; text-align:right;">Wages cum.</th>
+          <th style="padding:6px 8px; text-align:right;">MAC paid cum.</th>
+          <th style="padding:6px 8px;">Key flow</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>What's in the basket (Grok V9.13 Y20 reference)</h3>
+    <div class="sub">
+      Three consumption categories in our model (food / goods / services) map
+      to Grok's seven-category moderate basket. Grok V9.13 Y20 family-of-4
+      total: <strong>$655-950 Mond/month</strong>. UBI for a family of 4 = ~$783/month
+      → comfortable surplus after the Colony Bill (utilities/LVT/Fed line).
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; font-size:11px;">
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #7eb24f; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Food — 25% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Groceries + meals</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Groceries (meat, dairy, produce, staples)</li>
+          <li>Fast-food / quick-service restaurants</li>
+          <li>Cafés &amp; coffee shops</li>
+          <li>Sit-down restaurants &amp; takeaway</li>
+          <li>Bakery / specialty food</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 60% chain, 35% local indy, 5% import
+        </div>
+      </div>
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #ffb86c; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Goods — 35% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Physical &amp; durable items</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Clothing &amp; footwear</li>
+          <li>Electronics, appliances, tools</li>
+          <li>Home furniture &amp; furnishings</li>
+          <li>Auto parts &amp; transport equipment</li>
+          <li>Personal care, household supplies, hobby goods</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 65% chain, 15% local indy, 20% import
+        </div>
+      </div>
+      <div style="background:#0b0d12; border:1px solid var(--line-hot); border-left:3px solid #7aa2ff; padding:12px 14px;">
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Services — 40% of basket</div>
+        <div style="font-size:14px; color:var(--headline); margin:4px 0 8px;">Healthcare, utilities, professional, recreation</div>
+        <ul style="margin:0 0 8px 16px; padding:0; color:var(--txt); line-height:1.6;">
+          <li>Healthcare (doctor, dentist, prescriptions)</li>
+          <li>Utilities (electricity, gas, water, internet, phone)</li>
+          <li>Insurance, legal, accounting</li>
+          <li>Childcare, education extras, auto repair</li>
+          <li>Recreation, streaming &amp; subscriptions</li>
+        </ul>
+        <div style="font-size:10px; color:var(--dim); border-top:1px solid #14171f; padding-top:6px;">
+          Provider mix: 30% chain, 60% local indy, 10% import
+        </div>
+      </div>
+    </div>
+    <div style="font-size:10px; color:var(--dim); margin-top:10px; line-height:1.5;">
+      <strong>Note:</strong> housing (rent, mortgage interest, property tax) is modelled separately from
+      the basket — those flows go via the Bank/Landlord entity and the public sector,
+      not via the three consumption sectors. Federal/state income tax is also separate.
+      The basket here is the post-tax, post-housing consumption pie.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Pension policy — three groups (MF Pensions Policy v1.0)</h3>
+    <div class="sub">
+      Existing pension promises are honoured. Pensions are paid <em>in addition to</em> UBI,
+      never clawed back. The other 53% of adults not in the workforce are not all retirees —
+      ~21% of adults are 65+ Group 1 retirees (full $400/mo pension + UBI), the other ~32%
+      are students, full-time caregivers, and disabled (UBI only — no separate safety-net
+      payment in this model; existing federal/state safety-net spending is folded into the
+      public-sector transfer line).
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-top:8px;">
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Current Retirees (Group 1)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          Full existing pension continues unchanged. Receive pension <strong>+ UBI</strong>.
+          Many comfortably better off as deflation lowers basket cost.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Mid-Career (Group 2)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          Accrued benefits legally protected. Mandatory new contributions
+          phase down over 7–10 years. Voluntary saving thereafter.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Younger Workers (Group 3)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          No mandatory pension contributions. UBI is the primary retirement floor.
+          Voluntary Axion-linked savings if desired.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="./colony-v0.js"></script>
+</body>
+</html>

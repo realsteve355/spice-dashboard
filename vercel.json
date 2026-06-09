@@ -1,7 +1,8 @@
 {
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js",
   "rewrites": [
-    { "source": "/((?!spice-methodology\\.html|api\\/).*)", "destination": "/index.html" }
+    { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
+    { "source": "/((?!spice-methodology\\.html|colony-v0(\\/|$)|api\\/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

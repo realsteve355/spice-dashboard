@@ -1,0 +1,80 @@
+/* Mission-control palette — same vocabulary as the complex dashboard */
+:root {
+  --bg: #06070a;
+  --panel: #0d0f12;
+  --panel2: #11141a;
+  --line: #232831;
+  --line-hot: #353c47;
+  --txt: #e8e8e8;
+  --txt2: #d2d2d2;
+  --dim: #a4a4a4;
+  --faint: #767676;
+  --headline: #ffffff;
+  --ok: #5dd39e;
+  --warn: #d4a04a;
+  --crit: #ef4444;
+  --blue: #3b82f6;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+header {
+  border-bottom: 1px solid var(--line-hot);
+  padding: 16px 24px;
+  background: var(--panel);
+}
+header h1 {
+  font-size: 14px;
+  margin: 0;
+  color: var(--headline);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+header .subtitle {
+  margin-top: 6px;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+header a { color: var(--blue); text-decoration: none; }
+header a:hover { color: var(--txt); }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line-hot);
+  padding: 14px 18px;
+}
+.card h3 {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+table th, table td { text-align: left; padding: 5px 8px; vertical-align: middle; white-space: nowrap; }
+table th {
+  font-weight: normal;
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line-hot);
+}
+table td { color: var(--txt2); border-bottom: 1px dotted var(--line); }
+table tr:last-child td { border-bottom: none; }
+
+.status { font-size: 11px; color: var(--dim); }
+.status.err { color: var(--crit); }
