@@ -12,6 +12,17 @@ function fmt(n) {
   if (n === undefined || n === null || isNaN(n)) return '—';
   return Math.abs(n) >= 1e3 ? Math.round(n).toLocaleString() : n.toFixed(0);
 }
+// Compact dollar formatter for chart axes — keeps labels narrow so they fit
+// inside pad.l. $4,660,000,000,000 -> "$4.66T", $42,355 -> "$42.4K".
+function fmtCompact(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return (n / 1e9).toFixed(2)  + 'B';
+  if (a >= 1e6)  return (n / 1e6).toFixed(2)  + 'M';
+  if (a >= 1e3)  return (n / 1e3).toFixed(1)  + 'K';
+  return Math.round(n).toString();
+}
 function pct(v) { return (v * 100).toFixed(1) + '%'; }
 
 function setStatus(msg, err = false) {
@@ -93,7 +104,11 @@ function renderChart(svgId, traj, series, opts = {}) {
     const yPx = pad.t + (innerH * i / 4);
     const yVal = yMax - (yMax - yMin) * (i / 4);
     grid += `<line x1="${pad.l}" y1="${yPx}" x2="${pad.l + innerW}" y2="${yPx}" stroke="#14171f"/>`;
-    const lbl = opts.percent ? pct(yVal) : (opts.dollar ? '$' + fmt(yVal) : fmt(yVal));
+    // Use compact notation ($1.05T, $42.4K) when values are large enough to
+    // overflow the 60px left pad with comma-separated digits.
+    const useCompact = Math.abs(yMax) >= 1e5;
+    const numStr = useCompact ? fmtCompact(yVal) : fmt(yVal);
+    const lbl = opts.percent ? pct(yVal) : (opts.dollar ? '$' + numStr : numStr);
     grid += `<text x="${pad.l - 6}" y="${yPx + 3}" fill="#9aa3b3" font-size="10" text-anchor="end">${lbl}</text>`;
   }
 
