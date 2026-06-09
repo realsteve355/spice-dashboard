@@ -1,8 +1,8 @@
 // Colony v0 dashboard. POSTs config to /api/colony-v0, renders 4 macro charts
 // + the per-citizen wealth heatmap.
 
-const INPUTS = ['n_citizens', 'months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'mcc_mode', 'automation_end', 'automation_months', 'seed'];
-const STORAGE_KEY = 'axion_colony_v0_v4';   // bump on schema changes
+const INPUTS = ['n_citizens', 'months', 'monthly_external_transfers', 'pension_per_inactive', 'mac_rate', 'tech_growth_rate', 'mcc_mode', 'automation_end', 'automation_months', 'seed'];
+const STORAGE_KEY = 'axion_colony_v0_v5';   // bump on schema changes
 
 function readNum(id, def) {
   const v = parseFloat(document.getElementById(id).value);
@@ -20,40 +20,6 @@ function setStatus(msg, err = false) {
   el.className = err ? 'status err' : 'status';
 }
 
-function renderComparison(tradData, axionData) {
-  const tbody = document.querySelector('#compare-table tbody');
-  if (!tbody) return;
-  const t = tradData.trajectory[tradData.trajectory.length - 1];
-  const a = axionData.trajectory[axionData.trajectory.length - 1];
-  const rows = [
-    { label: 'Unemployment rate (of workforce)', t: 1 - t.employment_rate_workforce, a: 1 - a.employment_rate_workforce, fmt: pct, important: true, sign: -1, note: 'traditional definition: % of workforce-active adults seeking work but not employed' },
-    { label: 'UBI per adult / mo', t: t.ubi_per_adult_mo, a: a.ubi_per_adult_mo, fmt: v => '$' + fmt(v), important: true, note: 'driven primarily by MAC, similar across modes' },
-    { label: 'Liquid wealth / adult', t: t.liquid_wealth / Math.max(1, t.n_adults), a: a.liquid_wealth / Math.max(1, a.n_adults), fmt: v => '$' + fmt(v), important: true, note: 'cash + bank deposits per adult' },
-    { label: 'Net worth / adult', t: t.net_worth / Math.max(1, t.n_adults), a: a.net_worth / Math.max(1, a.n_adults), fmt: v => '$' + fmt(v), important: true, note: 'liquid + external investments + property equity, per adult' },
-    { label: 'Cumulative tax paid', t: t.income_tax_cum + (t.sales_tax_cum || 0), a: a.mcc_charge_cum || a.income_tax_cum, fmt: v => '$' + fmt(v), important: true, sign: -1, note: 'AXION should be lower — that\'s the citizen win' },
-    { label: 'Money supply (colony)', t: t.money_supply, a: a.money_supply, fmt: v => '$' + fmt(v), note: 'higher = more capital retained locally' },
-    { label: 'MOND outstanding', t: t.mond_outstanding || 0, a: a.mond_outstanding || 0, fmt: v => '$' + fmt(v), note: 'AXION local-currency portion of citizen savings' },
-    { label: 'MAC cumulative', t: t.mac_cum, a: a.mac_cum, fmt: v => '$' + fmt(v), note: 'total MAC pool collected over the run' },
-    { label: 'Pension cumulative', t: t.pension_cum, a: a.pension_cum, fmt: v => '$' + fmt(v), note: 'social-security inflow to non-workforce' },
-  ];
-  tbody.innerHTML = rows.map(r => {
-    const delta = r.a - r.t;
-    const sign = r.sign || 1;
-    const winning = (sign * delta) > 0;
-    const deltaColor = delta === 0 ? 'var(--dim)' : (winning ? 'var(--ok)' : 'var(--crit)');
-    const sym = delta >= 0 ? '+' : '';
-    const dStr = r.fmt === pct ? sym + pct(delta) : sym + (r.fmt(Math.abs(delta)).replace('$', delta < 0 ? '-$' : '$'));
-    const label = r.important ? `<strong>${r.label}</strong>` : r.label;
-    return `<tr style="border-bottom:1px solid #14171f;">
-      <td style="padding:6px 8px; color:var(--headline);">${label}</td>
-      <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">${r.fmt(r.t)}</td>
-      <td style="padding:6px 8px; text-align:right; font-variant-numeric:tabular-nums;">${r.fmt(r.a)}</td>
-      <td style="padding:6px 8px; text-align:right; color:${deltaColor}; font-variant-numeric:tabular-nums;">${dStr}</td>
-      <td style="padding:6px 8px; color:var(--dim); font-size:10px;">${r.note}</td>
-    </tr>`;
-  }).join('');
-}
-
 function readCfg() {
   return {
     n_citizens:                 readNum('n_citizens', 100),
@@ -61,6 +27,7 @@ function readCfg() {
     monthly_external_transfers: readNum('monthly_external_transfers', 2800),
     pension_per_inactive:       readNum('pension_per_inactive', 400),
     mac_rate:                   readNum('mac_rate', 0.22),
+    tech_growth_rate:           readNum('tech_growth_rate', 0.054),
     mcc_mode:                   document.getElementById('mcc_mode').checked,
     automation_end:             readNum('automation_end', 0.85),
     automation_months:          readNum('automation_months', 240),
@@ -234,19 +201,13 @@ function renderSnapshot(data) {
     {
       lbl: 'Population',
       val: `${last.n_total_pop}`,
-      sub: `${last.n_adults} adults (${last.n_workforce} workforce + ${last.n_inactive} inactive) + ${last.n_dependents} kids`,
+      sub: `${last.n_adults} adults · ${last.n_workforce} workforce + ${last.n_retirees ?? 0} retirees + ${last.n_other_inactive ?? 0} other-inactive + ${last.n_dependents} kids`,
       color: 'var(--ok)',
     },
     {
       lbl: `Unemployment ${endTag}`, val: pct(1 - last.employment_rate_workforce),
       sub: `${pct(last.employment_rate_workforce)} of workforce employed · local ${last.workers_local} · chain ${last.workers_chain} · public ${last.workers_public}`,
       color: last.employment_rate_workforce > 0.9 ? 'var(--ok)' : (last.employment_rate_workforce > 0.6 ? 'var(--warn)' : 'var(--crit)'),
-    },
-    {
-      lbl: `Net worth / adult ${endTag}`,
-      val: '$' + fmt((last.net_worth || 0) / Math.max(1, last.n_adults)),
-      sub: `colony total $${fmt(last.net_worth || 0)} · ${(last.net_worth - first.net_worth) >= 0 ? '+' : ''}$${fmt((last.net_worth - first.net_worth) / Math.max(1, last.n_adults))} per adult vs Y0`,
-      color: (last.net_worth >= first.net_worth) ? 'var(--ok)' : 'var(--warn)',
     },
     {
       lbl: 'Homeowners / renters',
@@ -348,17 +309,67 @@ function renderFirmsTable(firms) {
 async function refresh() {
   try {
     saveInputs();
-    // Fetch current mode AND the opposite tax mode in parallel for the
-    // Traditional vs AXION MCC comparison.
+    // Fetch both tax modes in parallel so the Tax burden chart can compare
+    // them. The rest of the dashboard renders from whichever mode the user
+    // currently has selected.
     const cfg = readCfg();
     setStatus('running both tax modes…');
     const [tradData, axionData] = await Promise.all([
       fetchRunWithCfg({ ...cfg, mcc_mode: false }),
       fetchRunWithCfg({ ...cfg, mcc_mode: true }),
     ]);
-    renderComparison(tradData, axionData);
     const data = cfg.mcc_mode ? axionData : tradData;
     const t = data.trajectory;
+
+    // ── National trajectories — macro context (above colony detail) ──
+    // Three charts pull from the same trajectory series:
+    //   1. CBO/BLS baseline national unemployment — linear ramp 4% → 5.5%
+    //      over the run, independent of controls. The conventional view.
+    //   2. National AI/robotics corporate profits — productivity_idx
+    //      (compounds at tech_growth_rate) × $1T base. These are the firms
+    //      paying MAC into colony UBI pools.
+    //   3. AXION-thesis national unemployment scenario — the colony's
+    //      workforce-unemployment rate + a 4% structural floor. Driven by
+    //      automation_end / automation_months. Shows what national
+    //      unemployment looks like if displacement plays out as modelled.
+    const monthsRun = t.length - 1;
+    const NATIONAL_AI_PROFIT_Y0 = 1.0e12;   // $1T base — Big Tech + NVDA + AI/robotics adjacent
+    renderChart('ch-nat-unemp-base', t, [
+      { fn: (_, i) => 0.04 + (0.015 * i / Math.max(1, monthsRun)),
+        color: '#7aa2ff', label: 'CBO baseline' },
+    ], { percent: true, title: 'National unemployment (CBO baseline projection)' });
+    renderChart('ch-nat-profits', t, [
+      { fn: p => NATIONAL_AI_PROFIT_Y0 * (p.productivity_idx || 1),
+        color: '#cfa340', label: 'AI + robotics' },
+    ], { dollar: true, title: 'National AI / robotics corporate profits ($)' });
+    // AXION-thesis national unemployment is hardcoded to Grok V9.13's
+    // MaryFontaine 20-year projection table (Y0=4.2%, Y5=18%, Y10=35%,
+    // Y15=55%, Y20=75%) and linearly interpolated to monthly resolution.
+    // Source: docs/Grok2.md Section 2 ramp dynamics.
+    const GROK_UNEMP = [
+      { y: 0,  v: 0.042 },
+      { y: 5,  v: 0.180 },
+      { y: 10, v: 0.350 },
+      { y: 15, v: 0.550 },
+      { y: 20, v: 0.750 },
+    ];
+    const grokAt = (monthIdx) => {
+      const y = monthIdx / 12;
+      for (let k = 0; k < GROK_UNEMP.length - 1; k++) {
+        const a = GROK_UNEMP[k], b = GROK_UNEMP[k + 1];
+        if (y >= a.y && y <= b.y) {
+          const f = (y - a.y) / (b.y - a.y);
+          return a.v + (b.v - a.v) * f;
+        }
+      }
+      return GROK_UNEMP[GROK_UNEMP.length - 1].v;
+    };
+    renderChart('ch-nat-unemp-ai', t, [
+      { fn: (_, i) => grokAt(i),
+        color: '#ef4444', label: 'AXION (Grok V9.13)' },
+      { fn: (_, i) => 0.04 + (0.015 * i / Math.max(1, monthsRun)),
+        color: '#7aa2ff', label: 'CBO', dash: '4 3' },
+    ], { percent: true, title: 'National unemployment — AXION vs CBO' });
 
     renderChart('ch-employment', t, [
       { fn: p => p.workers_local + p.workers_chain + p.workers_public, color: '#a8e6a8', label: 'total' },
@@ -367,48 +378,36 @@ async function refresh() {
       { fn: p => p.workers_public, color: '#7aa2ff', label: 'public', dash: '4 3' },
     ], { title: 'Employment by firm type' });
 
-    // Mond circulation: cumulative minted (= total UBI ever distributed) vs
-    // currently outstanding in citizen wallets. Difference = Mond that's been
-    // spent (retired by transactions).
-    renderChart('ch-mond', t, [
-      { fn: p => p.mond_minted_cum, color: '#b48ee6', label: 'cum. minted (= UBI distributed)' },
-      { fn: p => p.mond_outstanding, color: '#cfa340', label: 'currently in wallets', dash: '4 3' },
-    ], { dollar: true, title: 'Mond circulation (USD-pegged stablecoin)' });
-
-    // Average citizen income by source, per adult per month
-    const nA = data.productivities.length || 1;
+    // Average income per adult per month — colony-wide. Aggregate income
+    // flow (wages + pensions + UBI) divided by total adults. The cohort
+    // composition behind this average is in the bottom-left chart.
+    const nAd = p => Math.max(1, p.n_adults || 1);
     renderChart('ch-income', t, [
-      { fn: p => ((p.wages_step || 0) + (p.ubi_step || 0) + (p.pension_paid_step || 0) + (p.child_transfers || 0)) / nA,
-        color: '#a8e6a8', label: 'total / adult / mo' },
-      { fn: p => (p.wages_step || 0) / nA,            color: '#7eb24f', label: 'wages', dash: '3 3' },
-      { fn: p => (p.ubi_step || 0) / nA,              color: '#b48ee6', label: 'UBI', dash: '3 3' },
-      { fn: p => (p.pension_paid_step || 0) / nA,     color: '#ffb86c', label: 'pensions', dash: '3 3' },
-    ], { dollar: true, title: 'Citizen income per adult per month' });
+      { fn: p => ((p.wages_step || 0) + (p.pension_paid_step || 0) + (p.ubi_step || 0)) / nAd(p),
+        color: '#a8e6a8', label: 'avg' },
+    ], { dollar: true, title: 'Avg income / person / mo' });
 
-    // MAC pool monthly trajectory (replaces velocity in the macro grid)
+    // Cohort sizes over time — the recipient counts behind the income chart.
+    // Workers fall as automation displaces them; pensioners fall as the
+    // legacy Group 1 cohort ages out at 8.5%/yr; the "everyone else" pool
+    // (unemployed workforce + other-inactive) grows to absorb both flows.
     renderChart('ch-velocity', t, [
-      { fn: p => p.mac_step || 0, color: '#cfa340', label: 'MAC pool / mo' },
-    ], { dollar: true, title: 'MAC pool collected per month' });
+      { fn: p => p.n_adults || 0,
+        color: '#a8e6a8', label: 'total' },
+      { fn: p => (p.workers_local || 0) + (p.workers_chain || 0) + (p.workers_public || 0),
+        color: '#7eb24f', label: 'workers', dash: '3 3' },
+      { fn: p => p.n_retirees || 0,
+        color: '#ffb86c', label: 'pensioners', dash: '3 3' },
+      { fn: p => (p.n_adults || 0)
+                 - ((p.workers_local || 0) + (p.workers_chain || 0) + (p.workers_public || 0))
+                 - (p.n_retirees || 0),
+        color: '#b48ee6', label: 'others', dash: '3 3' },
+    ], { title: 'Cohort sizes (adults)' });
 
     // AXION mechanism chart — UBI trajectory
     renderChart('ch-ubi', t, [
       { fn: p => p.ubi_per_adult_mo, color: '#b48ee6', label: 'UBI per adult / mo' },
     ], { dollar: true, title: 'UBI per adult per month' });
-
-    // MAC split chart — local vs national over time. Monthly deltas from cumulative.
-    let prevLocal = 0, prevNational = 0;
-    const localSteps = [], nationalSteps = [];
-    for (const p of t) {
-      const lc = p.mac_local_cum || 0;
-      const nc = p.mac_national_cum || 0;
-      localSteps.push(lc - prevLocal);
-      nationalSteps.push(nc - prevNational);
-      prevLocal = lc; prevNational = nc;
-    }
-    renderChart('ch-mac-split', t, [
-      { fn: (_, i) => nationalSteps[i] || 0, color: '#b48ee6', label: 'national (frontier-tech)' },
-      { fn: (_, i) => localSteps[i] || 0, color: '#cfa340', label: 'local firms', dash: '3 3' },
-    ], { dollar: true, title: 'MAC contribution by source (monthly)' });
 
     // Saved wealth chart (single wide chart, three components)
     renderChart('ch-wealth', t, [

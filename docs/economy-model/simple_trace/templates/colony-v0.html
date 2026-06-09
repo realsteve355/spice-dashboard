@@ -106,8 +106,9 @@
       <label>Adults (population) <input type="number" id="n_citizens" value="100" min="30" max="500" step="10"></label>
       <label>Months <input type="number" id="months" value="240" min="12" max="360" step="12"></label>
       <label>Public-sector transfers ($/mo) <input type="number" id="monthly_external_transfers" value="2800" min="0" step="100"></label>
-      <label>Pension / SS per inactive adult ($/mo) <input type="number" id="pension_per_inactive" value="400" min="0" step="50"></label>
+      <label>Pension per retiree ($/mo, legacy) <input type="number" id="pension_per_inactive" value="400" min="0" step="50"></label>
       <label>Market Access Charge rate k <input type="number" id="mac_rate" value="0.22" min="0" max="0.50" step="0.01"></label>
+      <label>Tech growth rate (annual) <input type="number" id="tech_growth_rate" value="0.054" min="0" max="0.20" step="0.005"></label>
       <label>AXION Colony Bill mode <input type="checkbox" id="mcc_mode"></label>
       <label>Automation end (A_max) <input type="number" id="automation_end" value="0.85" min="0" max="1" step="0.05"></label>
       <label>Automation ramp (months) <input type="number" id="automation_months" value="240" min="12" max="360" step="12"></label>
@@ -121,26 +122,26 @@
   </div>
 
   <div class="card">
-    <h3>Traditional vs AXION Colony Bill — end-of-run comparison</h3>
+    <h3>National trajectories — macro context</h3>
     <div class="sub">
-      Both runs use the same parameters (population, automation, seed) and only
-      differ on tax structure. Traditional = 15% income tax + 7% sales tax (today's US).
-      AXION Colony Bill = $42/mo utilities + 0.35% LVT (exempt for UBI-only homes &lt;$450k)
-      + $18.50/mo federal contribution. 0% sales, 0% income, 0% corporate. Per Grok V9.13.
-      Key citizen-impact metrics are bolded.
+      The macro environment the colony exists within.
+      Top-left: <strong>conventional national-unemployment projection</strong>
+      (CBO/BLS baseline) — modest rise from ~4% over 20yr, the kind of
+      forecast policymakers use today. ·
+      Top-right: <strong>national AI &amp; robotics corporate profits</strong> —
+      compounds at the <code>tech growth rate</code> set above. These are the
+      firms paying MAC into the colony's UBI pool. ·
+      Bottom: <strong>AXION-thesis national-unemployment scenario</strong> —
+      Grok V9.13's MaryFontaine projection (Y0=4.2%, Y5=18%, Y10=35%, Y15=55%,
+      Y20=75%), linearly interpolated to monthly resolution. Source:
+      <code>docs/Grok2.md</code> §2. The gap between top-left and bottom is
+      the AXION thesis in one picture.
     </div>
-    <table style="width:100%; border-collapse:collapse; font-size:11px;" id="compare-table">
-      <thead>
-        <tr style="border-bottom:1px solid var(--line-hot); color:var(--dim);">
-          <th style="padding:6px 8px; text-align:left;">Metric (end of run)</th>
-          <th style="padding:6px 8px; text-align:right;">Traditional</th>
-          <th style="padding:6px 8px; text-align:right;">AXION Colony</th>
-          <th style="padding:6px 8px; text-align:right;">Δ</th>
-          <th style="padding:6px 8px;">Notes</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="chart-grid">
+      <svg id="ch-nat-unemp-base" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-nat-profits"    class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <svg id="ch-nat-unemp-ai" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet" style="margin-top:14px;"></svg>
   </div>
 
   <div class="card">
@@ -149,33 +150,27 @@
   </div>
 
   <div class="card">
-    <h3>Macro trajectories</h3>
+    <h3>Colony trajectories</h3>
     <div class="sub">
-      Top-left: employment by firm type · Top-right: Mond circulation (cumulative minted vs currently in wallets) ·
-      Bottom-left: citizen income per adult per month (wages + UBI + pensions) ·
-      Bottom-right: MAC pool collected per month — the AXION mechanism's headline.
+      Top-left: employment by firm type. ·
+      Top-right: UBI per adult per month — Grok's headline metric. Funded mostly
+      by the MAC pool charged on national/frontier-tech firms (Amazon HQ, Apple,
+      Google etc.) with a smaller and shrinking contribution from local firms as
+      automation reduces the local labour bill. ·
+      Bottom-left: cohort sizes over time — how many adults are in each group.
+      The transition story lives here: workers fall as automation displaces them,
+      pensioners fall as the legacy Group 1 cohort ages out (~21%→~5% over 20yr
+      per MF Pensions Policy v1.0), and the "everyone else" pool absorbs both flows
+      onto the UBI floor. ·
+      Bottom-right: average income per adult per month across the whole colony
+      — total wages + pensions + UBI, ÷ total adults. The cohort composition
+      behind this average is on the bottom-left.
     </div>
     <div class="chart-grid">
       <svg id="ch-employment" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-      <svg id="ch-mond"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-      <svg id="ch-income"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-ubi"        class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
       <svg id="ch-velocity"   class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3>AXION mechanism — MAC pool, UBI trajectory</h3>
-    <div class="sub">
-      <span style="color:#b48ee6;">●</span> UBI per adult / month — Grok's headline metric.
-      The MAC split chart shows where the pool is coming from:
-      <span style="color:#b48ee6;">●</span> national/frontier-tech firms (Amazon HQ, Apple,
-      Google etc. paying MAC for market access) — the dominant and growing share,
-      vs <span style="color:#cfa340;">●</span> local-firm contribution (chains, indies,
-      bank) which is smaller and shrinks with automation.
-    </div>
-    <div class="chart-grid">
-      <svg id="ch-ubi"       class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
-      <svg id="ch-mac-split" class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-income"     class="chart" viewBox="0 0 700 240" preserveAspectRatio="xMidYMid meet"></svg>
     </div>
   </div>
 
@@ -299,6 +294,54 @@
       the basket — those flows go via the Bank/Landlord entity and the public sector,
       not via the three consumption sectors. Federal/state income tax is also separate.
       The basket here is the post-tax, post-housing consumption pie.
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Pension policy — three groups (MF Pensions Policy v1.0)</h3>
+    <div class="sub">
+      Existing pension promises are honoured. Pensions are paid <em>in addition to</em> UBI,
+      never clawed back. The other 53% of adults not in the workforce are not all retirees —
+      ~21% of adults are 65+ Group 1 retirees (full $400/mo pension + UBI), the other ~32%
+      are students, full-time caregivers, and disabled (UBI only — no separate safety-net
+      payment in this model; existing federal/state safety-net spending is folded into the
+      public-sector transfer line).
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-top:8px;">
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Current Retirees (Group 1)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          Full existing pension continues unchanged. Receive pension <strong>+ UBI</strong>.
+          Many comfortably better off as deflation lowers basket cost.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Mid-Career (Group 2)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          Accrued benefits legally protected. Mandatory new contributions
+          phase down over 7–10 years. Voluntary saving thereafter.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px; color:var(--dim); letter-spacing:0.16em; text-transform:uppercase;">Younger Workers (Group 3)</div>
+        <div style="font-size:13px; line-height:1.6; margin-top:6px;">
+          No mandatory pension contributions. UBI is the primary retirement floor.
+          Voluntary Axion-linked savings if desired.
+        </div>
+      </div>
+    </div>
+    <div style="font-size:10px; color:var(--dim); margin-top:14px; line-height:1.5;">
+      <strong>In this sim:</strong> at Y0, ~21% of adults are Group 1 retirees (flagged
+      <code>is_retired</code>) receiving $400/mo pension <em>in addition to</em> UBI.
+      The cohort shrinks each month at 8.5%/yr (mortality + zero new Group 1 entrants —
+      Groups 2/3 retire with smaller or no pensions). Over the 20-year horizon the
+      pension recipient count falls from ~21% to ~5% of adults. Everyone else (students,
+      full-time caregivers, disabled, workforce-unemployed) receives UBI only — there is
+      no separate safety-net payment in the AXION model. UBI is the floor. Mid-career
+      phase-down and Group 3 dynamics are out of scope for v0 — the comparison this
+      dashboard makes is between today's tax structure (no UBI, full income/payroll/sales
+      taxes) and the Colony Bill structure (no income or sales tax, MAC-funded UBI,
+      pensions intact for the shrinking Group 1).
     </div>
   </div>
 

@@ -81,9 +81,31 @@ CHILD_CONSUMPTION = 0.30          # each child adds this fraction to adult targe
 # consume, but earn pensions / social security / family support instead
 # of wages. Matches US BLS employment-to-adult-population ratio.
 WORKFORCE_RATE        = 0.47
-PENSION_PER_INACTIVE  = 400.0   # monthly Social Security / pension / family
-                                 # support, paid by federal/state to each
-                                 # non-workforce adult (BoP credit inflow)
+# Of total adults, ~21% are 65+ retirees. That's ~40% of the inactive (53%)
+# population. The rest of the inactive are students, full-time caregivers,
+# homemakers, disabled — they get smaller social-safety support, not the
+# full pension.
+RETIREE_RATE_OF_ADULTS = 0.21   # ~21% of adults are retirees at Y0 (US BLS aged 65+)
+PENSION_PER_RETIREE    = 400.0  # full pension (SS + private) per retiree
+                                 # Per MaryFontaine Pensions Policy v1.0:
+                                 # legacy retirees receive full pension
+                                 # IN ADDITION TO UBI, for life (legal promise).
+                                 # Cohort shrinks over 20yr horizon — see attrition.
+RETIREE_ATTRITION_ANNUAL = 0.085  # ~8.5%/yr legacy-retiree exit (mortality dominates;
+                                   # avg 15yr in retirement → ~6.7%/yr base rate, lifted
+                                   # to reflect zero new entrants to the full-pension scheme
+                                   # under the spec — Group 2 retires with smaller accrued
+                                   # pensions, Group 3 with UBI only). Over 240 months this
+                                   # shrinks the cohort from ~21% of adults at Y0 to ~5% at
+                                   # Y20, with corresponding decline in colony-wide pension
+                                   # outlay. Exited retirees stay alive in the sim — they
+                                   # transition to other-inactive (UBI only, no pension).
+OTHER_INACTIVE_SUPPORT = 0.0    # AXION model has NO safety-net payment beyond
+                                 # UBI. Students, full-time caregivers, disabled
+                                 # adults receive UBI only — same as everyone else.
+                                 # Existing federal/state safety-net spending is
+                                 # absorbed into monthly_external_transfers (which
+                                 # funds the public-sector payroll).
 
 # Public sector — modelled as a single employer. Funded by external transfers
 # (federal/state money — Social Security, Medicare, federal jobs, state
@@ -194,12 +216,13 @@ EXPORT_DECAY = 0.90            # at A=1, export demand → 10% of baseline
 
 # ── Agents ───────────────────────────────────────────────────────────────
 class Citizen(Agent):
-    def __init__(self, model, productivity, initial_savings, dependents=0, in_workforce=True):
+    def __init__(self, model, productivity, initial_savings, dependents=0, in_workforce=True, is_retired=False):
         super().__init__(model)
         self.productivity = productivity
         self.savings = initial_savings   # liquid savings (cash + bank deposits)
         self.dependents = dependents     # number of children in household
         self.in_workforce = in_workforce  # False = retiree/student/caregiver/disabled
+        self.is_retired = is_retired      # subset of in_workforce=False — gets pension
         self.employer = None             # LocalFirm | ChainBranch | PublicSector | None
         self.last_income = 0.0
         self.months_unemployed = 0
@@ -486,13 +509,23 @@ class ColonyV0Model(Model):
         sectors_automate: tuple = ("food", "goods", "services"),
         layoff_threshold: float = 0.70,
         hire_threshold: float = 1.15,
+        warmup_months: int = 6,    # disable revenue-driven layoffs for first N months
+                                    # so the colony bootstraps to steady-state
+                                    # consumption flows before firms make firing
+                                    # decisions. Firms are sized to steady-state
+                                    # demand at __init__ — the warmup just stops
+                                    # spurious M0-M3 layoffs while wage/UBI flows
+                                    # propagate. Automation-driven layoffs
+                                    # (_chain_hq_workforce_reduction) still apply.
         monthly_external_transfers: float = 2800.0,  # public sector payroll inflow only
-        pension_per_inactive: float = PENSION_PER_INACTIVE,  # per non-workforce adult / month
+        pension_per_inactive: float = PENSION_PER_RETIREE,   # per retiree / month (legacy promise)
         mac_rate: float = MAC_RATE,                  # Market Access Charge — k of profit
         mcc_mode: bool = False,                      # AXION tax structure on/off
+        tech_growth_rate: float = PRODUCTIVITY_GROWTH_ANNUAL,  # annual productivity / national tech-profit growth rate
         seed=None,
     ):
         super().__init__(seed=seed)
+        self.tech_growth_rate = tech_growth_rate
         self.base_wage = base_wage
         self.target_spend_pct = target_spend_pct
         self.subsistence_floor = subsistence_floor
@@ -501,6 +534,7 @@ class ColonyV0Model(Model):
         self.sectors_automate = sectors_automate
         self.layoff_threshold = layoff_threshold
         self.hire_threshold = hire_threshold
+        self.warmup_months = warmup_months
 
         # Money tracking
         self.money_drained_total = 0.0
@@ -530,6 +564,8 @@ class ColonyV0Model(Model):
         # Pension / SS / family-support payments to non-workforce adults
         self.pension_paid_this_step = 0.0
         self.pension_cumulative = 0.0
+        self.other_support_paid_this_step = 0.0
+        self.other_support_cumulative = 0.0
         # MAC + UBI (the AXION mechanism)
         self.mac_rate = MAC_RATE
         self.mac_pool = 0.0
@@ -575,11 +611,19 @@ class ColonyV0Model(Model):
             # Workforce participation: ~47% of adults are workforce-active.
             # The other 53% (retirees, students, caregivers, disabled) consume
             # and receive pensions/benefits but don't work.
-            in_workforce = self.random.random() < WORKFORCE_RATE
+            # Of total adults, ~21% are retirees (subset of the 53% inactive).
+            r = self.random.random()
+            in_workforce = r < WORKFORCE_RATE
+            # Of the inactive 53%, the ~21% retirees come first by sort order.
+            # Roll a fresh die for retiree status among the inactive.
+            is_retired = (not in_workforce) and (
+                self.random.random() < (RETIREE_RATE_OF_ADULTS / (1 - WORKFORCE_RATE))
+            )
             self.citizens.append(Citizen(self, productivity=p,
                                           initial_savings=initial_savings,
                                           dependents=n_kids,
-                                          in_workforce=in_workforce))
+                                          in_workforce=in_workforce,
+                                          is_retired=is_retired))
         avg_p = sum(c.productivity for c in self.citizens) / len(self.citizens)
         self.total_dependents = sum(c.dependents for c in self.citizens)
         self.total_population = n_citizens + self.total_dependents
@@ -705,13 +749,15 @@ class ColonyV0Model(Model):
         self.bank = BankLandlord(self)
 
         # Bootstrap citizens' last_income so month-1 consumption isn't just
-        # subsistence. Workforce employees use their expected wage; non-
-        # workforce adults use their pension amount.
+        # subsistence. Workforce employees use their expected wage; retirees
+        # use their pension; other-inactive use the smaller support amount.
         for c in self.citizens:
             if c.employed:
                 c.last_income = c.wage_if_hired
-            elif not c.in_workforce:
+            elif c.is_retired:
                 c.last_income = self.pension_per_inactive
+            elif not c.in_workforce:
+                c.last_income = OTHER_INACTIVE_SUPPORT
 
         # Per-citizen history
         self.savings_history: list[list[float]] = [[c.savings for c in self.citizens]]
@@ -747,12 +793,18 @@ class ColonyV0Model(Model):
                 "n_total_pop":       lambda m: m.total_population,
                 "n_workforce":       lambda m: sum(1 for c in m.citizens if c.in_workforce),
                 "n_inactive":        lambda m: sum(1 for c in m.citizens if not c.in_workforce),
+                "n_retirees":        lambda m: sum(1 for c in m.citizens if c.is_retired),
+                "n_other_inactive":  lambda m: sum(
+                    1 for c in m.citizens if (not c.in_workforce) and (not c.is_retired)
+                ),
                 "employment_rate_workforce": lambda m: (
                     sum(1 for c in m.citizens if c.employed)
                     / max(1, sum(1 for c in m.citizens if c.in_workforce))
                 ),
                 "pension_paid_step": lambda m: m.pension_paid_this_step,
                 "pension_cum":       lambda m: m.pension_cumulative,
+                "other_support_step":lambda m: m.other_support_paid_this_step,
+                "other_support_cum": lambda m: m.other_support_cumulative,
                 # Public sector financials
                 "public_balance":    lambda m: m.public_sector.balance,
                 "transfers_in":      lambda m: m.public_sector.transfers_received_this_step,
@@ -807,7 +859,7 @@ class ColonyV0Model(Model):
                 ),
                 # New: corporate profit, productivity, unemployment, tax share
                 "corp_profit_step":  lambda m: m.corporate_profit_this_step,
-                "productivity_idx":  lambda m: (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (m.steps / 12.0),
+                "productivity_idx":  lambda m: (1 + m.tech_growth_rate) ** (m.steps / 12.0),
                 "unemployment_rate": lambda m: 1.0 - m.employment_rate_workforce_internal(),
                 "wages_step":        lambda m: m.total_wages_this_step,
                 "tax_step":          lambda m: m.income_tax_this_step + m.sales_tax_this_step,
@@ -1027,7 +1079,7 @@ class ColonyV0Model(Model):
         self.corporate_profit_this_step = 0.0
         if self.mac_rate <= 0:
             # Still calculate corporate profit even with mac off, for the chart
-            productivity = (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (self.steps / 12.0)
+            productivity = (1 + self.tech_growth_rate) ** (self.steps / 12.0)
             for f in self.local_firms.values():
                 wc = sum(w.wage_if_hired for w in f.workers)
                 self.corporate_profit_this_step += max(0.0, f.revenue_this_month * productivity - wc)
@@ -1044,7 +1096,7 @@ class ColonyV0Model(Model):
         # effective firm profit (and thus MAC pool) over time even when
         # revenue is flat. The extra above firm balance is paid from
         # 'abundance' (BoP credit).
-        productivity = (1 + PRODUCTIVITY_GROWTH_ANNUAL) ** (self.steps / 12.0)
+        productivity = (1 + self.tech_growth_rate) ** (self.steps / 12.0)
         # LocalFirms: profit = revenue × productivity - wages
         for f in self.local_firms.values():
             wage_cost = sum(w.wage_if_hired for w in f.workers)
@@ -1236,6 +1288,27 @@ class ColonyV0Model(Model):
                     self.income_tax_this_step += tax
                     self.income_tax_cumulative += tax
 
+    def _retiree_attrition(self):
+        """Legacy-retiree cohort shrinks over the simulation horizon.
+        Per MF Pensions Policy v1.0: Group 1 (current retirees at Y0) keep
+        full pension for life. Group 2 retires later with smaller accrued
+        pensions; Group 3 retires later with UBI only. In a 20yr window
+        with no new legacy entrants, the count of full-pension recipients
+        falls steeply.
+
+        Implementation: each step, each retiree has a small probability of
+        exiting the legacy pension scheme. Exited retirees stay in the sim
+        (no death modelled) but transition to other-inactive status — they
+        no longer receive PENSION_PER_RETIREE, only OTHER_INACTIVE_SUPPORT
+        (+ UBI when Colony Bill is on). This is a simplification — the spec
+        implies dead retirees would be replaced by Group 2 entrants on
+        smaller accrued pensions, but for v0 we collapse both effects into
+        a single declining pension outlay."""
+        p_exit_monthly = 1 - (1 - RETIREE_ATTRITION_ANNUAL) ** (1 / 12)
+        for c in self.citizens:
+            if c.is_retired and self.random.random() < p_exit_monthly:
+                c.is_retired = False
+
     def _external_transfers(self):
         """Federal / state money flowing into the colony. Three channels:
         (a) bulk transfers to the public sector — funds public payroll
@@ -1254,15 +1327,27 @@ class ColonyV0Model(Model):
                 self.child_transfers_this_step += amt
                 self.money_returned_total += amt
                 self.exports_this_step += amt
+        # Per MF Pensions Policy v1.0:
+        #   - Retirees receive full pension (legacy promise honored)
+        #   - Other-inactive get smaller social-safety support
+        # Both in addition to UBI. Pensions are NOT clawed back when UBI flows.
+        self.other_support_paid_this_step = 0.0
         if self.pension_per_inactive > 0:
             for c in self.citizens:
-                if not c.in_workforce:
-                    amt = self.pension_per_inactive
+                if c.in_workforce:
+                    continue
+                if c.is_retired:
+                    amt = self.pension_per_inactive    # full pension
                     c.receive_pension(amt)
                     self.pension_paid_this_step += amt
                     self.pension_cumulative += amt
-                    self.money_returned_total += amt
-                    self.exports_this_step += amt
+                else:
+                    amt = OTHER_INACTIVE_SUPPORT       # student / caregiver / disability
+                    c.receive_pension(amt)
+                    self.other_support_paid_this_step += amt
+                    self.other_support_cumulative += amt
+                self.money_returned_total += amt
+                self.exports_this_step += amt
 
     def _pay_wages(self):
         all_employers = (
@@ -1270,11 +1355,17 @@ class ColonyV0Model(Model):
             + list(self.chain_branches.values())
             + [self.public_sector]
         )
+        # During warmup, firms pay wages even into negative balance and
+        # don't fire for cash exhaustion. This bootstraps the colony to
+        # steady-state consumption flows (UBI ramp, exports, transfers)
+        # before solvency constraints kick in. After warmup, the normal
+        # "can't pay → fire" rule applies.
+        in_warmup = self.steps < self.warmup_months
         self.total_wages_this_step = 0.0
         for firm in all_employers:
             for worker in list(firm.workers):
                 w = worker.wage_if_hired
-                if firm.balance >= w:
+                if firm.balance >= w or in_warmup:
                     firm.balance -= w
                     worker.receive_wage(w)
                     self.total_wages_this_step += w
@@ -1433,7 +1524,10 @@ class ColonyV0Model(Model):
                     firm.workers.append(new_hire)
                 continue
             ratio = rev_for_wages / wage_cost if wage_cost > 0 else float('inf')
-            if ratio < self.layoff_threshold and firm.workers:
+            # Skip revenue-driven layoffs during warmup so the colony bootstraps
+            # to steady-state consumption flows before firms make firing decisions.
+            in_warmup = self.steps < self.warmup_months
+            if ratio < self.layoff_threshold and firm.workers and not in_warmup:
                 firm.workers.sort(key=lambda c: c.productivity)
                 victim = firm.workers[0]
                 firm.fire(victim)
@@ -1471,6 +1565,7 @@ class ColonyV0Model(Model):
         self._chain_hq_workforce_reduction()
         self._citizens_consume()
         self._external_exports()
+        self._retiree_attrition()
         self._external_transfers()
         self._pay_wages()
         self._withhold_income_tax()
