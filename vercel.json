@@ -3,7 +3,10 @@
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
-    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|api\\/).*)", "destination": "/index.html" }
+    { "source": "/sim", "destination": "/sim/index.html" },
+    { "source": "/sim/", "destination": "/sim/index.html" },
+    { "source": "/sim/:page", "destination": "/sim/:page.html" },
+    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|sim\\/|sim$|api\\/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

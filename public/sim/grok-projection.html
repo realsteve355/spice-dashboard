@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Grok V8.3 Projection — MaryFontaine 20-year reference</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.grok { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .preamble {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    border-left: 3px solid #b48ee6;
+    padding: 14px 20px; margin-bottom: 18px;
+    font-size: 12px; color: var(--txt); line-height: 1.65;
+  }
+  .preamble strong { color: var(--headline); }
+  .card {
+    background: var(--panel); border: 1px solid var(--line-hot);
+    padding: 16px 20px; margin-bottom: 18px;
+  }
+  .card h3 {
+    font-size: 11px; color: var(--headline);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .card .sub { font-size: 11px; color: var(--dim); margin-bottom: 12px; }
+  .chart-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  svg.chart {
+    width: 100%; height: 260px;
+    background: #0b0d12; border: 1px solid var(--line-hot);
+  }
+  table.proj {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+  }
+  table.proj th {
+    color: var(--dim); text-align: left; padding: 6px 8px;
+    border-bottom: 1px solid var(--line-hot);
+    letter-spacing: 0.06em; font-weight: 400;
+  }
+  table.proj th.amt { text-align: right; }
+  table.proj td {
+    padding: 6px 8px; border-bottom: 1px solid #14171f; color: var(--txt);
+    font-variant-numeric: tabular-nums;
+  }
+  table.proj td.amt { text-align: right; }
+  table.proj tr.milestone td {
+    background: #14171f; color: var(--headline);
+  }
+  .status { font-size: 11px; color: var(--dim); }
+  .status.err { color: var(--crit); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Grok V8.3 Projection — MaryFontaine 20-year reference</h1>
+  <div class="subtitle">
+    Top-down implementation of Grok's stable simulation framework.
+    Uses his Section 3 parameters to reproduce the projected trajectory.
+  </div>
+</header>
+
+<main class="grok">
+
+  <div class="preamble">
+    <strong>What this is.</strong> A faithful reproduction of Grok's V8.3
+    projection using his exact Section 3 parameters and the Y0/Y5/Y12/Y20
+    data points from Sections 1-2. This is a top-down aggregate calculator,
+    not an agent-based simulation — its purpose is to be the canonical
+    <em>reference trajectory</em> the ABM (at <code>/colony-v0</code>) is
+    being evaluated against. <strong>Trajectory anchors:</strong> Y0 81k
+    employed (45%) / $1,350m profit; Y5 40k (22%) / $2,050m; Y12 27k (15%)
+    / $2,680m; Y20 45k (25% voluntary) / $3,450m. Monthly values between
+    anchor years are linearly interpolated. Charge = k × profit; UBI pool
+    distributed equally to all 180k adults; tradable goods deflate -2%/yr;
+    housing inflates +1.2%/yr.
+  </div>
+
+  <div class="card">
+    <h3>Endpoint snapshot (Year 20)</h3>
+    <div id="snapshot"></div>
+  </div>
+
+  <div class="card">
+    <h3>Charts — UBI / Employment / Revenue / Profits</h3>
+    <div class="chart-grid">
+      <svg id="ch-ubi"        class="chart" viewBox="0 0 700 260" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-employment" class="chart" viewBox="0 0 700 260" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-revenue"    class="chart" viewBox="0 0 700 260" preserveAspectRatio="xMidYMid meet"></svg>
+      <svg id="ch-profits"    class="chart" viewBox="0 0 700 260" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Milestone table — Y0 / Y1 / Y5 / Y10 / Y20</h3>
+    <div class="sub">Per-adult UBI, employment, total profit, MAC pool, deflated values. Months 0, 12, 60, 120, 240.</div>
+    <table class="proj" id="milestone-table">
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th>Year</th>
+          <th class="amt">Employed</th>
+          <th class="amt">Emp %</th>
+          <th class="amt">Profit/yr</th>
+          <th class="amt">MAC pool/yr</th>
+          <th class="amt">UBI nominal /yr</th>
+          <th class="amt">UBI real (Y0 $) /yr</th>
+          <th class="amt">UBI /mo</th>
+          <th class="amt">Tradable idx</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="status" id="status">running…</div>
+  </div>
+
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/grok-projection.js"></script>
+</body>
+</html>

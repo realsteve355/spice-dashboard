@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aggregate — colony-wide trajectory</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.aggregate { display: block; padding: 24px 32px; max-width: 1500px; margin: 0 auto; }
+
+  .header-controls {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 24px;
+    align-items: end;
+  }
+  .header-controls label {
+    display: block;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header-controls input[type=range] { width: 100%; }
+  .header-controls .val {
+    font-size: 14px;
+    color: var(--headline);
+    margin-top: 4px;
+  }
+  .header-controls .stat-display {
+    font-size: 11px;
+    color: var(--txt);
+  }
+  .header-controls .stat-display .num {
+    font-size: 22px;
+    color: var(--headline);
+    font-weight: 500;
+    line-height: 1.1;
+  }
+
+  .chart-card {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 18px 22px;
+    margin-bottom: 18px;
+  }
+  .chart-card h3 {
+    font-size: 12px; color: var(--headline);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    margin: 0 0 4px;
+  }
+  .chart-card .sub {
+    font-size: 11px; color: var(--dim); margin-bottom: 12px;
+  }
+  .chart-card svg { display: block; width: 100%; }
+
+  .legend {
+    display: flex; gap: 18px; font-size: 11px; color: var(--dim);
+    margin: 10px 0 6px; flex-wrap: wrap;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 14px; height: 3px; }
+  .legend .area-swatch { width: 18px; height: 12px; opacity: 0.6; }
+
+  /* Snapshot table */
+  table.snap {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+    margin-top: 6px;
+  }
+  table.snap th, table.snap td {
+    padding: 6px 10px; border-bottom: 1px solid var(--line-hot);
+    text-align: right;
+  }
+  table.snap th {
+    color: var(--dim); letter-spacing: 0.06em;
+    font-weight: 400; text-transform: uppercase;
+    font-size: 10px;
+  }
+  table.snap td:first-child, table.snap th:first-child {
+    text-align: left; color: var(--dim);
+  }
+  table.snap tr.boundary td { color: #a855f7; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Aggregate — colony-wide trajectory</h1>
+  <div class="subtitle">
+    Sums across all 18 sectors. Top: total employment over time (stacked by sector).
+    Bottom: weighted basket cost over time, using basket-model category shares.
+    Edit per-sector parameters on the <a href="/sim/sectors" style="color: var(--txt);">Sectors</a> page;
+    those defaults flow through here.
+  </div>
+</header>
+
+<main class="aggregate">
+
+  <!-- Top-level controls + headline stats -->
+  <div class="header-controls">
+    <div>
+      <label>Transition velocity (Phase 2 plateau)</label>
+      <input type="range" id="velocity" min="2042" max="2050" step="1" value="2046">
+      <div class="val">Plateau by <span id="velocity-val">2046</span></div>
+    </div>
+    <div class="stat-display">
+      <label>Employment (2046)</label>
+      <div class="num"><span id="emp-2046">—</span></div>
+      <div style="color: var(--faint);">of 18,000 (2026)</div>
+    </div>
+    <div class="stat-display">
+      <label>Unemployment (2046)</label>
+      <div class="num"><span id="unemp-2046">—</span></div>
+      <div style="color: var(--faint);">of 30,000 adults</div>
+    </div>
+    <div class="stat-display">
+      <label>Basket cost (2046)</label>
+      <div class="num"><span id="basket-2046">—</span></div>
+      <div style="color: var(--faint);">monthly, real USD</div>
+    </div>
+  </div>
+
+  <!-- Employment chart -->
+  <div class="chart-card">
+    <h3>Total MF employment over time</h3>
+    <div class="sub">
+      Stacked area by sector (taller = more total employed).
+      Falls from 18,000 jobs in 2026 toward the abundance plateau.
+      Phase 2 region shaded purple.
+    </div>
+    <svg id="emp-chart" style="width: 100%; height: 380px;"></svg>
+    <div class="legend" id="emp-legend"></div>
+  </div>
+
+  <!-- Basket cost chart -->
+  <div class="chart-card">
+    <h3>Weighted basket cost over time</h3>
+    <div class="sub">
+      Per-adult monthly basket cost (USD). Weighted blend of 10 basket
+      categories — each mapped to a sector's deflation trajectory.
+      Starts at $980/month per adult (2026).
+    </div>
+    <svg id="basket-chart" style="width: 100%; height: 320px;"></svg>
+  </div>
+
+  <!-- Snapshot table -->
+  <div class="chart-card">
+    <h3>Snapshot at key years</h3>
+    <div class="sub">Yearly totals at 2026, 2031, 2036, 2041, 2046.</div>
+    <table class="snap" id="snap-table">
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Phase</th>
+          <th>Employed</th>
+          <th>Unemployed</th>
+          <th>Unemp. %</th>
+          <th>Basket / mo</th>
+          <th>Basket vs 2026</th>
+          <th>UBI obligation / yr</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/sector-defaults.js"></script>
+<script src="/sim/static/aggregate.js"></script>
+</body>
+</html>

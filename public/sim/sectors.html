@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sectors — bridge years</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.sectors { display: block; padding: 24px 32px; max-width: 1500px; margin: 0 auto; }
+
+  .header-controls {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 16px 20px;
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    align-items: end;
+  }
+  .header-controls label {
+    display: block;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header-controls input[type=range] { width: 100%; }
+  .header-controls .val {
+    font-size: 14px;
+    color: var(--headline);
+    margin-top: 4px;
+  }
+  .header-controls .stat-display {
+    font-size: 12px;
+    color: var(--txt);
+  }
+  .header-controls .stat-display .num {
+    font-size: 22px;
+    color: var(--headline);
+    font-weight: 500;
+  }
+
+  /* Editable table */
+  .table-card {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 14px 18px;
+    margin-bottom: 24px;
+  }
+  .table-card h3 { font-size: 12px; color: var(--headline); letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 12px; }
+  table.sectors {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  table.sectors th {
+    color: var(--dim);
+    text-align: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--line-hot);
+    letter-spacing: 0.06em;
+    font-weight: 400;
+  }
+  table.sectors th.sector { text-align: left; padding-left: 8px; }
+  table.sectors th.notes { text-align: left; padding-left: 8px; max-width: 240px; }
+  table.sectors th.phase1 { color: var(--blue); }
+  table.sectors th.phase2 { color: #a855f7; }
+  table.sectors td {
+    padding: 4px 4px;
+    text-align: center;
+    border-bottom: 1px solid #14171f;
+    color: var(--txt);
+  }
+  table.sectors td.sector-name { text-align: left; padding-left: 8px; color: var(--headline); font-size: 12px; }
+  table.sectors td.note { text-align: left; padding-left: 8px; font-size: 10px; color: var(--faint); line-height: 1.45; }
+  table.sectors input[type=number] {
+    background: #0b0d12;
+    color: var(--txt);
+    border: 1px solid #2a2f3d;
+    padding: 3px 4px;
+    width: 56px;
+    text-align: center;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  table.sectors input[type=number]:focus {
+    outline: 1px solid var(--ok);
+    border-color: var(--ok);
+  }
+  table.sectors tr:hover td { background: #14171f; }
+
+  /* Chart grid */
+  .charts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .chart-card {
+    background: var(--panel);
+    border: 1px solid var(--line-hot);
+    padding: 12px 14px;
+  }
+  .chart-card .ch-title {
+    font-size: 11px;
+    color: var(--headline);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .chart-card .ch-sub {
+    font-size: 10px;
+    color: var(--dim);
+    margin-bottom: 8px;
+  }
+  .chart-card svg { display: block; width: 100%; }
+  .chart-card .ch-endpoints {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--dim);
+    margin-top: 6px;
+  }
+  .chart-card .ch-endpoints .pt-price { color: var(--blue); }
+  .chart-card .ch-endpoints .pt-emp { color: var(--crit); }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 18px; font-size: 11px; color: var(--dim);
+    margin: 14px 0; padding: 10px 14px;
+    background: var(--panel); border: 1px solid var(--line-hot);
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 14px; height: 3px; }
+  .legend .phase-swatch { width: 18px; height: 12px; opacity: 0.35; }
+
+  .reset-btn {
+    background: transparent;
+    color: var(--dim);
+    border: 1px solid var(--line-hot);
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .reset-btn:hover { color: var(--headline); border-color: var(--ok); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sectors — bridge years</h1>
+  <div class="subtitle">
+    Per-sector deflation × employment trajectories, 2026–2046.
+    Two-phase model: imaginable automation (Phase 1) then unimaginable (Phase 2).
+    Edit any cell in the table — the matching chart updates immediately.
+  </div>
+</header>
+
+<main class="sectors">
+
+  <!-- Top-level controls -->
+  <div class="header-controls">
+    <div>
+      <label>Transition velocity (Phase 2 plateau)</label>
+      <input type="range" id="velocity" min="2042" max="2050" step="1" value="2046">
+      <div class="val">Unimaginable phase mostly done by <span id="velocity-val">2046</span></div>
+    </div>
+    <div class="stat-display">
+      <label>Total MF jobs (2026)</label>
+      <div class="num"><span id="total-jobs">—</span></div>
+      <div style="color: var(--faint);">across 15 sectors</div>
+    </div>
+    <div style="text-align: right;">
+      <button class="reset-btn" id="reset-btn">Reset to defaults</button>
+    </div>
+  </div>
+
+  <!-- Editable parameter table -->
+  <div class="table-card">
+    <h3>Sector parameters (research defaults · click any cell to edit)</h3>
+    <table class="sectors" id="param-table">
+      <thead>
+        <tr>
+          <th class="sector">Sector</th>
+          <th>MF jobs<br>(2026)</th>
+          <th class="phase1">P1 deflation<br>%/yr</th>
+          <th class="phase1">P1 ceiling<br>%</th>
+          <th class="phase2">P2 deflation<br>%/yr</th>
+          <th class="phase2">P2 ceiling<br>%</th>
+          <th>Floor<br>%</th>
+          <th class="notes">Research note</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--blue)"></span> Price index</span>
+    <span><span class="swatch" style="background:var(--crit)"></span> Employment remaining</span>
+    <span><span class="swatch" style="background:var(--warn); opacity:0.4"></span> Bridge gap</span>
+    <span><span class="phase-swatch" style="background:#a855f7"></span> Phase 2 (post-2036, "unimaginable")</span>
+  </div>
+
+  <!-- Charts grid -->
+  <div class="charts" id="charts-grid"></div>
+
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/sector-defaults.js"></script>
+<script src="/sim/static/sectors.js"></script>
+</body>
+</html>

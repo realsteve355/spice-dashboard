@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unemployment — three scenarios</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.forecasts { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 14px; }
+  .cat-card { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; font-size: 12px; }
+  .cat-card.crit { border-left: 3px solid var(--crit); }
+  .cat-card.warn { border-left: 3px solid var(--warn); }
+  .cat-card.ok   { border-left: 3px solid var(--ok); }
+  .cat-card.blue { border-left: 3px solid var(--blue); }
+  .cat-card .cat-name { font-size: 13px; color: var(--headline); letter-spacing: 0.1em; text-transform: uppercase; }
+  .cat-card table { font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Unemployment — three scenarios</h1>
+  <div class="subtitle">
+    Three scenarios (mainstream · bull · sceptic) · displacement evidence · workforce composition
+  </div>
+</header>
+
+<main class="forecasts" id="results">
+  <div class="empty" style="padding:80px; text-align:center; color:var(--faint);">Loading…</div>
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/renderers.js"></script>
+<script src="/sim/static/unemployment.js"></script>
+</body>
+</html>
