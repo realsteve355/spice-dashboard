@@ -31,6 +31,8 @@
 
   .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
   .verdict strong { color: var(--headline); }
+  .clarify { background: rgba(212,160,74,0.07); border: 1px solid var(--line-hot); border-left: 3px solid var(--warn); padding: 14px 18px; margin-bottom: 14px; font-size: 12px; color: var(--txt); line-height: 1.7; }
+  .clarify b { color: var(--headline); }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .narrative .block { background: var(--panel); border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 16px 20px; margin-bottom: 12px; }
@@ -60,8 +62,7 @@
   <div class="card context">
     <h3>MaryFontaine — county context</h3>
     <ul class="ctx-list">
-      <li>Total population <b>~300,000</b> — 180,000 adults + 120,000 children</li>
-      <li>Adults <b>180,000</b></li>
+      <li>Population <b>~300,000</b> (~180,000 adults)</li>
       <li>The Corporate Profit Pool represents total real economic profit attributable to companies
         serving MaryFontaine residents — local firms plus the proportional share of national and
         global companies (Amazon, Walmart, Google, Apple, and so on).</li>
@@ -96,10 +97,17 @@
   <div class="card">
     <h3>MAC sufficiency — does the charge fund the UBI?</h3>
     <div class="what">
-      The core test. The MAC pool (green) sits above total UBI cost for all 180,000 adults (amber) at
-      every point in the ramp, with the gap — the headroom — <em>widening</em> over time.
+      The core test. The MAC pool (green) sits above total UBI cost for all 180,000 adults (amber),
+      with the gap — the headroom — <em>widening</em> over time.
     </div>
     <div id="chart-sufficiency"></div>
+    <div class="clarify">
+      <b>MAC pool</b> is the revenue raised by the Market Access Charge (k × profit pool).
+      <b>Total UBI cost</b> is the cost of paying UBI to all 180,000 adults. In the earliest
+      displacement years the MAC may not fully cover UBI on its own — a temporary sovereign top-up or
+      deficit is expected during the transition. Coverage then improves steadily and becomes strongly
+      sufficient by mid-period as profits grow.
+    </div>
   </div>
 
   <!-- Metrics table -->
@@ -109,6 +117,10 @@
     <div class="footnote">
       Figures in real (today's prices) terms, scaled for a county of 180,000 adults. UBI cost is
       universal (every adult). MAC pool = k × profit pool; MAC coverage = MAC pool ÷ UBI cost.
+      <br><b style="color:var(--txt2);">Note on early years:</b> in Year 0–3 the headline coverage
+      assumes the full attributable profit pool; in practice it ramps up as the charge and the
+      attributed base come online, so some transitional sovereign support may be needed before the
+      MAC stands alone.
     </div>
   </div>
 
@@ -117,8 +129,8 @@
     <h3>Productivity growth trajectory</h3>
     <div class="what">
       Productivity growth starts at ~2.8%/yr and accelerates to ~5%/yr after widespread humanoid-robot
-      deployment in the mid-2030s. Toggle <em>Early</em> vs <em>Late acceleration</em> in the inputs —
-      the profit-pool anchors stay fixed, but the curve bows earlier or later between them.
+      deployment in the mid-2030s, then moderates — averaging ~3.7–4% over the 20 years. This drives
+      both the basket deflation and the expansion of the profit pool.
     </div>
     <div id="chart-productivity"></div>
   </div>
@@ -147,17 +159,12 @@
         local firms plus the proportional share of national and global companies. At ~$14,400 per adult
         in Year 0 it is consistent with US averages.</p>
     </div>
-    <div class="block">
-      <h4>Productivity growth trajectory</h4>
-      <p>Productivity growth starts at ~2.8% per year and accelerates to 4.5–5.5% per year after
-        widespread humanoid-robot deployment in the mid-2030s. This drives both the cost deflation seen
-        in the Aggregate Basket and the expansion of the profit pool.</p>
-    </div>
     <div class="block proof">
-      <h4>MAC sufficiency proof</h4>
-      <p>The MAC recycles a portion of profits into UBI, sustaining demand. At k = 0.22 the MAC pool
-        fully funds UBI with increasing headroom over time — coverage rises from ~193% in Year 0 to
-        ~341% by Year 20 — and the slider confirms sufficiency holds across the k = 0.15–0.30 range.</p>
+      <h4>MAC sufficiency</h4>
+      <p>The MAC recycles a portion of profits into UBI, sustaining demand. Coverage starts adequate and
+        grows strongly over time as automation expands the profit pool — from ~193% in Year 0 to ~341%
+        by Year 20. In the earliest displacement years some transitional sovereign support may be
+        needed; thereafter the MAC funds UBI on its own with increasing headroom.</p>
     </div>
     <div class="footnote">
       The model assumes UBI is spent at high propensity, so recycled income returns to firms as
