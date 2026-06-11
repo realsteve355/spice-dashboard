@@ -282,6 +282,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "colony-v0.html", "text/html; charset=utf-8")
         elif p == "/grok-projection":
             self._send_file(self.templates_dir / "grok-projection.html", "text/html; charset=utf-8")
+        elif p == "/basket_research.md":
+            self._send_file(HERE / "basket_research.md", "text/markdown; charset=utf-8")
         elif p.startswith("/static/"):
             rel = p[len("/static/"):]
             ct = ("application/javascript" if rel.endswith(".js")
