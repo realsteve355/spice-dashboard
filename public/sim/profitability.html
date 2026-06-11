@@ -12,79 +12,94 @@
   .card .what em { color: var(--ok); font-style: normal; }
 
   /* Controls */
-  .controls-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 28px; }
-  .ctrl { display: grid; grid-template-columns: 1fr 160px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); }
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 56px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 640px; }
   .ctrl-label { color: var(--txt2); }
   .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
   .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
-  .ctrl-ref { grid-template-columns: 1fr auto; }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+  .assumptions b { color: var(--txt2); }
 
   /* Headline stats */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
   .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
   .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
   .stat .value { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
 
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
+  .verdict strong { color: var(--headline); }
+
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .narrative .block { background: var(--panel); border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 16px 20px; margin-bottom: 12px; }
   .narrative .block.demand { border-left-color: var(--crit); }
+  .narrative .block.proof { border-left-color: var(--blue); }
   .narrative h4 { font-size: 12px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
   .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0; }
+  .footnote { font-size: 11px; color: var(--faint); margin-top: 10px; line-height: 1.6; }
 </style>
 </head>
 <body data-live-sim>
 
 <header>
   <h1>Corporate Profitability in the Age of AI Abundance</h1>
-  <div class="subtitle">How automation drives profit growth — and why a Market Access Charge sustains the loop</div>
+  <div class="subtitle">Can the Market Access Charge sustainably fund UBI as automation drives profits?</div>
 </header>
 
 <main class="prof">
 
   <!-- Controls -->
   <div class="card">
-    <h3>Inputs</h3>
-    <div class="controls-grid" id="controls"></div>
+    <h3>Input — Market Access Charge rate</h3>
+    <div id="controls"></div>
   </div>
 
   <!-- Headline stats -->
   <div class="card">
     <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
   </div>
 
   <!-- Primary chart -->
   <div class="card">
-    <h3>Total corporate profit pool over time</h3>
+    <h3>Total attributable corporate profit pool over time (MaryFontaine)</h3>
     <div class="what">
-      Profit potential rises as automation lifts productivity and expands margins. Whether it is
-      <em>realised and sustained</em> depends on demand. Under unchecked capital capture, consumer
-      purchasing power collapses with employment and the pool peaks then falls. With the Market Access
-      Charge recycling a share of profit into UBI, demand stays whole and the pool grows steadily.
+      The profit pool grows strongly as automation expands margins. With the Market Access Charge
+      recycling a share into UBI, consumer demand stays whole and profits grow <em>sustainably</em>
+      (green). Left unchecked, demand erodes with employment and realised profit stalls then declines
+      (red). The MAC pool itself is shaded below.
     </div>
     <div id="chart-primary"></div>
   </div>
 
+  <!-- MAC sufficiency chart -->
+  <div class="card">
+    <h3>MAC sufficiency — does the charge fund the UBI?</h3>
+    <div class="what">
+      The core test. The MAC pool (green) sits above total UBI cost for all 180,000 adults (amber) at
+      every point in the ramp, with the gap — the headroom — <em>widening</em> over time.
+    </div>
+    <div id="chart-sufficiency"></div>
+  </div>
+
   <!-- Metrics table -->
   <div class="card">
-    <h3>Key metrics — the MAC + UBI loop</h3>
-    <div class="what">
-      Unemployment and UBI anchored to Grok V9.13; basket cost from the research Aggregate Basket;
-      profit pool, profit per adult and MAC pool computed from the inputs above. At default inputs the
-      MAC pool funds a UBI of ~$137/mo at Y0 rising to ~$398/mo at Y20 — matching the colony-v0 design.
-    </div>
+    <h3>Key metrics — MAC coverage of UBI</h3>
     <div id="metrics-table"></div>
+    <div class="footnote">
+      Figures in real (today's prices) terms, scaled for a county of 180,000 adults. UBI cost is
+      universal (every adult). MAC pool = k × profit pool; MAC coverage = MAC pool ÷ UBI cost.
+    </div>
   </div>
 
   <!-- Supporting charts -->
   <div class="two-col">
     <div class="card">
-      <h3>Margin &amp; profit share over time</h3>
+      <h3>Gross margin &amp; profit share of local activity</h3>
       <div id="chart-margin"></div>
     </div>
     <div class="card">
       <h3>Revenue vs cost per unit</h3>
-      <div class="what" style="margin-bottom:8px;">Cost collapses faster than price deflation — the
-        widening gap is margin.</div>
+      <div class="what" style="margin-bottom:8px;">Cost falls faster than basket prices — the widening
+        gap is margin.</div>
       <div id="chart-revcost"></div>
     </div>
   </div>
@@ -93,30 +108,38 @@
   <div class="card narrative">
     <h3>The argument</h3>
     <div class="block">
-      <h4>Why profits surge initially</h4>
-      <p>Automation dramatically reduces unit costs — labour, energy, errors, overhead. In many
-        sectors prices fall more slowly than costs, held up by market power, branding, network effects
-        and intellectual property. The result is significant margin expansion, concentrated in the
-        2026–2035 window.</p>
+      <h4>What the profit pool represents</h4>
+      <p>The Corporate Profit Pool is the total real economic profit (broad EBITDA / operating surplus)
+        attributable to companies whose goods and services are consumed by MaryFontaine residents —
+        local firms plus the proportional share of national and global companies (Amazon, Google,
+        Apple, Walmart, and so on). At ~$14,400 per adult in Year 0 it is consistent with US averages.</p>
+    </div>
+    <div class="block">
+      <h4>Why profits grow strongly</h4>
+      <p>Automation reduces unit costs faster than the research Aggregate Basket prices fall. The gap is
+        margin, and it expands — concentrated in the first ten to fifteen years.</p>
     </div>
     <div class="block demand">
-      <h4>The demand problem</h4>
-      <p>If profits accrue overwhelmingly to capital owners, consumer purchasing power eventually lags
-        behind production capacity. This is the classic Henry Ford insight: workers and consumers need
-        sufficient income to buy the output. Without intervention, revenue growth slows and profit
-        growth eventually stalls — the unchecked line above.</p>
+      <h4>The demand challenge &amp; MAC role</h4>
+      <p>Unchecked profit concentration risks weakening consumer demand: as employment falls, purchasing
+        power follows, and revenue — then profit — stalls. The Market Access Charge recycles a portion
+        of profits back into UBI, sustaining demand and revenue while still allowing healthy corporate
+        profitability.</p>
+    </div>
+    <div class="block proof">
+      <h4>MAC sufficiency proof</h4>
+      <p>At k = 0.22 the MAC pool fully funds the projected UBI at every stage of the 20-year ramp, with
+        coverage rising from ~193% in Year 0 to ~341% by Year 20 — increasing headroom as automation
+        advances. Use the slider to confirm sufficiency holds across the k = 0.15–0.30 range.</p>
     </div>
     <div class="block">
-      <h4>The Market Access Charge solution</h4>
-      <p>The MAC recycles a portion of automation-driven profits back into consumer hands via UBI. This
-        maintains healthy demand — and therefore revenue — while still allowing strong, sustainable
-        profit growth. It creates a stable, self-reinforcing abundance loop.</p>
+      <h4>MaryFontaine insight</h4>
+      <p>The colony is deliberately designed to handle high automation (~75% optional work by Year 20)
+        while keeping corporate profits strong and UBI sustainable through the MAC mechanism.</p>
     </div>
-    <div class="block">
-      <h4>MaryFontaine design insight</h4>
-      <p>The colony is deliberately designed to handle the upper end of the Bull unemployment scenario
-        (~75% optional work by Year 20) while keeping corporate profitability healthy through the MAC
-        mechanism.</p>
+    <div class="footnote">
+      The model assumes UBI is spent at high propensity, so recycled income returns to firms as
+      revenue — the closed loop that keeps the profit pool on its sustainable path.
     </div>
   </div>
 
