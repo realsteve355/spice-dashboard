@@ -214,7 +214,7 @@ function renderUnemploymentChart(unemp) {
   const xLabels = [2026, 2030, 2035, 2040, 2045].map(yr => `<text x="${xToPx(yr)}" y="${H - PAD_B + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${yr}</text>`).join('');
 
   const labels = [];
-  const lines = unemp.scenarios.map(s => {
+  const lines = unemp.scenarios.filter(s => !/axion/i.test(s.name)).map(s => {
     const color = colorVar(s.color_class);
     const path = s.checkpoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xToPx(p.year).toFixed(1)} ${yToPx(p.unemployment_pct).toFixed(1)}`).join(' ');
     const dots = s.checkpoints.map(p => `<circle cx="${xToPx(p.year)}" cy="${yToPx(p.unemployment_pct)}" r="3" fill="${color}"/>`).join('');
@@ -318,11 +318,6 @@ function renderUnemploymentScenarios(unemp) {
   <div class="card" style="margin-top:14px; border-left: 3px solid var(--crit);">
     <h3>Labour displacement — 2026 cost ratios with sources</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6; margin-bottom:14px;">${ev.intro}</div>
-    ${ev.caveat ? `
-    <div style="background: rgba(212, 160, 74, 0.08); border-left: 3px solid var(--warn); padding: 14px 18px; margin-bottom: 14px; font-size: 12px; line-height: 1.6; color: var(--txt);">
-      <div style="font-size:10px; color:var(--warn); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Caveat — read before the table</div>
-      ${ev.caveat.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--headline);">$1</strong>')}
-    </div>` : ''}
     <table style="table-layout: fixed; width: 100%;">
       <colgroup>
         <col style="width: 18%;">
@@ -335,7 +330,7 @@ function renderUnemploymentScenarios(unemp) {
         <th>Role</th>
         <th class="num">AI / mo</th>
         <th class="num">Human / mo</th>
-        <th class="num">Ratio</th>
+        <th class="num">Ratio (max 20×)</th>
         <th>Evidence + notes</th>
       </tr></thead>
       <tbody>
@@ -349,7 +344,7 @@ function renderUnemploymentScenarios(unemp) {
             <td class="cat" style="white-space: normal; vertical-align: top;">${e.role}</td>
             <td class="num" style="vertical-align: top;">$${e.ai_cost_per_month.toLocaleString()}</td>
             <td class="num" style="vertical-align: top;">$${e.human_cost_per_month.toLocaleString()}</td>
-            <td class="num" style="color: var(--crit); vertical-align: top;"><strong>${e.cost_ratio}×</strong></td>
+            <td class="num" style="color: var(--crit); vertical-align: top;"><strong>${Math.min(e.cost_ratio, 20)}×</strong></td>
             <td style="font-size:11px; color:var(--dim); white-space: normal; line-height: 1.5; vertical-align: top;">
               <strong style="color:var(--txt2);">Evidence:</strong> ${e.evidence}<br>
               <strong style="color:var(--txt2);">Notes:</strong> ${e.note}<br>
@@ -363,17 +358,13 @@ function renderUnemploymentScenarios(unemp) {
       <div style="font-size:10px; color:var(--warn); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">Macro picture</div>
       <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.macro_summary}</div>
     </div>
-    <div style="background:var(--panel2); border-left: 2px solid var(--ok); padding:14px 18px; margin-top:10px;">
-      <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:6px;">AXION implication</div>
-      <div style="font-size:13px; color:var(--txt); line-height:1.6;">${ev.axion_implication}</div>
-    </div>
   </div>`;
 
   return `
   <div class="card" style="margin-top:14px;">
     <h3>Unemployment scenarios — per-source predictions</h3>
     <div class="cat-grid">
-      ${unemp.scenarios.map(s => `
+      ${unemp.scenarios.filter(s => !/axion/i.test(s.name)).map(s => `
         <div class="cat-card ${s.color_class}" style="overflow: hidden;">
           <div class="cat-name" style="margin-bottom:6px;">${s.name}</div>
           <div style="font-size:11px; color:var(--dim); margin-bottom:8px; line-height:1.5;">${s.interpretation}</div>
