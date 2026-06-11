@@ -18,6 +18,10 @@
   .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
   .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
   .assumptions b { color: var(--txt2); }
+  .ctrl-toggle { grid-template-columns: 1fr auto; max-width: 640px; margin-top: 12px; }
+  .toggle { display: inline-flex; gap: 18px; font-size: 12px; color: var(--txt2); }
+  .toggle label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .toggle input { accent-color: var(--ok); }
 
   /* Headline stats */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
@@ -38,11 +42,9 @@
 
   /* County context */
   .context { border-left: 3px solid var(--blue); }
-  .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 32px; }
-  .ctx-grid h4 { font-size: 11px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
-  .ctx-grid ul { margin: 0; padding-left: 18px; }
-  .ctx-grid li { font-size: 12px; color: var(--txt); line-height: 1.7; margin-bottom: 5px; }
-  .ctx-grid li b { color: var(--headline); }
+  .ctx-list { margin: 0; padding-left: 18px; }
+  .ctx-list li { font-size: 12px; color: var(--txt); line-height: 1.7; margin-bottom: 5px; }
+  .ctx-list li b { color: var(--headline); }
 </style>
 </head>
 <body data-live-sim>
@@ -57,28 +59,13 @@
   <!-- County context -->
   <div class="card context">
     <h3>MaryFontaine — county context</h3>
-    <div class="ctx-grid">
-      <div>
-        <h4>County overview</h4>
-        <ul>
-          <li>Total population <b>~300,000</b> — 180,000 adults + 120,000 children</li>
-          <li>Adults <b>180,000</b></li>
-          <li>This simulator shows the total profit pool attributable to companies that sell goods and
-            services to MaryFontaine residents — local firms plus the proportional share of national
-            and global companies (Amazon, Walmart, Google, Apple, and so on).</li>
-        </ul>
-      </div>
-      <div>
-        <h4>Why the numbers are realistic</h4>
-        <ul>
-          <li>Current US corporate profit pool <b>≈ $4–5 trillion</b> / year</li>
-          <li>MaryFontaine is <b>~0.09%</b> of US population, with a slightly higher consumption share
-            due to UBI</li>
-          <li>Year 0 attributable profit pool <b>~$2.6 billion</b> (≈ $14,400 per adult)</li>
-          <li>Grows with productivity, margin expansion, and sustained consumption from UBI</li>
-        </ul>
-      </div>
-    </div>
+    <ul class="ctx-list">
+      <li>Total population <b>~300,000</b> — 180,000 adults + 120,000 children</li>
+      <li>Adults <b>180,000</b></li>
+      <li>The Corporate Profit Pool represents total real economic profit attributable to companies
+        serving MaryFontaine residents — local firms plus the proportional share of national and
+        global companies (Amazon, Walmart, Google, Apple, and so on).</li>
+    </ul>
   </div>
 
   <!-- Controls -->
@@ -125,6 +112,17 @@
     </div>
   </div>
 
+  <!-- Productivity chart -->
+  <div class="card">
+    <h3>Productivity growth trajectory</h3>
+    <div class="what">
+      Productivity growth starts at ~2.8%/yr and accelerates to ~5%/yr after widespread humanoid-robot
+      deployment in the mid-2030s. Toggle <em>Early</em> vs <em>Late acceleration</em> in the inputs —
+      the profit-pool anchors stay fixed, but the curve bows earlier or later between them.
+    </div>
+    <div id="chart-productivity"></div>
+  </div>
+
   <!-- Supporting charts -->
   <div class="two-col">
     <div class="card">
@@ -146,25 +144,20 @@
       <h4>What the profit pool represents</h4>
       <p>The Corporate Profit Pool is the total real economic profit (broad EBITDA / operating surplus)
         attributable to companies whose goods and services are consumed by MaryFontaine residents —
-        local firms plus the proportional share of national and global companies (Amazon, Google,
-        Apple, Walmart, and so on). At ~$14,400 per adult in Year 0 it is consistent with US averages.</p>
+        local firms plus the proportional share of national and global companies. At ~$14,400 per adult
+        in Year 0 it is consistent with US averages.</p>
     </div>
     <div class="block">
-      <h4>Why profits grow strongly</h4>
-      <p>Automation reduces unit costs faster than the research Aggregate Basket prices fall. The gap is
-        margin, and it expands — concentrated in the first ten to fifteen years.</p>
+      <h4>Productivity growth trajectory</h4>
+      <p>Productivity growth starts at ~2.8% per year and accelerates to 4.5–5.5% per year after
+        widespread humanoid-robot deployment in the mid-2030s. This drives both the cost deflation seen
+        in the Aggregate Basket and the expansion of the profit pool.</p>
     </div>
-    <div class="block demand">
-      <h4>The demand challenge &amp; MAC role</h4>
-      <p>Unchecked profit concentration risks weakening consumer demand: as employment falls, purchasing
-        power follows, and revenue — then profit — stalls. The Market Access Charge recycles a portion
-        of profits back into UBI, sustaining demand and revenue while still allowing healthy corporate
-        profitability.</p>
-    </div>
-    <div class="block">
-      <h4>MaryFontaine insight</h4>
-      <p>The colony is deliberately designed to handle high automation (~75% optional work by Year 20)
-        while keeping corporate profits strong and UBI sustainable through the MAC mechanism.</p>
+    <div class="block proof">
+      <h4>MAC sufficiency proof</h4>
+      <p>The MAC recycles a portion of profits into UBI, sustaining demand. At k = 0.22 the MAC pool
+        fully funds UBI with increasing headroom over time — coverage rises from ~193% in Year 0 to
+        ~341% by Year 20 — and the slider confirms sufficiency holds across the k = 0.15–0.30 range.</p>
     </div>
     <div class="footnote">
       The model assumes UBI is spent at high propensity, so recycled income returns to firms as
