@@ -35,6 +35,14 @@
   .narrative h4 { font-size: 12px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
   .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0; }
   .footnote { font-size: 11px; color: var(--faint); margin-top: 10px; line-height: 1.6; }
+
+  /* County context */
+  .context { border-left: 3px solid var(--blue); }
+  .ctx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 32px; }
+  .ctx-grid h4 { font-size: 11px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
+  .ctx-grid ul { margin: 0; padding-left: 18px; }
+  .ctx-grid li { font-size: 12px; color: var(--txt); line-height: 1.7; margin-bottom: 5px; }
+  .ctx-grid li b { color: var(--headline); }
 </style>
 </head>
 <body data-live-sim>
@@ -45,6 +53,33 @@
 </header>
 
 <main class="prof">
+
+  <!-- County context -->
+  <div class="card context">
+    <h3>MaryFontaine — county context</h3>
+    <div class="ctx-grid">
+      <div>
+        <h4>County overview</h4>
+        <ul>
+          <li>Total population <b>~300,000</b> — 180,000 adults + 120,000 children</li>
+          <li>Adults <b>180,000</b></li>
+          <li>This simulator shows the total profit pool attributable to companies that sell goods and
+            services to MaryFontaine residents — local firms plus the proportional share of national
+            and global companies (Amazon, Walmart, Google, Apple, and so on).</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Why the numbers are realistic</h4>
+        <ul>
+          <li>Current US corporate profit pool <b>≈ $4–5 trillion</b> / year</li>
+          <li>MaryFontaine is <b>~0.09%</b> of US population, with a slightly higher consumption share
+            due to UBI</li>
+          <li>Year 0 attributable profit pool <b>~$2.6 billion</b> (≈ $14,400 per adult)</li>
+          <li>Grows with productivity, margin expansion, and sustained consumption from UBI</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
   <!-- Controls -->
   <div class="card">
@@ -125,12 +160,6 @@
         power follows, and revenue — then profit — stalls. The Market Access Charge recycles a portion
         of profits back into UBI, sustaining demand and revenue while still allowing healthy corporate
         profitability.</p>
-    </div>
-    <div class="block proof">
-      <h4>MAC sufficiency proof</h4>
-      <p>At k = 0.22 the MAC pool fully funds the projected UBI at every stage of the 20-year ramp, with
-        coverage rising from ~193% in Year 0 to ~341% by Year 20 — increasing headroom as automation
-        advances. Use the slider to confirm sufficiency holds across the k = 0.15–0.30 range.</p>
     </div>
     <div class="block">
       <h4>MaryFontaine insight</h4>
