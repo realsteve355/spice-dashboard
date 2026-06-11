@@ -297,7 +297,7 @@ UNEMPLOYMENT_FORECASTS = {
          "url": "https://www.anthropic.com/research/labor-market-impacts"},
     ],
     "workforce_composition": {
-        "title": "Today's jobs displaced by 2035 — the AXION trajectory",
+        "title": "Today's jobs displaced by 2035",
         "intro": (
             "Past automation waves (steam, electricity, computing) hit physical "
             "labour first while knowledge work expanded. AI inverts the order: "
