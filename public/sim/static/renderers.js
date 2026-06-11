@@ -186,17 +186,13 @@ function renderCategoryChart(categories, basketTrajectory, axionBasketTrajectory
   if (basketTrajectory) {
     series.push({ label: "BASKET (research aggregate)", color: "var(--headline)", points: basketTrajectory, strokeWidth: 3, dashed: true, emphasised: true });
   }
-  if (axionBasketTrajectory) {
-    series.push({ label: "AXION BASKET (planning)", color: "var(--crit)", points: axionBasketTrajectory, strokeWidth: 3.5, dashed: true, emphasised: true });
-  }
   return renderLogChart({
     title: "Cost trajectory by category · 2026 = 100%",
     series,
     height: 540,
     footer: `Y-axis logarithmic — each gridline ≈ 2× change.
              <strong style="color: var(--headline);">BASKET</strong> (dashed white) = research-anchored aggregate.
-             <strong style="color: var(--crit);">AXION BASKET</strong> (dashed red) = the more aggressive planning assumption used for AXION colony architecture.
-             <strong style="color: var(--crit);">LAND</strong> rises (Altman) and is excluded from both baskets.`,
+             <strong style="color: var(--crit);">LAND</strong> rises (Altman) and is excluded from the basket.`,
   });
 }
 
