@@ -2,34 +2,127 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Profitability — who captures AI productivity gains?</title>
+<title>Corporate Profitability in the Age of AI Abundance</title>
 <link rel="stylesheet" href="/sim/static/style.css">
 <style>
-  main.forecasts { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
-  .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 14px; }
-  .cat-card { background: var(--panel); border: 1px solid var(--line-hot); padding: 12px 16px; font-size: 12px; }
-  .cat-card.crit { border-left: 3px solid var(--crit); }
-  .cat-card.warn { border-left: 3px solid var(--warn); }
-  .cat-card.ok   { border-left: 3px solid var(--ok); }
-  .cat-card.blue { border-left: 3px solid var(--blue); }
-  .cat-card .cat-name { font-size: 13px; color: var(--headline); letter-spacing: 0.1em; text-transform: uppercase; }
+  main.prof { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  /* Controls */
+  .controls-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 28px; }
+  .ctrl { display: grid; grid-template-columns: 1fr 160px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .ctrl-ref { grid-template-columns: 1fr auto; }
+
+  /* Headline stats */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .narrative .block { background: var(--panel); border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 16px 20px; margin-bottom: 12px; }
+  .narrative .block.demand { border-left-color: var(--crit); }
+  .narrative h4 { font-size: 12px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0; }
 </style>
 </head>
-<body>
+<body data-live-sim>
 
 <header>
-  <h1>Profitability — who captures AI productivity gains?</h1>
-  <div class="subtitle">
-    Acemoglu-Restrepo task-based framework · capital / consumer / labour split · AXION insulation · Henry Ford insight
-  </div>
+  <h1>Corporate Profitability in the Age of AI Abundance</h1>
+  <div class="subtitle">How automation drives profit growth — and why a Market Access Charge sustains the loop</div>
 </header>
 
-<main class="forecasts" id="results">
-  <div class="empty" style="padding:80px; text-align:center; color:var(--faint);">Loading…</div>
+<main class="prof">
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>Inputs</h3>
+    <div class="controls-grid" id="controls"></div>
+  </div>
+
+  <!-- Headline stats -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+  </div>
+
+  <!-- Primary chart -->
+  <div class="card">
+    <h3>Total corporate profit pool over time</h3>
+    <div class="what">
+      Profit potential rises as automation lifts productivity and expands margins. Whether it is
+      <em>realised and sustained</em> depends on demand. Under unchecked capital capture, consumer
+      purchasing power collapses with employment and the pool peaks then falls. With the Market Access
+      Charge recycling a share of profit into UBI, demand stays whole and the pool grows steadily.
+    </div>
+    <div id="chart-primary"></div>
+  </div>
+
+  <!-- Metrics table -->
+  <div class="card">
+    <h3>Key metrics — the MAC + UBI loop</h3>
+    <div class="what">
+      Unemployment and UBI anchored to Grok V9.13; basket cost from the research Aggregate Basket;
+      profit pool, profit per adult and MAC pool computed from the inputs above. At default inputs the
+      MAC pool funds a UBI of ~$137/mo at Y0 rising to ~$398/mo at Y20 — matching the colony-v0 design.
+    </div>
+    <div id="metrics-table"></div>
+  </div>
+
+  <!-- Supporting charts -->
+  <div class="two-col">
+    <div class="card">
+      <h3>Margin &amp; profit share over time</h3>
+      <div id="chart-margin"></div>
+    </div>
+    <div class="card">
+      <h3>Revenue vs cost per unit</h3>
+      <div class="what" style="margin-bottom:8px;">Cost collapses faster than price deflation — the
+        widening gap is margin.</div>
+      <div id="chart-revcost"></div>
+    </div>
+  </div>
+
+  <!-- Narrative -->
+  <div class="card narrative">
+    <h3>The argument</h3>
+    <div class="block">
+      <h4>Why profits surge initially</h4>
+      <p>Automation dramatically reduces unit costs — labour, energy, errors, overhead. In many
+        sectors prices fall more slowly than costs, held up by market power, branding, network effects
+        and intellectual property. The result is significant margin expansion, concentrated in the
+        2026–2035 window.</p>
+    </div>
+    <div class="block demand">
+      <h4>The demand problem</h4>
+      <p>If profits accrue overwhelmingly to capital owners, consumer purchasing power eventually lags
+        behind production capacity. This is the classic Henry Ford insight: workers and consumers need
+        sufficient income to buy the output. Without intervention, revenue growth slows and profit
+        growth eventually stalls — the unchecked line above.</p>
+    </div>
+    <div class="block">
+      <h4>The Market Access Charge solution</h4>
+      <p>The MAC recycles a portion of automation-driven profits back into consumer hands via UBI. This
+        maintains healthy demand — and therefore revenue — while still allowing strong, sustainable
+        profit growth. It creates a stable, self-reinforcing abundance loop.</p>
+    </div>
+    <div class="block">
+      <h4>MaryFontaine design insight</h4>
+      <p>The colony is deliberately designed to handle the upper end of the Bull unemployment scenario
+        (~75% optional work by Year 20) while keeping corporate profitability healthy through the MAC
+        mechanism.</p>
+    </div>
+  </div>
+
 </main>
 
 <script src="/sim/static/nav.js"></script>
-<script src="/sim/static/renderers.js"></script>
 <script src="/sim/static/profitability.js"></script>
 </body>
 </html>

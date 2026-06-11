@@ -120,20 +120,28 @@
     nav.innerHTML = navHtml;
     header.parentNode.insertBefore(nav, header.nextSibling);
 
-    // Static-snapshot banner — this is a frozen publish, controls are inert.
+    // Pages flagged data-live-sim run entirely in the browser — keep them
+    // interactive even on the static publish (no Python server needed).
+    const liveSim = document.body.hasAttribute('data-live-sim');
+
     const banner = document.createElement('div');
     banner.style.cssText =
       'padding:8px 24px;background:#1a1407;border-bottom:1px solid #3a2f0a;' +
       'color:#d9b25a;font-size:11px;letter-spacing:0.04em;line-height:1.5;';
-    banner.textContent =
-      'Static snapshot — parameters are frozen at default values and the ' +
-      'interactive parameter controls are disabled. This is a published copy ' +
-      'of a local simulation tool, baked for external review.';
+    banner.textContent = liveSim
+      ? 'Interactive — this simulator runs entirely in your browser; the controls ' +
+        'below are live. Published from a local economy-model tool for external review.'
+      : 'Static snapshot — parameters are frozen at default values and the ' +
+        'interactive parameter controls are disabled. This is a published copy ' +
+        'of a local simulation tool, baked for external review.';
     nav.parentNode.insertBefore(banner, nav.nextSibling);
 
-    // Disable the inert parameter controls (nav links and view tabs stay live).
-    document.querySelectorAll('main input, main select, main textarea')
-      .forEach(el => { el.disabled = true; el.style.cursor = 'not-allowed'; });
+    // Disable the inert parameter controls on frozen pages only (nav links and
+    // view tabs stay live). Live-sim pages keep their controls enabled.
+    if (!liveSim) {
+      document.querySelectorAll('main input, main select, main textarea')
+        .forEach(el => { el.disabled = true; el.style.cursor = 'not-allowed'; });
+    }
   }
 
   if (document.readyState === 'loading') {
