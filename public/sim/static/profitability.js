@@ -6,7 +6,7 @@
 //   rate_i = min(RATE_CAP, k × BASE_RATE × (profit_i / employees_i) / REF_PPE)
 // k is a multiplier (a constant, usually 1.0); BASE_RATE (22%) is the charge at
 // the $200k/employee reference. Automated firms (high profit per employee) pay a
-// larger share; labour-intensive firms pay little. The county MAC pool is summed
+// larger share; labour-intensive firms pay little. The county MAC income is summed
 // bottom-up across the business mix; this page also shows how individual company
 // profits diverge over 20 years as automation advances.
 
@@ -39,7 +39,7 @@ const COMPANIES = [
 ];
 
 // MaryFontaine's business population (Year 0). Summing each sector's targeted
-// charge gives the county MAC pool bottom-up; the profit-weighted average works
+// charge gives the county MAC income bottom-up; the profit-weighted average works
 // out to ~22% at k=1 (the base charge), which calibrates the headline.
 // [sector, firm count, profit per firm, employees per firm]
 // driver / margin0 evolve each sector's profit over time (same margin model as
@@ -257,7 +257,7 @@ function yearlyTable(k) {
       <th>Year</th>
       <th class="num">Corporate profit / yr</th>
       <th class="num">Effective rate</th>
-      <th class="num">MAC pool / yr</th>
+      <th class="num">MAC income / yr</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
@@ -284,7 +284,7 @@ function render() {
   const st = compositionStats(cfg.k);
   set('headline-stats', [
     ['Total profit pool · 2026', fmtBn(st.totalProfit), 'var(--headline)'],
-    ['MAC pool · 2026 (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
+    ['MAC income · 2026 (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
     ['Effective MAC rate (% of total profit)', (st.effRate * 100).toFixed(1) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `
     <div class="stat">
@@ -316,7 +316,7 @@ function buildControls() {
     <div class="assumptions">
       <span>Per-firm rate = min(<b>50%</b>, k × <b>22%</b> × profit-per-emp / <b>$200k</b>)</span>
       <span>k is a multiplier, usually <b>1.0</b></span>
-      <span>MAC pool summed from the <b>business mix</b> below</span>
+      <span>MAC income summed from the <b>business mix</b> below</span>
     </div>`;
   document.getElementById('k').addEventListener('input', render);
 }
