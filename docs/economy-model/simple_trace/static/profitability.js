@@ -255,8 +255,8 @@ function yearlyTable(k) {
     <colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:30%;"><col style="width:20%;"></colgroup>
     <thead><tr>
       <th>Year</th>
-      <th class="num">Corporate profit</th>
-      <th class="num">MAC pool</th>
+      <th class="num">Corporate profit / yr</th>
+      <th class="num">MAC pool / yr</th>
       <th class="num">Effective rate</th>
     </tr></thead>
     <tbody>${body}</tbody>
