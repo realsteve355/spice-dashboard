@@ -42,12 +42,12 @@ function renderBasketStat(traj) {
   `;
   return `
   <div class="card" style="margin-bottom:14px;">
-    <h3>Aggregate basket — typical year's purchases (incl. basic housing, excl. land)</h3>
+    <h3>Aggregate basket — one person's typical year (incl. basic housing, excl. land)</h3>
     <div class="stats" style="grid-template-columns: repeat(${traj.length}, 1fr);">
       ${traj.map(stat).join('')}
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Weighted aggregate of 11 categories (incl. basic housing). Today's basket ~$1,600/mo collapses to ~$${Math.round(todayBasket * traj[traj.length-1].cost_index / 100)}/mo by ${traj[traj.length-1].year} —
+      Weighted aggregate of 11 categories (incl. basic housing), per person. Today's basket ~$1,600/mo collapses to ~$${Math.round(todayBasket * traj[traj.length-1].cost_index / 100)}/mo by ${traj[traj.length-1].year} —
       <strong>${(100 - traj[traj.length-1].cost_index).toFixed(0)}% deflation in ${traj[traj.length-1].year - traj[0].year} years</strong>.
     </div>
   </div>`;
@@ -111,9 +111,9 @@ function renderBasketComposition(categories, weights, trajectory) {
       </tfoot>
     </table>
     <div style="margin-top:12px; padding-top:12px; border-top: 1px solid var(--line); font-size:12px;">
-      <strong style="color:var(--headline);">Household scale:</strong>
+      <strong style="color:var(--headline);">Household scale</strong> — children under 18 at 50% basket, so a family of 4 (2 adults + 2 children) = ×3:<br>
       Per person/yr today: <strong>${fmtUSD(annualToday)}</strong> → ${finalYear}: <strong>${fmtUSD(annualFinal)}</strong> ·
-      Family of 4/yr today: <strong>${fmtUSD(annualToday * 4)}</strong> → ${finalYear}: <strong>${fmtUSD(annualFinal * 4)}</strong>
+      Family of 4/yr today: <strong>${fmtUSD(annualToday * 3)}</strong> → ${finalYear}: <strong>${fmtUSD(annualFinal * 3)}</strong>
     </div>
   </div>`;
 }

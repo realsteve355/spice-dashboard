@@ -50,19 +50,22 @@ function renderBasketTable(traj) {
   let rows = '';
   for (let y = 2026; y <= 2046; y++) {
     const idx = idxAt(y);
-    rows += `<tr><td class="cat">${y}</td><td class="num">${idx.toFixed(1)}%</td><td class="num">$${Math.round(todayBasket * idx / 100).toLocaleString()}/mo</td></tr>`;
+    const indiv = todayBasket * idx / 100;
+    rows += `<tr><td class="cat">${y}</td><td class="num">${idx.toFixed(1)}%</td><td class="num">$${Math.round(indiv).toLocaleString()}/mo</td><td class="num">$${Math.round(indiv * 3).toLocaleString()}/mo</td></tr>`;
   }
   return `
   <div class="card" style="margin-bottom:14px;">
     <h3>Aggregate basket cost by year</h3>
-    <table style="table-layout:fixed; width:100%; max-width:440px;">
-      <colgroup><col style="width:30%;"><col style="width:34%;"><col style="width:36%;"></colgroup>
-      <thead><tr><th>Year</th><th class="num">Cost index</th><th class="num">Basket / mo</th></tr></thead>
+    <table style="table-layout:fixed; width:100%; max-width:560px;">
+      <colgroup><col style="width:18%;"><col style="width:24%;"><col style="width:29%;"><col style="width:29%;"></colgroup>
+      <thead><tr><th>Year</th><th class="num">Cost index</th><th class="num">Individual / mo</th><th class="num">Family of 4 / mo</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Linear interpolation of the aggregate-basket trajectory (2026 = 100%, today ≈ $1,600/mo incl. basic
-      housing, excl. land). 2046 held at the 2045 value — the research horizon.
+      Per-person (individual) basket, ~$1,600/mo today (incl. basic housing, excl. land), 2026 = 100%.
+      <strong style="color:var(--txt2);">Family of 4</strong> = 2 adults at the full basket + 2 children
+      under 18 at 50% = <strong>×3 the individual</strong>. Linear interpolation; 2046 held at the 2045
+      value (research horizon).
     </div>
   </div>`;
 }
