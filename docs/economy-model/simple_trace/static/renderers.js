@@ -32,7 +32,7 @@ function renderQuotes(quotes) {
 
 function renderBasketStat(traj) {
   if (!traj || traj.length === 0) return '';
-  const todayBasket = 980;
+  const todayBasket = 1600;
   const stat = pt => `
     <div class="stat">
       <div class="label">${pt.year}</div>
@@ -42,12 +42,12 @@ function renderBasketStat(traj) {
   `;
   return `
   <div class="card" style="margin-bottom:14px;">
-    <h3>Aggregate basket — typical year's purchases (excl. land)</h3>
+    <h3>Aggregate basket — typical year's purchases (incl. basic housing, excl. land)</h3>
     <div class="stats" style="grid-template-columns: repeat(${traj.length}, 1fr);">
       ${traj.map(stat).join('')}
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Weighted aggregate of 10 categories. Today's basket ~$980/mo collapses to ~$${Math.round(todayBasket * traj[traj.length-1].cost_index / 100)}/mo by ${traj[traj.length-1].year} —
+      Weighted aggregate of 11 categories (incl. basic housing). Today's basket ~$1,600/mo collapses to ~$${Math.round(todayBasket * traj[traj.length-1].cost_index / 100)}/mo by ${traj[traj.length-1].year} —
       <strong>${(100 - traj[traj.length-1].cost_index).toFixed(0)}% deflation in ${traj[traj.length-1].year - traj[0].year} years</strong>.
     </div>
   </div>`;
@@ -55,7 +55,7 @@ function renderBasketStat(traj) {
 
 function renderBasketComposition(categories, weights, trajectory) {
   if (!weights || !categories || !trajectory) return '';
-  const todayBasketUSD = 980;
+  const todayBasketUSD = 1600;
   const final = trajectory[trajectory.length - 1];
   const finalBasketUSD = todayBasketUSD * final.cost_index / 100;
   const finalYear = final.year;

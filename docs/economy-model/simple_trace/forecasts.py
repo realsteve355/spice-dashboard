@@ -179,6 +179,19 @@ FORECASTS = {
             "sources": ["Musk (Optimus)", "consensus inference"],
         },
         {
+            "name": "Rent / mortgage (basic housing)",
+            "today_index": 100,
+            "checkpoints": [
+                {"year": 2030, "cost_index":  63, "anchor": "Prefab / modular at scale; structure cost tracks manufactured goods"},
+                {"year": 2035, "cost_index":  39, "anchor": "Volumetric / 3D-printed builds; vertical density designed to the UBI floor"},
+                {"year": 2040, "cost_index":  23, "anchor": "Engineered basic housing approaches material + energy cost"},
+                {"year": 2045, "cost_index":  16, "anchor": "Basic shelter near resource cost; LAND value excluded"},
+            ],
+            "color_class": "blue",
+            "mechanism": "BASIC housing only — rent / mortgage for engineered prefab, modular and vertical homes designed to fit within the UBI basket. Deflates with the basket average as construction industrialises (Wright's-law for structures). Excludes LAND value — the appreciating, out-of-scope luxury below. Land-rich / premium housing is a wealth-building asset, acquired above and beyond UBI, not a basket item.",
+            "sources": ["Wright's-law (construction)", "Steve (basic-housing-in-UBI thesis)"],
+        },
+        {
             "name": "LAND",
             "today_index": 100,
             "checkpoints": [
@@ -574,22 +587,24 @@ PROFITABILITY_FORECASTS = {
 }
 
 
-# Basket weights — share of a typical year's household spending allocated
-# to each forecast category. Excludes LAND (out of scope per Steve, handled
-# by the separate company-equity wealth-building model).
+# Basket weights — share of a typical year's household spending allocated to
+# each forecast category. INCLUDES basic housing (rent / mortgage), which
+# deflates with the basket. Excludes LAND — the appreciating, out-of-scope
+# luxury (like gold / BTC), handled by the separate wealth-building model.
 # Shares sum to 100%.
 BASKET_WEIGHTS = {
-    "Intelligence / digital":          3.0,   # streaming, apps, cloud, software
-    "Energy":                         10.0,   # utilities, fuel
-    "Transport":                      12.0,   # fuel, vehicles, services
-    "Manufactured goods":             18.0,   # incl housing structure (durable goods)
-    "Food (proteins)":                 8.0,   # meat, fish
-    "Education":                       5.0,
-    "Apparel":                         4.0,
-    "Food (general groceries)":       17.0,   # produce, packaged, staples
-    "Healthcare":                      8.0,
-    "Services (hospitality, care)":   15.0,
-    # LAND deliberately excluded — separate model.
+    "Rent / mortgage (basic housing)": 40.0,   # basic engineered housing, deflating
+    "Manufactured goods":             11.0,   # durable goods (appliances, electronics, furniture)
+    "Food (general groceries)":       10.0,   # produce, packaged, staples
+    "Services (hospitality, care)":    9.0,
+    "Transport":                       7.0,   # fuel, vehicles, services
+    "Energy":                          6.0,   # utilities, fuel
+    "Food (proteins)":                 5.0,   # meat, fish
+    "Healthcare":                      5.0,
+    "Education":                       3.0,
+    "Intelligence / digital":          2.0,   # streaming, apps, cloud, software
+    "Apparel":                         2.0,
+    # LAND deliberately excluded — appreciating luxury, separate model.
 }
 
 
