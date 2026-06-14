@@ -19,6 +19,7 @@
   .toggle { display: inline-flex; gap: 18px; font-size: 12px; color: var(--txt2); }
   .toggle label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
   .toggle input { accent-color: var(--ok); }
+  .mf-select { background: #14171f; color: var(--txt); border: 1px solid var(--line-hot); padding: 5px 8px; font-family: inherit; font-size: 12px; min-width: 220px; }
   .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
 
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
@@ -52,9 +53,10 @@
         the business mix; its <strong>outgoings</strong> are <strong>UBI / welfare</strong> — one
         per-person <strong>basket</strong> paid to each recipient; and the gap accumulates as a
         <strong>balance</strong>, with reserves earning a 10-year-bond yield.</p>
-      <p>Outgoings = the per-person basket × the number of recipients. By default that's the
-        <em>unemployed</em> (welfare during the transition); switch to <em>universal</em> to pay every
-        adult. Use the controls to find the charge rate that keeps the Fisc solvent.</p>
+      <p>Outgoings = the per-person basket × the number of recipients, set by an <strong>Implementation
+        Profile</strong> — a rule for how the Fisc deploys its resources. Profile 1 pays the unemployed
+        only; Profile 2 pays every adult in full and children at 50%. Use the controls to find the charge
+        rate that keeps the Fisc solvent under each.</p>
     </div>
   </div>
 

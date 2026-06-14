@@ -12,6 +12,22 @@ const { HORIZON, ADULTS, CHILDREN, BOND_YIELD, countyByYear, unemployedAt,
 
 const STORAGE_KEY = 'axion_fisc_v1';
 
+// Implementation Profiles — rules for how the Fisc deploys UBI. Each returns the
+// number of basket-equivalents to pay in year t (children count as 0.5). Add a
+// new profile here and it appears in the dropdown automatically.
+const PROFILES = [
+  {
+    id: 'p1', name: 'Profile 1 — Unemployed only',
+    desc: 'UBI / welfare paid only to the unemployed during the transition; the employed support themselves on wages.',
+    recipients: t => unemployedAt(t),
+  },
+  {
+    id: 'p2', name: 'Profile 2 — All; children at 50%',
+    desc: 'Universal: every adult receives a full basket and every child under 18 receives 50%.',
+    recipients: () => ADULTS + 0.5 * CHILDREN,
+  },
+];
+
 // ── Fisc P&L per year ──────────────────────────────────────────────────────
 function fiscByYear(cfg) {
   const county = countyByYear(cfg.k);
@@ -21,7 +37,7 @@ function fiscByYear(cfg) {
     const mac = county[t].mac;
     const ubiYr = basketPerPersonYr(t);                  // per person / yr
     const unemployed = unemployedAt(t);
-    const recipients = cfg.coverage === 'universal' ? (ADULTS + CHILDREN * 0.5) : unemployed;
+    const recipients = cfg.profile.recipients(t);
     const outgoings = ubiYr * recipients;
     const interest = balance * cfg.yield;
     const net = mac + interest - outgoings;
@@ -93,10 +109,11 @@ function fiscTable(rows) {
 // ── Render ───────────────────────────────────────────────────────────────
 function readCfg() {
   const kEl = document.getElementById('k'), yEl = document.getElementById('yield');
-  const covEl = document.querySelector('input[name="coverage"]:checked');
+  const pEl = document.getElementById('profile');
   const k = kEl ? parseFloat(kEl.value) : 1.0;
   const y = yEl ? parseFloat(yEl.value) : 4.1;
-  return { k: isNaN(k) ? 1.0 : k, yield: (isNaN(y) ? 4.1 : y) / 100, coverage: covEl ? covEl.value : 'unemployed' };
+  const profile = PROFILES.find(p => p.id === (pEl ? pEl.value : PROFILES[0].id)) || PROFILES[0];
+  return { k: isNaN(k) ? 1.0 : k, yield: (isNaN(y) ? 4.1 : y) / 100, profile };
 }
 
 function render() {
@@ -106,6 +123,7 @@ function render() {
   if (kOut) kOut.textContent = '×' + cfg.k.toFixed(2);
   if (yOut) yOut.textContent = (cfg.yield * 100).toFixed(1) + '%';
 
+  set('profile-desc', cfg.profile.desc);
   const rows = fiscByYear(cfg);
   set('chart-flows', flowsChart(rows));
   set('chart-balance', balanceChart(rows));
@@ -124,12 +142,11 @@ function render() {
   const verdict = document.getElementById('verdict');
   if (verdict) {
     verdict.style.borderLeftColor = y20.balance >= 0 ? 'var(--ok)' : 'var(--crit)';
-    const cov = cfg.coverage === 'universal' ? 'universal UBI (all adults + children at 50%)' : 'UBI paid to the unemployed';
     verdict.innerHTML = everyYearPositive
-      ? `With ${cov} at k=${cfg.k.toFixed(2)} and a ${(cfg.yield * 100).toFixed(1)}% reserve yield, the Fisc runs a `
+      ? `Under <strong>${cfg.profile.name}</strong> at k=${cfg.k.toFixed(2)} and a ${(cfg.yield * 100).toFixed(1)}% reserve yield, the Fisc runs a `
         + `<strong>surplus every year</strong> — the MAC income covers outgoings with room to spare, and reserves `
         + `compound to a <strong>${fmtMoney(y20.balance)}</strong> balance by 2046.`
-      : `With ${cov} at k=${cfg.k.toFixed(2)}, the Fisc runs a deficit in early years (balance negative for `
+      : `Under <strong>${cfg.profile.name}</strong> at k=${cfg.k.toFixed(2)}, the Fisc runs a deficit in early years (balance negative for `
         + `${deficits} year${deficits === 1 ? '' : 's'}), then recovers as MAC income grows — ending at `
         + `<strong>${fmtMoney(y20.balance)}</strong> by 2046.`;
   }
@@ -151,13 +168,13 @@ function buildControls() {
       <input type="range" id="yield" min="0" max="8" step="0.1" value="4.1">
       <span class="ctrl-val" id="yield_v"></span>
     </label>
-    <div class="ctrl ctrl-toggle">
-      <span class="ctrl-label">UBI coverage</span>
-      <span class="toggle">
-        <label><input type="radio" name="coverage" value="unemployed" checked> Unemployed only</label>
-        <label><input type="radio" name="coverage" value="universal"> Universal (all adults)</label>
-      </span>
-    </div>
+    <label class="ctrl ctrl-toggle">
+      <span class="ctrl-label">Implementation profile — who receives UBI</span>
+      <select id="profile" class="mf-select">
+        ${PROFILES.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+      </select>
+    </label>
+    <div id="profile-desc" style="font-size:11px; color:var(--dim); margin:2px 0 0; max-width:760px; line-height:1.5;"></div>
     <div class="assumptions">
       <span>UBI / person = the <a href="cost-deflation" style="color:var(--ok);">basket</a> (~$1,600/mo → falls)</span>
       <span>Unemployed from the <a href="unemployment" style="color:var(--ok);">cohort ramp</a> (4.2%→75%)</span>
@@ -166,7 +183,7 @@ function buildControls() {
     </div>`;
   document.getElementById('k').addEventListener('input', render);
   document.getElementById('yield').addEventListener('input', render);
-  document.querySelectorAll('input[name="coverage"]').forEach(el => el.addEventListener('change', render));
+  document.getElementById('profile').addEventListener('change', render);
 }
 
 function init() { buildControls(); render(); MF.load().then(render); }
