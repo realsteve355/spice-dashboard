@@ -11,6 +11,7 @@
       { path: '/cost-deflation', label: 'Cost deflation' },
       { path: '/unemployment',   label: 'Unemployment' },
       { path: '/profitability',  label: 'Profitability' },
+      { path: '/fisc',           label: 'Fisc' },
       { path: '/references',     label: 'References' },
     ]},
     { label: 'Transition', items: [

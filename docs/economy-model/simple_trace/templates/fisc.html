@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>The Fisc — income, outgoings and balance</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  main.fisc { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 720px; margin-bottom: 10px; }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .ctrl-toggle { grid-template-columns: 1fr auto; }
+  .toggle { display: inline-flex; gap: 18px; font-size: 12px; color: var(--txt2); }
+  .toggle label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .toggle input { accent-color: var(--ok); }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
+  .verdict strong { color: var(--headline); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .narrative strong { color: var(--headline); }
+</style>
+</head>
+<body data-live-sim>
+
+<header>
+  <h1>The Fisc — income, outgoings and balance</h1>
+  <div class="subtitle">MAC income vs the UBI bill, year by year — does the colony's treasury balance?</div>
+</header>
+
+<main class="fisc">
+
+  <!-- Intro -->
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>What the Fisc does</h3>
+    <div class="narrative">
+      <p>The Fisc is the colony treasury. It brings together three annual flows already modelled
+        elsewhere: its <strong>income</strong> is the <strong>Market Access Charge</strong> collected from
+        the business mix; its <strong>outgoings</strong> are <strong>UBI / welfare</strong> — one
+        per-person <strong>basket</strong> paid to each recipient; and the gap accumulates as a
+        <strong>balance</strong>, with reserves earning a 10-year-bond yield.</p>
+      <p>Outgoings = the per-person basket × the number of recipients. By default that's the
+        <em>unemployed</em> (welfare during the transition); switch to <em>universal</em> to pay every
+        adult. Use the controls to find the charge rate that keeps the Fisc solvent.</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>Inputs</h3>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Headline + verdict -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="card">
+    <h3>Annual flows — MAC income vs UBI outgoings</h3>
+    <div class="what">
+      Income (green) is the MAC collected each year; outgoings (red) are the UBI bill. Where green sits
+      above red, the Fisc runs an annual surplus.
+    </div>
+    <div id="chart-flows"></div>
+  </div>
+
+  <div class="card">
+    <h3>Fisc balance — cumulative reserves</h3>
+    <div class="what">
+      The running balance: prior reserves plus each year's net, with reserves compounding at the bond
+      yield. Below zero means the Fisc is borrowing.
+    </div>
+    <div id="chart-balance"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <h3>The Fisc, year by year</h3>
+    <div id="fisc-table"></div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
+      All figures are <strong style="color:var(--txt2);">annual flows</strong> in real (2026) dollars,
+      except the Fisc balance, which is cumulative. MAC income, the basket (UBI) and the unemployed count
+      are the same series shown on the Profitability, Cost Deflation and Unemployment pages.
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/nav.js"></script>
+<script src="/static/fisc.js"></script>
+</body>
+</html>
