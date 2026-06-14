@@ -42,18 +42,21 @@ const COMPANIES = [
 // charge gives the county MAC pool bottom-up; the profit-weighted average works
 // out to ~22% at k=1 (the base charge), which calibrates the headline.
 // [sector, firm count, profit per firm, employees per firm]
+// driver / margin0 evolve each sector's profit over time (same margin model as
+// the company examples) — automated sectors deflate (goods/transport) and grow;
+// human-centric sectors are labour-bound (craftLabour) and stay flat.
 const MARYFONTAINE = [
-  { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14 },
-  { sector: 'Retail & local services', count: 440, profitPerFirm: 70e3, empPerFirm: 9 },
-  { sector: 'Trades & construction', count: 500, profitPerFirm: 90e3, empPerFirm: 7 },
-  { sector: 'Professional & financial', count: 230, profitPerFirm: 250e3, empPerFirm: 11 },
-  { sector: 'Healthcare & clinics', count: 165, profitPerFirm: 350e3, empPerFirm: 16 },
-  { sector: 'Education & childcare', count: 110, profitPerFirm: 60e3, empPerFirm: 22 },
-  { sector: 'Local manufacturing & workshops', count: 75, profitPerFirm: 600e3, empPerFirm: 28 },
-  { sector: 'Regional automated logistics', count: 14, profitPerFirm: 18e6, empPerFirm: 90 },
-  { sector: 'Attributed national retail share', count: 1, profitPerFirm: 800e6, empPerFirm: 3850 },
-  { sector: 'Attributed manufacturing & energy', count: 1, profitPerFirm: 600e6, empPerFirm: 2680 },
-  { sector: 'Attributed tech & platforms', count: 1, profitPerFirm: 690e6, empPerFirm: 2950 },
+  { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14, driver: 'hospLand', margin0: 0.35 },
+  { sector: 'Retail & local services', count: 440, profitPerFirm: 70e3, empPerFirm: 9, driver: 'goods', margin0: 0.35 },
+  { sector: 'Trades & construction', count: 500, profitPerFirm: 90e3, empPerFirm: 7, driver: 'craftLabour', margin0: 0.40 },
+  { sector: 'Professional & financial', count: 230, profitPerFirm: 250e3, empPerFirm: 11, driver: 'goods', margin0: 0.35 },
+  { sector: 'Healthcare & clinics', count: 165, profitPerFirm: 350e3, empPerFirm: 16, driver: 'craftLabour', margin0: 0.40 },
+  { sector: 'Education & childcare', count: 110, profitPerFirm: 60e3, empPerFirm: 22, driver: 'craftLabour', margin0: 0.40 },
+  { sector: 'Local manufacturing & workshops', count: 75, profitPerFirm: 600e3, empPerFirm: 28, driver: 'goods', margin0: 0.30 },
+  { sector: 'Regional automated logistics', count: 14, profitPerFirm: 18e6, empPerFirm: 90, driver: 'transport', margin0: 0.25 },
+  { sector: 'Attributed national retail share', count: 1, profitPerFirm: 800e6, empPerFirm: 3850, driver: 'goods', margin0: 0.30 },
+  { sector: 'Attributed manufacturing & energy', count: 1, profitPerFirm: 600e6, empPerFirm: 2680, driver: 'goods', margin0: 0.25 },
+  { sector: 'Attributed tech & platforms', count: 1, profitPerFirm: 690e6, empPerFirm: 2950, driver: 'goods', margin0: 0.28 },
 ];
 
 const STORAGE_KEY = 'axion_profitability_v6';
@@ -132,13 +135,29 @@ function interpYear(anchors, year) {
   }
   return anchors[anchors.length - 1].v;
 }
-// Real-profit index (2026 = 100) from margin expansion as the input cost falls.
-// cost(t) starts at (1 - margin0); margin(t) = 1 - (1-margin0) × driver(t)/100;
-// profit_index = margin(t)/margin0. Saturates as the driver bottoms out.
-function profitIndex(c, t) {
-  const cost = interpYear(DEFLATION[c.driver], 2026 + t) / 100;
-  const margin = 1 - (1 - c.margin0) * cost;
-  return margin / c.margin0 * 100;
+// Real-profit multiplier (1.0 at 2026) from margin expansion as the input cost
+// falls: cost(t) starts at (1 - margin0); margin(t) = 1 - (1-margin0) × driver(t)/100;
+// multiplier = margin(t)/margin0. Saturates as the driver bottoms out.
+function marginMult(driver, margin0, t) {
+  const cost = interpYear(DEFLATION[driver], 2026 + t) / 100;
+  return (1 - (1 - margin0) * cost) / margin0;
+}
+function profitIndex(c, t) { return marginMult(c.driver, c.margin0, t) * 100; }
+
+// County totals per year: each sector's profit evolves by its margin multiplier;
+// the targeted rate is recomputed each year from the (rising) profit-per-employee.
+function countyByYear(k) {
+  const out = [];
+  for (let t = 0; t <= HORIZON; t++) {
+    let profit = 0, mac = 0;
+    for (const s of MARYFONTAINE) {
+      const p = s.count * s.profitPerFirm * marginMult(s.driver, s.margin0, t);
+      const rate = macRate(p, s.count * s.empPerFirm, k);
+      profit += p; mac += p * rate;
+    }
+    out.push({ year: 2026 + t, profit, mac, effRate: mac / profit });
+  }
+  return out;
 }
 function profitGrowthChart() {
   return lineChart({
@@ -223,6 +242,27 @@ function compositionTable(k) {
   </table>`;
 }
 
+function yearlyTable(k) {
+  const body = countyByYear(k).map(r => `
+    <tr>
+      <td class="cat">${r.year}</td>
+      <td class="num">${fmtBn(r.profit)}</td>
+      <td class="num" style="color:var(--ok);">${fmtMoney(r.mac)}</td>
+      <td class="num">${(r.effRate * 100).toFixed(1)}%</td>
+    </tr>`).join('');
+  return `
+  <table style="table-layout:fixed; width:100%; max-width:580px;">
+    <colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:30%;"><col style="width:20%;"></colgroup>
+    <thead><tr>
+      <th>Year</th>
+      <th class="num">Corporate profit</th>
+      <th class="num">MAC pool</th>
+      <th class="num">Effective rate</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
 // ── Render ───────────────────────────────────────────────────────────────
 function readCfg() {
   const kEl = document.getElementById('k');
@@ -239,6 +279,7 @@ function render() {
   set('company-table', companyTable(cfg.k));
   set('composition-table', compositionTable(cfg.k));
   set('chart-profit-growth', profitGrowthChart());
+  set('yearly-table', yearlyTable(cfg.k));
 
   const st = compositionStats(cfg.k);
   set('headline-stats', [
