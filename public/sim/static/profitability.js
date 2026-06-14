@@ -1,35 +1,15 @@
-// /profitability — MaryFontaine: a targeted Market Access Charge on
-// profit-per-employee. Fully client-side (no /api) so the page stays
-// interactive on the static publish.
-//
-// Per-firm charge:  MAC_i = profit_i × rate_i
-//   rate_i = min(RATE_CAP, k × BASE_RATE × (profit_i / employees_i) / REF_PPE)
-// k is a multiplier (a constant, usually 1.0); BASE_RATE (22%) is the charge at
-// the $200k/employee reference. Automated firms (high profit per employee) pay a
-// larger share; labour-intensive firms pay little. The county MAC income is summed
-// bottom-up across the business mix; this page also shows how individual company
-// profits diverge over 20 years as automation advances.
+// /profitability — MaryFontaine: a targeted Market Access Charge on profit-per-
+// employee. Uses the shared MaryFontaine model in maryfontaine.js (loaded first);
+// page-specific bits below are the five company-type examples and the
+// profit-evolution chart. Fully client-side / interactive.
 
-const REF_PPE = 200000;         // profit/employee reference (maps to the base rate)
-const BASE_RATE = 0.22;         // charge rate at the reference when k = 1
-const RATE_CAP = 0.50;          // max share of profit any firm pays
-const HORIZON = 20;             // years (2026–2046)
+const { HORIZON, RATE_CAP, macRate, marginMult, compositionStats, countyByYear,
+        lineChart, fmtBn, fmtMoney, mfUSD: fmtUSD } = MF;
 
-// Cost-deflation category trajectories (cost_index, 2026 = 100) — mirror the
-// Cost Deflation page. Profit growth here comes from MARGIN EXPANSION as these
-// input costs collapse: margins (and profits) rise fast while costs are falling
-// hardest, then flatten as costs bottom out — so the curves SATURATE, they do
-// not compound exponentially. Human-centric drivers barely deflate (labour) or
-// rise (land), so those profits stay flat to squeezed.
-const DEFLATION = {
-  goods:       [{ y: 2026, v: 100 }, { y: 2030, v: 60 }, { y: 2035, v: 30 }, { y: 2040, v: 15 }, { y: 2045, v: 10 }],
-  transport:   [{ y: 2026, v: 100 }, { y: 2030, v: 30 }, { y: 2035, v: 15 }, { y: 2040, v: 10 }, { y: 2045, v: 8 }],
-  craftLabour: [{ y: 2026, v: 100 }, { y: 2045, v: 90 }],    // craft labour: minimal deflation
-  hospLand:    [{ y: 2026, v: 100 }, { y: 2045, v: 105 }],   // hospitality labour + rising land
-};
+const STORAGE_KEY = 'axion_profitability_v6';
 
-// Company-type examples. Each maps to a deflating (or not) cost driver and a
-// starting margin; profit_index = margin(t)/margin(0), so it saturates.
+// Company-type examples (illustrative). Each maps to a deflating (or not) cost
+// driver and a starting margin; profit_index = margin(t)/margin(0), so it saturates.
 const COMPANIES = [
   { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, driver: 'craftLabour', margin0: 0.40, color: '#7aa2ff' },
   { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, driver: 'hospLand', margin0: 0.35, color: '#8b93a0' },
@@ -38,128 +18,8 @@ const COMPANIES = [
   { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, driver: 'goods', margin0: 0.30, color: '#7eb24f' },
 ];
 
-// MaryFontaine's business population (Year 0). Summing each sector's targeted
-// charge gives the county MAC income bottom-up; the profit-weighted average works
-// out to ~22% at k=1 (the base charge), which calibrates the headline.
-// [sector, firm count, profit per firm, employees per firm]
-// driver / margin0 evolve each sector's profit over time (same margin model as
-// the company examples) — automated sectors deflate (goods/transport) and grow;
-// human-centric sectors are labour-bound (craftLabour) and stay flat.
-const MARYFONTAINE = [
-  { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14, driver: 'hospLand', margin0: 0.35 },
-  { sector: 'Retail & local services', count: 440, profitPerFirm: 70e3, empPerFirm: 9, driver: 'goods', margin0: 0.35 },
-  { sector: 'Trades & construction', count: 500, profitPerFirm: 90e3, empPerFirm: 7, driver: 'craftLabour', margin0: 0.40 },
-  { sector: 'Professional & financial', count: 230, profitPerFirm: 250e3, empPerFirm: 11, driver: 'goods', margin0: 0.35 },
-  { sector: 'Healthcare & clinics', count: 165, profitPerFirm: 350e3, empPerFirm: 16, driver: 'craftLabour', margin0: 0.40 },
-  { sector: 'Education & childcare', count: 110, profitPerFirm: 60e3, empPerFirm: 22, driver: 'craftLabour', margin0: 0.40 },
-  { sector: 'Local manufacturing & workshops', count: 75, profitPerFirm: 600e3, empPerFirm: 28, driver: 'goods', margin0: 0.30 },
-  { sector: 'Regional automated logistics', count: 14, profitPerFirm: 18e6, empPerFirm: 90, driver: 'transport', margin0: 0.25 },
-  { sector: 'Attributed national retail share', count: 1, profitPerFirm: 800e6, empPerFirm: 3850, driver: 'goods', margin0: 0.30 },
-  { sector: 'Attributed manufacturing & energy', count: 1, profitPerFirm: 600e6, empPerFirm: 2680, driver: 'goods', margin0: 0.25 },
-  { sector: 'Attributed tech & platforms', count: 1, profitPerFirm: 690e6, empPerFirm: 2950, driver: 'goods', margin0: 0.28 },
-];
-
-const STORAGE_KEY = 'axion_profitability_v6';
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-function fmtBn(v) { return '$' + (v / 1e9).toFixed(2) + 'B'; }
-function fmtMoney(v) {
-  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e5) return '$' + Math.round(v / 1e3) + 'k';
-  return '$' + Math.round(v).toLocaleString();
-}
-function fmtUSD(v) { return '$' + Math.round(v).toLocaleString(); }
-// k is a multiplier (usually 1.0); base charge is BASE_RATE at the reference.
-function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * BASE_RATE * (profit / emp) / REF_PPE); }
-
-// Bottom-up county totals at multiplier k: each sector pays profit × its rate.
-function compositionStats(k) {
-  let totalProfit = 0, totalEmp = 0, totalMAC = 0, totalRevenue = 0;
-  const rows = MARYFONTAINE.map(s => {
-    const profit = s.count * s.profitPerFirm;
-    const revenue = profit / s.margin0;
-    const emp = s.count * s.empPerFirm;
-    const ppe = profit / emp;
-    const rate = macRate(profit, emp, k);
-    const mac = profit * rate;
-    totalProfit += profit; totalEmp += emp; totalMAC += mac; totalRevenue += revenue;
-    return { sector: s.sector, count: s.count, revenue, profit, emp, ppe, rate, mac };
-  });
-  return { rows, totalProfit, totalEmp, totalMAC, totalRevenue, effRate: totalMAC / totalProfit };
-}
-
-// ── Generic SVG line chart ───────────────────────────────────────────────
-function lineChart(opts) {
-  const W = opts.width || 1280, H = opts.height || 320;
-  const PAD = { l: 78, r: opts.padR || 210, t: 26, b: 42 };
-  const plotW = W - PAD.l - PAD.r, plotH = H - PAD.t - PAD.b;
-  const [x0, x1] = opts.xDomain, [y0, y1] = opts.yDomain;
-  const xPx = x => PAD.l + plotW * (x - x0) / (x1 - x0);
-  const yPx = y => PAD.t + plotH * (1 - (y - y0) / (y1 - y0));
-
-  const grid = (opts.yTicks || []).map(t => `
-    <line x1="${PAD.l}" y1="${yPx(t)}" x2="${PAD.l + plotW}" y2="${yPx(t)}" stroke="var(--line)" stroke-width="0.5" stroke-dasharray="2 3"/>
-    <text x="${PAD.l - 8}" y="${yPx(t) + 4}" fill="var(--dim)" font-size="10" text-anchor="end" font-family="var(--mono)">${opts.yFmt ? opts.yFmt(t) : t}</text>
-  `).join('');
-  const xLabels = (opts.xTicks || []).map(x => `<text x="${xPx(x)}" y="${H - PAD.b + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${x}</text>`).join('');
-
-  const labels = [];
-  const paths = opts.series.map(s => {
-    const d = s.pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPx(p.x).toFixed(1)} ${yPx(p.y).toFixed(1)}`).join(' ');
-    const last = s.pts[s.pts.length - 1];
-    if (s.label) labels.push({ label: s.label, color: s.color, desiredY: yPx(last.y), endX: xPx(last.x) });
-    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width || 2.5}" ${s.dashed ? 'stroke-dasharray="6 4"' : ''}/>`;
-  }).join('');
-
-  labels.sort((a, b) => a.desiredY - b.desiredY);
-  if (labels.length) {
-    labels[0].placedY = labels[0].desiredY;
-    for (let i = 1; i < labels.length; i++) labels[i].placedY = Math.max(labels[i].desiredY, labels[i - 1].placedY + 15);
-  }
-  const labelEls = labels.map(L => `
-    <line x1="${L.endX + 4}" y1="${L.desiredY}" x2="${PAD.l + plotW + 12}" y2="${L.placedY}" stroke="${L.color}" stroke-width="0.5" opacity="0.5"/>
-    <text x="${PAD.l + plotW + 14}" y="${L.placedY + 4}" fill="${L.color}" font-size="10" font-family="var(--mono)">${L.label}</text>
-  `).join('');
-
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">${grid}${xLabels}${paths}${labelEls}</svg>`;
-}
-
-function interpYear(anchors, year) {
-  if (year <= anchors[0].y) return anchors[0].v;
-  if (year >= anchors[anchors.length - 1].y) return anchors[anchors.length - 1].v;
-  for (let i = 0; i < anchors.length - 1; i++) {
-    if (year >= anchors[i].y && year <= anchors[i + 1].y) {
-      const f = (year - anchors[i].y) / (anchors[i + 1].y - anchors[i].y);
-      return anchors[i].v + (anchors[i + 1].v - anchors[i].v) * f;
-    }
-  }
-  return anchors[anchors.length - 1].v;
-}
-// Real-profit multiplier (1.0 at 2026) from margin expansion as the input cost
-// falls: cost(t) starts at (1 - margin0); margin(t) = 1 - (1-margin0) × driver(t)/100;
-// multiplier = margin(t)/margin0. Saturates as the driver bottoms out.
-function marginMult(driver, margin0, t) {
-  const cost = interpYear(DEFLATION[driver], 2026 + t) / 100;
-  return (1 - (1 - margin0) * cost) / margin0;
-}
 function profitIndex(c, t) { return marginMult(c.driver, c.margin0, t) * 100; }
 
-// County totals per year: each sector's profit evolves by its margin multiplier;
-// the targeted rate is recomputed each year from the (rising) profit-per-employee.
-function countyByYear(k) {
-  const out = [];
-  for (let t = 0; t <= HORIZON; t++) {
-    let profit = 0, mac = 0;
-    for (const s of MARYFONTAINE) {
-      const p = s.count * s.profitPerFirm * marginMult(s.driver, s.margin0, t);
-      const rate = macRate(p, s.count * s.empPerFirm, k);
-      profit += p; mac += p * rate;
-    }
-    out.push({ year: 2026 + t, profit, mac, effRate: mac / profit });
-  }
-  return out;
-}
 function profitGrowthChart() {
   return lineChart({
     height: 360, padR: 210, xDomain: [2026, 2046], yDomain: [0, 500],
