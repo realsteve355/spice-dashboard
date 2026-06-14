@@ -26,6 +26,11 @@ const PROFILES = [
     desc: 'Universal: every adult receives a full basket and every child under 18 receives 50%.',
     recipients: () => ADULTS + 0.5 * CHILDREN,
   },
+  {
+    id: 'p3', name: 'Profile 3 — Phased (unemployed → universal at Year 8)',
+    desc: 'Means-tested during the early displacement (unemployed only, Years 0–7), then universal from the Year-8 inflection — every adult full, children at 50%.',
+    recipients: t => t < 8 ? unemployedAt(t) : (ADULTS + 0.5 * CHILDREN),
+  },
 ];
 
 // ── Fisc P&L per year ──────────────────────────────────────────────────────
@@ -84,6 +89,7 @@ function fiscTable(rows) {
       <td class="cat">${r.year}</td>
       <td class="num">${fmtMoney(r.mac)}</td>
       <td class="num">${Math.round(r.recipients).toLocaleString()}</td>
+      <td class="num">${fmtMoney(r.ubiYr)}</td>
       <td class="num">${fmtMoney(r.outgoings)}</td>
       <td class="num">${fmtMoney(r.interest)}</td>
       <td class="num" style="color:${netC};">${fmtMoney(r.net)}</td>
@@ -92,11 +98,12 @@ function fiscTable(rows) {
   }).join('');
   return `
   <table style="table-layout:fixed; width:100%;">
-    <colgroup><col style="width:8%;"><col style="width:15%;"><col style="width:15%;"><col style="width:15%;"><col style="width:13%;"><col style="width:15%;"><col style="width:19%;"></colgroup>
+    <colgroup><col style="width:7%;"><col style="width:14%;"><col style="width:13%;"><col style="width:12%;"><col style="width:13%;"><col style="width:11%;"><col style="width:13%;"><col style="width:17%;"></colgroup>
     <thead><tr>
       <th>Year</th>
       <th class="num">MAC income</th>
       <th class="num">UBI recipients</th>
+      <th class="num">UBI / person / yr</th>
       <th class="num">UBI outgoings</th>
       <th class="num">Interest</th>
       <th class="num">Net</th>
