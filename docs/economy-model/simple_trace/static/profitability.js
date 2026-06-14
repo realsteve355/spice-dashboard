@@ -15,13 +15,17 @@ const BASE_RATE = 0.22;         // charge rate at the reference when k = 1
 const RATE_CAP = 0.50;          // max share of profit any firm pays
 const HORIZON = 20;             // years (2026–2046)
 
-// Company-type examples, with automation-driven real profit growth per year.
+// Company-type examples. Real profit growth per year is derived from the
+// input-cost deflation on the Cost Deflation page: automatable cost bases
+// collapse (Manufactured goods -11%/yr, Transport -12%/yr, Energy -15%/yr,
+// Intelligence -21%/yr), expanding the margins of automated producers, while
+// human-centric firms are labour-bound (no deflation) and face rising land.
 const COMPANIES = [
-  { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, growth: 0.020, auto: 'craft / low automation', color: '#7aa2ff' },
-  { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, growth: 0.015, auto: 'human-centric', color: '#8b93a0' },
-  { type: 'Automated warehouse / logistics', short: 'Warehouse / logistics', profit: 18e6, emp: 80, growth: 0.090, auto: 'highly automated', color: '#cfa340' },
-  { type: 'Lights-out manufacturing plant', short: 'Lights-out plant', profit: 45e6, emp: 45, growth: 0.110, auto: 'fully automated', color: '#ef4444' },
-  { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, growth: 0.070, auto: 'highly automated', color: '#7eb24f' },
+  { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, growth: 0.010, color: '#7aa2ff' },
+  { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, growth: 0.005, color: '#8b93a0' },
+  { type: 'Automated warehouse / logistics', short: 'Warehouse / logistics', profit: 18e6, emp: 80, growth: 0.100, color: '#cfa340' },
+  { type: 'Lights-out manufacturing plant', short: 'Lights-out plant', profit: 45e6, emp: 45, growth: 0.110, color: '#ef4444' },
+  { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, growth: 0.090, color: '#7eb24f' },
 ];
 
 // MaryFontaine's business population (Year 0). Summing each sector's targeted
@@ -210,8 +214,8 @@ function render() {
 
   const st = compositionStats(cfg.k);
   set('headline-stats', [
-    ['Total profit pool', fmtBn(st.totalProfit), 'var(--headline)'],
-    ['MAC pool (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
+    ['Total profit pool · 2026', fmtBn(st.totalProfit), 'var(--headline)'],
+    ['MAC pool · 2026 (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
     ['Effective MAC rate (% of total profit)', (st.effRate * 100).toFixed(1) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `
     <div class="stat">
@@ -224,8 +228,8 @@ function render() {
     verdict.innerHTML =
       `The <strong>effective MAC rate</strong> is the share of the county's total profit the charge `
       + `collects — <strong>${(st.effRate * 100).toFixed(1)}%</strong> at the base multiplier (k=${cfg.k.toFixed(2)}). `
-      + `It rises over time because the automated, high-rate firms grow their profits far faster than `
-      + `human-centric ones — shown below.`;
+      + `These are the <strong>2026 baseline</strong> figures; the pool grows from here as automated, `
+      + `high-rate firms compound their profits far faster than human-centric ones — shown below.`;
   }
 
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
