@@ -1,42 +1,32 @@
-// /profitability — MaryFontaine & Islara Abundance Model (v9.16).
-//
-// Targeted Market Access Charge based on profit-per-employee, funding a phased
-// transition from means-tested support to full UBI. Fully client-side (no /api)
-// so the page stays interactive on the static publish. County scale 180k adults.
-// All figures real (today's prices).
+// /profitability — MaryFontaine: a targeted Market Access Charge on
+// profit-per-employee. Fully client-side (no /api) so the page stays
+// interactive on the static publish.
 //
 // Per-firm charge:  MAC_i = profit_i × rate_i
 //   rate_i = min(RATE_CAP, k × BASE_RATE × (profit_i / employees_i) / REF_PPE)
 // k is a multiplier (a constant, usually 1.0); BASE_RATE (22%) is the charge at
 // the $200k/employee reference. Automated firms (high profit per employee) pay a
-// larger share; labour-intensive firms pay little.
+// larger share; labour-intensive firms pay little. The county MAC pool is summed
+// bottom-up across the business mix; this page also shows how individual company
+// profits diverge over 20 years as automation advances.
 
-const ADULTS = 180000;
-const HORIZON = 20;
-const INFLECTION = 8;            // year means-tested support -> full universal UBI
 const REF_PPE = 200000;         // profit/employee reference (maps to the base rate)
 const BASE_RATE = 0.22;         // charge rate at the reference when k = 1
 const RATE_CAP = 0.50;          // max share of profit any firm pays
+const HORIZON = 20;             // years (2026–2046)
 
-// Anchor trajectories {y: year-from-2026, v: value}.
-const UNEMP  = [{ y: 0, v: 4.2 }, { y: 5, v: 18 }, { y: 8, v: 28 }, { y: 10, v: 35 }, { y: 15, v: 55 }, { y: 20, v: 75 }];          // %
-const BASKET = [{ y: 0, v: 980 }, { y: 5, v: 850 }, { y: 8, v: 760 }, { y: 10, v: 700 }, { y: 15, v: 520 }, { y: 20, v: 380 }];   // family of 4, $/mo
-const POOL   = [{ y: 0, v: 2.6e9 }, { y: 5, v: 4.1e9 }, { y: 8, v: 5.227e9 }, { y: 10, v: 6.2e9 }, { y: 15, v: 9.1e9 }, { y: 20, v: 13.2e9 }]; // attributable profit pool, real $
-const UBI_MEANS = [{ y: 0, v: 180 }, { y: 5, v: 280 }, { y: 8, v: 300 }];      // Phase 1: means-tested $/recipient/mo
-const UBI_FULL  = [{ y: 8, v: 260 }, { y: 10, v: 298 }, { y: 15, v: 355 }, { y: 20, v: 394 }]; // Phase 2: full universal UBI $/adult/mo
-
-// Company-type examples (Year 15-20). Charges computed from the formula.
+// Company-type examples, with automation-driven real profit growth per year.
 const COMPANIES = [
-  { type: 'Bespoke handmade furniture', profit: 1.2e6, emp: 35 },
-  { type: 'Local café / restaurant', profit: 180e3, emp: 18 },
-  { type: 'Automated warehouse / logistics', profit: 18e6, emp: 80 },
-  { type: 'Lights-out manufacturing plant', profit: 45e6, emp: 45 },
-  { type: 'Amazon MaryFontaine (national share)', profit: 280e6, emp: 1400 },
+  { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, growth: 0.020, auto: 'craft / low automation', color: '#7aa2ff' },
+  { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, growth: 0.015, auto: 'human-centric', color: '#8b93a0' },
+  { type: 'Automated warehouse / logistics', short: 'Warehouse / logistics', profit: 18e6, emp: 80, growth: 0.090, auto: 'highly automated', color: '#cfa340' },
+  { type: 'Lights-out manufacturing plant', short: 'Lights-out plant', profit: 45e6, emp: 45, growth: 0.110, auto: 'fully automated', color: '#ef4444' },
+  { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, growth: 0.070, auto: 'highly automated', color: '#7eb24f' },
 ];
 
-// MaryFontaine's actual business population (Year 0). Summing each sector's
-// targeted charge gives the county MAC pool bottom-up — the profit-weighted
-// average works out to ~22% at k=1 (the base charge), which calibrates the headline.
+// MaryFontaine's business population (Year 0). Summing each sector's targeted
+// charge gives the county MAC pool bottom-up; the profit-weighted average works
+// out to ~22% at k=1 (the base charge), which calibrates the headline.
 // [sector, firm count, profit per firm, employees per firm]
 const MARYFONTAINE = [
   { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14 },
@@ -52,7 +42,21 @@ const MARYFONTAINE = [
   { sector: 'Attributed tech & platforms', count: 1, profitPerFirm: 690e6, empPerFirm: 2950 },
 ];
 
-// Bottom-up county totals at rate k: each sector pays profit × its targeted rate.
+const STORAGE_KEY = 'axion_profitability_v6';
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function fmtBn(v) { return '$' + (v / 1e9).toFixed(2) + 'B'; }
+function fmtMoney(v) {
+  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e5) return '$' + Math.round(v / 1e3) + 'k';
+  return '$' + Math.round(v).toLocaleString();
+}
+function fmtUSD(v) { return '$' + Math.round(v).toLocaleString(); }
+// k is a multiplier (usually 1.0); base charge is BASE_RATE at the reference.
+function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * BASE_RATE * (profit / emp) / REF_PPE); }
+
+// Bottom-up county totals at multiplier k: each sector pays profit × its rate.
 function compositionStats(k) {
   let totalProfit = 0, totalEmp = 0, totalMAC = 0;
   const rows = MARYFONTAINE.map(s => {
@@ -65,74 +69,6 @@ function compositionStats(k) {
     return { sector: s.sector, count: s.count, profit, emp, ppe, rate, mac };
   });
   return { rows, totalProfit, totalEmp, totalMAC, effRate: totalMAC / totalProfit };
-}
-
-// Year-20 moderate basket breakdown (family of 4, $/mo Mond).
-const BASKET_BREAKDOWN = [
-  { cat: 'Housing', lo: 180, hi: 280 },
-  { cat: 'Food & groceries', lo: 95, hi: 135 },
-  { cat: 'Transport', lo: 35, hi: 55 },
-  { cat: 'Healthcare', lo: 45, hi: 70 },
-  { cat: 'Clothing & personal', lo: 30, hi: 45 },
-  { cat: 'Education / misc', lo: 90, hi: 145 },
-];
-
-const STORAGE_KEY = 'axion_profitability_v5';
-
-// ── Helpers ──────────────────────────────────────────────────────────────
-function interpYV(anchors, t) {
-  if (t <= anchors[0].y) return anchors[0].v;
-  if (t >= anchors[anchors.length - 1].y) return anchors[anchors.length - 1].v;
-  for (let i = 0; i < anchors.length - 1; i++) {
-    if (t >= anchors[i].y && t <= anchors[i + 1].y) {
-      const f = (t - anchors[i].y) / (anchors[i + 1].y - anchors[i].y);
-      return anchors[i].v + (anchors[i + 1].v - anchors[i].v) * f;
-    }
-  }
-  return anchors[anchors.length - 1].v;
-}
-function fmtBn(v) { return '$' + (v / 1e9).toFixed(2) + 'B'; }
-function fmtMoney(v) {
-  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-  if (v >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e5) return '$' + Math.round(v / 1e3) + 'k';
-  return '$' + Math.round(v).toLocaleString();
-}
-function fmtUSD(v) { return '$' + Math.round(v).toLocaleString(); }
-// k is a multiplier (usually 1.0); base charge is BASE_RATE at the reference.
-function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * BASE_RATE * (profit / emp) / REF_PPE); }
-
-// ── Model ────────────────────────────────────────────────────────────────
-function runModel(cfg) {
-  const rows = [];
-  const e0 = 1 - UNEMP[0].v / 100;
-  // Effective MAC rate is the profit-weighted average across MaryFontaine's
-  // business mix (with the 50% cap), so the MAC pool is microfounded, not a
-  // flat k × pool. At k=1 (base charge) this is ~22%.
-  const effRate = compositionStats(cfg.k).effRate;
-  for (let t = 0; t <= HORIZON; t++) {
-    const unemp = interpYV(UNEMP, t);
-    const basket = interpYV(BASKET, t);
-    const pool = interpYV(POOL, t);
-    const phase = t < INFLECTION ? 1 : 2;
-    const ubiMo = phase === 1 ? interpYV(UBI_MEANS, t) : interpYV(UBI_FULL, t);
-
-    const profitPerAdult = pool / ADULTS;
-    const macPool = effRate * pool;
-    // Full universal UBI cost only applies once Phase 2 begins.
-    const ubiCostFull = phase === 2 ? interpYV(UBI_FULL, t) * 12 * ADULTS : null;
-    const coverage = ubiCostFull ? macPool / ubiCostFull * 100 : null;
-    const ubiFamily = phase === 2 ? ubiMo * 2 : null;
-
-    const e = 1 - unemp / 100;
-    const poolUnchecked = pool * (e / e0);
-
-    rows.push({
-      t, year: 2026 + t, unemp, basket, pool, phase, ubiMo, ubiFamily,
-      profitPerAdult, macPool, ubiCostFull, coverage, poolUnchecked,
-    });
-  }
-  return rows;
 }
 
 // ── Generic SVG line chart ───────────────────────────────────────────────
@@ -149,16 +85,6 @@ function lineChart(opts) {
     <text x="${PAD.l - 8}" y="${yPx(t) + 4}" fill="var(--dim)" font-size="10" text-anchor="end" font-family="var(--mono)">${opts.yFmt ? opts.yFmt(t) : t}</text>
   `).join('');
   const xLabels = (opts.xTicks || []).map(x => `<text x="${xPx(x)}" y="${H - PAD.b + 16}" fill="var(--dim)" font-size="10" text-anchor="middle" font-family="var(--mono)">${x}</text>`).join('');
-  const vlines = (opts.vlines || []).map(vl => `
-    <line x1="${xPx(vl.x)}" y1="${PAD.t}" x2="${xPx(vl.x)}" y2="${PAD.t + plotH}" stroke="var(--dim)" stroke-width="0.75" stroke-dasharray="3 3"/>
-    <text x="${xPx(vl.x) + 5}" y="${PAD.t + 11}" fill="var(--dim)" font-size="9" font-family="var(--mono)">${vl.label}</text>
-  `).join('');
-
-  const areas = opts.series.filter(s => s.area).map(s => {
-    const top = s.pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xPx(p.x).toFixed(1)} ${yPx(p.y).toFixed(1)}`).join(' ');
-    const base = `L ${xPx(s.pts[s.pts.length - 1].x).toFixed(1)} ${yPx(y0).toFixed(1)} L ${xPx(s.pts[0].x).toFixed(1)} ${yPx(y0).toFixed(1)} Z`;
-    return `<path d="${top} ${base}" fill="${s.color}" fill-opacity="${s.areaOpacity || 0.08}" stroke="none"/>`;
-  }).join('');
 
   const labels = [];
   const paths = opts.series.map(s => {
@@ -178,43 +104,19 @@ function lineChart(opts) {
     <text x="${PAD.l + plotW + 14}" y="${L.placedY + 4}" fill="${L.color}" font-size="10" font-family="var(--mono)">${L.label}</text>
   `).join('');
 
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">${grid}${vlines}${xLabels}${areas}${paths}${labelEls}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">${grid}${xLabels}${paths}${labelEls}</svg>`;
 }
 
-const YEAR_TICKS = [2026, 2031, 2034, 2036, 2041, 2046];
-const yB = v => '$' + (v / 1e9).toFixed(0) + 'B';
-const PHASE_VLINE = { x: 2026 + INFLECTION, label: 'Phase 2 — full UBI →' };
-
-function primaryChart(rows) {
+// Profit growth by company type, indexed to 100 at 2026.
+function profitGrowthChart() {
   return lineChart({
-    height: 380, xDomain: [2026, 2046], yDomain: [0, 14e9],
-    xTicks: YEAR_TICKS, yTicks: [0, 2e9, 4e9, 6e9, 8e9, 10e9, 12e9, 14e9], yFmt: yB,
-    vlines: [PHASE_VLINE],
-    series: [
-      { label: 'With MAC + UBI loop', color: 'var(--ok)', area: true, width: 3,
-        pts: rows.map(r => ({ x: r.year, y: r.pool })) },
-      { label: 'Unchecked capital capture', color: 'var(--crit)', width: 2.5, dashed: true,
-        pts: rows.map(r => ({ x: r.year, y: r.poolUnchecked })) },
-      { label: 'MAC pool', color: 'var(--blue)', width: 2, area: true, areaOpacity: 0.10,
-        pts: rows.map(r => ({ x: r.year, y: r.macPool })) },
-    ],
-  });
-}
-
-function sufficiencyChart(rows) {
-  const maxV = Math.max(...rows.map(r => r.macPool));
-  const yMax = Math.ceil(maxV / 1e9 / 0.5) * 0.5e9 + 0.5e9;
-  const yTicks = []; for (let v = 0; v <= yMax + 1; v += 0.5e9) yTicks.push(v);
-  return lineChart({
-    height: 340, padR: 230, xDomain: [2026, 2046], yDomain: [0, yMax],
-    xTicks: YEAR_TICKS, yTicks, yFmt: v => '$' + (v / 1e9).toFixed(1) + 'B',
-    vlines: [PHASE_VLINE],
-    series: [
-      { label: 'MAC pool (k)', color: 'var(--ok)', area: true, width: 3, areaOpacity: 0.10,
-        pts: rows.map(r => ({ x: r.year, y: r.macPool })) },
-      { label: 'Full UBI cost (Phase 2)', color: 'var(--warn)', width: 2.5,
-        pts: rows.filter(r => r.phase === 2).map(r => ({ x: r.year, y: r.ubiCostFull })) },
-    ],
+    height: 360, padR: 200, xDomain: [2026, 2046], yDomain: [0, 850],
+    xTicks: [2026, 2031, 2036, 2041, 2046], yTicks: [0, 200, 400, 600, 800], yFmt: v => v,
+    series: COMPANIES.map(c => ({
+      label: `${c.short} (${(c.growth * 100).toFixed(1)}%/yr)`,
+      color: c.color, width: c.growth >= 0.05 ? 2.8 : 2,
+      pts: Array.from({ length: HORIZON + 1 }, (_, t) => ({ x: 2026 + t, y: Math.pow(1 + c.growth, t) * 100 })),
+    })),
   });
 }
 
@@ -289,63 +191,6 @@ function compositionTable(k) {
   </table>`;
 }
 
-function rampTable(rows) {
-  const pick = [0, 5, 8, 10, 15, 20].map(t => rows[t]);
-  const body = pick.map(r => {
-    const phaseLabel = r.t < INFLECTION ? 'Phase 1' : (r.t === INFLECTION ? 'Inflection' : 'Phase 2');
-    const ubiCell = r.phase === 1
-      ? `${fmtUSD(r.ubiMo)} <span style="color:var(--dim);">MT</span>`
-      : `${fmtUSD(r.ubiMo)}`;
-    const fam = r.ubiFamily ? fmtUSD(r.ubiFamily) : '—';
-    const cov = r.coverage == null
-      ? '<span style="color:var(--dim);">N/A</span>'
-      : `<strong style="color:var(--ok);">${Math.round(r.coverage)}%</strong>`;
-    return `
-    <tr>
-      <td class="cat">${r.t}</td>
-      <td class="num">${r.unemp.toFixed(1)}%</td>
-      <td class="num">${fmtUSD(r.basket)}</td>
-      <td>${phaseLabel}</td>
-      <td class="num">${ubiCell}</td>
-      <td class="num">${fam}</td>
-      <td class="num" style="color:var(--ok);">${fmtMoney(r.macPool)}</td>
-      <td class="num">${cov}</td>
-    </tr>`;
-  }).join('');
-  return `
-  <table style="table-layout:fixed; width:100%;">
-    <colgroup><col style="width:6%;"><col style="width:11%;"><col style="width:12%;"><col style="width:13%;"><col style="width:16%;"><col style="width:14%;"><col style="width:14%;"><col style="width:14%;"></colgroup>
-    <thead><tr>
-      <th>Year</th>
-      <th class="num">Unemp</th>
-      <th class="num">Basket (fam 4)</th>
-      <th>Phase</th>
-      <th class="num">UBI / adult / mo</th>
-      <th class="num">UBI / fam 4 / mo</th>
-      <th class="num">MAC pool</th>
-      <th class="num">MAC coverage</th>
-    </tr></thead>
-    <tbody>${body}</tbody>
-  </table>`;
-}
-
-function basketBreakdown() {
-  const loTot = BASKET_BREAKDOWN.reduce((s, b) => s + b.lo, 0);
-  const hiTot = BASKET_BREAKDOWN.reduce((s, b) => s + b.hi, 0);
-  const rows = BASKET_BREAKDOWN.map(b => `
-    <tr><td class="cat">${b.cat}</td><td class="num">$${b.lo}–${b.hi}</td></tr>`).join('');
-  return `
-  <table style="table-layout:fixed; width:100%; max-width:460px;">
-    <colgroup><col style="width:62%;"><col style="width:38%;"></colgroup>
-    <thead><tr><th>Category</th><th class="num">Mond / mo</th></tr></thead>
-    <tbody>
-      ${rows}
-      <tr><td class="cat" style="color:var(--dim);">Utilities &amp; infrastructure</td><td class="num" style="color:var(--dim);">in Colony Bill</td></tr>
-      <tr style="border-top:1px solid var(--line-hot);"><td class="cat"><strong>Total</strong></td><td class="num"><strong style="color:var(--headline);">$${loTot}–${hiTot}</strong></td></tr>
-    </tbody>
-  </table>`;
-}
-
 // ── Render ───────────────────────────────────────────────────────────────
 function readCfg() {
   const kEl = document.getElementById('k');
@@ -358,23 +203,16 @@ function render() {
   const kEl = document.getElementById('k'), kOut = document.getElementById('k_v');
   if (kEl && kOut) kOut.textContent = '×' + parseFloat(kEl.value).toFixed(2);
 
-  const rows = runModel(cfg);
   const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
-  set('chart-primary', primaryChart(rows));
-  set('chart-sufficiency', sufficiencyChart(rows));
   set('company-table', companyTable(cfg.k));
   set('composition-table', compositionTable(cfg.k));
-  set('ramp-table', rampTable(rows));
-  set('basket-breakdown', basketBreakdown());
+  set('chart-profit-growth', profitGrowthChart());
 
-  const y20 = rows[20], inflect = rows[INFLECTION];
   const st = compositionStats(cfg.k);
   set('headline-stats', [
-    ['MAC pool · Y0 (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
-    ['Effective MAC rate', (st.effRate * 100).toFixed(1) + '%', 'var(--blue)'],
-    ['MAC pool · Y20', fmtMoney(y20.macPool), 'var(--ok)'],
-    ['Full UBI · fam 4 · Y20', fmtUSD(y20.ubiFamily) + '/mo', 'var(--ok)'],
-    ['MAC coverage · Y20', Math.round(y20.coverage) + '%', 'var(--ok)'],
+    ['Total profit pool', fmtBn(st.totalProfit), 'var(--headline)'],
+    ['MAC pool (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
+    ['Effective MAC rate (% of total profit)', (st.effRate * 100).toFixed(1) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `
     <div class="stat">
       <div class="label">${l}</div>
@@ -384,11 +222,10 @@ function render() {
   const verdict = document.getElementById('verdict');
   if (verdict) {
     verdict.innerHTML =
-      `Phase 1 (Years 0–${INFLECTION - 1}) runs means-tested support during the steep displacement ramp. `
-      + `Full universal UBI begins at the Year-${INFLECTION} inflection (~28% unemployment), where the MAC `
-      + `pool already covers <strong>${Math.round(inflect.coverage)}%</strong> of its cost. With the charge multiplier at ${cfg.k.toFixed(2)}× `
-      + `coverage then climbs to <strong>${Math.round(y20.coverage)}%</strong> by Year 20 — the charge funds `
-      + `UBI with widening headroom as automation expands the profit pool.`;
+      `The <strong>effective MAC rate</strong> is the share of the county's total profit the charge `
+      + `collects — <strong>${(st.effRate * 100).toFixed(1)}%</strong> at the base multiplier (k=${cfg.k.toFixed(2)}). `
+      + `It rises over time because the automated, high-rate firms grow their profits far faster than `
+      + `human-centric ones — shown below.`;
   }
 
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -404,10 +241,8 @@ function buildControls() {
       <span class="ctrl-val" id="k_v"></span>
     </label>
     <div class="assumptions">
-      <span><b>180,000</b> adults</span>
       <span>Per-firm rate = min(<b>50%</b>, k × <b>22%</b> × profit-per-emp / <b>$200k</b>)</span>
       <span>k is a multiplier, usually <b>1.0</b></span>
-      <span>Profit pool Y0 <b>$2.6B</b> (~$14.4k/adult)</span>
       <span>MAC pool summed from the <b>business mix</b> below</span>
     </div>`;
   document.getElementById('k').addEventListener('input', render);

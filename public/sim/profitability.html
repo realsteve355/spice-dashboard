@@ -20,11 +20,11 @@
   .assumptions b { color: var(--txt2); }
 
   /* Headline stats */
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
   .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
-  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
-  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
+  .stat .value { font-size: 24px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--blue); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
   .verdict strong { color: var(--headline); }
 
   /* Formula */
@@ -33,28 +33,23 @@
   .formula-legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 11px; color: var(--txt2); }
   .formula-legend b { color: var(--headline); }
 
-  /* Context + system notes */
+  /* Context */
   .context { border-left: 3px solid var(--blue); }
   .ctx-list { margin: 0; padding-left: 18px; }
-  .ctx-list li, .sys-list li { font-size: 12px; color: var(--txt); line-height: 1.7; margin-bottom: 5px; }
+  .ctx-list li { font-size: 12px; color: var(--txt); line-height: 1.7; margin-bottom: 5px; }
   .ctx-list li b { color: var(--headline); }
-  .sys-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 32px; }
-  .sys-list { margin: 0; padding-left: 18px; }
-  .sys-list li b { color: var(--headline); }
 
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
   .narrative .block { background: var(--panel); border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 16px 20px; margin-bottom: 12px; }
   .narrative .block.proof { border-left-color: var(--blue); }
   .narrative h4 { font-size: 12px; color: var(--headline); letter-spacing: 0.12em; text-transform: uppercase; margin: 0 0 8px; }
   .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0; }
-  .footnote { font-size: 11px; color: var(--faint); margin-top: 10px; line-height: 1.6; }
 </style>
 </head>
 <body data-live-sim>
 
 <header>
   <h1>Corporate Profitability in the Age of AI Abundance</h1>
-  <div class="subtitle">A targeted Market Access Charge on profit-per-employee, funding a phased transition to full UBI</div>
+  <div class="subtitle">A targeted Market Access Charge on profit-per-employee — and how automated profits pull ahead over time</div>
 </header>
 
 <main class="prof">
@@ -118,102 +113,39 @@
     <div id="composition-table"></div>
   </div>
 
-  <!-- Headline stats + verdict -->
+  <!-- Headline + verdict -->
   <div class="card">
     <div class="stat-grid" id="headline-stats"></div>
     <div class="verdict" id="verdict"></div>
   </div>
 
-  <!-- Primary chart -->
+  <!-- Profit evolution -->
   <div class="card">
-    <h3>Total attributable corporate profit pool over time (MaryFontaine)</h3>
+    <h3>How company profits evolve as automation advances</h3>
     <div class="what">
-      The profit pool grows strongly as automation expands margins. With the MAC recycling a share into
-      UBI, consumer demand stays whole and profits grow <em>sustainably</em> (green); left unchecked,
-      demand erodes with employment and realised profit stalls then declines (red). The dashed marker is
-      the Year-8 inflection where full UBI begins.
+      Automation does not lift every business equally. Firms that can automate — logistics, manufacturing,
+      large-scale retail, platforms — cut unit costs and expand output, so their real profits compound
+      quickly. Human-centric and craft businesses — cafés, trades, care, bespoke makers — automate little;
+      their value <em>is</em> the human element, so their profits stay broadly flat in real terms. Each line
+      is indexed to 100 in 2026; the annual real growth rate is shown in the legend.
     </div>
-    <div id="chart-primary"></div>
+    <div id="chart-profit-growth"></div>
   </div>
 
-  <!-- MAC sufficiency chart -->
-  <div class="card">
-    <h3>MAC sufficiency — does the charge fund full UBI?</h3>
-    <div class="what">
-      From the Year-8 inflection onward, the MAC pool (green) sits above the cost of full universal UBI
-      for all 180,000 adults (amber), with the headroom <em>widening</em> over time.
-    </div>
-    <div id="chart-sufficiency"></div>
-  </div>
-
-  <!-- Two-phase ramp table -->
-  <div class="card">
-    <h3>20-year ramp — two phases</h3>
-    <div class="what">
-      <strong style="color:var(--txt2);">Phase 1</strong> (Years 0–7): means-tested support (marked
-      <em>MT</em>) during the steepest displacement. <strong style="color:var(--txt2);">Phase 2</strong>
-      (Year 8+): full universal UBI, with MAC coverage shown against its cost.
-    </div>
-    <div id="ramp-table"></div>
-    <div class="footnote">
-      All figures real (today's prices), county of 180,000 adults. UBI per family of 4 = two adult
-      grants. MAC coverage is N/A in Phase 1 (means-tested, not universal). In the earliest displacement
-      years some transitional sovereign support may be needed before the MAC stands alone.
-    </div>
-  </div>
-
-  <!-- Basket breakdown + system notes -->
-  <div class="two-col">
-    <div class="card">
-      <h3>Year-20 moderate basket — family of 4</h3>
-      <div id="basket-breakdown"></div>
-      <div class="footnote">
-        By Year 20 a family of 4 receives <b style="color:var(--ok);">$788/month</b> in UBI —
-        comfortably covering the $655–950 basket with surplus.
-      </div>
-    </div>
-    <div class="card">
-      <h3>Fisc, Mond, land &amp; pensions</h3>
-      <div class="sys-grid">
-        <ul class="sys-list">
-          <li><b>Fisc:</b> one monthly Colony Company bill</li>
-          <li><b>Billing:</b> automatic LVT with exemptions for UBI residents</li>
-          <li><b>Contribution:</b> small federal / state line</li>
-          <li><b>Process:</b> fully automated and transparent</li>
-        </ul>
-        <ul class="sys-list">
-          <li><b>Mond:</b> starts as a USD-backed stablecoin</li>
-          <li><b>Axion Inc.:</b> gas fees on Mond transactions</li>
-          <li><b>Land:</b> modest LVT with exemptions</li>
-          <li><b>Pensions:</b> grandfathered for existing retirees, phased to UBI-centric</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Narrative -->
   <div class="card narrative">
-    <h3>The argument</h3>
+    <h3>What this means</h3>
     <div class="block">
-      <h4>What the profit pool represents</h4>
-      <p>The Corporate Profit Pool is the total real economic profit (broad EBITDA / operating surplus)
-        attributable to companies whose goods and services are consumed by MaryFontaine residents —
-        local firms plus the proportional share of national and global companies. At ~$14,400 per adult
-        in Year 0 it is consistent with US averages.</p>
-    </div>
-    <div class="block">
-      <h4>A targeted charge that protects human work</h4>
-      <p>Because the rate scales with profit-per-employee, the charge falls hardest on hyper-automated
-        firms and barely touches labour-intensive, human-centric businesses. This protects new post-AI
-        industries and the jobs that remain, while still raising the revenue that funds UBI.</p>
+      <h4>Profits diverge</h4>
+      <p>Over twenty years the automated firms' profits compound four- to eight-fold, while human-centric
+        businesses barely move in real terms. The profit pool tilts steadily toward the most automated
+        companies — the same firms that already sit at the high end of the charge.</p>
     </div>
     <div class="block proof">
-      <h4>A phased transition to full UBI</h4>
-      <p>Means-tested support carries the early displacement years; full universal UBI begins at the
-        Year-8 inflection (~28% unemployment). From there the MAC pool covers UBI with increasing
-        headroom — from ~205% at the inflection to ~341% by Year 20 — as automation expands the profit
-        pool. A low-tax, automated abundance where the profit-per-employee formula keeps human work
-        protected and UBI sustainable.</p>
+      <h4>Why it matters for the charge</h4>
+      <p>The targeted charge falls hardest on high-profit-per-employee firms — and those are exactly the
+        firms whose profits grow. So the county MAC pool rises over time even with the rate structure
+        fixed: a growing share of automation's gains is channelled back into the colony, precisely as
+        human work is displaced.</p>
     </div>
   </div>
 
