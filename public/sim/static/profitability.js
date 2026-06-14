@@ -247,17 +247,17 @@ function yearlyTable(k) {
     <tr>
       <td class="cat">${r.year}</td>
       <td class="num">${fmtBn(r.profit)}</td>
-      <td class="num" style="color:var(--ok);">${fmtMoney(r.mac)}</td>
       <td class="num">${(r.effRate * 100).toFixed(1)}%</td>
+      <td class="num" style="color:var(--ok);">${fmtMoney(r.mac)}</td>
     </tr>`).join('');
   return `
   <table style="table-layout:fixed; width:100%; max-width:580px;">
-    <colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:30%;"><col style="width:20%;"></colgroup>
+    <colgroup><col style="width:20%;"><col style="width:30%;"><col style="width:20%;"><col style="width:30%;"></colgroup>
     <thead><tr>
       <th>Year</th>
       <th class="num">Corporate profit / yr</th>
-      <th class="num">MAC pool / yr</th>
       <th class="num">Effective rate</th>
+      <th class="num">MAC pool / yr</th>
     </tr></thead>
     <tbody>${body}</tbody>
   </table>`;
