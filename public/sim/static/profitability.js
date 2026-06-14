@@ -188,6 +188,6 @@ function buildControls() {
   document.getElementById('k').addEventListener('input', render);
 }
 
-function init() { buildControls(); render(); }
+function init() { buildControls(); render(); MF.load().then(render); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();

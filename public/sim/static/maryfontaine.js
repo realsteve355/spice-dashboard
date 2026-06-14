@@ -52,7 +52,11 @@ const MF = (function () {
   const BASKET_TODAY = 1600;
   const BOND_YIELD = 0.041;   // 10yr Treasury, early 2026
 
-  // ── Cost-deflation category drivers (cost_index, 2026 = 100) — mirror forecasts.py ──
+  // ── Cost-deflation category drivers (cost_index, 2026 = 100) ──
+  // goods + transport are SOURCED from forecasts.json (Manufactured goods /
+  // Transport categories) by load() below — the values here are a fallback
+  // mirror. craftLabour + hospLand are local modelling assumptions (labour does
+  // not deflate; hospitality labour + rising land), not forecast categories.
   const DEFLATION = {
     goods:       [{ y: 2026, v: 100 }, { y: 2030, v: 60 }, { y: 2035, v: 30 }, { y: 2040, v: 15 }, { y: 2045, v: 10 }],
     transport:   [{ y: 2026, v: 100 }, { y: 2030, v: 30 }, { y: 2035, v: 15 }, { y: 2040, v: 10 }, { y: 2045, v: 8 }],
@@ -60,8 +64,10 @@ const MF = (function () {
     hospLand:    [{ y: 2026, v: 100 }, { y: 2045, v: 105 }],  // hospitality labour + rising land
   };
 
-  // ── Research aggregate basket trajectory (mirror forecasts.py basket_trajectory) ──
-  const BASKET_TRAJ = [{ y: 2026, v: 100 }, { y: 2030, v: 62.9 }, { y: 2035, v: 39.1 }, { y: 2040, v: 23.0 }, { y: 2045, v: 15.7 }];
+  // ── Research aggregate basket trajectory ──
+  // SOURCED from forecasts.json (basket_trajectory) by load() below; the values
+  // here are a fallback mirror used until that resolves / if the fetch fails.
+  let BASKET_TRAJ = [{ y: 2026, v: 100 }, { y: 2030, v: 62.9 }, { y: 2035, v: 39.1 }, { y: 2040, v: 23.0 }, { y: 2045, v: 15.7 }];
 
   // ── Colony planning unemployment ramp (% of working-age) — Grok V9.13 ──
   const UNEMP_RAMP = [{ t: 0, v: 4.2 }, { t: 5, v: 18 }, { t: 10, v: 35 }, { t: 15, v: 55 }, { t: 20, v: 75 }];
@@ -188,12 +194,37 @@ const MF = (function () {
     return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">${grid}${xLabels}${areas}${paths}${labelEls}</svg>`;
   }
 
+  // ── Pull basket + goods/transport deflation from forecasts.json ──
+  // forecasts.py (baked to forecasts.json, served at /sim/data/ on the publish
+  // and /api/forecasts on the dev tool) is the AUTHORITATIVE source. Pages call
+  // MF.load().then(render) — they render with the fallback first, then re-render
+  // with the sourced values once this resolves.
+  let _loaded = false;
+  function load() {
+    if (_loaded || typeof fetch === 'undefined') return Promise.resolve();
+    const url = (typeof location !== 'undefined' && location.pathname.indexOf('/sim/') === 0)
+      ? '/sim/data/forecasts.json' : '/api/forecasts';
+    return fetch(url).then(r => r.json()).then(d => {
+      if (d && Array.isArray(d.basket_trajectory)) {
+        BASKET_TRAJ = d.basket_trajectory.map(p => ({ y: p.year, v: p.cost_index }));
+      }
+      if (d && Array.isArray(d.categories)) {
+        const by = {};
+        d.categories.forEach(c => { by[c.name] = c; });
+        const curve = c => c ? [{ y: 2026, v: c.today_index }].concat(c.checkpoints.map(cp => ({ y: cp.year, v: cp.cost_index }))) : null;
+        const g = curve(by['Manufactured goods']); if (g) DEFLATION.goods = g;
+        const t = curve(by['Transport']); if (t) DEFLATION.transport = t;
+      }
+      _loaded = true;
+    }).catch(() => { _loaded = true; });
+  }
+
   return {
     REF_PPE, BASE_RATE, RATE_CAP, HORIZON,
     ADULTS, WORKING_AGE, RETIRED, CHILDREN, TOTAL_POP, BASKET_TODAY, BOND_YIELD,
-    DEFLATION, BASKET_TRAJ, UNEMP_RAMP, MARYFONTAINE,
+    DEFLATION, UNEMP_RAMP, MARYFONTAINE,
     interpYear, interpT, macRate, marginMult, compositionStats, countyByYear,
     unempRateAt, unemployedAt, basketIndexAt, basketPerPersonYr,
-    fmtBn, fmtMoney, mfUSD, lineChart,
+    fmtBn, fmtMoney, mfUSD, lineChart, load,
   };
 })();

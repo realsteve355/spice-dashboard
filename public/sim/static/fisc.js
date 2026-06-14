@@ -169,6 +169,6 @@ function buildControls() {
   document.querySelectorAll('input[name="coverage"]').forEach(el => el.addEventListener('change', render));
 }
 
-function init() { buildControls(); render(); }
+function init() { buildControls(); render(); MF.load().then(render); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
 else init();
