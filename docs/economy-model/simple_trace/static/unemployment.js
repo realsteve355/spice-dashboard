@@ -10,10 +10,10 @@ runPage(d => [
 // working-age cohort; retired and children are out of the labour force.
 // Cohorts held constant for illustration; only the employed/unemployed split moves.
 function renderCohortTable() {
-  const CHILDREN = 120000;     // under 18
-  const RETIRED = 36000;       // ~20% of 180k adults
-  const WORKING_AGE = 144000;  // ~80% of 180k adults
-  const TOTAL = CHILDREN + RETIRED + WORKING_AGE;  // 300,000
+  const CHILDREN = 50000;      // under 18 (~22% of population)
+  const RETIRED = 40000;       // 65+ (~22% of 180k adults)
+  const WORKING_AGE = 140000;  // 18-64 (~78% of 180k adults)
+  const TOTAL = CHILDREN + RETIRED + WORKING_AGE;  // 230,000 (180,000 adults)
   // Colony planning unemployment ramp (matches the profitability + colony model).
   const RAMP = [{ y: 0, v: 4.2 }, { y: 5, v: 18 }, { y: 10, v: 35 }, { y: 15, v: 55 }, { y: 20, v: 75 }];
   const rateAt = t => {
@@ -48,8 +48,8 @@ function renderCohortTable() {
   <div class="card" style="margin-top:14px;">
     <h3>MaryFontaine population &amp; unemployment by year</h3>
     <div style="font-size:12px; color:var(--dim); font-style:italic; margin-bottom:12px; line-height:1.6;">
-      Population of ~300,000 — 144,000 working-age + 36,000 retired + 120,000 children. Unemployment
-      applies only to the working-age cohort; retired and children are outside the labour force. Ramp is
+      Population of ~230,000 — 180,000 adults (140,000 working-age + 40,000 retired) + 50,000 children.
+      Unemployment applies only to the working-age cohort; retired and children are outside the labour force. Ramp is
       the colony planning case (4.2% → 75% over 20 years), matching the profitability and colony models.
     </div>
     <table style="table-layout:fixed; width:100%;">
@@ -68,7 +68,7 @@ function renderCohortTable() {
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Cohort sizes held constant for illustration; only the employed / unemployed split changes. By Year 20,
-      ~108,000 of 144,000 working-age adults are unemployed (work optional) under the colony planning case.
+      ~105,000 of 140,000 working-age adults are unemployed (work optional) under the colony planning case.
     </div>
   </div>`;
 }
