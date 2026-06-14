@@ -15,17 +15,27 @@ const BASE_RATE = 0.22;         // charge rate at the reference when k = 1
 const RATE_CAP = 0.50;          // max share of profit any firm pays
 const HORIZON = 20;             // years (2026–2046)
 
-// Company-type examples. Real profit growth per year is derived from the
-// input-cost deflation on the Cost Deflation page: automatable cost bases
-// collapse (Manufactured goods -11%/yr, Transport -12%/yr, Energy -15%/yr,
-// Intelligence -21%/yr), expanding the margins of automated producers, while
-// human-centric firms are labour-bound (no deflation) and face rising land.
+// Cost-deflation category trajectories (cost_index, 2026 = 100) — mirror the
+// Cost Deflation page. Profit growth here comes from MARGIN EXPANSION as these
+// input costs collapse: margins (and profits) rise fast while costs are falling
+// hardest, then flatten as costs bottom out — so the curves SATURATE, they do
+// not compound exponentially. Human-centric drivers barely deflate (labour) or
+// rise (land), so those profits stay flat to squeezed.
+const DEFLATION = {
+  goods:       [{ y: 2026, v: 100 }, { y: 2030, v: 60 }, { y: 2035, v: 30 }, { y: 2040, v: 15 }, { y: 2045, v: 10 }],
+  transport:   [{ y: 2026, v: 100 }, { y: 2030, v: 30 }, { y: 2035, v: 15 }, { y: 2040, v: 10 }, { y: 2045, v: 8 }],
+  craftLabour: [{ y: 2026, v: 100 }, { y: 2045, v: 90 }],    // craft labour: minimal deflation
+  hospLand:    [{ y: 2026, v: 100 }, { y: 2045, v: 105 }],   // hospitality labour + rising land
+};
+
+// Company-type examples. Each maps to a deflating (or not) cost driver and a
+// starting margin; profit_index = margin(t)/margin(0), so it saturates.
 const COMPANIES = [
-  { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, growth: 0.010, color: '#7aa2ff' },
-  { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, growth: 0.005, color: '#8b93a0' },
-  { type: 'Automated warehouse / logistics', short: 'Warehouse / logistics', profit: 18e6, emp: 80, growth: 0.100, color: '#cfa340' },
-  { type: 'Lights-out manufacturing plant', short: 'Lights-out plant', profit: 45e6, emp: 45, growth: 0.110, color: '#ef4444' },
-  { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, growth: 0.090, color: '#7eb24f' },
+  { type: 'Bespoke handmade furniture', short: 'Bespoke furniture', profit: 1.2e6, emp: 35, driver: 'craftLabour', margin0: 0.40, color: '#7aa2ff' },
+  { type: 'Local café / restaurant', short: 'Café / restaurant', profit: 180e3, emp: 18, driver: 'hospLand', margin0: 0.35, color: '#8b93a0' },
+  { type: 'Automated warehouse / logistics', short: 'Warehouse / logistics', profit: 18e6, emp: 80, driver: 'transport', margin0: 0.25, color: '#cfa340' },
+  { type: 'Lights-out manufacturing plant', short: 'Lights-out plant', profit: 45e6, emp: 45, driver: 'goods', margin0: 0.20, color: '#ef4444' },
+  { type: 'Amazon MaryFontaine (national share)', short: 'Amazon (national)', profit: 280e6, emp: 1400, driver: 'goods', margin0: 0.30, color: '#7eb24f' },
 ];
 
 // MaryFontaine's business population (Year 0). Summing each sector's targeted
@@ -111,15 +121,33 @@ function lineChart(opts) {
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; background:var(--panel2);">${grid}${xLabels}${paths}${labelEls}</svg>`;
 }
 
-// Profit growth by company type, indexed to 100 at 2026.
+function interpYear(anchors, year) {
+  if (year <= anchors[0].y) return anchors[0].v;
+  if (year >= anchors[anchors.length - 1].y) return anchors[anchors.length - 1].v;
+  for (let i = 0; i < anchors.length - 1; i++) {
+    if (year >= anchors[i].y && year <= anchors[i + 1].y) {
+      const f = (year - anchors[i].y) / (anchors[i + 1].y - anchors[i].y);
+      return anchors[i].v + (anchors[i + 1].v - anchors[i].v) * f;
+    }
+  }
+  return anchors[anchors.length - 1].v;
+}
+// Real-profit index (2026 = 100) from margin expansion as the input cost falls.
+// cost(t) starts at (1 - margin0); margin(t) = 1 - (1-margin0) × driver(t)/100;
+// profit_index = margin(t)/margin0. Saturates as the driver bottoms out.
+function profitIndex(c, t) {
+  const cost = interpYear(DEFLATION[c.driver], 2026 + t) / 100;
+  const margin = 1 - (1 - c.margin0) * cost;
+  return margin / c.margin0 * 100;
+}
 function profitGrowthChart() {
   return lineChart({
-    height: 360, padR: 200, xDomain: [2026, 2046], yDomain: [0, 850],
-    xTicks: [2026, 2031, 2036, 2041, 2046], yTicks: [0, 200, 400, 600, 800], yFmt: v => v,
+    height: 360, padR: 210, xDomain: [2026, 2046], yDomain: [0, 500],
+    xTicks: [2026, 2031, 2036, 2041, 2046], yTicks: [0, 100, 200, 300, 400, 500], yFmt: v => v,
     series: COMPANIES.map(c => ({
-      label: `${c.short} (${(c.growth * 100).toFixed(1)}%/yr)`,
-      color: c.color, width: c.growth >= 0.05 ? 2.8 : 2,
-      pts: Array.from({ length: HORIZON + 1 }, (_, t) => ({ x: 2026 + t, y: Math.pow(1 + c.growth, t) * 100 })),
+      label: `${c.short} (×${(profitIndex(c, HORIZON) / 100).toFixed(1)})`,
+      color: c.color, width: c.margin0 <= 0.30 ? 2.8 : 2,
+      pts: Array.from({ length: HORIZON + 1 }, (_, t) => ({ x: 2026 + t, y: profitIndex(c, t) })),
     })),
   });
 }
