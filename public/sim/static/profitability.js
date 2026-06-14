@@ -75,17 +75,18 @@ function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * BASE_RATE * (pr
 
 // Bottom-up county totals at multiplier k: each sector pays profit × its rate.
 function compositionStats(k) {
-  let totalProfit = 0, totalEmp = 0, totalMAC = 0;
+  let totalProfit = 0, totalEmp = 0, totalMAC = 0, totalRevenue = 0;
   const rows = MARYFONTAINE.map(s => {
     const profit = s.count * s.profitPerFirm;
+    const revenue = profit / s.margin0;
     const emp = s.count * s.empPerFirm;
     const ppe = profit / emp;
     const rate = macRate(profit, emp, k);
     const mac = profit * rate;
-    totalProfit += profit; totalEmp += emp; totalMAC += mac;
-    return { sector: s.sector, count: s.count, profit, emp, ppe, rate, mac };
+    totalProfit += profit; totalEmp += emp; totalMAC += mac; totalRevenue += revenue;
+    return { sector: s.sector, count: s.count, revenue, profit, emp, ppe, rate, mac };
   });
-  return { rows, totalProfit, totalEmp, totalMAC, effRate: totalMAC / totalProfit };
+  return { rows, totalProfit, totalEmp, totalMAC, totalRevenue, effRate: totalMAC / totalProfit };
 }
 
 // ── Generic SVG line chart ───────────────────────────────────────────────
@@ -174,6 +175,7 @@ function profitGrowthChart() {
 // ── Tables ───────────────────────────────────────────────────────────────
 function companyTable(k) {
   const body = COMPANIES.map(c => {
+    const revenue = c.profit / c.margin0;
     const ppe = c.profit / c.emp;
     const rate = macRate(c.profit, c.emp, k);
     const charge = c.profit * rate;
@@ -181,6 +183,7 @@ function companyTable(k) {
     return `
     <tr>
       <td class="cat" style="white-space:normal;">${c.type}</td>
+      <td class="num">${fmtMoney(revenue)}</td>
       <td class="num">${fmtMoney(c.profit)}</td>
       <td class="num">${c.emp.toLocaleString()}</td>
       <td class="num">${fmtUSD(ppe)}</td>
@@ -190,9 +193,10 @@ function companyTable(k) {
   }).join('');
   return `
   <table style="table-layout:fixed; width:100%;">
-    <colgroup><col style="width:30%;"><col style="width:13%;"><col style="width:11%;"><col style="width:15%;"><col style="width:15%;"><col style="width:16%;"></colgroup>
+    <colgroup><col style="width:26%;"><col style="width:13%;"><col style="width:12%;"><col style="width:10%;"><col style="width:13%;"><col style="width:13%;"><col style="width:13%;"></colgroup>
     <thead><tr>
       <th>Company type</th>
+      <th class="num">Annual revenue</th>
       <th class="num">Annual profit</th>
       <th class="num">Employees</th>
       <th class="num">Profit / emp</th>
@@ -209,6 +213,7 @@ function compositionTable(k) {
     <tr>
       <td class="cat" style="white-space:normal;">${r.sector}</td>
       <td class="num">${r.count.toLocaleString()}</td>
+      <td class="num">${fmtMoney(r.revenue)}</td>
       <td class="num">${fmtMoney(r.profit)}</td>
       <td class="num">${Math.round(r.emp).toLocaleString()}</td>
       <td class="num">${fmtUSD(r.ppe)}</td>
@@ -218,10 +223,11 @@ function compositionTable(k) {
   const avgPpe = st.totalProfit / st.totalEmp;
   return `
   <table style="table-layout:fixed; width:100%;">
-    <colgroup><col style="width:28%;"><col style="width:9%;"><col style="width:14%;"><col style="width:13%;"><col style="width:13%;"><col style="width:10%;"><col style="width:13%;"></colgroup>
+    <colgroup><col style="width:24%;"><col style="width:8%;"><col style="width:13%;"><col style="width:13%;"><col style="width:12%;"><col style="width:12%;"><col style="width:8%;"><col style="width:10%;"></colgroup>
     <thead><tr>
       <th>Sector</th>
       <th class="num">Firms</th>
+      <th class="num">Revenue</th>
       <th class="num">Total profit</th>
       <th class="num">Employees</th>
       <th class="num">Profit / emp</th>
@@ -232,6 +238,7 @@ function compositionTable(k) {
       <tr style="border-top:1px solid var(--line-hot);">
         <td class="cat"><strong>MaryFontaine total</strong></td>
         <td class="num"><strong>${st.rows.reduce((s, r) => s + r.count, 0).toLocaleString()}</strong></td>
+        <td class="num"><strong>${fmtBn(st.totalRevenue)}</strong></td>
         <td class="num"><strong style="color:var(--headline);">${fmtBn(st.totalProfit)}</strong></td>
         <td class="num"><strong>${Math.round(st.totalEmp).toLocaleString()}</strong></td>
         <td class="num"><strong>${fmtUSD(avgPpe)}</strong></td>
