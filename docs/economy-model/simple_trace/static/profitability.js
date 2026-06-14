@@ -32,6 +32,39 @@ const COMPANIES = [
   { type: 'Amazon MaryFontaine (national share)', profit: 280e6, emp: 1400 },
 ];
 
+// MaryFontaine's actual business population (Year 0). Summing each sector's
+// targeted charge gives the county MAC pool bottom-up — the profit-weighted
+// average works out to ~22% at k=0.22, which is what calibrates the headline.
+// [sector, firm count, profit per firm, employees per firm]
+const MARYFONTAINE = [
+  { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14 },
+  { sector: 'Retail & local services', count: 440, profitPerFirm: 70e3, empPerFirm: 9 },
+  { sector: 'Trades & construction', count: 500, profitPerFirm: 90e3, empPerFirm: 7 },
+  { sector: 'Professional & financial', count: 230, profitPerFirm: 250e3, empPerFirm: 11 },
+  { sector: 'Healthcare & clinics', count: 165, profitPerFirm: 350e3, empPerFirm: 16 },
+  { sector: 'Education & childcare', count: 110, profitPerFirm: 60e3, empPerFirm: 22 },
+  { sector: 'Local manufacturing & workshops', count: 75, profitPerFirm: 600e3, empPerFirm: 28 },
+  { sector: 'Regional automated logistics', count: 14, profitPerFirm: 18e6, empPerFirm: 90 },
+  { sector: 'Attributed national retail share', count: 1, profitPerFirm: 800e6, empPerFirm: 3850 },
+  { sector: 'Attributed manufacturing & energy', count: 1, profitPerFirm: 600e6, empPerFirm: 2680 },
+  { sector: 'Attributed tech & platforms', count: 1, profitPerFirm: 690e6, empPerFirm: 2950 },
+];
+
+// Bottom-up county totals at rate k: each sector pays profit × its targeted rate.
+function compositionStats(k) {
+  let totalProfit = 0, totalEmp = 0, totalMAC = 0;
+  const rows = MARYFONTAINE.map(s => {
+    const profit = s.count * s.profitPerFirm;
+    const emp = s.count * s.empPerFirm;
+    const ppe = profit / emp;
+    const rate = macRate(profit, emp, k);
+    const mac = profit * rate;
+    totalProfit += profit; totalEmp += emp; totalMAC += mac;
+    return { sector: s.sector, count: s.count, profit, emp, ppe, rate, mac };
+  });
+  return { rows, totalProfit, totalEmp, totalMAC, effRate: totalMAC / totalProfit };
+}
+
 // Year-20 moderate basket breakdown (family of 4, $/mo Mond).
 const BASKET_BREAKDOWN = [
   { cat: 'Housing', lo: 180, hi: 280 },
@@ -70,6 +103,10 @@ function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * (profit / emp) 
 function runModel(cfg) {
   const rows = [];
   const e0 = 1 - UNEMP[0].v / 100;
+  // Effective MAC rate is the profit-weighted average across MaryFontaine's
+  // business mix (with the 50% cap), so the MAC pool is microfounded, not a
+  // flat k × pool. At k=0.22 this is ~22%.
+  const effRate = compositionStats(cfg.k).effRate;
   for (let t = 0; t <= HORIZON; t++) {
     const unemp = interpYV(UNEMP, t);
     const basket = interpYV(BASKET, t);
@@ -78,7 +115,7 @@ function runModel(cfg) {
     const ubiMo = phase === 1 ? interpYV(UBI_MEANS, t) : interpYV(UBI_FULL, t);
 
     const profitPerAdult = pool / ADULTS;
-    const macPool = cfg.k * pool;
+    const macPool = effRate * pool;
     // Full universal UBI cost only applies once Phase 2 begins.
     const ubiCostFull = phase === 2 ? interpYV(UBI_FULL, t) * 12 * ADULTS : null;
     const coverage = ubiCostFull ? macPool / ubiCostFull * 100 : null;
@@ -210,6 +247,45 @@ function companyTable(k) {
   </table>`;
 }
 
+function compositionTable(k) {
+  const st = compositionStats(k);
+  const body = st.rows.map(r => `
+    <tr>
+      <td class="cat" style="white-space:normal;">${r.sector}</td>
+      <td class="num">${r.count.toLocaleString()}</td>
+      <td class="num">${fmtMoney(r.profit)}</td>
+      <td class="num">${Math.round(r.emp).toLocaleString()}</td>
+      <td class="num">${fmtUSD(r.ppe)}</td>
+      <td class="num">${(r.rate * 100).toFixed(1)}%</td>
+      <td class="num" style="color:var(--ok);">${fmtMoney(r.mac)}</td>
+    </tr>`).join('');
+  const avgPpe = st.totalProfit / st.totalEmp;
+  return `
+  <table style="table-layout:fixed; width:100%;">
+    <colgroup><col style="width:28%;"><col style="width:9%;"><col style="width:14%;"><col style="width:13%;"><col style="width:13%;"><col style="width:10%;"><col style="width:13%;"></colgroup>
+    <thead><tr>
+      <th>Sector</th>
+      <th class="num">Firms</th>
+      <th class="num">Total profit</th>
+      <th class="num">Employees</th>
+      <th class="num">Profit / emp</th>
+      <th class="num">Rate</th>
+      <th class="num">MAC</th>
+    </tr></thead>
+    <tbody>${body}
+      <tr style="border-top:1px solid var(--line-hot);">
+        <td class="cat"><strong>MaryFontaine total</strong></td>
+        <td class="num"><strong>${st.rows.reduce((s, r) => s + r.count, 0).toLocaleString()}</strong></td>
+        <td class="num"><strong style="color:var(--headline);">${fmtBn(st.totalProfit)}</strong></td>
+        <td class="num"><strong>${Math.round(st.totalEmp).toLocaleString()}</strong></td>
+        <td class="num"><strong>${fmtUSD(avgPpe)}</strong></td>
+        <td class="num"><strong>${(st.effRate * 100).toFixed(1)}%</strong></td>
+        <td class="num"><strong style="color:var(--ok);">${fmtMoney(st.totalMAC)}</strong></td>
+      </tr>
+    </tbody>
+  </table>`;
+}
+
 function rampTable(rows) {
   const pick = [0, 5, 8, 10, 15, 20].map(t => rows[t]);
   const body = pick.map(r => {
@@ -284,16 +360,18 @@ function render() {
   set('chart-primary', primaryChart(rows));
   set('chart-sufficiency', sufficiencyChart(rows));
   set('company-table', companyTable(cfg.k));
+  set('composition-table', compositionTable(cfg.k));
   set('ramp-table', rampTable(rows));
   set('basket-breakdown', basketBreakdown());
 
   const y20 = rows[20], inflect = rows[INFLECTION];
+  const st = compositionStats(cfg.k);
   set('headline-stats', [
-    ['Profit pool · Y20', fmtBn(y20.pool), 'var(--headline)'],
+    ['MAC pool · Y0 (from business mix)', fmtMoney(st.totalMAC), 'var(--ok)'],
+    ['Effective MAC rate', (st.effRate * 100).toFixed(1) + '%', 'var(--blue)'],
     ['MAC pool · Y20', fmtMoney(y20.macPool), 'var(--ok)'],
     ['Full UBI · fam 4 · Y20', fmtUSD(y20.ubiFamily) + '/mo', 'var(--ok)'],
     ['MAC coverage · Y20', Math.round(y20.coverage) + '%', 'var(--ok)'],
-    ['Full UBI begins', 'Year ' + INFLECTION + ' · ' + Math.round(inflect.coverage) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `
     <div class="stat">
       <div class="label">${l}</div>
@@ -326,8 +404,8 @@ function buildControls() {
       <span><b>180,000</b> adults</span>
       <span>Charge rate per firm = min(<b>50%</b>, k × profit-per-emp / <b>$200k</b>)</span>
       <span>Profit pool Y0 <b>$2.6B</b> (~$14.4k/adult)</span>
+      <span>MAC pool summed from the <b>business mix</b> below (not flat k×pool)</span>
       <span>Full UBI from <b>Year ${INFLECTION}</b> (inflection)</span>
-      <span>Deflation → <a href="cost-deflation" style="color:var(--ok);">research Aggregate Basket</a></span>
     </div>`;
   document.getElementById('k').addEventListener('input', render);
 }

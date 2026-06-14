@@ -91,20 +91,31 @@
     </div>
   </div>
 
+  <!-- Controls -->
+  <div class="card">
+    <h3>Input — Market Access Charge rate</h3>
+    <div id="controls"></div>
+  </div>
+
   <!-- Company examples -->
   <div class="card">
     <h3>How different firms pay (computed from the formula)</h3>
     <div class="what">
-      Five company types across the automation spectrum. Adjust k below — every firm's rate moves with
+      Five company types across the automation spectrum. Adjust k above — every firm's rate moves with
       it, but automated firms always pay the larger share.
     </div>
     <div id="company-table"></div>
   </div>
 
-  <!-- Controls -->
+  <!-- MaryFontaine business composition -->
   <div class="card">
-    <h3>Input — Market Access Charge rate</h3>
-    <div id="controls"></div>
+    <h3>MaryFontaine's businesses — and the MAC pool they generate</h3>
+    <div class="what">
+      The county's actual business mix. Applying the targeted charge to every firm and summing gives the
+      MAC pool <em>bottom-up</em> — not a flat k × pool. The profit-weighted average rate is what the
+      base k = 0.22 represents; move k above and the whole pool recomputes.
+    </div>
+    <div id="composition-table"></div>
   </div>
 
   <!-- Headline stats + verdict -->
