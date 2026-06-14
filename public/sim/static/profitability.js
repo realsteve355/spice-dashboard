@@ -6,14 +6,16 @@
 // All figures real (today's prices).
 //
 // Per-firm charge:  MAC_i = profit_i × rate_i
-//   rate_i = min(RATE_CAP, k × (profit_i / employees_i) / REF_PPE)
-// k is the economy-wide average rate (profit-weighted); automated firms (high
-// profit per employee) pay a larger share, labour-intensive firms pay little.
+//   rate_i = min(RATE_CAP, k × BASE_RATE × (profit_i / employees_i) / REF_PPE)
+// k is a multiplier (a constant, usually 1.0); BASE_RATE (22%) is the charge at
+// the $200k/employee reference. Automated firms (high profit per employee) pay a
+// larger share; labour-intensive firms pay little.
 
 const ADULTS = 180000;
 const HORIZON = 20;
 const INFLECTION = 8;            // year means-tested support -> full universal UBI
-const REF_PPE = 200000;         // profit/employee mapping to the average rate
+const REF_PPE = 200000;         // profit/employee reference (maps to the base rate)
+const BASE_RATE = 0.22;         // charge rate at the reference when k = 1
 const RATE_CAP = 0.50;          // max share of profit any firm pays
 
 // Anchor trajectories {y: year-from-2026, v: value}.
@@ -34,7 +36,7 @@ const COMPANIES = [
 
 // MaryFontaine's actual business population (Year 0). Summing each sector's
 // targeted charge gives the county MAC pool bottom-up — the profit-weighted
-// average works out to ~22% at k=0.22, which is what calibrates the headline.
+// average works out to ~22% at k=1 (the base charge), which calibrates the headline.
 // [sector, firm count, profit per firm, employees per firm]
 const MARYFONTAINE = [
   { sector: 'Cafés & restaurants', count: 340, profitPerFirm: 45e3, empPerFirm: 14 },
@@ -97,7 +99,8 @@ function fmtMoney(v) {
   return '$' + Math.round(v).toLocaleString();
 }
 function fmtUSD(v) { return '$' + Math.round(v).toLocaleString(); }
-function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * (profit / emp) / REF_PPE); }
+// k is a multiplier (usually 1.0); base charge is BASE_RATE at the reference.
+function macRate(profit, emp, k) { return Math.min(RATE_CAP, k * BASE_RATE * (profit / emp) / REF_PPE); }
 
 // ── Model ────────────────────────────────────────────────────────────────
 function runModel(cfg) {
@@ -105,7 +108,7 @@ function runModel(cfg) {
   const e0 = 1 - UNEMP[0].v / 100;
   // Effective MAC rate is the profit-weighted average across MaryFontaine's
   // business mix (with the 50% cap), so the MAC pool is microfounded, not a
-  // flat k × pool. At k=0.22 this is ~22%.
+  // flat k × pool. At k=1 (base charge) this is ~22%.
   const effRate = compositionStats(cfg.k).effRate;
   for (let t = 0; t <= HORIZON; t++) {
     const unemp = interpYV(UNEMP, t);
@@ -346,14 +349,14 @@ function basketBreakdown() {
 // ── Render ───────────────────────────────────────────────────────────────
 function readCfg() {
   const kEl = document.getElementById('k');
-  const k = kEl ? parseFloat(kEl.value) : 0.22;
-  return { k: isNaN(k) ? 0.22 : k };
+  const k = kEl ? parseFloat(kEl.value) : 1.0;
+  return { k: isNaN(k) ? 1.0 : k };
 }
 
 function render() {
   const cfg = readCfg();
   const kEl = document.getElementById('k'), kOut = document.getElementById('k_v');
-  if (kEl && kOut) kOut.textContent = parseFloat(kEl.value).toFixed(2);
+  if (kEl && kOut) kOut.textContent = '×' + parseFloat(kEl.value).toFixed(2);
 
   const rows = runModel(cfg);
   const set = (id, html) => { const e = document.getElementById(id); if (e) e.innerHTML = html; };
@@ -383,7 +386,7 @@ function render() {
     verdict.innerHTML =
       `Phase 1 (Years 0–${INFLECTION - 1}) runs means-tested support during the steep displacement ramp. `
       + `Full universal UBI begins at the Year-${INFLECTION} inflection (~28% unemployment), where the MAC `
-      + `pool already covers <strong>${Math.round(inflect.coverage)}%</strong> of its cost. At k=${cfg.k.toFixed(2)} `
+      + `pool already covers <strong>${Math.round(inflect.coverage)}%</strong> of its cost. With the charge multiplier at ${cfg.k.toFixed(2)}× `
       + `coverage then climbs to <strong>${Math.round(y20.coverage)}%</strong> by Year 20 — the charge funds `
       + `UBI with widening headroom as automation expands the profit pool.`;
   }
@@ -396,16 +399,16 @@ function buildControls() {
   if (!host) return;
   host.innerHTML = `
     <label class="ctrl">
-      <span class="ctrl-label">Market Access Charge rate (k) — economy-wide average</span>
-      <input type="range" id="k" min="0.15" max="0.30" step="0.01" value="0.22">
+      <span class="ctrl-label">Charge multiplier (k) — a constant, usually 1.0</span>
+      <input type="range" id="k" min="0.5" max="2.0" step="0.05" value="1.0">
       <span class="ctrl-val" id="k_v"></span>
     </label>
     <div class="assumptions">
       <span><b>180,000</b> adults</span>
-      <span>Charge rate per firm = min(<b>50%</b>, k × profit-per-emp / <b>$200k</b>)</span>
+      <span>Per-firm rate = min(<b>50%</b>, k × <b>22%</b> × profit-per-emp / <b>$200k</b>)</span>
+      <span>k is a multiplier, usually <b>1.0</b></span>
       <span>Profit pool Y0 <b>$2.6B</b> (~$14.4k/adult)</span>
-      <span>MAC pool summed from the <b>business mix</b> below (not flat k×pool)</span>
-      <span>Full UBI from <b>Year ${INFLECTION}</b> (inflection)</span>
+      <span>MAC pool summed from the <b>business mix</b> below</span>
     </div>`;
   document.getElementById('k').addEventListener('input', render);
 }

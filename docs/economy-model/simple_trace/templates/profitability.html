@@ -80,31 +80,31 @@
     </div>
     <div class="formula">
       MAC<sub>i</sub> = &Pi;<sub>i</sub> &times; r<sub>i</sub>&nbsp;&nbsp;&nbsp;
-      r<sub>i</sub> = min( 50%, &nbsp;k &times; (&Pi;<sub>i</sub> / E<sub>i</sub>) / $200k )
-      <div class="small">rate scales with profit per employee, relative to a $200k reference, capped at 50%</div>
+      r<sub>i</sub> = min( 50%, &nbsp;k &times; 22% &times; (&Pi;<sub>i</sub> / E<sub>i</sub>) / $200k )
+      <div class="small">base charge 22% at $200k profit-per-employee; k is a multiplier (usually 1.0); capped at 50%</div>
     </div>
     <div class="formula-legend">
       <span><b>&Pi;<sub>i</sub></b> annual profit of company i</span>
       <span><b>E<sub>i</sub></b> full-time-equivalent employees</span>
-      <span><b>k</b> economy-wide average rate (profit-weighted), base 0.22</span>
-      <span><b>$200k/emp</b> maps to the average rate</span>
+      <span><b>k</b> charge multiplier — a constant, usually 1.0</span>
+      <span><b>22% @ $200k/emp</b> the base charge at the reference</span>
     </div>
-  </div>
-
-  <!-- Controls -->
-  <div class="card">
-    <h3>Input — Market Access Charge rate</h3>
-    <div id="controls"></div>
   </div>
 
   <!-- Company examples -->
   <div class="card">
     <h3>How different firms pay (computed from the formula)</h3>
     <div class="what">
-      Five company types across the automation spectrum. Adjust k above — every firm's rate moves with
-      it, but automated firms always pay the larger share.
+      Five company types across the automation spectrum. Adjust the k multiplier below — every firm's
+      rate moves with it, but automated firms always pay the larger share.
     </div>
     <div id="company-table"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>Input — charge multiplier (k)</h3>
+    <div id="controls"></div>
   </div>
 
   <!-- MaryFontaine business composition -->
@@ -112,8 +112,8 @@
     <h3>MaryFontaine's businesses — and the MAC pool they generate</h3>
     <div class="what">
       The county's actual business mix. Applying the targeted charge to every firm and summing gives the
-      MAC pool <em>bottom-up</em> — not a flat k × pool. The profit-weighted average rate is what the
-      base k = 0.22 represents; move k above and the whole pool recomputes.
+      MAC pool <em>bottom-up</em> — not a flat k × pool. At the base charge (k = 1.0) the profit-weighted
+      average lands near 22%; move the k multiplier above and the whole pool recomputes.
     </div>
     <div id="composition-table"></div>
   </div>
