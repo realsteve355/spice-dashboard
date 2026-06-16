@@ -1,5 +1,8 @@
 {
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js vercel.json",
+  "redirects": [
+    { "source": "/sim/community", "destination": "/sim/firm", "permanent": true }
+  ],
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
