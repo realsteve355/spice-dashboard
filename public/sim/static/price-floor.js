@@ -77,8 +77,8 @@ function render() {
   set('headline-stats', [
     ['Cheaper production alone · 2046', Math.round(b.naive) + '%', 'var(--dim)'],
     ['With the basic income funded · 2046', Math.round(b.actual) + '%', 'var(--ok)'],
-    ['Prices held up by the charge', '+' + Math.round(b.actual - b.naive) + ' points', 'var(--warn)'],
-    ['Spending paid by the basic income · 2046', Math.round(b.ubiShare * 100) + '%', 'var(--blue)'],
+    ['How much higher prices stay · 2046', '+' + Math.round(b.actual - b.naive) + ' points', 'var(--warn)'],
+    ['People living on the basic income · 2046', Math.round(b.U * 100) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `<div class="stat"><div class="label">${l}</div><div class="value" style="color:${c};">${v}</div></div>`).join(''));
 
   // a "near-total automation" reference, holding the same cfg
