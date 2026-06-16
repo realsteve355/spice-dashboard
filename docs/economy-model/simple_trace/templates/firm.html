@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A factory through automation</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  main.firm { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 90px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 760px; margin-bottom: 10px; }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+  .assumptions b { color: var(--txt2); font-weight: normal; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.7; }
+  .verdict strong { color: var(--headline); }
+
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .narrative strong { color: var(--headline); }
+  dl.defs { margin: 4px 0 0; font-size: 13px; color: var(--txt); line-height: 1.6; }
+  dl.defs dt { color: var(--headline); margin-top: 8px; }
+  dl.defs dd { margin: 0 0 0 0; color: var(--txt2); }
+</style>
+</head>
+<body data-live-sim>
+
+<header>
+  <h1>A factory through automation</h1>
+  <div class="subtitle">Following one ordinary factory's accounts as machines take over its work</div>
+</header>
+
+<main class="firm">
+
+  <!-- Intro + definitions -->
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>What we are looking at</h3>
+    <div class="narrative">
+      <p>This page follows a single factory — a maker of everyday goods that employs
+        <strong>100 people</strong> today — as machines gradually take over its work. The aim is to see,
+        in plain figures, what happens to the money as it does so. Five numbers in its accounts:</p>
+      <dl class="defs">
+        <dt>Sales (revenue)</dt><dd>the money the factory receives from selling what it makes.</dd>
+        <dt>Wages</dt><dd>what it pays the people who work there.</dd>
+        <dt>Materials &amp; energy</dt><dd>what it pays for parts, raw materials and power.</dd>
+        <dt>Profit</dt><dd>what is left for the owners once wages, materials and the charge are paid.</dd>
+        <dt>The charge</dt><dd>a payment the factory makes that grows as it replaces people with machines.
+          The money it raises is paid out as a <strong>basic income</strong> to people who no longer have a job.
+          (Across the whole colony this charge is the Market Access Charge, or MAC.)</dd>
+      </dl>
+      <p style="margin-top:12px;">The question this page answers: as the factory automates and its goods get
+        cheaper, can it still make a profit <em>and</em> pay a charge large enough to give the people it lets
+        go an income to live on?</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>Two things you can change</h3>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Headline + verdict -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <!-- Accounts: today vs automated -->
+  <div class="card">
+    <h3>The factory's accounts — today and once automated</h3>
+    <div class="what">
+      Sales, less wages, less materials, less the charge, leaves profit. The wages it stops paying are far
+      larger than the charge it takes on — so even with lower sales, the profit holds up.
+    </div>
+    <div id="accounts"></div>
+  </div>
+
+  <!-- The path -->
+  <div class="card">
+    <h3>The path, year by year</h3>
+    <div class="what">
+      As the factory automates, the <em>wages</em> it pays fall away; the <em>charge</em> that funds a basic
+      income for the people who left rises to take their place; and <em>profit</em> rises. The money that used
+      to leave as wages now leaves partly as the charge and partly as profit — none of it disappears.
+    </div>
+    <div id="path-chart"></div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
+      For the whole-colony version of this — every firm's charge added up against the total basic-income
+      bill — see the <a href="fisc" style="color:var(--ok);">Fisc</a> page.
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/nav.js"></script>
+<script src="/static/maryfontaine.js"></script>
+<script src="/static/firm.js"></script>
+</body>
+</html>
