@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>How far do prices actually fall?</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  main.pf { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 780px; margin-bottom: 10px; }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+  .assumptions b { color: var(--txt2); font-weight: normal; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.7; }
+  .verdict strong { color: var(--headline); }
+
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .narrative strong { color: var(--headline); }
+  .eq { background: #0b0d12; border: 1px solid var(--line-hot); padding: 12px 16px; margin: 10px 0 2px; font-size: 14px; color: var(--headline); text-align: center; line-height: 1.5; }
+  .eq small { color: var(--dim); font-size: 11px; }
+</style>
+</head>
+<body data-live-sim>
+
+<header>
+  <h1>How far do prices actually fall?</h1>
+  <div class="subtitle">Solving for the price floor once a UBI has to be funded out of those same prices</div>
+</header>
+
+<main class="pf">
+
+  <!-- Intro -->
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>The question</h3>
+    <div class="narrative">
+      <p>The usual story is that AI and robots drive prices down to a small fraction of today's — manufactured
+        goods to ~10%, and so on. That assumes the <strong>whole</strong> productivity saving is passed through
+        to lower prices. But there is a catch: the workers replaced by machines need an income to buy those
+        goods, or there is no one to sell to. That income — a <strong>basic income</strong> — is funded by a
+        charge on production (the Market Access Charge), and that charge is part of <strong>what everyone
+        buys</strong>.</p>
+      <p>So the price can't fall below the level needed to fund the very demand that buys it. Prices and the
+        basic income are drawn from the same productivity gain — you can take it as cheaper prices, or as
+        income to keep people buying, but not fully as both. This page solves for where the price actually
+        settles:</p>
+      <div class="eq">
+        price&nbsp;=&nbsp;(cost after productivity)&nbsp;÷&nbsp;(1&nbsp;−&nbsp;share of spending that is basic income)<br>
+        <small>the top falls as machines get cheaper · the bottom pushes the price back up as more people live on the basic income</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>What you can change</h3>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Headline + verdict -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <h3>The price level, 2026–2046</h3>
+    <div class="what">
+      The <em>dashed</em> line is the naive floor — where prices would go if every saving became a price cut.
+      The <em>solid</em> line is where prices actually settle once the basic income has to be funded out of
+      them. The gap between the two is the productivity gain that becomes income instead of cheaper prices.
+    </div>
+    <div id="price-chart"></div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
+      This is the same balance the <a href="fisc" style="color:var(--ok);">Fisc</a> page solves for the charge —
+      here it is solved for the price level instead. The naive per-category curves are on the
+      <a href="cost-deflation" style="color:var(--ok);">Cost Deflation</a> page.
+    </div>
+  </div>
+
+</main>
+
+<script src="/static/nav.js"></script>
+<script src="/static/maryfontaine.js"></script>
+<script src="/static/price-floor.js"></script>
+</body>
+</html>
