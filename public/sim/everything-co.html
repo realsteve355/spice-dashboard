@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Everything &amp; Co</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.eco { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 780px; margin-bottom: 10px; }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+  .assumptions b { color: var(--txt2); font-weight: normal; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 21px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.7; }
+  .verdict strong { color: var(--headline); }
+
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .narrative strong { color: var(--headline); }
+</style>
+</head>
+<body data-live-sim>
+
+<header>
+  <h1>Everything &amp; Co</h1>
+  <div class="subtitle">One company makes the whole basket. As it automates, can a charge on it fund a basic income — and what happens to the price?</div>
+</header>
+
+<main class="eco">
+
+  <!-- Intro -->
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>The set-up</h3>
+    <div class="narrative">
+      <p>Imagine a single company — <strong>Everything &amp; Co</strong> — that makes the whole basket of
+        essentials for a town of <strong>1,000 working-age people</strong>, one basket each. Today a basket
+        costs <strong>$20,000</strong>, and the company makes a <strong>15% profit</strong> on it.</p>
+      <p>Over 20 years it automates: the <strong>cost of making a basket falls from 100% to 15%</strong> of
+        today. As it does, more and more people are out of work — from 4% to 75% — and each of them needs a
+        <strong>basic income</strong> large enough to buy a basket. That basic income is funded by a
+        <strong>charge</strong> on Everything &amp; Co (the Market Access Charge).</p>
+      <p>The catch: a charge can only be paid out of a <strong>surplus</strong>, and a surplus only exists if
+        the basket's <strong>price stays above the cost of making it</strong>. So the price can't simply fall
+        to the cheaper cost — it has to stay high enough to raise the basic income for everyone now out of
+        work. This page solves, year by year, for the price where the charge exactly funds the basic income —
+        and shows the company's own profit getting squeezed as it does.</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>What you can change</h3>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Headline + verdict -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <!-- Accounts -->
+  <div class="card">
+    <h3>Everything &amp; Co's accounts — today and 2046</h3>
+    <div class="what">
+      The cost of making a basket collapses, but the price holds far higher — the gap is the charge that funds
+      the basic income. Read the bottom line: by 2046 the charge has taken the company's whole margin.
+    </div>
+    <div id="pnl-table"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <h3>Cost to make a basket vs its price</h3>
+    <div class="what">
+      The <em>dashed</em> line is what a basket costs to make — it falls to a fraction of today. The
+      <em>solid</em> line is the price people pay — it falls far less, because it has to carry the basic
+      income for everyone out of work. The gap between them is that charge.
+    </div>
+    <div id="price-chart"></div>
+  </div>
+
+  <!-- Year table -->
+  <div class="card">
+    <h3>Year by year</h3>
+    <div id="year-table"></div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
+      The charge each year equals the basic-income bill (people out of work × the basket price). "E&amp;Co
+      keeps" is its gross profit after paying the charge — what's left for the owners.
+    </div>
+  </div>
+
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/maryfontaine.js"></script>
+<script src="/sim/static/everything-co.js"></script>
+</body>
+</html>
