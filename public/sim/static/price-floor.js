@@ -75,10 +75,10 @@ function render() {
 
   const b = rows[HORIZON];
   set('headline-stats', [
-    ['Naive floor · 2046 (assumed)', Math.round(b.naive) + '%', 'var(--dim)'],
-    ['Actual floor · 2046 (UBI funded)', Math.round(b.actual) + '%', 'var(--ok)'],
-    ['Deflation recycled into demand', '+' + Math.round(b.actual - b.naive) + ' pts', 'var(--warn)'],
-    ['Share of spending that is UBI · 2046', Math.round(b.ubiShare * 100) + '%', 'var(--blue)'],
+    ['Cheaper production alone · 2046', Math.round(b.naive) + '%', 'var(--dim)'],
+    ['With the basic income funded · 2046', Math.round(b.actual) + '%', 'var(--ok)'],
+    ['Prices held up by the charge', '+' + Math.round(b.actual - b.naive) + ' points', 'var(--warn)'],
+    ['Spending paid by the basic income · 2046', Math.round(b.ubiShare * 100) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `<div class="stat"><div class="label">${l}</div><div class="value" style="color:${c};">${v}</div></div>`).join(''));
 
   // a "near-total automation" reference, holding the same cfg
@@ -90,13 +90,13 @@ function render() {
   const verdict = document.getElementById('verdict');
   if (verdict) {
     verdict.innerHTML =
-      `If every productivity saving flowed straight to prices, this economy's price level would fall to about `
-      + `<strong>${Math.round(b.naive)}%</strong> of today by 2046. But by then roughly <strong>${Math.round(b.U * 100)}%</strong> of people `
-      + `live on UBI, and the charge that funds it is part of what everyone buys — so prices settle higher, at about `
-      + `<strong>${Math.round(b.actual)}%</strong>. The gap (<strong>${Math.round(b.actual - b.naive)} points</strong>) is the productivity gain that is `
-      + `<strong>recycled as demand</strong> rather than cheaper prices. `
-      + `The effect compounds as automation completes: push displacement toward total — nearly everyone on UBI — and the floor climbs to around `
-      + `<strong>${actualDeep}%</strong>, because almost all spending must then be funded by the charge. The widely-assumed near-zero price is the case where demand is simply ignored.`;
+      `If cheaper production were the only thing happening, prices would fall to about <strong>${Math.round(b.naive)}%</strong> `
+      + `of today by 2046. But by then roughly <strong>${Math.round(b.U * 100)}%</strong> of people live on the basic income, and the `
+      + `charge that funds it is built into every price — so prices settle higher, at about <strong>${Math.round(b.actual)}%</strong>. `
+      + `The difference (<strong>${Math.round(b.actual - b.naive)} points</strong>) is the saving that becomes income for people who can't `
+      + `earn, instead of cheaper prices. And it grows as automation spreads: if almost everyone ends up on the basic income, prices barely `
+      + `fall at all — around <strong>${actualDeep}%</strong> — because nearly every purchase has to carry the cost of funding it. The `
+      + `"almost free" story is simply what happens if you forget that someone still has to be able to buy.`;
   }
 
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
