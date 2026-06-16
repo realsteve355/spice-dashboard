@@ -16,7 +16,6 @@
     { label: 'Fisc', items: [
       { path: '/fisc',           label: 'Income & balance' },
       { path: '/firm',           label: 'A factory automates' },
-      { path: '/price-floor',    label: 'Price floor' },
       { path: '/everything-co',  label: 'Everything & Co' },
     ]},
     { label: 'Transition', items: [
