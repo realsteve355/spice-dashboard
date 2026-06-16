@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>A community of 1,000 — the robot's wage</title>
+<link rel="stylesheet" href="/sim/static/style.css">
+<style>
+  main.community { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+  .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
+  .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
+  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
+  .card .what em { color: var(--ok); font-style: normal; }
+
+  .ctrl { display: grid; grid-template-columns: 1fr 220px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 720px; margin-bottom: 10px; }
+  .ctrl-label { color: var(--txt2); }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--ok); }
+  .ctrl-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--headline); }
+  .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
+  .assumptions b { color: var(--txt2); font-weight: normal; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
+  .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
+  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.6; }
+  .verdict strong { color: var(--headline); }
+
+  .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
+  .narrative p:last-child { margin-bottom: 0; }
+  .narrative strong { color: var(--headline); }
+  .ledger { font-family: var(--mono); font-size: 12px; color: var(--txt2); line-height: 1.9; margin: 6px 0 0; }
+  .ledger .w { color: var(--blue); }
+  .ledger .m { color: var(--ok); }
+  .ledger .p { color: var(--warn); }
+</style>
+</head>
+<body data-live-sim>
+
+<header>
+  <h1>A community of 1,000 — the robot's wage</h1>
+  <div class="subtitle">How the colony's output splits into wages, MAC and profit as automation advances</div>
+</header>
+
+<main class="community">
+
+  <!-- Intro -->
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>The idea</h3>
+    <div class="narrative">
+      <p>The value a community produces in a year — its <strong>output</strong> — is shared out three ways:
+        as <strong class="ledger"><span class="w">wages</span></strong> to people who work, as
+        <strong class="ledger"><span class="m">profit</span></strong> to the owners of capital, and — once
+        automation arrives — as the <strong class="ledger"><span class="m">MAC</span></strong>: the
+        <em>robot's wage</em>. The MAC is a business expense that sits in the accounts <strong>where wages
+        used to be</strong>; the firm pays it on the automation that replaced its workers, and it is handed
+        to the displaced as <strong>UBI</strong>.</p>
+      <p>So the identity is simply <strong class="ledger"><span class="w">wages</span> + <span class="m">MAC</span> + <span class="p">profit</span> = output</strong>.
+        As employment falls, the wage share drains away — but the MAC picks it up and the displaced still
+        have income to spend, so <strong>demand never falls</strong>. And because a basic basket costs
+        <strong>less than the wage it replaces</strong>, the firm keeps the difference: <strong>profit
+        rises</strong>. UBI is funded by construction; the only question is whether profit stays positive —
+        i.e. whether firms remain viable. Worked below for 1,000 people.</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="card">
+    <h3>Inputs</h3>
+    <div id="controls"></div>
+  </div>
+
+  <!-- Headline + verdict -->
+  <div class="card">
+    <div class="stat-grid" id="headline-stats"></div>
+    <div class="verdict" id="verdict"></div>
+  </div>
+
+  <!-- Split chart -->
+  <div class="card">
+    <h3>The output split — wages, MAC and profit (baskets / year)</h3>
+    <div class="what">
+      Total height is the community's output. <em>Blue</em> is wages, <em>green</em> is the MAC that funds
+      UBI, <em>gold</em> is profit. Watch the wage band shrink and the MAC + profit bands grow as automation
+      displaces workers — the total (demand) holds steady.
+    </div>
+    <div id="split-chart"></div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <h3>Year by year</h3>
+    <div id="community-table"></div>
+  </div>
+
+</main>
+
+<script src="/sim/static/nav.js"></script>
+<script src="/sim/static/maryfontaine.js"></script>
+<script src="/sim/static/community.js"></script>
+</body>
+</html>

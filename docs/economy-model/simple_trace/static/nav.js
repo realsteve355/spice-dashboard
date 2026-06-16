@@ -15,6 +15,7 @@
     ]},
     { label: 'Fisc', items: [
       { path: '/fisc',           label: 'Income & balance' },
+      { path: '/community',      label: 'Community of 1,000' },
     ]},
     { label: 'Transition', items: [
       { path: '/sectors',        label: 'Sectors' },
