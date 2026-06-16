@@ -30,8 +30,8 @@ function model(cfg) {
     const g = 1 - (1 - cfg.gFloor) * prog;       // labour in each product: 1 → gFloor
     const rho = 1 - (1 - NL_FLOOR) * prog;       // materials/energy: 1 → NL_FLOOR
     const naive = cfg.lambda * g + (1 - cfg.lambda) * rho;   // price if every saving cut prices
-    const U = WA_SHARE * disp;                   // share of people living on UBI (0 → ~0.45)
-    const ubiShare = U * cfg.phi;                // share of all spending that is UBI
+    const U = WA_SHARE * disp;                   // share of people living on the basic income (0 → ~0.45)
+    const ubiShare = U * cfg.income;             // share of all spending funded by the basic income
     const denom = Math.max(0.08, 1 - ubiShare);  // guard against the divergence
     const actual = naive / denom;                // the endogenous price floor
     rows.push({ year: 2026 + t, naive: naive * 100, actual: actual * 100, ubiShare, U });
@@ -54,20 +54,20 @@ function priceChart(rows) {
 function readCfg() {
   const lam = parseFloat((document.getElementById('lambda') || {}).value);
   const gf = parseFloat((document.getElementById('gFloor') || {}).value);
-  const phi = parseFloat((document.getElementById('phi') || {}).value);
+  const inc = parseFloat((document.getElementById('income') || {}).value);
   return {
     lambda: isNaN(lam) ? 0.65 : lam / 100,
     gFloor: isNaN(gf) ? 0.10 : gf / 100,
-    phi: isNaN(phi) ? 0.60 : phi / 100,
+    income: isNaN(inc) ? 1.0 : inc / 100,
   };
 }
 
 function render() {
   const cfg = readCfg();
-  const lamOut = document.getElementById('lambda_v'), gfOut = document.getElementById('gFloor_v'), phiOut = document.getElementById('phi_v');
+  const lamOut = document.getElementById('lambda_v'), gfOut = document.getElementById('gFloor_v'), incOut = document.getElementById('income_v');
   if (lamOut) lamOut.textContent = Math.round(cfg.lambda * 100) + '%';
   if (gfOut) gfOut.textContent = Math.round(cfg.gFloor * 100) + '%';
-  if (phiOut) phiOut.textContent = Math.round(cfg.phi * 100) + '%';
+  if (incOut) incOut.textContent = Math.round(cfg.income * 100) + '%';
 
   const rows = model(cfg);
   const set = (id, h) => { const e = document.getElementById(id); if (e) e.innerHTML = h; };
@@ -84,8 +84,8 @@ function render() {
   // a "near-total automation" reference, holding the same cfg
   const naiveDeep = cfg.lambda * cfg.gFloor + (1 - cfg.lambda) * NL_FLOOR;
   const Udeep = Math.min(0.95, WA_SHARE + 0.30);   // displaced workers + dependants
-  const denomDeep = Math.max(0.08, 1 - Udeep * cfg.phi);
-  const actualDeep = Math.round(naiveDeep / denomDeep * 100);
+  const denomDeep = Math.max(0.08, 1 - Udeep * cfg.income);
+  const actualDeep = Math.min(100, Math.round(naiveDeep / denomDeep * 100));
 
   const verdict = document.getElementById('verdict');
   if (verdict) {
@@ -107,26 +107,26 @@ function buildControls() {
   if (!host) return;
   host.innerHTML = `
     <label class="ctrl">
-      <span class="ctrl-label">Labour share of cost today (rest is materials &amp; energy)</span>
+      <span class="ctrl-label">Of what a product costs to make today, how much is wages?</span>
       <input type="range" id="lambda" min="40" max="80" step="1" value="65">
       <span class="ctrl-val" id="lambda_v"></span>
     </label>
     <label class="ctrl">
-      <span class="ctrl-label">How far the labour in each product falls (automation depth)</span>
+      <span class="ctrl-label">Once fully automated, the wages in each product fall to…</span>
       <input type="range" id="gFloor" min="5" max="40" step="1" value="10">
       <span class="ctrl-val" id="gFloor_v"></span>
     </label>
     <label class="ctrl">
-      <span class="ctrl-label">UBI generosity (a basic basket, as a share of a full one)</span>
-      <input type="range" id="phi" min="30" max="90" step="1" value="60">
-      <span class="ctrl-val" id="phi_v"></span>
+      <span class="ctrl-label">Basic income, as a share of a full basket of essentials</span>
+      <input type="range" id="income" min="100" max="150" step="5" value="100">
+      <span class="ctrl-val" id="income_v"></span>
     </label>
     <div class="assumptions">
       <span>Employment follows the <a href="unemployment" style="color:var(--ok);">cohort ramp</a> (4.2% → 75% out of work)</span>
       <span>Materials &amp; energy deflate to <b>12%</b> of today</span>
-      <span>Price = (cost after productivity) ÷ (1 − UBI share of spending)</span>
+      <span>The basic income always covers a full basket (100%) — below that, people couldn't live</span>
     </div>`;
-  ['lambda', 'gFloor', 'phi'].forEach(id => document.getElementById(id).addEventListener('input', render));
+  ['lambda', 'gFloor', 'income'].forEach(id => document.getElementById(id).addEventListener('input', render));
 }
 
 function init() { buildControls(); render(); MF.load().then(render); }
