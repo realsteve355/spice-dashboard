@@ -22,19 +22,19 @@ const NL_FLOOR = 0.12;                         // materials/energy deflation flo
 function model(cfg) {
   const empMin = 1 - 0.75;                      // employment at the end of the ramp (25%)
   const dispMax = 1 - empMin / e0;              // worker displacement by 2046 (~0.74)
+  const Uend = 1 - WA_SHARE * empMin;           // ~0.85: share of ALL people on the basic income by 2046
   const rows = [];
   for (let t = 0; t <= HORIZON; t++) {
-    const emp = 1 - unempRateAt(t) / 100;        // employment fraction this year
-    const disp = 1 - emp / e0;                   // share of workers displaced vs today (0 → ~0.74)
+    const emp = 1 - unempRateAt(t) / 100;        // employment fraction of the working-age
+    const disp = 1 - emp / e0;                   // share of workers displaced vs today
     const prog = dispMax > 0 ? disp / dispMax : 0;   // automation progress 0 → 1
     const g = 1 - (1 - cfg.gFloor) * prog;       // labour in each product: 1 → gFloor
     const rho = 1 - (1 - NL_FLOOR) * prog;       // materials/energy: 1 → NL_FLOOR
     const naive = cfg.lambda * g + (1 - cfg.lambda) * rho;   // price if every saving cut prices
-    const U = WA_SHARE * disp;                   // share of people living on the basic income (0 → ~0.45)
-    const ubiShare = U * cfg.income;             // share of all spending funded by the basic income
-    const denom = Math.max(0.08, 1 - ubiShare);  // guard against the divergence
-    const actual = naive / denom;                // the endogenous price floor
-    rows.push({ year: 2026 + t, naive: naive * 100, actual: actual * 100, ubiShare, U });
+    const U = Uend * prog;                       // share on the basic income, ramps 0 → ~0.85
+    const ubiShare = Math.min(0.95, U * cfg.income);   // share of spending funded by the basic income
+    const actual = Math.min(100, naive / Math.max(0.06, 1 - ubiShare) * 100);
+    rows.push({ year: 2026 + t, naive: naive * 100, actual, U });
   }
   return rows;
 }
@@ -81,22 +81,15 @@ function render() {
     ['People living on the basic income · 2046', Math.round(b.U * 100) + '%', 'var(--blue)'],
   ].map(([l, v, c]) => `<div class="stat"><div class="label">${l}</div><div class="value" style="color:${c};">${v}</div></div>`).join(''));
 
-  // a "near-total automation" reference, holding the same cfg
-  const naiveDeep = cfg.lambda * cfg.gFloor + (1 - cfg.lambda) * NL_FLOOR;
-  const Udeep = Math.min(0.95, WA_SHARE + 0.30);   // displaced workers + dependants
-  const denomDeep = Math.max(0.08, 1 - Udeep * cfg.income);
-  const actualDeep = Math.min(100, Math.round(naiveDeep / denomDeep * 100));
-
   const verdict = document.getElementById('verdict');
   if (verdict) {
     verdict.innerHTML =
       `If cheaper production were the only thing happening, prices would fall to about <strong>${Math.round(b.naive)}%</strong> `
-      + `of today by 2046. But by then roughly <strong>${Math.round(b.U * 100)}%</strong> of people live on the basic income, and the `
-      + `charge that funds it is built into every price — so prices settle higher, at about <strong>${Math.round(b.actual)}%</strong>. `
-      + `The difference (<strong>${Math.round(b.actual - b.naive)} points</strong>) is the saving that becomes income for people who can't `
-      + `earn, instead of cheaper prices. And it grows as automation spreads: if almost everyone ends up on the basic income, prices barely `
-      + `fall at all — around <strong>${actualDeep}%</strong> — because nearly every purchase has to carry the cost of funding it. The `
-      + `"almost free" story is simply what happens if you forget that someone still has to be able to buy.`;
+      + `of today by 2046. But by then about <strong>${Math.round(b.U * 100)}%</strong> of people live on the basic income — only ~15% `
+      + `are still in work — and the charge that funds everyone's basket is built into every price. So prices settle far higher, at about `
+      + `<strong>${Math.round(b.actual)}%</strong>. Cheaper machines pull prices down; the basic income that nearly everyone now needs pushes `
+      + `them most of the way back up. The "almost free" story only holds if you imagine the <strong>${Math.round(b.U * 100)}%</strong> who no `
+      + `longer earn can somehow still buy.`;
   }
 
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -122,7 +115,7 @@ function buildControls() {
       <span class="ctrl-val" id="income_v"></span>
     </label>
     <div class="assumptions">
-      <span>Employment follows the <a href="unemployment" style="color:var(--ok);">cohort ramp</a> (4.2% → 75% out of work)</span>
+      <span>By 2046 about <b>85%</b> of people live on the basic income — only ~15% still in work</span>
       <span>Materials &amp; energy deflate to <b>12%</b> of today</span>
       <span>The basic income always covers a full basket (100%) — below that, people couldn't live</span>
     </div>`;
