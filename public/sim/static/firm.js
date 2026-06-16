@@ -80,10 +80,16 @@ function accountsTable(rows) {
       ${line('Sales (revenue)', a.revenue, b.revenue, { top: true })}
       ${line('Wages', a.wages, b.wages, { minus: true, color: 'var(--blue)' })}
       ${line('Materials & energy', a.materials, b.materials, { minus: true })}
+      ${line('Operating profit', a.opProfit, b.opProfit, { equals: true, top: true })}
       ${line('Market Access Charge', a.charge, b.charge, { minus: true, color: 'var(--ok)' })}
       ${line('Profit', a.profit, b.profit, { equals: true, strong: true, top: true, color: profitColor })}
     </tbody>
-  </table>`;
+  </table>
+  <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
+    The Market Access Charge is worked out from <strong style="color:var(--txt2);">operating profit</strong>
+    (the line above it) and its profit-per-worker — never from the final profit line below it. So the charge
+    does not depend on itself.
+  </div>`;
 }
 
 // ── Render ──────────────────────────────────────────────────────────────────
@@ -153,7 +159,7 @@ function buildControls() {
     <div class="assumptions">
       <span>Starts at <b>100</b> staff on <b>$50k</b>; <b>$12M</b> sales, <b>$4M</b> materials, <b>$3M</b> profit</span>
       <span>By the end machines do ~<b>three-quarters</b> of the work</span>
-      <span>Charge rate = min(<b>50%</b>, k × <b>22%</b> × profit-per-worker / <b>$200k</b>)</span>
+      <span>Charge rate = min(<b>50%</b>, k × <b>22%</b> × operating-profit-per-worker / <b>$200k</b>)</span>
     </div>`;
   document.getElementById('priceFall').addEventListener('input', render);
   document.getElementById('k').addEventListener('input', render);
