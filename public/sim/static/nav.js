@@ -16,7 +16,7 @@
     { label: 'Fisc', items: [
       { path: '/fisc',           label: 'Income & balance' },
       { path: '/firm',           label: 'A factory automates' },
-      { path: '/everything-co',  label: 'Everything & Co' },
+      { path: '/post-automation', label: 'The MAC loop' },
     ]},
     { label: 'Transition', items: [
       { path: '/sectors',        label: 'Sectors' },
