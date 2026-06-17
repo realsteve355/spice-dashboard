@@ -8,7 +8,6 @@
 // the rest, so the Fisc gets the whole UBI back and can pay it out again.
 
 const N = 100;            // citizens
-const BASKET = 100;       // survival basket, $/capita/month
 const SPLIT = 0.6;        // automated revenue split: OmniCorp 60% / MegaStore 40% (illustrative)
 
 function usd(v) {
@@ -18,7 +17,7 @@ function usd(v) {
 }
 
 function model(cfg) {
-  const ubi = BASKET * (1 + cfg.leisure);          // per capita
+  const ubi = cfg.basket * (1 + cfg.leisure);      // per capita
   const pool = N * ubi;                            // Fisc monthly outflow
   // Phase 1 — consumer loop
   const autoConsumer = cfg.autoShare * pool;
@@ -78,11 +77,13 @@ function ledger(rows, totals) {
 
 // ── Render ──────────────────────────────────────────────────────────────────
 function readCfg() {
+  const bk = parseFloat((document.getElementById('basket') || {}).value);
   const lp = parseFloat((document.getElementById('leisure') || {}).value);
   const rt = parseFloat((document.getElementById('rate') || {}).value);
   const as = parseFloat((document.getElementById('autoShare') || {}).value);
   const bb = parseFloat((document.getElementById('b2b') || {}).value);
   return {
+    basket: isNaN(bk) ? 100 : bk,
     leisure: isNaN(lp) ? 0.20 : lp / 100,
     rate: isNaN(rt) ? 0.80 : rt / 100,
     autoShare: isNaN(as) ? 0.833 : as / 100,
@@ -93,6 +94,7 @@ function readCfg() {
 function render() {
   const cfg = readCfg();
   const out = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  out('basket_v', usd(cfg.basket));
   out('leisure_v', Math.round(cfg.leisure * 100) + '%');
   out('rate_v', Math.round(cfg.rate * 100) + '%');
   out('autoShare_v', Math.round(cfg.autoShare * 100) + '%');
@@ -100,6 +102,13 @@ function render() {
 
   const m = model(cfg);
   const set = (id, h) => { const e = document.getElementById(id); if (e) e.innerHTML = h; };
+
+  const leisureAmt = cfg.basket * cfg.leisure;
+  set('ubi-summary',
+    `Each of the <strong>${N}</strong> citizens receives a <strong>${usd(m.ubi)}</strong> basic income a month — `
+    + `a <strong>${usd(cfg.basket)}</strong> survival basket plus a <strong>${usd(leisureAmt)}</strong> leisure buffer `
+    + `(${Math.round(cfg.leisure * 100)}%). Across all ${N} citizens that is the <strong>${usd(m.pool)}</strong> the Fisc pays out — `
+    + `and, through the MAC, recovers — every month.`);
 
   set('phase1', ledger([
     { name: 'OmniCorp (automated)', rev: m.omniC, rate: cfg.rate, mac: cfg.rate * m.omniC, kept: m.omniC * (1 - cfg.rate) },
@@ -115,7 +124,7 @@ function render() {
 
   const closed = Math.abs(m.fiscBalance) < 1;
   set('balance-stats', [
-    ['UBI paid out by the Fisc', usd(m.pool), 'var(--blue)'],
+    ['Basic income paid (all ' + N + ')', usd(m.pool), 'var(--blue)'],
     ['MAC recovered (both loops)', usd(m.totalMAC), 'var(--ok)'],
     ['Fisc balance', (m.fiscBalance >= 0 ? '+' : '') + usd(m.fiscBalance), closed ? 'var(--ok)' : 'var(--crit)'],
     ['Money turnover through automated firms', '×' + m.turnover.toFixed(2), 'var(--warn)'],
@@ -153,7 +162,12 @@ function buildControls() {
   if (!host) return;
   host.innerHTML = `
     <label class="ctrl">
-      <span class="ctrl-label">Leisure buffer on top of the survival basket</span>
+      <span class="ctrl-label">Survival basket — what a citizen needs to live, per month</span>
+      <input type="range" id="basket" min="50" max="200" step="10" value="100">
+      <span class="ctrl-val" id="basket_v"></span>
+    </label>
+    <label class="ctrl">
+      <span class="ctrl-label">Leisure buffer on top of the basket (raises the basic income)</span>
       <input type="range" id="leisure" min="0" max="50" step="5" value="20">
       <span class="ctrl-val" id="leisure_v"></span>
     </label>
@@ -173,11 +187,11 @@ function buildControls() {
       <span class="ctrl-val" id="b2b_v"></span>
     </label>
     <div class="assumptions">
-      <span><b>100</b> citizens · survival basket <b>$100</b>/mo · robots make everything at <b>zero</b> cost (COGS = 0)</span>
+      <span><b>100</b> citizens · robots make everything at <b>zero</b> cost (COGS = 0)</span>
       <span>The MAC is a skim on transactions, not a markup — prices don't change</span>
-      <span>The loop closes when the MAC recovers the whole UBI pool</span>
+      <span>The loop closes when the MAC recovers the whole basic-income pool</span>
     </div>`;
-  ['leisure', 'rate', 'autoShare', 'b2b'].forEach(id => document.getElementById(id).addEventListener('input', render));
+  ['basket', 'leisure', 'rate', 'autoShare', 'b2b'].forEach(id => document.getElementById(id).addEventListener('input', render));
 }
 
 function init() { buildControls(); render(); }
