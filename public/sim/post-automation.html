@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>The MAC loop — how a post-automation economy closes</title>
+<title>How a basic income pays for itself when robots do the work</title>
 <link rel="stylesheet" href="/sim/static/style.css">
 <style>
   main.pa { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
@@ -18,7 +18,7 @@
   .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
   .assumptions b { color: var(--txt2); font-weight: normal; }
 
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
   .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
   .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
   .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
@@ -28,35 +28,32 @@
   .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
   .narrative p:last-child { margin-bottom: 0; }
   .narrative strong { color: var(--headline); }
-  .eq { background: #0b0d12; border: 1px solid var(--line-hot); padding: 12px 16px; margin: 10px 0 2px; font-size: 14px; color: var(--headline); text-align: center; }
-  .eq small { color: var(--dim); font-size: 11px; }
 </style>
 </head>
 <body data-live-sim>
 
 <header>
-  <h1>The MAC loop — how a post-automation economy closes</h1>
-  <div class="subtitle">When robots make everything for free, how does a basic income fund itself? By being skimmed every time the money changes hands.</div>
+  <h1>How a basic income pays for itself</h1>
+  <div class="subtitle">When robots do the work, no one earns wages. So where does the money to live come from — and how does it not run out?</div>
 </header>
 
 <main class="pa">
 
   <!-- Intro -->
   <div class="card" style="border-left:3px solid var(--blue);">
-    <h3>The problem, and the trick</h3>
+    <h3>The idea, in plain terms</h3>
     <div class="narrative">
-      <p>Once robots make everything at <strong>zero cost</strong>, no one earns wages — so the only way people
-        can buy anything is a <strong>basic income</strong>. But if a single firm hands out the money and then
-        sells to those same people, it just gets its own money back and is left carrying its costs:</p>
-      <div class="eq">
-        Π = M − (COGS + M) = −COGS<br>
-        <small>hand out M, collect M back, and your profit is just minus your costs — the loop stalls</small>
-      </div>
-      <p>The fix isn't a higher price — it's <strong>velocity</strong>. The treasury (the Fisc) takes a cut —
-        the <strong>Market Access Charge</strong> — every time money is spent at an automated firm. One pass of
-        spending only claws back the rate (say 80%). But the money is spent again — businesses buying from other
-        businesses — and gets skimmed a <strong>second time</strong>. Add the passes up and the Fisc recovers the
-        <strong>whole</strong> basic income, ready to pay out again. The numbers below close at exactly 1:1.</p>
+      <p>Robots do all the work, so no one earns a wage. The only way people can buy anything is a
+        <strong>basic income</strong> — the community treasury (the <strong>Fisc</strong>) pays everyone a set
+        amount each month.</p>
+      <p>It pays for itself by going round in a circle. People spend the basic income at the shops. The Fisc
+        takes a <strong>cut of every sale — the Market Access Charge (MAC)</strong> — and that money goes back
+        to the treasury to be paid out again next month.</p>
+      <p>The catch: the cut is only about a <strong>third</strong> of each sale, so one round of spending
+        doesn't bring the whole basic income back. But the money is spent <strong>again and again</strong>
+        through the month — the shops' takings get spent, and so on — and the Fisc takes its cut every time.
+        After the money has gone round <strong>about three times</strong>, the cuts add up to the whole basic
+        income, and the circle closes. The numbers below show it balancing.</p>
     </div>
   </div>
 
@@ -78,27 +75,28 @@
     <div class="verdict" id="verdict"></div>
   </div>
 
-  <!-- Phase 1 -->
+  <!-- Sector breakdown -->
   <div class="card">
-    <h3>Pass 1 — the basic income is spent</h3>
+    <h3>Where the money goes — for every sale</h3>
     <div class="what">
-      The Fisc injects the basic income; citizens spend it. The MAC skims each automated sale (the human
-      sector pays nothing). This pass alone leaves the Fisc short — the gap is what the firms keep.
+      Each sale is split: the Fisc takes the MAC, the robots cost a little to run, and the firm keeps the rest.
+      The human shops pay no MAC — that money is a person's wage for real work.
     </div>
-    <div id="phase1"></div>
+    <div id="sector-table"></div>
   </div>
 
-  <!-- Phase 2 -->
+  <!-- Comparison -->
   <div class="card">
-    <h3>Pass 2 — the money is spent again (business-to-business)</h3>
+    <h3>Why the firms are happy to pay it</h3>
     <div class="what">
-      The human firms buy automated compute and logistics to do their work. Those sales get skimmed too —
-      recapturing the gap left by the first pass and closing the loop.
+      Even handing the Fisc a big cut of every sale, the automated firms keep a far higher margin than they do
+      today — because they no longer pay any wages. That's the answer to "why would a company accept this?"
     </div>
-    <div id="phase2"></div>
+    <div id="comparison-table"></div>
     <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
-      After "The Mathematics of a Post-Automation Economy" (the MAC + UBI loop). The human sector's negative
-      balance is funded by credit — it is the mirror image of the automated firms' retained profit.
+      Realistic figures after the "Post-Automation Macroeconomic Engine" spec (10,000 households, Amazon/Walmart
+      profiles). The loop is solved so the MAC recovers exactly the basic income; the robot running cost (COGS)
+      comes out of the firms' margin.
     </div>
   </div>
 
