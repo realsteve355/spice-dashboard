@@ -33,27 +33,29 @@
 <body data-live-sim>
 
 <header>
-  <h1>How a basic income pays for itself</h1>
-  <div class="subtitle">When robots do the work, no one earns wages. So where does the money to live come from — and how does it not run out?</div>
+  <h1>Funding a basic income when robots do the work</h1>
+  <div class="subtitle">The honest version — the MAC recovers most of it, the rest is issued money that automation's falling costs absorb. No closed-loop magic.</div>
 </header>
 
 <main class="pa">
 
   <!-- Intro -->
   <div class="card" style="border-left:3px solid var(--blue);">
-    <h3>The idea, in plain terms</h3>
+    <h3>The idea, in plain terms (the honest version)</h3>
     <div class="narrative">
       <p>Robots do all the work, so no one earns a wage. The only way people can buy anything is a
-        <strong>basic income</strong> — the community treasury (the <strong>Fisc</strong>) pays everyone a set
-        amount each month.</p>
-      <p>It pays for itself by going round in a circle. People spend the basic income at the shops. The Fisc
-        takes a <strong>cut of every sale — the Market Access Charge (MAC)</strong> — and that money goes back
-        to the treasury to be paid out again next month.</p>
-      <p>The catch: the cut is only about a <strong>third</strong> of each sale, so one round of spending
-        doesn't bring the whole basic income back. But the money is spent <strong>again and again</strong>
-        through the month — the shops' takings get spent, and so on — and the Fisc takes its cut every time.
-        After the money has gone round <strong>about three times</strong>, the cuts add up to the whole basic
-        income, and the circle closes. The numbers below show it balancing.</p>
+        <strong>basic income</strong> — the community treasury (the <strong>Fisc</strong>) issues everyone a
+        set amount each month.</p>
+      <p>The robots make the essentials <strong>nearly for free</strong>. So think of money as the
+        <strong>ration coupon</strong> that lets people claim those goods. The basic income issues the coupons;
+        the Fisc takes a <strong>cut of each automated sale — the Market Access Charge (MAC)</strong> — and
+        pulls most of the coupons back, so the same money can be issued again next month.</p>
+      <p>It does <strong>not</strong> all come back, and we don't pretend it does. The automated firms keep a
+        slim profit (which still beats today, because they pay no wages), and the human-craft shops aren't
+        charged at all. The part the MAC can't reach is simply <strong>issued as new money</strong> — and that
+        stays non-inflationary because automation is making everything <strong>cheaper</strong> at the same
+        time. The deflation is the headroom. The numbers below show exactly how much is recovered and how much
+        is newly issued — and the trade-off between the firms' margin and that gap.</p>
     </div>
   </div>
 
@@ -87,16 +89,17 @@
 
   <!-- Comparison -->
   <div class="card">
-    <h3>Why the firms are happy to pay it</h3>
+    <h3>Why a firm might accept it</h3>
     <div class="what">
-      Even handing the Fisc a big cut of every sale, the automated firms keep a far higher margin than they do
-      today — because they no longer pay any wages. That's the answer to "why would a company accept this?"
+      Even handing the Fisc a big cut of every sale, an automated firm can keep a margin above today's —
+      because it pays no wages. But only up to a point: push the MAC too high and the margin drops below
+      today's. Watch this table and the issued-money figure move against each other as you change the rates.
     </div>
     <div id="comparison-table"></div>
     <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
       Realistic figures after the "Post-Automation Macroeconomic Engine" spec (10,000 households, Amazon/Walmart
-      profiles). The loop is solved so the MAC recovers exactly the basic income; the robot running cost (COGS)
-      comes out of the firms' margin.
+      profiles). The firm's margin is <em>1 − MAC − robot cost</em>; every point of margin it keeps is a point
+      the MAC doesn't recover, which is why the firm margin and the issued-money gap move in opposite directions.
     </div>
   </div>
 
