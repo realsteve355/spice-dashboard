@@ -272,6 +272,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "firm.html", "text/html; charset=utf-8")
         elif p == "/post-automation":
             self._send_file(self.templates_dir / "post-automation.html", "text/html; charset=utf-8")
+        elif p == "/time-dividend":
+            self._send_file(self.templates_dir / "time-dividend.html", "text/html; charset=utf-8")
         elif p == "/references":
             self._send_file(self.templates_dir / "references.html", "text/html; charset=utf-8")
         elif p == "/sectors":

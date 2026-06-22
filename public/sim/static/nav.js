@@ -16,7 +16,8 @@
     { label: 'Fisc', items: [
       { path: '/fisc',           label: 'Income & balance' },
       { path: '/firm',           label: 'A factory automates' },
-      { path: '/post-automation', label: 'The MAC loop' },
+      { path: '/post-automation', label: 'Same economy' },
+      { path: '/time-dividend',   label: 'The time dividend' },
     ]},
     { label: 'Transition', items: [
       { path: '/sectors',        label: 'Sectors' },
