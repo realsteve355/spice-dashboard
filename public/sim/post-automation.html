@@ -2,14 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>How a basic income pays for itself when robots do the work</title>
+<title>It's the same economy</title>
 <link rel="stylesheet" href="/sim/static/style.css">
 <style>
   main.pa { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
   .card { background: var(--panel); border: 1px solid var(--line-hot); padding: 16px 20px; margin-bottom: 14px; }
   .card h3 { font-size: 11px; color: var(--headline); letter-spacing: 0.2em; text-transform: uppercase; margin: 0 0 12px; }
-  .card .what { font-size: 12px; color: var(--dim); font-style: italic; margin-bottom: 14px; line-height: 1.6; }
-  .card .what em { color: var(--ok); font-style: normal; }
 
   .ctrl { display: grid; grid-template-columns: 1fr 220px 64px; align-items: center; gap: 12px; font-size: 12px; color: var(--txt); max-width: 820px; margin-bottom: 10px; }
   .ctrl-label { color: var(--txt2); }
@@ -18,88 +16,76 @@
   .assumptions { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 11px; color: var(--dim); }
   .assumptions b { color: var(--txt2); font-weight: normal; }
 
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .stat { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 12px 16px; }
   .stat .label { font-size: 10px; color: var(--dim); letter-spacing: 0.14em; text-transform: uppercase; }
-  .stat .value { font-size: 22px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
+  .stat .value { font-size: 21px; font-variant-numeric: tabular-nums; margin-top: 6px; line-height: 1.1; }
   .verdict { background: #0b0d12; border: 1px solid var(--line-hot); border-left: 3px solid var(--ok); padding: 14px 18px; margin-top: 12px; font-size: 13px; color: var(--txt); line-height: 1.7; }
-  .verdict strong { color: var(--headline); }
+  .verdict strong { color: var(--headline); } .verdict em { color: var(--ok); font-style: normal; }
 
   .narrative p { font-size: 13px; color: var(--txt); line-height: 1.75; margin: 0 0 10px; }
-  .narrative p:last-child { margin-bottom: 0; }
   .narrative strong { color: var(--headline); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .col h4 { font-size: 12px; color: var(--headline); margin: 0 0 12px; letter-spacing: 0.08em; }
+  .col.today { border-top: 3px solid var(--dim); padding-top: 12px; }
+  .col.robots { border-top: 3px solid var(--ok); padding-top: 12px; }
+  .flow-step { background: #0b0d12; border: 1px solid var(--line); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .flow-step.hl { border-color: var(--line-hot); }
+  .flow-label { font-size: 12px; color: var(--txt2); }
+  .flow-amt { font-size: 14px; color: var(--headline); font-variant-numeric: tabular-nums; }
+  .flow-arrow { text-align: center; color: var(--dim); font-size: 13px; line-height: 1.4; }
 </style>
 </head>
 <body data-live-sim>
 
 <header>
-  <h1>Funding a basic income when robots do the work</h1>
-  <div class="subtitle">The honest version — the MAC recovers most of it, the rest is issued money that automation's falling costs absorb. No closed-loop magic.</div>
+  <h1>It's the same economy</h1>
+  <div class="subtitle">Replace every worker with a free robot, but keep paying the same wage bill — now as a basic income. The money flow doesn't change at all.</div>
 </header>
 
 <main class="pa">
 
-  <!-- Intro -->
   <div class="card" style="border-left:3px solid var(--blue);">
-    <h3>The idea, in plain terms (the honest version)</h3>
+    <h3>The point</h3>
     <div class="narrative">
-      <p>Robots do all the work, so no one earns a wage. The only way people can buy anything is a
-        <strong>basic income</strong> — the community treasury (the <strong>Fisc</strong>) issues everyone a
-        set amount each month.</p>
-      <p>The robots make the essentials <strong>nearly for free</strong>. So think of money as the
-        <strong>ration coupon</strong> that lets people claim those goods. The basic income issues the coupons;
-        the Fisc takes a <strong>cut of each automated sale — the Market Access Charge (MAC)</strong> — and
-        pulls most of the coupons back, so the same money can be issued again next month.</p>
-      <p>It does <strong>not</strong> all come back, and we don't pretend it does. The automated firms keep a
-        slim profit (which still beats today, because they pay no wages), and the human-craft shops aren't
-        charged at all. The part the MAC can't reach is simply <strong>issued as new money</strong> — and that
-        stays non-inflationary because automation is making everything <strong>cheaper</strong> at the same
-        time. The deflation is the headroom. The numbers below show exactly how much is recovered and how much
-        is newly issued — and the trade-off between the firms' margin and that gap.</p>
+      <p>Today's economy already works: firms pay out incomes, people spend them, that spending is the firms'
+        revenue, and out of it they pay incomes again. Round and round.</p>
+      <p>Now replace every worker with a <strong>perfect, free robot</strong> — but have the firm keep paying
+        the <strong>same total</strong>, as a charge (the MAC) that the Fisc hands straight back out as a
+        <strong>basic income</strong>. Nothing in the money changes. People get the same income, spend the same,
+        the firms earn and keep the same. The <strong>only</strong> differences are that the work is now done by
+        robots and the paycheck is called a basic income. It must work — because it <em>is</em> today's economy.</p>
     </div>
   </div>
 
-  <!-- Controls -->
   <div class="card">
     <h3>What you can change</h3>
     <div id="controls"></div>
   </div>
 
-  <!-- The basic income -->
-  <div class="card" style="border-left:3px solid var(--ok);">
-    <h3>The basic income &amp; the basket</h3>
-    <div id="ubi-summary" class="narrative" style="font-size:14px;"></div>
-  </div>
-
-  <!-- Balance + verdict -->
   <div class="card">
     <div class="stat-grid" id="balance-stats"></div>
     <div class="verdict" id="verdict"></div>
   </div>
 
-  <!-- Sector breakdown -->
   <div class="card">
-    <h3>Where the money goes — for every sale</h3>
-    <div class="what">
-      Each sale is split: the Fisc takes the MAC, the robots cost a little to run, and the firm keeps the rest.
-      The human shops pay no MAC — that money is a person's wage for real work.
+    <h3>The same money, side by side</h3>
+    <div class="two-col">
+      <div class="col today">
+        <h4>TODAY — people work</h4>
+        <div id="today-flow"></div>
+      </div>
+      <div class="col robots">
+        <h4>WITH FREE ROBOTS — no one works</h4>
+        <div id="robot-flow"></div>
+      </div>
     </div>
-    <div id="sector-table"></div>
-  </div>
-
-  <!-- Comparison -->
-  <div class="card">
-    <h3>Why a firm might accept it</h3>
-    <div class="what">
-      Even handing the Fisc a big cut of every sale, an automated firm can keep a margin above today's —
-      because it pays no wages. But only up to a point: push the MAC too high and the margin drops below
-      today's. Watch this table and the issued-money figure move against each other as you change the rates.
-    </div>
-    <div id="comparison-table"></div>
-    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.6;">
-      Realistic figures after the "Post-Automation Macroeconomic Engine" spec (10,000 households, Amazon/Walmart
-      profiles). The firm's margin is <em>1 − MAC − robot cost</em>; every point of margin it keeps is a point
-      the MAC doesn't recover, which is why the firm margin and the issued-money gap move in opposite directions.
+    <div style="font-size:11px; color:var(--faint); margin-top:12px; line-height:1.6;">
+      Both columns circulate the same amount. The MAC each firm owes is simply the wage bill it stopped paying —
+      so collecting it and paying it out as a basic income leaves every total exactly where it was. The dividend
+      from automation is that no one has to work for it.
     </div>
   </div>
 
