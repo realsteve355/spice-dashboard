@@ -1,9 +1,9 @@
 {
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js vercel.json",
   "redirects": [
-    { "source": "/sim/community", "destination": "/sim/firm", "permanent": true },
-    { "source": "/sim/price-floor", "destination": "/sim/post-automation", "permanent": true },
-    { "source": "/sim/everything-co", "destination": "/sim/post-automation", "permanent": true }
+    { "source": "/sim/community", "destination": "/sim/time-dividend", "permanent": true },
+    { "source": "/sim/price-floor", "destination": "/sim/time-dividend", "permanent": true },
+    { "source": "/sim/everything-co", "destination": "/sim/time-dividend", "permanent": true }
   ],
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },

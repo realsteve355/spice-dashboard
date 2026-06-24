@@ -260,18 +260,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "trajectory.html", "text/html; charset=utf-8")
         elif p == "/forecasts":
             self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
-        elif p == "/cost-deflation":
-            self._send_file(self.templates_dir / "cost-deflation.html", "text/html; charset=utf-8")
         elif p == "/unemployment":
             self._send_file(self.templates_dir / "unemployment.html", "text/html; charset=utf-8")
-        elif p == "/profitability":
-            self._send_file(self.templates_dir / "profitability.html", "text/html; charset=utf-8")
         elif p == "/fisc":
             self._send_file(self.templates_dir / "fisc.html", "text/html; charset=utf-8")
-        elif p == "/firm":
-            self._send_file(self.templates_dir / "firm.html", "text/html; charset=utf-8")
-        elif p == "/post-automation":
-            self._send_file(self.templates_dir / "post-automation.html", "text/html; charset=utf-8")
         elif p == "/time-dividend":
             self._send_file(self.templates_dir / "time-dividend.html", "text/html; charset=utf-8")
         elif p == "/references":
@@ -280,16 +272,6 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "sectors.html", "text/html; charset=utf-8")
         elif p == "/aggregate":
             self._send_file(self.templates_dir / "aggregate.html", "text/html; charset=utf-8")
-        elif p == "/ledger":
-            self._send_file(self.templates_dir / "ledger.html", "text/html; charset=utf-8")
-        elif p == "/abundance":
-            self._send_file(self.templates_dir / "abundance.html", "text/html; charset=utf-8")
-        elif p == "/abm":
-            self._send_file(self.templates_dir / "abm.html", "text/html; charset=utf-8")
-        elif p == "/colony-v0":
-            self._send_file(self.templates_dir / "colony-v0.html", "text/html; charset=utf-8")
-        elif p == "/grok-projection":
-            self._send_file(self.templates_dir / "grok-projection.html", "text/html; charset=utf-8")
         elif p == "/basket_research.md":
             self._send_file(HERE / "basket_research.md", "text/markdown; charset=utf-8")
         elif p.startswith("/static/"):

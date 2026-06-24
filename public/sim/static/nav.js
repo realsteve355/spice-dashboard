@@ -3,36 +3,20 @@
 (function() {
   const groups = [
     { label: 'Simulation', items: [
-      { path: '/',            label: 'Snapshot' },
       { path: '/trajectory',  label: 'Trajectory' },
     ]},
     { label: 'Forecasts', items: [
       { path: '/forecasts',      label: 'Overview' },
-      { path: '/cost-deflation', label: 'Cost deflation' },
       { path: '/unemployment',   label: 'Unemployment' },
-      { path: '/profitability',  label: 'Profitability' },
       { path: '/references',     label: 'References' },
     ]},
     { label: 'Fisc', items: [
       { path: '/fisc',           label: 'Income & balance' },
-      { path: '/firm',           label: 'A factory automates' },
-      { path: '/post-automation', label: 'Same economy' },
       { path: '/time-dividend',   label: 'The time dividend' },
     ]},
     { label: 'Transition', items: [
       { path: '/sectors',        label: 'Sectors' },
       { path: '/aggregate',      label: 'Aggregate' },
-    ]},
-    { label: 'Toy colony', items: [
-      { path: '/ledger',         label: 'Support phase' },
-      { path: '/abundance',      label: 'Abundance' },
-      { path: '/abm',            label: 'Mesa ABM' },
-    ]},
-    { label: 'Pre-AXION baseline', items: [
-      { path: '/colony-v0',      label: 'Colony v0' },
-    ]},
-    { label: 'Grok V8.3', items: [
-      { path: '/grok-projection', label: 'Reference projection' },
     ]},
   ];
 
