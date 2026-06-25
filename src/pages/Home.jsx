@@ -175,9 +175,8 @@ export default function Home() {
           <p style={{ ...S.lead, marginBottom: 18 }}>
             Driven by advances in AI, robotics and automation, for the first
             time in human history, the world's political and economic systems
-            will navigate the transition from an economic system that evolved to
-            manage scarcity, to a system that must be rapidly redesigned to
-            manage abundance.
+            must navigate the transition from an economic system that evolved to
+            manage scarcity, to a system that must manage abundance.
           </p>
           <p style={{ ...S.lead, marginBottom: 18 }}>
             This website explores the features of the abundance economy, and the
@@ -187,14 +186,13 @@ export default function Home() {
             AXION is a blockchain-based product designed to implement a rollout
             of a UBI system within a capitalist economy. The AXION product is
             available for online demonstration and will shortly be seeking a
-            live pilot site. Axion Inc is the vehicle for future development of
-            the AXION product. To view the Axion Inc investment proposition,{" "}
+            live pilot site. To view the Axion Inc investment proposition,{" "}
             <Link to="/invest" style={{ color: C.ok, textDecoration: "underline" }}>click here</Link>.
           </p>
         </div>
 
         {/* INTRO VIDEO */}
-        <SectionHead tag="V-01" title="Introduction · the AXION colony economy" timestamp="2-MIN OVERVIEW" />
+        <SectionHead tag="V-01" title="Introduction · the AXION pitch" timestamp="2-MIN OVERVIEW" />
         <div style={S.videoWrap}>
           {/* TODO: drop in YouTube embed once script is recorded */}
           <div style={{ textAlign: "center" }}>
