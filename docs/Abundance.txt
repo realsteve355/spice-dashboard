@@ -1,0 +1,42 @@
+For the purposes of this let's ignore V tokens. S tokens only for a while.
+
+Citizens sell their labour to companies
+Companies sell goods and services to the citizens
+Citizens pay tax
+Companies pay tax
+
+
+Ai and robotics comes along and automates all labour. There is no longer a market for human labour. All humans are unemployed.
+Citizens have no money so cannot buy goods or pay tax
+Companies receive no revenue and cannot buy materials or pay tax
+Government collapses due to no tax revenues to pay welfare or interest on debt
+Economic and societal collapse
+
+Solutions
+1) Citizens provide the Ai and robotics rather than human labour (very unlikely - let's discount this)
+2) Citizens print the money
+
+Citizens Print The Money
+
+Citizens print S-tokens
+External Companies say "we'd like to sell you X for $Y"
+Citizens say "We have no $. We are printing a Crypto UBI of S tokens you can have instead. Companies reluctantly agree.
+Company goes to supplier to buy input products and says "we'd like to buy some e.g. flour. we can't pay you in $ , because we have run out , but we have these S crypto tokens" Supplier reluctantly agrees.
+
+S-tokens printed are UBI basket + 20%, printed monthly.
+Money supply inflation in month 2 is obviously 100%
+But every subsequent month this reduces due to dilution.
+There is no fractional reserve banking to inflate the money supply via loans.
+S tokens are a little like bitcoin , but rather than the bitcoin fixed supply, the Spice supply formula is known (UBI + 20%). Inflation formula is known.
+
+Questions - 
+is the S-token issued as a 0% loan and if so, how does it get paid back? Would that help?
+What happens to $ already owned? Does it gradually get converted to S as transactions occur?
+What happens to assets and liabilities priced in $?
+
+
+
+
+
+
+

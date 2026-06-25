@@ -1,17 +1,25 @@
 {
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- src/ api/ public/ index.html vite.config.js vercel.json",
   "redirects": [
-    { "source": "/sim/community", "destination": "/sim/time-dividend", "permanent": true },
-    { "source": "/sim/price-floor", "destination": "/sim/time-dividend", "permanent": true },
-    { "source": "/sim/everything-co", "destination": "/sim/time-dividend", "permanent": true },
-    { "source": "/sim", "destination": "/", "permanent": false },
-    { "source": "/sim/", "destination": "/", "permanent": false }
+    { "source": "/sim/community", "destination": "/time-dividend", "permanent": true },
+    { "source": "/sim/price-floor", "destination": "/time-dividend", "permanent": true },
+    { "source": "/sim/everything-co", "destination": "/time-dividend", "permanent": true },
+    { "source": "/sim/:page", "destination": "/:page", "permanent": true },
+    { "source": "/sim", "destination": "/", "permanent": true },
+    { "source": "/sim/", "destination": "/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
-    { "source": "/sim/:page", "destination": "/sim/:page.html" },
-    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|sim\\/|sim$|api\\/).*)", "destination": "/index.html" }
+    { "source": "/trajectory", "destination": "/trajectory.html" },
+    { "source": "/forecasts", "destination": "/forecasts.html" },
+    { "source": "/fisc", "destination": "/fisc.html" },
+    { "source": "/unemployment", "destination": "/unemployment.html" },
+    { "source": "/references", "destination": "/references.html" },
+    { "source": "/time-dividend", "destination": "/time-dividend.html" },
+    { "source": "/sectors", "destination": "/sectors.html" },
+    { "source": "/aggregate", "destination": "/aggregate.html" },
+    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|api\\/|static\\/|data\\/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

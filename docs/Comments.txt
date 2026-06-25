@@ -1,3 +1,25 @@
+73) The UBI @ S1000 does not match the current published budget?
+74) We see the LRT level, but what is the expected LRT collection rate vs actual, last month etc. How "viable" is the colony? We have a reserve float used for currency exchange, but what's the income in LRT vs the outgoings, including UBI?
+75) I didn't know that Dave's colony was an earth colony but that's fine. I guess a mars colony is just the same with some features unused.
+76) we need to get on to the floating exchange rate and that calculation 
+
+
+
+
+
+
+
+72) what we need to do somehow is to workout what the Mars colony simulation is really trying to achieve.
+the current GDP graph shows GDP growing in a linear way. What we would really like to see is GDP growing exponentially. Not just through the inflation of V tokens across time.
+So we need to pick some measures based on alleged benefits of the SPice currency system.
+the benefits that posited were:
+
+  - Security — UBI covering all basic needs, target 20% of basic income
+  - No tax — pay only for services consumed
+  - No inflation — monthly reset + V-token cap
+  - Responsibility — metered consumption incentivises efficiency
+  - Entrepreneurship — V-token savings + equity ownership
+
 
 
 
