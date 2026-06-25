@@ -3,13 +3,13 @@
   "redirects": [
     { "source": "/sim/community", "destination": "/sim/time-dividend", "permanent": true },
     { "source": "/sim/price-floor", "destination": "/sim/time-dividend", "permanent": true },
-    { "source": "/sim/everything-co", "destination": "/sim/time-dividend", "permanent": true }
+    { "source": "/sim/everything-co", "destination": "/sim/time-dividend", "permanent": true },
+    { "source": "/sim", "destination": "/", "permanent": false },
+    { "source": "/sim/", "destination": "/", "permanent": false }
   ],
   "rewrites": [
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
-    { "source": "/sim", "destination": "/sim/index.html" },
-    { "source": "/sim/", "destination": "/sim/index.html" },
     { "source": "/sim/:page", "destination": "/sim/:page.html" },
     { "source": "/((?!spice-methodology\\.html|colony-v0\\/|sim\\/|sim$|api\\/).*)", "destination": "/index.html" }
   ],

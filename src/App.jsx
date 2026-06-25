@@ -11,9 +11,16 @@ import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 
 const NAV_ITEMS = [
-  { label: "Home",      to: "/", end: true },
-  { label: "Collision", to: "/collision" },
-  { label: "Models",    to: "/sim", external: true },
+  { label: "Home",             to: "/", end: true },
+  { label: "Collision",        to: "/collision" },
+  { label: "Trajectory",       to: "/sim/trajectory",    external: true },
+  { label: "Overview",         to: "/sim/forecasts",     external: true },
+  { label: "Unemployment",     to: "/sim/unemployment",  external: true },
+  { label: "References",       to: "/sim/references",    external: true },
+  { label: "Income & balance", to: "/sim/fisc",          external: true },
+  { label: "Time dividend",    to: "/sim/time-dividend", external: true },
+  { label: "Sectors",          to: "/sim/sectors",       external: true },
+  { label: "Aggregate",        to: "/sim/aggregate",     external: true },
 ];
 
 export default function App() {

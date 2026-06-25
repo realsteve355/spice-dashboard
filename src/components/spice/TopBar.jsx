@@ -20,7 +20,7 @@ const S = {
   brandName: { fontWeight: 600, letterSpacing: "0.24em", textTransform: "uppercase", fontSize: 12 },
   brandSep: { color: C.faint },
   brandTag: { color: C.dim, fontSize: 11, letterSpacing: "0.04em" },
-  nav: { display: "flex", gap: 22 },
+  nav: { display: "flex", flexWrap: "wrap", gap: "8px 16px" },
   link: {
     color: C.dim, textDecoration: "none",
     textTransform: "uppercase", letterSpacing: "0.18em",

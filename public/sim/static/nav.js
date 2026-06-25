@@ -80,7 +80,7 @@
 
   // Build nav HTML — brand on the left, then nav groups
   const brandHtml = `
-    <a class="brand" href="/sim/">
+    <a class="brand" href="/">
       <img src="/sim/static/brand/axion-wordmark-light.png" alt="AXION">
       <span class="tag">/ economy model</span>
     </a>
