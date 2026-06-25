@@ -4,7 +4,6 @@
 (function() {
   const items = [
     { path: '/',             label: 'Home' },
-    { path: '/collision',    label: 'Collision' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/unemployment', label: 'Unemployment' },

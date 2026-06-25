@@ -173,19 +173,23 @@ export default function Home() {
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>UBI for a Capitalist Economy</h1>
           <p style={{ ...S.lead, marginBottom: 18 }}>
-            Driven by recent advances in AI, robotics and automation, for the
-            first time in human history, the world's political and economic
-            systems will navigate the transition from an economy designed to
-            manage scarcity, to an economy designed to manage abundance.
+            Driven by advances in AI, robotics and automation, for the first
+            time in human history, the world's political and economic systems
+            will navigate the transition from an economic system that evolved to
+            manage scarcity, to a system that must be rapidly redesigned to
+            manage abundance.
           </p>
           <p style={{ ...S.lead, marginBottom: 18 }}>
-            AXION is a blockchain-based product designed to implement a rollout
-            of a UBI system, featuring near-zero inflation, near-zero taxation,
-            in an automated, low regulation environment.
+            This website explores the features of the abundance economy, and the
+            infrastructure required to support it.
           </p>
           <p style={S.lead}>
-            The AXION product exists today and is available for demonstration
-            and pilot implementation.
+            AXION is a blockchain-based product designed to implement a rollout
+            of a UBI system within a capitalist economy. The AXION product is
+            available for online demonstration and will shortly be seeking a
+            live pilot site. Axion Inc is the vehicle for future development of
+            the AXION product. To view the Axion Inc investment proposition,{" "}
+            <Link to="/invest" style={{ color: C.ok, textDecoration: "underline" }}>click here</Link>.
           </p>
         </div>
 

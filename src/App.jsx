@@ -13,7 +13,6 @@ import Invest from "./pages/Invest";
 
 const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
-  { label: "Collision",        to: "/collision" },
   { label: "Trajectory",       to: "/trajectory",    external: true },
   { label: "Overview",         to: "/forecasts",     external: true },
   { label: "Unemployment",     to: "/unemployment",  external: true },
