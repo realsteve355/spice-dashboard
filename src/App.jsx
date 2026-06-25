@@ -9,6 +9,7 @@ import Impact from "./pages/Impact";
 import CrisisScenarios from "./pages/CrisisScenarios";
 import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
+import Invest from "./pages/Invest";
 
 const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
@@ -27,7 +28,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={S.root}>
-        <TopBar navItems={NAV_ITEMS} />
+        <TopBar navItems={NAV_ITEMS} cta={{ label: "Invest", to: "/invest" }} />
         <Routes>
           <Route path="/" element={<Home />} />
 
@@ -47,6 +48,8 @@ export default function App() {
           <Route path="/indicators"  element={<Navigate to="/collision/indicators" replace />} />
           <Route path="/apocalypse"  element={<Navigate to="/collision/indicators" replace />} />
           <Route path="/portfolio"   element={<Navigate to="/collision/portfolio" replace />} />
+
+          <Route path="/invest" element={<Invest />} />
 
           {/* ── Archived pages (Mars/Earth/colony/etc.) → home ── */}
           <Route path="*" element={<Navigate to="/" replace />} />

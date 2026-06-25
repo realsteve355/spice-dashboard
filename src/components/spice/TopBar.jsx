@@ -29,11 +29,12 @@ const S = {
   },
   linkActive: { color: C.txt },
   ctaBtn: {
-    border: `1px solid ${C.txt}`, color: C.txt, background: "transparent",
-    padding: "7px 14px", fontFamily: F.mono, fontSize: 11,
-    letterSpacing: "0.18em", textTransform: "uppercase",
+    border: `1px solid ${C.ok}`, color: C.bg, background: C.ok,
+    padding: "9px 22px", fontFamily: F.mono, fontSize: 11.5, fontWeight: 600,
+    letterSpacing: "0.2em", textTransform: "uppercase",
     cursor: "pointer", transition: "all 0.15s",
     textDecoration: "none", display: "inline-block",
+    boxShadow: `0 0 0 3px ${C.okBg}`,
   },
 };
 

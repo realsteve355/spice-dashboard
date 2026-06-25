@@ -205,8 +205,8 @@ export default function Home() {
         {/* VIDEO SEGMENTS — chapter tours */}
         <div style={S.videoSegments}>
           <Button to="/collision">Collision</Button>
-          <Button href="/sim/">Mars Colony Tour</Button>
-          <Button href="/sim/">Earth Colony Tour</Button>
+          <Button href="/forecasts">The Model</Button>
+          <Button href="/fisc">The Area</Button>
         </div>
 
         {/* TELEMETRY */}
@@ -240,7 +240,7 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Read the thesis →</div>
           </Link>
-          <a href="/sim/" style={S.dispatch}>
+          <a href="/forecasts" style={S.dispatch}>
             <CornerFrame />
             <span style={S.dTag}>Act II · The Model</span>
             <h3 style={S.dTtl}>Pricing market participation. A basic income that funds itself.</h3>
@@ -250,7 +250,7 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Open the models →</div>
           </a>
-          <a href="/sim/" style={S.dispatch}>
+          <a href="/fisc" style={S.dispatch}>
             <CornerFrame />
             <span style={S.dTag}>Act III · The Area</span>
             <h3 style={S.dTtl}>Bringing the model home.</h3>
