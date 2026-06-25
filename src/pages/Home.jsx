@@ -205,8 +205,8 @@ export default function Home() {
         {/* VIDEO SEGMENTS — chapter tours */}
         <div style={S.videoSegments}>
           <Button to="/collision">Collision</Button>
-          <Button to="/mars">Mars Colony Tour</Button>
-          <Button to="/earth">Earth Colony Tour</Button>
+          <Button href="/sim/">Mars Colony Tour</Button>
+          <Button href="/sim/">Earth Colony Tour</Button>
         </div>
 
         {/* TELEMETRY */}
@@ -240,27 +240,26 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Read the thesis →</div>
           </Link>
-          <Link to="/mars" style={S.dispatch}>
+          <a href="/sim/" style={S.dispatch}>
             <CornerFrame />
-            <span style={S.dTag}>Act II · Mars Colony</span>
-            <h3 style={S.dTtl}>Capitalist UBI. Every citizen a shareholder.</h3>
+            <span style={S.dTag}>Act II · The Model</span>
+            <h3 style={S.dTtl}>Pricing market participation. A basic income that funds itself.</h3>
             <p style={S.dBody}>
-              A working post-scarcity simulation. Sixty-six citizens, one hundred
-              and sixty robots, an automated Fisc — the economic model that
-              survives AI displacement.
+              The economic model behind Axion — the Market Access Charge, the
+              Fisc, and the Time Dividend that automation actually pays out.
             </p>
-            <div style={S.dSep}>Enter simulation →</div>
-          </Link>
-          <Link to="/earth" style={S.dispatch}>
+            <div style={S.dSep}>Open the models →</div>
+          </a>
+          <a href="/sim/" style={S.dispatch}>
             <CornerFrame />
-            <span style={S.dTag}>Act III · Earth Implementation</span>
+            <span style={S.dTag}>Act III · The Area</span>
             <h3 style={S.dTtl}>Bringing the model home.</h3>
             <p style={S.dBody}>
-              How the principles tested on Mars adapt to existing nation-states.
-              A blueprint for the post-fiat transition, ground up.
+              How a real place runs it — a county-scale treasury collecting the
+              charge and paying a basic income, in dollar-pegged Mond.
             </p>
-            <div style={S.dSep}>Read blueprint →</div>
-          </Link>
+            <div style={S.dSep}>See the Fisc →</div>
+          </a>
         </div>
 
         <div style={{ height: 56 }} />

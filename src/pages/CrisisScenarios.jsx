@@ -1352,9 +1352,9 @@ export default function CrisisScenarios() {
 
         <div style={{ textAlign: "center", padding: "24px 0 8px" }}>
           <div style={{ fontSize: 10, color: "#767676", marginBottom: 10 }}>Ready to hedge the transition?</div>
-          <Link to="/coin" style={{ display: "inline-block", background: "#c8a96e", color: "#fff", padding: "10px 24px", fontFamily: F, fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: "0.08em" }}>
-            Explore the AXION Vault →
-          </Link>
+          <a href="/sim/" style={{ display: "inline-block", background: "#c8a96e", color: "#fff", padding: "10px 24px", fontFamily: F, fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: "0.08em" }}>
+            Explore the Axion model →
+          </a>
         </div>
       </div>
 
