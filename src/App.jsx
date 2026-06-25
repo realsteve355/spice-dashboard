@@ -13,9 +13,9 @@ import Invest from "./pages/Invest";
 
 const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
+  { label: "Employment",       to: "/unemployment",  external: true },
   { label: "Trajectory",       to: "/trajectory",    external: true },
   { label: "Overview",         to: "/forecasts",     external: true },
-  { label: "Unemployment",     to: "/unemployment",  external: true },
   { label: "References",       to: "/references",    external: true },
   { label: "Income & balance", to: "/fisc",          external: true },
   { label: "Time dividend",    to: "/time-dividend", external: true },

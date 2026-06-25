@@ -204,32 +204,8 @@ export default function Home() {
           Two-minute overview of the colony economy — citizens, companies, the Fisc, S/V tokens.
         </div>
 
-        {/* VIDEO SEGMENTS — chapter tours */}
-        <div style={S.videoSegments}>
-          <Button to="/collision">Collision</Button>
-          <Button href="/forecasts">The Model</Button>
-          <Button href="/fisc">The Area</Button>
-        </div>
-
-        {/* TELEMETRY */}
-        <SectionHead tag="T-01" title="Field Telemetry · Live" timestamp="BASE SEPOLIA · 84532" />
-        <div>
-          <TelemetryGrid
-            columns={4}
-            cells={[
-              { label: "Active Colonies",   value: String(colonies.length), delta: "on-chain registry" },
-              { label: "Citizens Enrolled", value: String(totalCitizens),   delta: "across all colonies" },
-              { label: "Mars Colonies",     value: String(marsCount),       delta: "simulation only" },
-              { label: "Earth Colonies",    value: String(earthCount),      delta: "live on testnet" },
-            ]}
-          />
-        </div>
-        <div style={S.handoff}>
-          <Button variant="primary" href={COLONY_APP_HOST}>Browse all colonies →</Button>
-        </div>
-
         {/* DISPATCHES */}
-        <SectionHead tag="T-02" title="Dispatches · Three Acts" timestamp="3 ENTRIES" />
+        <SectionHead tag="T-01" title="Dispatches · Three Acts" timestamp="3 ENTRIES" />
         <div style={S.dispatches}>
           <Link to="/collision" style={S.dispatch}>
             <CornerFrame />
@@ -262,6 +238,23 @@ export default function Home() {
             </p>
             <div style={S.dSep}>See the Fisc →</div>
           </a>
+        </div>
+
+        {/* TELEMETRY */}
+        <SectionHead tag="T-02" title="Field Telemetry · Live" timestamp="BASE SEPOLIA · 84532" />
+        <div>
+          <TelemetryGrid
+            columns={4}
+            cells={[
+              { label: "Active Colonies",   value: String(colonies.length), delta: "on-chain registry" },
+              { label: "Citizens Enrolled", value: String(totalCitizens),   delta: "across all colonies" },
+              { label: "Mars Colonies",     value: String(marsCount),       delta: "simulation only" },
+              { label: "Earth Colonies",    value: String(earthCount),      delta: "live on testnet" },
+            ]}
+          />
+        </div>
+        <div style={S.handoff}>
+          <Button variant="primary" href={COLONY_APP_HOST}>Browse all colonies →</Button>
         </div>
 
         <div style={{ height: 56 }} />

@@ -47,8 +47,6 @@ export default function TopBar({ navItems = [], cta }) {
           alt="AXION"
           style={{ height: 56, width: "auto", display: "block" }}
         />
-        <span style={S.brandSep}>/</span>
-        <span style={S.brandTag}>mission control</span>
       </NavLink>
       <nav style={S.nav}>
           {navItems.map((item) => (
