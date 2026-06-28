@@ -106,9 +106,12 @@ function introCard() {
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       Taking the ${money(T.rev)} of business done in the county
       (<a href="/companies" style="color:var(--ok);">previous page</a>), each sector
-      declares a profit margin, an employee count, and an average transaction size.
-      The Market Access Charge is then a charge on profit whose rate rises with profit
-      <em>per employee</em>:
+      declares the profit it makes <strong>on its county sales</strong> (revenue × margin),
+      and a share of its workforce is attributed to that business
+      (county revenue ÷ revenue-per-employee). Both are <strong>county figures</strong>, not
+      national totals — for a national chain it is the slice that serves Midwestville; for a
+      local firm it is simply the firm. The Market Access Charge is then a charge on that
+      county profit, at a rate that rises with the firm's profit <em>per employee</em>:
     </div>
     <div class="formula">
       rate = <code>k</code> × 22% × (profit ÷ employees) ÷ $200,000 &nbsp;·&nbsp; <code>k = 1</code><br>
@@ -119,6 +122,12 @@ function introCard() {
       automated firms — few employees, fat profit — pay proportionally more, with no
       ceiling for now; labour-heavy, thin-margin firms (groceries, restaurants, shops)
       pay almost nothing. The charge targets automation, by design.
+      <br><br>
+      Profit per employee here is the firm's <strong>company-wide</strong> figure
+      (margin × revenue-per-employee), not a count of staff sitting in the county — an
+      airline, a streaming service or an online casino may have <em>no</em> employees in
+      Midwestville at all, yet sell heavily into it. What matters is how automated the
+      firm is overall; the charge applies that rate to the profit it earns here.
       <br><br>
       These are <strong>today's</strong> figures — year 1, 2026. By year 20 automation
       pushes profit per employee up (raising MAC rates) even as employment falls, so the
@@ -131,8 +140,8 @@ function statRow() {
   return `
   <div class="card">
     <div class="stats">
-      ${statBox("Declared profit / yr", money(T.profit), "from " + money(T.rev) + " revenue")}
-      ${statBox("Employees", "~" + n(T.emp), "attributed to county business")}
+      ${statBox("County profit / yr", money(T.profit), "from " + money(T.rev) + " county revenue")}
+      ${statBox("Employees (county share)", "~" + n(T.emp), "workforce attributed to the county")}
       ${statBox("Transactions / yr", "~" + count(T.ntxn), "across all sectors")}
       ${statBox("Total MAC (k = 1)", money(T.mac), "per year", "var(--ok)")}
       ${statBox("Effective rate", pct(T.effRate), "of declared profit")}
@@ -159,14 +168,14 @@ function chargeTable() {
   }).join("");
   return `
   <div class="card">
-    <h3>Declared profit, employees and the charge</h3>
+    <h3>County profit, employees and the charge</h3>
     <div style="overflow-x:auto;">
     <table>
       <thead><tr>
         <th>Sector</th>
-        <th class="num">Declared profit</th>
-        <th class="num">Employees</th>
-        <th class="num">Profit / emp</th>
+        <th class="num">County profit</th>
+        <th class="num">Employees (county share)</th>
+        <th class="num">Profit / emp (company-wide)</th>
         <th class="num">MAC rate</th>
         <th class="num">MAC / yr</th>
         <th class="num">MAC / company</th>
@@ -188,6 +197,10 @@ function chargeTable() {
     </table>
     </div>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      County profit and employees are <strong>attributed to the county's business</strong> — for national firms the
+      slice serving Midwestville, not their national totals. Profit / emp is the firm's company-wide automation level
+      and drives the rate.
+      <br>
       Avg wage bill / company = attributed employees × average sector wage, divided by the number of companies —
       a yardstick for the charge (the MAC is meant to sit alongside wages as a business expense). Total wage bill
       ${money(T.wageBill)}/yr. MAC % of rev = the charge as a share of the sector's county sales (= margin × rate).
