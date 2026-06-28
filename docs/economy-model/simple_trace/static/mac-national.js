@@ -29,10 +29,57 @@ const SECTORS = CATEGORIES.map(c => {
 }).sort((a, b) => b.weight - a.weight);
 const totalWeight = SECTORS.reduce((s, x) => s + x.weight, 0);
 
+// Citizen breakdown (national, year 20).
+const RETIRED = 60000;
+const totalPop     = (WA + RETIRED + CH) * SCALE;
+const employedN    = WA * (1 - u20) * SCALE;      // still working
+const unemployedN  = WA * u20 * SCALE;            // displaced — on UBI
+const childrenUBI  = CH * u20 * SCALE;            // children in UBI households
+const childrenWork = CH * (1 - u20) * SCALE;      // children in working households
+const retiredN     = RETIRED * SCALE;             // pensioners
+const SINGLE_SHARE = 0.15;                        // ~share of adults who live alone (approx)
+const singleAdults = unemployedN * SINGLE_SHARE;
+const familyAdults = unemployedN * (1 - SINGLE_SHARE);
+
 const T = v => "$" + (v / 1e12).toFixed(2) + "T";
+const peo = v => (v / 1e6).toFixed(0) + "M";
 
 function render() {
-  document.getElementById("results").innerHTML = [introCard(), statRow(), affordCard(), distTable(), sourceCard()].join("\n");
+  document.getElementById("results").innerHTML = [introCard(), statRow(), affordCard(), breakdownCard(), distTable(), sourceCard()].join("\n");
+}
+
+function breakdownCard() {
+  const row = (label, n, ubi, note) => `<tr>
+    <td class="cat">${label}</td>
+    <td class="num">${peo(n)}</td>
+    <td class="num">${ubi ? T(ubi) : "—"}</td>
+    <td style="color:var(--dim); font-size:11px;">${note}</td></tr>`;
+  return `
+  <div class="card">
+    <h3>Who the UBI supports — year 20</h3>
+    <table>
+      <thead><tr><th>Group</th><th class="num">People</th><th class="num">Annual UBI</th><th></th></tr></thead>
+      <tbody>
+        ${row("Single adults", singleAdults, singleAdults * AY, "on UBI · full basket")}
+        ${row("Adults in families", familyAdults, familyAdults * AY, "on UBI · full basket")}
+        ${row("Children", childrenUBI, childrenUBI * CY, "50% basket, paid to parents")}
+        ${row("Pensioners (65+)", retiredN, 0, "on pensions, not UBI")}
+        ${row("Still employed", employedN, 0, "earn wages, not UBI")}
+        ${row("Children in working homes", childrenWork, 0, "—")}
+      </tbody>
+      <tfoot><tr style="border-top:2px solid var(--line-hot);">
+        <td class="cat"><strong>US citizens</strong></td>
+        <td class="num"><strong>${peo(totalPop)}</strong></td>
+        <td class="num"><strong>${T(UBI)}</strong></td>
+        <td></td>
+      </tr></tfoot>
+    </table>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      The UBI (= the MAC) supports the ${peo(unemployedN)} displaced adults + their ${peo(childrenUBI)} children at
+      basket level. Pensioners and the still-employed are not on it. Single / family split approximate
+      (~${(SINGLE_SHARE * 100).toFixed(0)}% of adults live alone).
+    </div>
+  </div>`;
 }
 function statBox(label, value, sub, color) {
   return `<div class="stat"><div class="label">${label}</div>
