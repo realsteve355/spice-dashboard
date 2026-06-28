@@ -20,17 +20,18 @@ const RATE_CAP = 0.50;      // max share of profit (cap removed for now — see 
 const REF_PPE = 200000;     // profit-per-employee reference ($)
 
 // rev ($/yr from county), margin (profit/rev), rpe (revenue per employee $),
-// txn (avg transaction size $), cos (number of companies — from /companies).
+// txn (avg transaction size $), cos (number of companies — from /companies),
+// wage (average annual wage per employee $ — drives the wage bill).
 const CATEGORIES = [
-  { name: "Housing & real estate",     rev: 3.9e9, margin: 0.28, rpe: 350000, txn: 1200, cos: 4000 },
-  { name: "Food — grocery & dining",   rev: 2.4e9, margin: 0.08, rpe: 120000, txn:   35, cos: 1600 },
-  { name: "Transport, autos & travel", rev: 1.8e9, margin: 0.12, rpe: 400000, txn:   90, cos:  350 },
-  { name: "Healthcare & pharma",       rev: 1.3e9, margin: 0.12, rpe: 200000, txn:  180, cos:  550 },
-  { name: "Retail goods & e-commerce", rev: 1.2e9, margin: 0.06, rpe: 250000, txn:   55, cos:  900 },
-  { name: "Utilities & telecom",       rev: 1.0e9, margin: 0.20, rpe: 800000, txn:  150, cos:   20 },
-  { name: "Digital, media & gambling", rev: 0.7e9, margin: 0.35, rpe: 1500000, txn:  20, cos:  150 },
-  { name: "Financial services",        rev: 0.4e9, margin: 0.25, rpe: 600000, txn:  250, cos:  220 },
-  { name: "Education & training",      rev: 0.3e9, margin: 0.08, rpe: 120000, txn:  400, cos:  110 },
+  { name: "Housing & real estate",     rev: 3.9e9, margin: 0.28, rpe: 350000, txn: 1200, cos: 4000, wage: 55000 },
+  { name: "Food — grocery & dining",   rev: 2.4e9, margin: 0.08, rpe: 120000, txn:   35, cos: 1600, wage: 30000 },
+  { name: "Transport, autos & travel", rev: 1.8e9, margin: 0.12, rpe: 400000, txn:   90, cos:  350, wage: 55000 },
+  { name: "Healthcare & pharma",       rev: 1.3e9, margin: 0.12, rpe: 200000, txn:  180, cos:  550, wage: 65000 },
+  { name: "Retail goods & e-commerce", rev: 1.2e9, margin: 0.06, rpe: 250000, txn:   55, cos:  900, wage: 38000 },
+  { name: "Utilities & telecom",       rev: 1.0e9, margin: 0.20, rpe: 800000, txn:  150, cos:   20, wage: 90000 },
+  { name: "Digital, media & gambling", rev: 0.7e9, margin: 0.35, rpe: 1500000, txn:  20, cos:  150, wage: 120000 },
+  { name: "Financial services",        rev: 0.4e9, margin: 0.25, rpe: 600000, txn:  250, cos:  220, wage: 95000 },
+  { name: "Education & training",      rev: 0.3e9, margin: 0.08, rpe: 120000, txn:  400, cos:  110, wage: 50000 },
 ];
 
 function macRate(profit, emp) {
@@ -46,7 +47,10 @@ function derive() {
     const rate = macRate(profit, emp);
     const mac = profit * rate;
     const ntxn = c.rev / c.txn;
-    return { ...c, profit, emp, ppe, rate, mac, ntxn, macPerCo: mac / c.cos, macPerTxn: mac / ntxn };
+    const wageBill = emp * c.wage;
+    return { ...c, profit, emp, ppe, rate, mac, ntxn, wageBill,
+      macPerCo: mac / c.cos, macPerTxn: mac / ntxn,
+      wageBillPerCo: wageBill / c.cos, macPctRev: mac / c.rev };
   });
 }
 
@@ -66,8 +70,8 @@ const pct = v => (v * 100).toFixed(1) + "%";
 
 let R, T;
 function totals(R) {
-  const t = { rev: 0, profit: 0, emp: 0, mac: 0, ntxn: 0, cos: 0 };
-  for (const r of R) { t.rev += r.rev; t.profit += r.profit; t.emp += r.emp; t.mac += r.mac; t.ntxn += r.ntxn; t.cos += r.cos; }
+  const t = { rev: 0, profit: 0, emp: 0, mac: 0, ntxn: 0, cos: 0, wageBill: 0 };
+  for (const r of R) { t.rev += r.rev; t.profit += r.profit; t.emp += r.emp; t.mac += r.mac; t.ntxn += r.ntxn; t.cos += r.cos; t.wageBill += r.wageBill; }
   t.effRate = t.mac / t.profit;
   return t;
 }
@@ -145,11 +149,14 @@ function chargeTable() {
       <td class="num">${pct(r.rate)}</td>
       <td class="num bar" style="background:linear-gradient(90deg, rgba(93,211,158,0.18) ${barPct.toFixed(0)}%, transparent ${barPct.toFixed(0)}%);">${money(r.mac)}</td>
       <td class="num">${money(r.macPerCo)}</td>
+      <td class="num">${money(r.wageBillPerCo)}</td>
+      <td class="num">${pct(r.macPctRev)}</td>
     </tr>`;
   }).join("");
   return `
   <div class="card">
     <h3>Declared profit, employees and the charge</h3>
+    <div style="overflow-x:auto;">
     <table>
       <thead><tr>
         <th>Sector</th>
@@ -159,6 +166,8 @@ function chargeTable() {
         <th class="num">MAC rate</th>
         <th class="num">MAC / yr</th>
         <th class="num">MAC / company</th>
+        <th class="num">Avg wage bill / co</th>
+        <th class="num">MAC % of rev</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr style="border-top:2px solid var(--line-hot);">
@@ -169,8 +178,16 @@ function chargeTable() {
         <td class="num"><strong>${pct(T.effRate)}</strong></td>
         <td class="num"><strong>${money(T.mac)}</strong></td>
         <td class="num">${money(T.mac / T.cos)}</td>
+        <td class="num">${money(T.wageBill / T.cos)}</td>
+        <td class="num"><strong>${pct(T.mac / T.rev)}</strong></td>
       </tr></tfoot>
     </table>
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
+      Avg wage bill / company = attributed employees × average sector wage, divided by the number of companies —
+      a yardstick for the charge (the MAC is meant to sit alongside wages as a business expense). Total wage bill
+      ${money(T.wageBill)}/yr. MAC % of rev = the charge as a share of the sector's county sales (= margin × rate).
+    </div>
   </div>`;
 }
 
