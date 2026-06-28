@@ -203,6 +203,10 @@ function gapCard() {
       MAC base must widen to the whole economy; with the basket also deflating (lowering the bill) and
       the multiplier <code style="color:var(--ok);">k</code> available, the gap can close — but not from
       consumer profit alone.
+      <br><br>
+      <a href="/calibration" style="color:var(--ok);">Calibrating k →</a> works it through: on the whole
+      economy, funding the full UBI takes ~65% of the wages automation frees up, and the firms still keep
+      more profit than before — the win-win, with the numbers.
     </div>
   </div>`;
 }
