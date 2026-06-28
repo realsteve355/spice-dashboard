@@ -95,23 +95,24 @@ function introCard() {
       MAC = profit × rate
     </div>
     <div style="font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px;">
-      Optimistic "cheap robots" case — robot capital and energy costs would temper the profit rise.
+      As before, <strong>k = 1 is the shape</strong>, not the funding level — k is the dial that scales the
+      total to the UBI. What follows tests whether the <em>base</em> is big enough for any k to reach the
+      bill. Optimistic "cheap robots" case — robot capital and energy costs would temper the profit rise.
       Revenue held nominal; basket deflation (which lowers the UBI bill) is a separate effect. First-pass estimates.
     </div>
   </div>`;
 }
 
 function statRow() {
-  const cover = T.mac / UBI_Y20 * 100;
   return `
   <div class="card">
     <div class="stats">
       ${statBox("Employment · year 20", "~" + count(T.emp), "down from ~" + count(T.emp1) + " — automation", "var(--crit)")}
       ${statBox("County profit · year 20", money(T.profit), "up from " + money(T.profit1) + " — wages → profit", "var(--ok)")}
-      ${statBox("Total MAC · year 20", money(T.mac), "up from " + money(T.macY1) + " (year 1)", "var(--ok)")}
+      ${statBox("Total MAC · shape (k = 1)", money(T.mac), "up from " + money(T.macY1) + " (year 1) — before calibration", "var(--ok)")}
       ${statBox("Required UBI · year 20", money(UBI_Y20), "from the UBI page", "var(--warn)")}
-      ${statBox("MAC covers", cover.toFixed(0) + "%", "of the year-20 UBI bill", cover >= 100 ? "var(--ok)" : "var(--crit)")}
-      ${statBox("Effective rate", pct(T.effRate), "of year-20 profit")}
+      ${statBox("Whole profit pool", money(T.profit), (T.profit / UBI_Y20 * 100).toFixed(0) + "% of the UBI — even 100% falls short", "var(--crit)")}
+      ${statBox("Effective rate", pct(T.effRate), "of year-20 profit, at k = 1")}
     </div>
   </div>`;
 }
@@ -175,15 +176,14 @@ function gapCard() {
   const mismatch = unemployedY20 / macDisplaced;
   return `
   <div class="card" style="border-left:3px solid var(--crit);">
-    <h3>The gap — and why raising the rate cannot close it</h3>
+    <h3>The gap — and why a bigger k cannot close it</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      At year 20 the charge raises <strong>${money(T.mac)}</strong> — about
+      At k = 1 the shape raises <strong>${money(T.mac)}</strong> — about
       ${(T.mac / T.macY1).toFixed(0)}× the year-1 figure, as automation turns wages into profit and
-      drives profit per employee through the roof. Yet the required UBI is
-      <strong>${money(UBI_Y20)}</strong>. The charge still funds only
-      <strong>${(T.mac / UBI_Y20 * 100).toFixed(0)}%</strong> of it.
+      drives profit per employee through the roof. Normally k would now scale that up to the
+      <strong>${money(UBI_Y20)}</strong> UBI — but here it can't.
       <br><br>
-      And it cannot be fixed by turning the rate up: the county's <em>entire</em> consumer-business
+      Turning k up cannot conjure a base that isn't there: the county's <em>entire</em> consumer-business
       profit at year 20 is only <strong>${money(T.profit)}</strong> — less than the
       ${money(UBI_Y20)} bill. Even charging 100% of every firm's profit would fall short. The base is
       too small.

@@ -88,6 +88,10 @@ function introCard() {
       ceiling for now; labour-heavy, thin-margin firms (groceries, restaurants, shops)
       pay almost nothing. The charge targets automation, by design.
       <br><br>
+      <strong>k = 1 gives only the shape</strong> — <em>which</em> firms pay and in what proportion,
+      not the funding level. k is the dial that scales the total up to the required UBI; it is not meant
+      to sit at 1. So read the totals below as the distribution, before calibration.
+      <br><br>
       Profit per employee here is the firm's <strong>company-wide</strong> figure
       (margin × revenue-per-employee), not a count of staff sitting in the county — an
       airline, a streaming service or an online casino may have <em>no</em> employees in
@@ -108,8 +112,8 @@ function statRow() {
       ${statBox("County profit / yr", money(T.profit), "from " + money(T.rev) + " county revenue")}
       ${statBox("Employees (county share)", "~" + n(T.emp), "workforce attributed to the county")}
       ${statBox("Transactions / yr", "~" + count(T.ntxn), "across all sectors")}
-      ${statBox("Total MAC (k = 1)", money(T.mac), "per year", "var(--ok)")}
-      ${statBox("Effective rate", pct(T.effRate), "of declared profit")}
+      ${statBox("Total MAC · shape (k = 1)", money(T.mac), "before calibration — k scales it to the UBI", "var(--ok)")}
+      ${statBox("Effective rate", pct(T.effRate), "of declared profit, at k = 1")}
       ${statBox("Avg MAC / company", money(T.mac / T.cos), "skewed — see table")}
     </div>
   </div>`;
@@ -230,19 +234,24 @@ function whoPaysCard() {
 
 function nextCard() {
   // Required UBI figures are from the /ubi page (held here as reference points).
-  const ubiToday = 0.373e9, ubiY20 = 6.67e9;
+  const ubiToday = 0.373e9;
+  const kToday = ubiToday / T.mac;
   return `
   <div class="card" style="border-left:3px solid var(--ok);">
-    <h3>The reckoning — MAC vs the UBI bill</h3>
+    <h3>From shape to level — the role of k</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      At k = 1 the charge raises <strong>${money(T.mac)}/year</strong>. The
-      <a href="/ubi" style="color:var(--ok);">required UBI</a> is ${money(ubiToday)} today
-      (at 4.2% unemployment) and climbs to ${money(ubiY20)} by year 20 (at 75%).
-      So today's MAC nearly covers today's bill, but falls far short of the automated
-      end-state. Closing that gap is the next question — through the charge multiplier
-      <code style="color:var(--ok);">k</code>, a broader base (business-to-business and
-      government), and the basket deflation that lowers the bill over time. That funding
-      comparison, year by year, is the next page.
+      At k = 1 the charge raises <strong>${money(T.mac)}/year</strong> — but that is the
+      <strong>distribution</strong>, not the target. The job of k is to scale the whole pattern up to
+      the <a href="/ubi" style="color:var(--ok);">required UBI</a> (${money(ubiToday)} today, at 4.2%
+      unemployment). Here that would mean <strong>k ≈ ${kToday.toFixed(1)}</strong> — and because
+      automation has lifted these firms' profit so far above their wage bill, paying it still leaves them
+      better off than before. The displaced get a basket <em>and</em> their time back.
+      <br><br>
+      What k <em>cannot</em> do is conjure a base that isn't there. As automation deepens
+      (<a href="/mac-y20" style="color:var(--ok);">year 20</a>) the UBI climbs to ${money(6.67e9)}, and
+      the county's whole consumer-business profit is smaller than that — so no k closes it from consumer
+      sales alone. The fix is a wider base (the whole economy,
+      <a href="/mac-national" style="color:var(--ok);">nationally</a>), not a bigger k.
     </div>
   </div>`;
 }
