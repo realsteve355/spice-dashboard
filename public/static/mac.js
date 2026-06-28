@@ -4,19 +4,19 @@
 // declared margin (revenue -> profit), a revenue-per-employee (-> employees), and
 // an average transaction size (-> number of transactions), then apply the charge.
 //
-// Canonical MAC formula (same as maryfontaine.js):
-//     rate = min(50%, k × 22% × (profit / employees) / $200,000)
+// MAC formula (the 50% cap is removed for now — see macRate):
+//     rate = k × 22% × (profit / employees) / $200,000
 //     MAC  = profit × rate
 // k = 1 here. The rate rises with profit PER EMPLOYEE: highly automated firms
-// (few employees, fat profit) pay up to the 50% cap; labour-heavy, thin-margin
-// firms pay almost nothing. That is the design, not an accident.
+// (few employees, fat profit) pay a high rate; labour-heavy, thin-margin firms
+// pay almost nothing. That is the design, not an accident.
 //
 // All figures are first-pass illustrative estimates, to be refined. Sector
 // revenues match the /companies page ($13B total).
 
 const K = 1;
 const BASE_RATE = 0.22;     // charge at the reference profit-per-employee
-const RATE_CAP = 0.50;      // max share of profit
+const RATE_CAP = 0.50;      // max share of profit (cap removed for now — see macRate)
 const REF_PPE = 200000;     // profit-per-employee reference ($)
 
 // rev ($/yr from county), margin (profit/rev), rpe (revenue per employee $),
@@ -34,7 +34,8 @@ const CATEGORIES = [
 ];
 
 function macRate(profit, emp) {
-  return Math.min(RATE_CAP, K * BASE_RATE * (profit / emp) / REF_PPE);
+  // Cap removed for now — reinstate with Math.min(RATE_CAP, …)
+  return K * BASE_RATE * (profit / emp) / REF_PPE;
 }
 
 function derive() {
@@ -105,14 +106,15 @@ function introCard() {
       <em>per employee</em>:
     </div>
     <div class="formula">
-      rate = min(50%, <code>k</code> × 22% × (profit ÷ employees) ÷ $200,000) &nbsp;·&nbsp; <code>k = 1</code><br>
+      rate = <code>k</code> × 22% × (profit ÷ employees) ÷ $200,000 &nbsp;·&nbsp; <code>k = 1</code><br>
       MAC = profit × rate
     </div>
     <div style="font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px;">
       A firm earning the reference $200,000 profit per employee pays 22%. Highly
-      automated firms — few employees, fat profit — run up to the 50% cap; labour-heavy,
-      thin-margin firms (groceries, restaurants, shops) pay almost nothing. The charge
-      targets automation, by design. First-pass estimates throughout.
+      automated firms — few employees, fat profit — pay proportionally more, with no
+      ceiling for now; labour-heavy, thin-margin firms (groceries, restaurants, shops)
+      pay almost nothing. The charge targets automation, by design. First-pass estimates
+      throughout.
     </div>
   </div>`;
 }
@@ -140,7 +142,7 @@ function chargeTable() {
       <td class="num">${money(r.profit)}</td>
       <td class="num">${n(r.emp)}</td>
       <td class="num">${money(r.ppe)}</td>
-      <td class="num">${pct(r.rate)}${r.rate >= RATE_CAP ? ' <span style="color:var(--crit);">cap</span>' : ''}</td>
+      <td class="num">${pct(r.rate)}</td>
       <td class="num bar" style="background:linear-gradient(90deg, rgba(93,211,158,0.18) ${barPct.toFixed(0)}%, transparent ${barPct.toFixed(0)}%);">${money(r.mac)}</td>
       <td class="num">${money(r.macPerCo)}</td>
     </tr>`;
@@ -221,7 +223,7 @@ function whoPaysCard() {
       <strong>${top3.map(r => r.name.replace(/ —.*/, "")).join(", ")}</strong> —
       contribute ${money(top3Mac)} of the ${money(T.mac)} total
       (${pct(top3Mac / T.mac)}). Digital and gambling, on only ${money(R[6].rev)} of revenue,
-      hit the 50% cap because their profit per employee is enormous; groceries, retail and
+      pay the highest rate because their profit per employee is enormous; groceries, retail and
       education — labour-heavy and thin-margin — pay almost nothing despite large turnover.
     </div>
   </div>`;
