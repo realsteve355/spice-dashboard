@@ -7,6 +7,7 @@
     { path: '/unemployment', label: 'Employment' },
     { path: '/basket',       label: 'Basket' },
     { path: '/ubi',          label: 'UBI' },
+    { path: '/companies',    label: 'Companies' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/references',   label: 'References' },

@@ -262,6 +262,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "basket.html", "text/html; charset=utf-8")
         elif p == "/ubi":
             self._send_file(self.templates_dir / "ubi.html", "text/html; charset=utf-8")
+        elif p == "/companies":
+            self._send_file(self.templates_dir / "companies.html", "text/html; charset=utf-8")
         elif p == "/forecasts":
             self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
         elif p == "/unemployment":

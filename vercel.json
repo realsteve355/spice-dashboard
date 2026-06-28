@@ -13,6 +13,7 @@
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
     { "source": "/basket", "destination": "/basket.html" },
     { "source": "/ubi", "destination": "/ubi.html" },
+    { "source": "/companies", "destination": "/companies.html" },
     { "source": "/trajectory", "destination": "/trajectory.html" },
     { "source": "/forecasts", "destination": "/forecasts.html" },
     { "source": "/fisc", "destination": "/fisc.html" },
