@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
   { label: "Employment",       to: "/unemployment",  external: true },
   { label: "Basket",           to: "/basket",        external: true },
+  { label: "UBI",              to: "/ubi",           external: true },
   { label: "Trajectory",       to: "/trajectory",    external: true },
   { label: "Overview",         to: "/forecasts",     external: true },
   { label: "References",       to: "/references",    external: true },
