@@ -95,24 +95,25 @@ function introCard() {
       MAC = profit × rate
     </div>
     <div style="font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px;">
-      As before, <strong>k = 1 is the shape</strong>, not the funding level — k is the dial that scales the
-      total to the UBI. What follows tests whether the <em>base</em> is big enough for any k to reach the
-      bill. Optimistic "cheap robots" case — robot capital and energy costs would temper the profit rise.
+      The MAC is a <strong>business expense in the place of wages</strong>, not a slice of profit. The figures
+      below are this slice's <strong>distribution shape</strong> at k = 1 (who pays more); k scales the total to
+      the UBI. Optimistic "cheap robots" case — robot capital and energy costs would temper the profit rise.
       Revenue held nominal; basket deflation (which lowers the UBI bill) is a separate effect. First-pass estimates.
     </div>
   </div>`;
 }
 
 function statRow() {
+  const freed = WORKING_AGE * (u20 - u1) * 60000;   // wages automation removed (county)
   return `
   <div class="card">
     <div class="stats">
       ${statBox("Employment · year 20", "~" + count(T.emp), "down from ~" + count(T.emp1) + " — automation", "var(--crit)")}
       ${statBox("County profit · year 20", money(T.profit), "up from " + money(T.profit1) + " — wages → profit", "var(--ok)")}
       ${statBox("Total MAC · shape (k = 1)", money(T.mac), "up from " + money(T.macY1) + " (year 1) — before calibration", "var(--ok)")}
-      ${statBox("Required UBI · year 20", money(UBI_Y20), "from the UBI page", "var(--warn)")}
-      ${statBox("Whole profit pool", money(T.profit), (T.profit / UBI_Y20 * 100).toFixed(0) + "% of the UBI — even 100% falls short", "var(--crit)")}
-      ${statBox("Effective rate", pct(T.effRate), "of year-20 profit, at k = 1")}
+      ${statBox("Required UBI · year 20", money(UBI_Y20), "= the total MAC, set by k", "var(--warn)")}
+      ${statBox("Wages freed", money(freed), "automation removed — more than the UBI; the MAC replaces them", "var(--ok)")}
+      ${statBox("Charge share · k = 1", pct(T.effRate), "this slice's distribution shape")}
     </div>
   </div>`;
 }
@@ -171,42 +172,24 @@ function gapCard() {
   const displaced = WORKING_AGE * (u20 - u1);
   const formerWages = displaced * 60000;  // ~avg county wage
   const allJobsY1 = WORKING_AGE * (1 - u1);     // employment page: all jobs, year 1
-  const unemployedY20 = WORKING_AGE * u20;       // UBI page: all unemployed at year 20
-  const macDisplaced = T.emp1 - T.emp;           // workers this MAC slice sheds
-  const mismatch = unemployedY20 / macDisplaced;
   return `
-  <div class="card" style="border-left:3px solid var(--crit);">
-    <h3>The gap — and why a bigger k cannot close it</h3>
+  <div class="card" style="border-left:3px solid var(--warn);">
+    <h3>This is only a slice — the charge isn't bounded by it</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      At k = 1 the shape raises <strong>${money(T.mac)}</strong> — about
-      ${(T.mac / T.macY1).toFixed(0)}× the year-1 figure, as automation turns wages into profit and
-      drives profit per employee through the roof. Normally k would now scale that up to the
-      <strong>${money(UBI_Y20)}</strong> UBI — but here it can't.
-      <br><br>
-      Turning k up cannot conjure a base that isn't there: the county's <em>entire</em> consumer-business
-      profit at year 20 is only <strong>${money(T.profit)}</strong> — less than the
-      ${money(UBI_Y20)} bill. Even charging 100% of every firm's profit would fall short. The base is
-      too small.
+      The MAC is a business expense in the place of wages, scaled (by k) so the total equals the UBI — it is
+      <strong>not</strong> a share of profit, and not bounded by it. The numbers above are this slice's part of
+      the <em>distribution</em> (who pays more), not a funding attempt.
       <br><br>
       Seen through the <a href="/unemployment" style="color:var(--ok);">employment page</a>: it tracks all
-      ~${count(allJobsY1)} of the county's jobs, but this MAC sees only the ~${count(T.emp1)} in
-      consumer-facing business — under a quarter. Both fall at the same rate (to ${(RETENTION * 100).toFixed(0)}%),
-      yet the UBI must support all ~${count(unemployedY20)} people unemployed by year 20, while this slice's
-      automation frees up only ~${count(macDisplaced)} workers' wages — a <strong>${mismatch.toFixed(1)}×</strong>
-      mismatch. The charge sees a quarter of the workforce but is asked to fund all of it.
+      ~${count(allJobsY1)} of the county's jobs, but these consumer-facing sectors are only ~${count(T.emp1)} of
+      them — under a quarter. The charge spreads across the <em>whole</em> production chain: the
+      ~${count(displaced)} displaced workers earned on the order of <strong>${money(formerWages)}</strong> in
+      wages — more than the ${money(UBI_Y20)} UBI — so the MAC, which replaces those wages, is affordable
+      everywhere it lands.
       <br><br>
-      The reason is scope. This MAC is levied on <strong>consumer-facing business only</strong>
-      (the ${money(T.rev)} from the basket + discretionary spending). But automation eliminates wages
-      across the <em>whole</em> economy: the ~${count(displaced)} displaced workers earned on the order
-      of <strong>${money(formerWages)}</strong> in wages — far more than the UBI bill — and most of that
-      sits outside this consumer slice (business-to-business, government, exports). To fund the UBI the
-      MAC base must widen to the whole economy; with the basket also deflating (lowering the bill) and
-      the multiplier <code style="color:var(--ok);">k</code> available, the gap can close — but not from
-      consumer profit alone.
-      <br><br>
-      <a href="/calibration" style="color:var(--ok);">Calibrating k →</a> works it through: on the whole
-      economy, funding the full UBI takes ~65% of the wages automation frees up, and the firms still keep
-      more profit than before — the win-win, with the numbers.
+      <a href="/mac-national" style="color:var(--ok);">The MAC vs the wage bill →</a> shows it whole: the charge
+      is smaller than the wage bill it replaces, so firms pay less than before and the UBI is funded.
+      <a href="/calibration" style="color:var(--ok);">Calibrating k →</a> has the split.
     </div>
   </div>`;
 }

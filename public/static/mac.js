@@ -98,9 +98,14 @@ function introCard() {
       Midwestville at all, yet sell heavily into it. What matters is how automated the
       firm is overall; the charge applies that rate to the profit it earns here.
       <br><br>
+      The MAC is a <strong>business expense in the place of wages</strong>, not a slice of profit. Read the
+      figures below as the <strong>distribution</strong> — each firm's relative share of the charge; k then scales
+      the shares so the total equals the UBI. Affordability is the MAC vs the wage bill it replaces
+      (<a href="/mac-national" style="color:var(--ok);">National →</a>), not vs profit.
+      <br><br>
       These are <strong>today's</strong> figures — year 1, 2026. By year 20 automation
-      pushes profit per employee up (raising MAC rates) even as employment falls, so the
-      year-20 charge differs; that evolution is a later page. First-pass estimates throughout.
+      pushes profit per employee up (raising each firm's share) even as employment falls, so the
+      year-20 distribution differs; that evolution is a later page. First-pass estimates throughout.
     </div>
   </div>`;
 }

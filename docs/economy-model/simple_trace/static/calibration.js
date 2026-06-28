@@ -46,6 +46,7 @@ function render() {
     todayCard(),
     endstateConsumerCard(),
     wholeEconomyCard(),
+    chickenEggCard(),
   ].join("\n");
 }
 
@@ -184,6 +185,23 @@ function wholeEconomyCard() {
         profit-per-employee mix (a model still to build); what's fixed is the size of the pool and the take.
         First-pass estimates.
       </span>
+    </div>
+  </div>`;
+}
+
+function chickenEggCard() {
+  return `
+  <div class="card" style="border-left:3px solid var(--warn);">
+    <h3>The chicken-and-egg — and how it's broken</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      The charge is weighted by profit per employee — but profit in the accounts is revenue minus costs minus
+      wages minus the MAC. So profit seems to depend on the charge, which depends on profit. Circular.
+      <br><br>
+      It's broken the way income tax is: the charge is assessed on <strong>pre-charge profit</strong>
+      (revenue − costs − the reduced wages), then booked as an expense. The weight uses the pre-charge figure,
+      which doesn't contain the MAC, so there's no loop. <strong>Post-charge profit = pre-charge profit − MAC.</strong>
+      The only real limit is solvency — a firm's MAC can't exceed its pre-charge profit — which holds across the
+      whole economy because the total UBI is smaller than the wages automation freed.
     </div>
   </div>`;
 }
