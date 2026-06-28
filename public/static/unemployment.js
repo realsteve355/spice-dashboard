@@ -1,5 +1,17 @@
-// /unemployment page — uses the shared MaryFontaine cohorts + ramp (maryfontaine.js).
-const { WORKING_AGE, RETIRED, CHILDREN, TOTAL_POP, unempRateAt } = MF;
+// /unemployment page — uses the shared unemployment ramp (maryfontaine.js) but
+// its OWN demographics: Midwestville County, an anonymised public name for a
+// real ~390,000-person US Midwest county (Butler County, OH basis).
+//
+// NOTE: this is an employment-page-only override. The shared maryfontaine.js
+// anchor (230k / 180k adults) still drives the per-adult MAC/UBI maths on the
+// Fisc and Profitability pages until those pages are re-anchored to the county.
+const { unempRateAt } = MF;
+
+// Midwestville County age structure (US Census basis, rounded):
+const WORKING_AGE = 240000; // 18–64   (~62%)
+const RETIRED     = 60000;  // 65+     (~15%)
+const CHILDREN    = 90000;  // under 18 (~23%)
+const TOTAL_POP   = WORKING_AGE + RETIRED + CHILDREN; // 390,000
 
 runPage(d => [
   renderUnemploymentChart(d.unemployment),
@@ -8,7 +20,7 @@ runPage(d => [
   renderCohortTable(),
 ].join('\n'));
 
-// MaryFontaine population by cohort, per year (shared model). Unemployment applies
+// Midwestville County population by cohort, per year. Unemployment applies
 // to the working-age cohort; retired and children are out of the labour force.
 // Cohorts held constant for illustration; only the employed/unemployed split moves.
 function renderCohortTable() {
@@ -31,11 +43,12 @@ function renderCohortTable() {
   }
   return `
   <div class="card" style="margin-top:14px;">
-    <h3>MaryFontaine population &amp; unemployment by year</h3>
+    <h3>Midwestville County population &amp; unemployment by year</h3>
     <div style="font-size:12px; color:var(--dim); font-style:italic; margin-bottom:12px; line-height:1.6;">
-      Population of ~230,000 — 180,000 adults (140,000 working-age + 40,000 retired) + 50,000 children.
-      Unemployment applies only to the working-age cohort; retired and children are outside the labour force. Ramp is
-      the colony planning case (4.2% → 75% over 20 years), matching the profitability and Fisc models.
+      Population of ~390,000 — 300,000 adults (240,000 working-age + 60,000 retired) + 90,000 children.
+      Modelled on a real US Midwest county. Unemployment applies only to the working-age cohort; retired and
+      children are outside the labour force. Ramp is the colony planning case (4.2% → 75% over 20 years),
+      matching the profitability and Fisc models.
     </div>
     <table style="table-layout:fixed; width:100%;">
       <colgroup><col style="width:8%;"><col style="width:11%;"><col style="width:14%;"><col style="width:14%;"><col style="width:15%;"><col style="width:13%;"><col style="width:13%;"><col style="width:12%;"></colgroup>
@@ -53,7 +66,7 @@ function renderCohortTable() {
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Cohort sizes held constant for illustration; only the employed / unemployed split changes. By Year 20,
-      ~105,000 of 140,000 working-age adults are unemployed (work optional) under the colony planning case.
+      ~180,000 of 240,000 working-age adults are unemployed (work optional) under the colony planning case.
     </div>
   </div>`;
 }
