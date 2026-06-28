@@ -49,11 +49,7 @@ btn.addEventListener('click', async () => {
   btn.disabled = true;
   status.textContent = 'running…';
   try {
-    const r = await fetch('/api/trajectory', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(readConfig()),
-    });
+    const r = await fetch('/data/trajectory.json');
     if (!r.ok) {
       const err = await r.json();
       status.textContent = 'ERROR: ' + (err.error || r.status);
@@ -120,6 +116,9 @@ function renderBasketBreakdown(d) {
       not the UBI basket. The 10 categories here represent everything else a
       citizen needs to live. Rates sourced from <code>basket_model.py</code>
       (research-derived in <code>basket_research.md</code>).
+    </div>
+    <div style="margin-top:10px;">
+      <a href="/basket" style="color:var(--ok); font-size:12px;">See the full basket today — categories, dollar shares and who supplies each one →</a>
     </div>
   </div>`;
 }

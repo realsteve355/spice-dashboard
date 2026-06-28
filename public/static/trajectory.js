@@ -117,6 +117,9 @@ function renderBasketBreakdown(d) {
       citizen needs to live. Rates sourced from <code>basket_model.py</code>
       (research-derived in <code>basket_research.md</code>).
     </div>
+    <div style="margin-top:10px;">
+      <a href="/basket" style="color:var(--ok); font-size:12px;">See the full basket today — categories, dollar shares and who supplies each one →</a>
+    </div>
   </div>`;
 }
 

@@ -5,6 +5,7 @@
   const items = [
     { path: '/',             label: 'Home' },
     { path: '/unemployment', label: 'Employment' },
+    { path: '/basket',       label: 'Basket' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/references',   label: 'References' },
