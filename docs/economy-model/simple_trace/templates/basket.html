@@ -7,20 +7,13 @@
 <style>
   main.basket { display: block; padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
   .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 14px; }
-  .cat-card { background: var(--panel); border: 1px solid var(--line-hot); padding: 14px 16px; font-size: 12px; }
-  .cat-card.local    { border-left: 3px solid var(--ok); }
-  .cat-card.external { border-left: 3px solid var(--crit); }
-  .cat-card.mixed    { border-left: 3px solid var(--warn); }
+  .cat-card { background: var(--panel); border: 1px solid var(--line-hot); border-left: 3px solid var(--line-hot); padding: 14px 16px; font-size: 12px; }
   .cat-card .cat-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
   .cat-card .cat-name { font-size: 13px; color: var(--headline); letter-spacing: 0.08em; text-transform: uppercase; }
   .cat-card .cat-money { font-size: 12px; color: var(--txt2); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .cat-card .covers { color: var(--dim); line-height: 1.5; margin-bottom: 8px; }
   .cat-card .src-label { font-size: 10px; color: var(--dim); letter-spacing: 0.15em; text-transform: uppercase; margin: 8px 0 4px; }
-  .cat-card .src { color: var(--txt2); line-height: 1.5; }
-  .scope-tag { display:inline-block; font-size:9px; letter-spacing:0.12em; text-transform:uppercase; padding:1px 6px; border:1px solid var(--line-hot); }
-  .scope-tag.local    { color: var(--ok);   border-color: var(--ok); }
-  .scope-tag.external { color: var(--crit); border-color: var(--crit); }
-  .scope-tag.mixed    { color: var(--warn); border-color: var(--warn); }
+  .cat-card .src { color: var(--txt2); line-height: 1.6; }
   .basket table { font-size: 12px; }
 </style>
 </head>
