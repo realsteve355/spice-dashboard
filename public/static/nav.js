@@ -10,6 +10,7 @@
     { path: '/companies',    label: 'Companies' },
     { path: '/mac',          label: 'MAC' },
     { path: '/mac-y20',      label: 'MAC Y20' },
+    { path: '/mac-national', label: 'National' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/references',   label: 'References' },
