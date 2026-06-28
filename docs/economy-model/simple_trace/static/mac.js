@@ -102,6 +102,7 @@ function introCard() {
   return `
   <div class="card" style="border-left:3px solid var(--blue);">
     <h3>How the charge is computed</h3>
+    <div style="font-size:11px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:10px;">Snapshot · year 1 · 2026 (today)</div>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       Taking the ${money(T.rev)} of business done in the county
       (<a href="/companies" style="color:var(--ok);">previous page</a>), each sector
@@ -117,8 +118,11 @@ function introCard() {
       A firm earning the reference $200,000 profit per employee pays 22%. Highly
       automated firms — few employees, fat profit — pay proportionally more, with no
       ceiling for now; labour-heavy, thin-margin firms (groceries, restaurants, shops)
-      pay almost nothing. The charge targets automation, by design. First-pass estimates
-      throughout.
+      pay almost nothing. The charge targets automation, by design.
+      <br><br>
+      These are <strong>today's</strong> figures — year 1, 2026. By year 20 automation
+      pushes profit per employee up (raising MAC rates) even as employment falls, so the
+      year-20 charge differs; that evolution is a later page. First-pass estimates throughout.
     </div>
   </div>`;
 }

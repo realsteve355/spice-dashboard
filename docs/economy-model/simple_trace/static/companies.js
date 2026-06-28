@@ -82,6 +82,7 @@ function introCard() {
   return `
   <div class="card" style="border-left:3px solid var(--blue);">
     <h3>What this page does</h3>
+    <div style="font-size:11px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:10px;">Snapshot · year 1 · 2026 (today)</div>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       The Market Access Charge is paid by the companies that do business in the
       county — assume here that <strong>every one of them signs up</strong>. There is
@@ -98,7 +99,9 @@ function introCard() {
       <span style="color:var(--dim); font-size:12px;">
         This page sizes the business and the revenue per company. Applying margins,
         profit and the charge itself comes on a later page — the MAC is not computed here.
-        All figures are first-pass estimates, to be refined.
+        These are <strong>today's</strong> figures (year 1, 2026); by year 20 automation
+        will have changed both the business done and the companies doing it. All figures
+        are first-pass estimates, to be refined.
       </span>
     </div>
   </div>`;
