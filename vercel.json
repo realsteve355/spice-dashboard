@@ -15,6 +15,7 @@
     { "source": "/ubi", "destination": "/ubi.html" },
     { "source": "/companies", "destination": "/companies.html" },
     { "source": "/mac", "destination": "/mac.html" },
+    { "source": "/mac-y20", "destination": "/mac-y20.html" },
     { "source": "/trajectory", "destination": "/trajectory.html" },
     { "source": "/forecasts", "destination": "/forecasts.html" },
     { "source": "/fisc", "destination": "/fisc.html" },

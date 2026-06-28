@@ -266,6 +266,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "companies.html", "text/html; charset=utf-8")
         elif p == "/mac":
             self._send_file(self.templates_dir / "mac.html", "text/html; charset=utf-8")
+        elif p == "/mac-y20":
+            self._send_file(self.templates_dir / "mac-y20.html", "text/html; charset=utf-8")
         elif p == "/forecasts":
             self._send_file(self.templates_dir / "forecasts.html", "text/html; charset=utf-8")
         elif p == "/unemployment":
