@@ -169,6 +169,10 @@ function table() {
 function gapCard() {
   const displaced = WORKING_AGE * (u20 - u1);
   const formerWages = displaced * 60000;  // ~avg county wage
+  const allJobsY1 = WORKING_AGE * (1 - u1);     // employment page: all jobs, year 1
+  const unemployedY20 = WORKING_AGE * u20;       // UBI page: all unemployed at year 20
+  const macDisplaced = T.emp1 - T.emp;           // workers this MAC slice sheds
+  const mismatch = unemployedY20 / macDisplaced;
   return `
   <div class="card" style="border-left:3px solid var(--crit);">
     <h3>The gap — and why raising the rate cannot close it</h3>
@@ -183,6 +187,13 @@ function gapCard() {
       profit at year 20 is only <strong>${money(T.profit)}</strong> — less than the
       ${money(UBI_Y20)} bill. Even charging 100% of every firm's profit would fall short. The base is
       too small.
+      <br><br>
+      Seen through the <a href="/unemployment" style="color:var(--ok);">employment page</a>: it tracks all
+      ~${count(allJobsY1)} of the county's jobs, but this MAC sees only the ~${count(T.emp1)} in
+      consumer-facing business — under a quarter. Both fall at the same rate (to ${(RETENTION * 100).toFixed(0)}%),
+      yet the UBI must support all ~${count(unemployedY20)} people unemployed by year 20, while this slice's
+      automation frees up only ~${count(macDisplaced)} workers' wages — a <strong>${mismatch.toFixed(1)}×</strong>
+      mismatch. The charge sees a quarter of the workforce but is asked to fund all of it.
       <br><br>
       The reason is scope. This MAC is levied on <strong>consumer-facing business only</strong>
       (the ${money(T.rev)} from the basket + discretionary spending). But automation eliminates wages
