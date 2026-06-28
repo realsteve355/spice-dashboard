@@ -8,6 +8,7 @@
     { path: '/basket',       label: 'Basket' },
     { path: '/ubi',          label: 'UBI' },
     { path: '/companies',    label: 'Companies' },
+    { path: '/mac',          label: 'MAC' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/references',   label: 'References' },
