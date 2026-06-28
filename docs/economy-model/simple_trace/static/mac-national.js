@@ -20,11 +20,13 @@ const UBI         = (WA * u20 * AY + CH * u20 * CY) * SCALE;   // = total MAC (b
 const laborCostY20 = wagesLeft + UBI;                    // wages left + the MAC
 const firmsKeep    = wageBillOld - laborCostY20;         // vs the old wage bill
 
-// Per-sector distribution: who pays the larger SHARE (automation-weighted).
+// Per-sector distribution: who pays the larger SHARE. Weighted by normal
+// profit-per-employee (profit = margin × revenue; the freed wages are the MAC,
+// not profit) with year-20 (automation-reduced) employee counts.
 const SECTORS = CATEGORIES.map(c => {
-  const p1 = c.rev * c.margin, e1 = c.rev / c.rpe, wb = e1 * c.wage;
-  const emp = e1 * RET, profit = p1 + wb * (1 - RET);
-  const weight = profit * Math.min(1, macRate(profit, emp));   // the k=1 shape = the relative weight
+  const profit = c.rev * c.margin;
+  const emp = (c.rev / c.rpe) * RET;
+  const weight = profit * Math.min(1, macRate(profit, emp));   // relative weight = each firm's share
   return { name: c.name, weight };
 }).sort((a, b) => b.weight - a.weight);
 const totalWeight = SECTORS.reduce((s, x) => s + x.weight, 0);

@@ -24,8 +24,10 @@ function deriveY1() {
 // Year-20 per sector (the /mac-y20 transform: wages -> profit).
 function deriveY20() {
   return CATEGORIES.map(c => {
-    const p1 = c.rev * c.margin, e1 = c.rev / c.rpe, wb = e1 * c.wage;
-    const emp = e1 * RET, profit = p1 + wb * (1 - RET);
+    // Profit is the normal margin (freed wages become the MAC, not profit); only
+    // the employee count falls at year 20.
+    const p1 = c.rev * c.margin, e1 = c.rev / c.rpe;
+    const emp = e1 * RET, profit = p1;
     const rate1 = macRate(profit, emp);
     return { name: c.name, profit, rate1, mac1: profit * Math.min(1, rate1) };
   });

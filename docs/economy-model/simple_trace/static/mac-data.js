@@ -20,7 +20,7 @@ const REF_PPE = 200000;     // profit-per-employee reference ($)
 // txn (avg transaction size $), cos (number of companies — from /companies),
 // wage (average annual wage per employee $ — drives the wage bill).
 const CATEGORIES = [
-  { name: "Housing & real estate",     rev: 3.9e9, margin: 0.28, rpe: 180000, txn: 1200, cos: 4000, wage: 55000 },
+  { name: "Housing & real estate",     rev: 3.9e9, margin: 0.04, rpe: 180000, txn: 1200, cos: 4000, wage: 55000 },
   { name: "Food — grocery & dining",   rev: 2.4e9, margin: 0.08, rpe: 120000, txn:   35, cos: 1600, wage: 30000 },
   { name: "Transport, autos & travel", rev: 1.8e9, margin: 0.12, rpe: 400000, txn:   90, cos:  350, wage: 55000 },
   { name: "Healthcare & pharma",       rev: 1.3e9, margin: 0.12, rpe: 200000, txn:  180, cos:  550, wage: 65000 },

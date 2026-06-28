@@ -32,13 +32,15 @@ function deriveY20() {
     const emp1 = c.rev / c.rpe;
     const wageBill1 = emp1 * c.wage;
     const macY1 = profit1 * macRate(profit1, emp1);
-    // Year 20
+    // Year 20: profit is the SAME normal margin (the freed wages do NOT become profit —
+    // the MAC replaces them as a cost). Only the employee count falls, so profit per
+    // employee rises and the charge shifts onto the leanest (most automated) firms.
     const emp = emp1 * RETENTION;
-    const wagesSaved = wageBill1 * (1 - RETENTION);
-    const profit = profit1 + wagesSaved;        // saved wages become profit
+    const wagesSaved = wageBill1 * (1 - RETENTION);   // the wages the MAC replaces
+    const profit = profit1;                            // normal business profit, unchanged
     const ppe = profit / emp;
     const rateRaw = macRate(profit, emp);
-    const rate = Math.min(1, rateRaw);           // can't charge more than the profit
+    const rate = Math.min(1, rateRaw);
     const mac = profit * rate;
     return { ...c, profit1, emp1, macY1, emp, wagesSaved, profit, ppe, rateRaw, rate, mac, capped: rateRaw > 1 };
   });
@@ -86,19 +88,19 @@ function introCard() {
       Revenue is held at today's level. Employment falls with the
       <a href="/unemployment" style="color:var(--ok);">employment ramp</a> —
       retention is <strong>${(RETENTION * 100).toFixed(0)}%</strong>, so roughly
-      ${((1 - RETENTION) * 100).toFixed(0)}% of the workforce is gone. The wages no longer paid
-      become <strong>profit</strong> (the robots do the work; prices held), so profit per employee
-      soars and the MAC rate climbs with it.
+      ${((1 - RETENTION) * 100).toFixed(0)}% of the workforce is gone. The wages no longer paid become the
+      <strong>MAC</strong> — a cost in their place — <em>not</em> profit. Profit stays at its normal margin;
+      only the employee count falls, so profit <em>per employee</em> rises and the charge shifts onto the leanest,
+      most automated firms.
     </div>
     <div class="formula">
-      rate = <code>k</code> × 22% × (profit ÷ employees) ÷ $200,000 &nbsp;·&nbsp; <code>k = 1</code> &nbsp;·&nbsp; ceiling 100%<br>
-      MAC = profit × rate
+      weight = profit × (<code>k</code> × 22% × (profit ÷ employees) ÷ $200,000) &nbsp;·&nbsp; share = weight ÷ Σ weights
     </div>
     <div style="font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px;">
-      The MAC is a <strong>business expense in the place of wages</strong>, not a slice of profit. The figures
-      below are this slice's <strong>distribution shape</strong> at k = 1 (who pays more); k scales the total to
-      the UBI. Optimistic "cheap robots" case — robot capital and energy costs would temper the profit rise.
-      Revenue held nominal; basket deflation (which lowers the UBI bill) is a separate effect. First-pass estimates.
+      The MAC is a <strong>business expense in the place of wages</strong>, not a slice of profit. Profit per
+      employee (using the firm's <em>normal</em> margin profit) only sets each firm's <strong>share</strong>; k
+      scales the total to the UBI. Revenue held nominal; basket deflation (which lowers the UBI bill) is a separate
+      effect. First-pass estimates.
     </div>
   </div>`;
 }
@@ -109,11 +111,9 @@ function statRow() {
   <div class="card">
     <div class="stats">
       ${statBox("Employment · year 20", "~" + count(T.emp), "down from ~" + count(T.emp1) + " — automation", "var(--crit)")}
-      ${statBox("County profit · year 20", money(T.profit), "up from " + money(T.profit1) + " — wages → profit", "var(--ok)")}
-      ${statBox("Total MAC · shape (k = 1)", money(T.mac), "up from " + money(T.macY1) + " (year 1) — before calibration", "var(--ok)")}
+      ${statBox("County profit · year 20", money(T.profit), "unchanged — normal margins (not inflated)")}
       ${statBox("Required UBI · year 20", money(UBI_Y20), "= the total MAC, set by k", "var(--warn)")}
       ${statBox("Wages freed", money(freed), "automation removed — more than the UBI; the MAC replaces them", "var(--ok)")}
-      ${statBox("Charge share · k = 1", pct(T.effRate), "this slice's distribution shape")}
     </div>
   </div>`;
 }
