@@ -184,7 +184,7 @@ function buildControls() {
     <div id="profile-desc" style="font-size:11px; color:var(--dim); margin:2px 0 0; max-width:760px; line-height:1.5;"></div>
     <div class="assumptions">
       <span>UBI / person = the <a href="cost-deflation" style="color:var(--ok);">basket</a> (~$1,600/mo → falls)</span>
-      <span>Unemployed from the <a href="unemployment" style="color:var(--ok);">cohort ramp</a> (4.2%→75%)</span>
+      <span>Unemployed from the <a href="unemployment" style="color:var(--ok);">cohort ramp</a> (4.2%→85%)</span>
       <span>MAC income from the <a href="profitability" style="color:var(--ok);">business mix</a></span>
       <span>Reserves earn the bond yield; balance is cumulative</span>
     </div>`;

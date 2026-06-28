@@ -9,7 +9,7 @@ const COUNTY_POP = 390000;
 const SCALE = US_POP / COUNTY_POP;          // ≈ 872
 
 const u1 = MF.unempRateAt(0) / 100;
-const u20 = MF.unempRateAt(20) / 100;        // 75% — year 20
+const u20 = MF.unempRateAt(20) / 100;        // 85% — year 20
 const RETENTION = (1 - u20) / (1 - u1);
 const WORKING_AGE = 240000, CHILDREN = 90000, ADULT_YR = 31200, CHILD_YR = 15600, AVG_WAGE = 60000;
 

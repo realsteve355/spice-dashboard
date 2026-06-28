@@ -288,16 +288,16 @@ function renderWorkforceComposition(unemp) {
     <div style="margin-top:14px; padding:12px 16px; background:var(--panel2); border:1px solid var(--line-hot);">
       <div style="display:flex; justify-content:space-between; gap:14px; font-size:13px;">
         <div>
-          <div style="font-size:10px; color:var(--dim); letter-spacing:0.15em; text-transform:uppercase;">Total today's jobs</div>
-          <div style="font-size:18px; color:var(--headline); font-variant-numeric:tabular-nums;">~${Math.round((totalLow+totalHigh)/2)}%</div>
+          <div style="font-size:10px; color:var(--dim); letter-spacing:0.15em; text-transform:uppercase;">Today's jobs</div>
+          <div style="font-size:18px; color:var(--headline); font-variant-numeric:tabular-nums;">100%</div>
         </div>
         <div>
-          <div style="font-size:10px; color:var(--crit); letter-spacing:0.15em; text-transform:uppercase;">Displaced by 2035</div>
-          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">~${totalDisplaced.toFixed(0)}%</div>
+          <div style="font-size:10px; color:var(--crit); letter-spacing:0.15em; text-transform:uppercase;">Displaced by 2045</div>
+          <div style="font-size:18px; color:var(--crit); font-variant-numeric:tabular-nums;">${dispPct}%</div>
         </div>
         <div>
           <div style="font-size:10px; color:var(--ok); letter-spacing:0.15em; text-transform:uppercase;">Retained intact</div>
-          <div style="font-size:18px; color:var(--ok); font-variant-numeric:tabular-nums;">~${totalRetained.toFixed(0)}%</div>
+          <div style="font-size:18px; color:var(--ok); font-variant-numeric:tabular-nums;">${retainedPct}%</div>
         </div>
       </div>
     </div>

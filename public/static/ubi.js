@@ -3,7 +3,7 @@
 // Brings together three things already on the site:
 //   • the basket (basket page)            — $2,600/adult/mo, child <18 = 50%
 //   • Midwestville County demographics     — 240k working-age, 90k children, 60k retired
-//   • the unemployment ramp (Employment)   — MF.unempRateAt(t), 4.2% → 75% over 20yr
+//   • the unemployment ramp (Employment)   — MF.unempRateAt(t), 4.2% → 85% over 20yr
 //
 // and computes the annual UBI bill as automation displaces workers. UBI here
 // REPLACES LOST INCOME: it is paid to working-age adults who are unemployed, plus

@@ -279,12 +279,12 @@ UNEMPLOYMENT_FORECASTS = {
             "color_class": "crit",
             "checkpoints": [
                 {"year": 2026, "unemployment_pct":  4.0, "anchor": "Current baseline"},
-                {"year": 2030, "unemployment_pct": 30.0, "anchor": "Digital wave: ~85% of knowledge work (coders, advisers, illustrators, analysts) displaced"},
-                {"year": 2035, "unemployment_pct": 80.0, "anchor": "Services + manual waves: humanoid robots at scale; 85% of today's jobs gone"},
-                {"year": 2040, "unemployment_pct": 85.0, "anchor": "Management thinning begins; long-tail roles fade"},
-                {"year": 2045, "unemployment_pct": 88.0, "anchor": "Of today's jobs ~12% remain (human-touch/craft); new emergent categories absorb some displaced"},
+                {"year": 2030, "unemployment_pct": 20.0, "anchor": "Digital wave — knowledge work automating"},
+                {"year": 2035, "unemployment_pct": 39.0, "anchor": "Services + manual waves building"},
+                {"year": 2040, "unemployment_pct": 62.0, "anchor": "Humanoid robots reaching scale"},
+                {"year": 2045, "unemployment_pct": 85.0, "anchor": "~85% of today's jobs gone; ~15% remain (human-touch / craft)"},
             ],
-            "interpretation": "Faster than the public bull voices. AXION colonies plan for this case: ~85% of today's jobs gone by 2035, compressed timeline from sequential waves (digital → services + manual → management long tail). This is the design case for AXION architecture.",
+            "interpretation": "The AXION planning case: a steady ramp to ~85% of today's jobs displaced by year 20, leaving ~15% retained. Matches the cohort ramp that drives the UBI, MAC and Fisc models.",
         },
         {
             "name": "Skeptic (Acemoglu)",
@@ -310,7 +310,7 @@ UNEMPLOYMENT_FORECASTS = {
          "url": "https://www.anthropic.com/research/labor-market-impacts"},
     ],
     "workforce_composition": {
-        "title": "Today's jobs displaced by 2035",
+        "title": "Today's jobs displaced by 2045",
         "intro": (
             "Past automation waves (steam, electricity, computing) hit physical "
             "labour first while knowledge work expanded. AI inverts the order: "

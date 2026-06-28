@@ -28,7 +28,7 @@
 //   forecasts.json). The curves here MUST be kept in sync with forecasts.py.
 //   Basket today ≈ $1,600/mo per person (incl. basic housing, excl. land);
 //   trajectory 100 → 62.9 → 39.1 → 23.0 → 15.7 (2026→2045).
-// • UNEMPLOYMENT RAMP 4.2% → 75% over 20 years: Grok V9.13 MaryFontaine
+// • UNEMPLOYMENT RAMP 4.2% → 85% over 20 years: AXION planning case (15% retained)
 //   projection (docs/Grok2.md §2) — the colony planning case.
 // • RESERVE / BOND YIELD (used by the Fisc page): ~4.1% = 10-year US Treasury,
 //   early 2026 (same r0 as the macro simulation).
@@ -70,7 +70,7 @@ const MF = (function () {
   let BASKET_TRAJ = [{ y: 2026, v: 100 }, { y: 2030, v: 62.9 }, { y: 2035, v: 39.1 }, { y: 2040, v: 23.0 }, { y: 2045, v: 15.7 }];
 
   // ── Colony planning unemployment ramp (% of working-age) — Grok V9.13 ──
-  const UNEMP_RAMP = [{ t: 0, v: 4.2 }, { t: 5, v: 18 }, { t: 10, v: 35 }, { t: 15, v: 55 }, { t: 20, v: 75 }];
+  const UNEMP_RAMP = [{ t: 0, v: 4.2 }, { t: 5, v: 20 }, { t: 10, v: 39 }, { t: 15, v: 62 }, { t: 20, v: 85 }];
 
   // ── Business population (Year 0). [count, profit/firm, emp/firm, driver, margin0] ──
   const MARYFONTAINE = [
@@ -195,15 +195,15 @@ const MF = (function () {
   }
 
   // ── Pull basket + goods/transport deflation from forecasts.json ──
-  // forecasts.py (baked to forecasts.json, served at /sim/data/ on the publish
+  // forecasts.py (baked to forecasts.json, served at /data/ on the publish
   // and /api/forecasts on the dev tool) is the AUTHORITATIVE source. Pages call
   // MF.load().then(render) — they render with the fallback first, then re-render
   // with the sourced values once this resolves.
   let _loaded = false;
   function load() {
     if (_loaded || typeof fetch === 'undefined') return Promise.resolve();
-    const url = (typeof location !== 'undefined' && location.pathname.indexOf('/sim/') === 0)
-      ? '/sim/data/forecasts.json' : '/api/forecasts';
+    const url = (typeof location !== 'undefined' && location.pathname.indexOf('/') === 0)
+      ? '/data/forecasts.json' : '/api/forecasts';
     return fetch(url).then(r => r.json()).then(d => {
       if (d && Array.isArray(d.basket_trajectory)) {
         BASKET_TRAJ = d.basket_trajectory.map(p => ({ y: p.year, v: p.cost_index }));

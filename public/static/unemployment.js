@@ -47,7 +47,7 @@ function renderCohortTable() {
     <div style="font-size:12px; color:var(--dim); font-style:italic; margin-bottom:12px; line-height:1.6;">
       Population of ~390,000 — 300,000 adults (240,000 working-age + 60,000 retired) + 90,000 children.
       Modelled on a real US Midwest county. Unemployment applies only to the working-age cohort; retired and
-      children are outside the labour force. Ramp is the colony planning case (4.2% → 75% over 20 years),
+      children are outside the labour force. Ramp is the colony planning case (4.2% → 85% over 20 years),
       matching the profitability and Fisc models.
     </div>
     <table style="table-layout:fixed; width:100%;">
@@ -66,7 +66,7 @@ function renderCohortTable() {
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Cohort sizes held constant for illustration; only the employed / unemployed split changes. By Year 20,
-      ~180,000 of 240,000 working-age adults are unemployed (work optional) under the colony planning case.
+      ~204,000 of 240,000 working-age adults are unemployed (work optional) under the colony planning case.
     </div>
   </div>`;
 }
