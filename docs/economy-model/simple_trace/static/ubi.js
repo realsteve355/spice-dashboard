@@ -21,6 +21,8 @@ const CHILD_YR = ADULT_YR * 0.5;   // $15,600/yr per child <18 (50%, paid to par
 const WORKING_AGE = 240000;        // 18–64
 const CHILDREN    = 90000;         // under 18
 const RETIRED     = 60000;         // 65+ (on pensions — excluded from the UBI bill here)
+const ADULTS      = WORKING_AGE + RETIRED;   // 300,000  (18+)
+const TOTAL_POP   = ADULTS + CHILDREN;       // 390,000
 
 const HORIZON = 20;                // years, 2026–2046
 const BASE_YEAR = 2026;
@@ -52,10 +54,51 @@ function render() {
   const first = R[0], last = R[R.length - 1];
   document.getElementById("results").innerHTML = [
     introCard(),
+    demographicsCard(),
     statRow(first, last),
     chartCard(R),
     tableCard(R),
   ].join("\n");
+}
+
+function statBox(label, value, sub, color) {
+  return `
+    <div class="stat">
+      <div class="label">${label}</div>
+      <div class="value" ${color ? `style="color:${color};"` : ""}>${value}</div>
+      <div class="sub">${sub}</div>
+    </div>`;
+}
+
+function demographicsCard() {
+  const n = v => v.toLocaleString();
+  const population = [
+    statBox("Overall population", n(TOTAL_POP), "Butler County, OH basis"),
+    statBox("Adults (18+)", n(ADULTS), "77% of the population"),
+    statBox("Working-age (18–64)", n(WORKING_AGE), "the labour-force cohort"),
+    statBox("Retired (65+)", n(RETIRED), "on pensions"),
+    statBox("Children (under 18)", n(CHILDREN), "basket at 50%"),
+  ].join("");
+  // Household figures are approximate (US Census patterns for a county this size).
+  const households = [
+    statBox("Households", "~155,000", "avg 2.5 people"),
+    statBox("Families with children", "~47,000", "incl. ~13,000 single-parent"),
+    statBox("One-person households", "~45,000", "live alone"),
+    statBox("Couples & shared adult homes", "~63,000", "no children"),
+  ].join("");
+  return `
+  <div class="card">
+    <h3>Midwestville County — demographic makeup</h3>
+    <div style="font-size:11px; color:var(--dim); letter-spacing:0.15em; text-transform:uppercase; margin-top:6px;">Population</div>
+    <div class="stats">${population}</div>
+    <div style="font-size:11px; color:var(--dim); letter-spacing:0.15em; text-transform:uppercase; margin-top:16px;">Households</div>
+    <div class="stats">${households}</div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.5;">
+      Population cohorts are the model's anchor (390,000 = 300,000 adults + 90,000 children; adults = 240,000
+      working-age + 60,000 retired). Household figures are approximate, based on US Census household patterns for a
+      county this size — the UBI calculation works at the individual level (adults + children), not households.
+    </div>
+  </div>`;
 }
 
 function introCard() {
