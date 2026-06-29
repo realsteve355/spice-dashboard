@@ -22,11 +22,11 @@ const firmsKeep     = wagesFreedTot - UBI;                     // aggregate, net
 
 // Per sector: apply the formula.
 const SECTORS = CATEGORIES.map(c => {
-  const revenue = c.rev * SCALE;
-  const profit  = c.rev * c.margin * SCALE;
-  const emp     = (c.rev / c.rpe) * RET * SCALE;        // year-20 (automation-reduced) headcount
-  const ppe     = profit / emp;                         // profit per employee — the dial
+  const revenue    = c.rev * SCALE;
+  const emp        = (c.rev / c.rpe) * RET * SCALE;          // year-20 (automation-reduced) headcount
   const wagesFreed = (c.rev / c.rpe) * c.wage * (1 - RET) * SCALE;
+  const profit     = c.rev * c.margin * SCALE + wagesFreed;  // margin profit + the wages automation freed
+  const ppe        = profit / emp;                           // profit per employee — the dial
   return { name: c.name, revenue, profit, ppe, wagesFreed, weight: revenue * ppe };
 });
 const totalWeight = SECTORS.reduce((s, x) => s + x.weight, 0);
@@ -54,10 +54,10 @@ function introCard() {
     <h3>The charge applied, sector by sector</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.6;">
       Each sector's charge is <strong>MAC = k × revenue × (profit ÷ employees)</strong>, with k set so the total
-      equals the UBI. In aggregate it's affordable — the total MAC is less than the wages automation removed, so
-      firms keep the difference. But it lands <strong>unevenly</strong>: the firms that gained most from automation
-      (high profit per employee) are <span style="color:var(--crit);">net losers</span>; labour-heavy firms are
-      <span style="color:var(--ok);">net winners</span>. (US = Midwestville × ${Math.round(SCALE)}, year 20.)
+      equals the UBI. Profit at year 20 is the firm's margin <em>plus</em> the wages automation freed (revenue is
+      held, so saved wages drop to profit). Across the <em>whole</em> economy the charge is affordable. But the
+      formula lands hardest on the firms that gained most from automation — and here it's charged to only these
+      few consumer-facing sectors, which overloads them. (US = Midwestville × ${Math.round(SCALE)}, year 20.)
     </div>
   </div>`;
 }
@@ -65,10 +65,10 @@ function introCard() {
 function statRow() {
   return `
   <div class="card"><div class="stats">
-    ${statBox("Old wage bill", T(wageBillOld), "before automation")}
+    ${statBox("Whole-economy wages freed", T(wageBillOld - wagesLeft), "automation removed")}
     ${statBox("Total MAC = the UBI", T(UBI), "what the charge raises (gross)", "var(--warn)")}
-    ${statBox("Firms keep, in aggregate", T(firmsKeep), "wages freed − MAC", "var(--ok)")}
-    ${statBox("Net-loser sectors", losers + " of " + SECTORS.length, "pay more than they saved", "var(--crit)")}
+    ${statBox("Affordable, whole economy", T(firmsKeep), "freed wages − UBI, across all firms", "var(--ok)")}
+    ${statBox("Net-loser sectors", losers + " of " + SECTORS.length, "these few carry the whole charge", "var(--crit)")}
   </div></div>`;
 }
 
@@ -121,16 +121,16 @@ function distTable() {
 function noteCard() {
   return `
   <div class="card" style="border-left:3px solid var(--warn);">
-    <h3>What it shows — and the dial's limit</h3>
+    <h3>What it shows — two limits</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      As expected, the automation winners — <strong>digital, utilities, finance</strong> — are the big net losers:
-      already lean, they saved little in wages but carry most of the charge. Labour-heavy firms
-      (<strong>housing, food</strong>) are net winners. That is the design working.
+      The automation winners — <strong>digital, utilities, finance</strong> — carry the most: already lean, with
+      profit per employee in the millions, the dial loads the charge onto them. That part is the design working.
       <br><br>
-      But the raw dial <strong>over-concentrates</strong>: <strong>${overRev} of ${SECTORS.length} sectors</strong>
-      are assigned <em>more than 100% of their revenue</em> (digital ${(SECTORS[0].pctRev * 100).toFixed(0)}%) —
-      impossible to actually collect. The principle is right; the unbounded profit-per-employee multiplier needs a
-      bound so no firm is charged more than its transactions can bear.
+      But two limits surface. <strong>(1) The dial over-concentrates</strong> — ${overRev} of ${SECTORS.length}
+      sectors are assigned <em>more than 100% of their revenue</em> (digital ${(SECTORS[0].pctRev * 100).toFixed(0)}%),
+      impossible to collect; the profit-per-employee multiplier needs a bound. <strong>(2) The base is too
+      narrow</strong> — the whole ${T(UBI)} charge falls on just these consumer-facing sectors, so nearly all come
+      out net losers. It should fall on <em>every</em> firm with transactions in the area, not this slice.
     </div>
   </div>`;
 }
