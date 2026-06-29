@@ -26,7 +26,7 @@ const CATEGORIES = [
   { name: "Healthcare & pharma",       rev: 1.3e9, margin: 0.12, rpe: 200000, txn:  180, cos:  550, wage: 65000 },
   { name: "Retail goods & e-commerce", rev: 1.2e9, margin: 0.06, rpe: 250000, txn:   55, cos:  900, wage: 38000 },
   { name: "Utilities & telecom",       rev: 1.0e9, margin: 0.20, rpe: 800000, txn:  150, cos:   20, wage: 90000 },
-  { name: "Digital, media & gambling", rev: 0.7e9, margin: 0.35, rpe: 1500000, txn:  20, cos:  150, wage: 120000 },
+  { name: "Digital and media",         rev: 0.7e9, margin: 0.35, rpe: 1500000, txn:  20, cos:  150, wage: 120000 },
   { name: "Financial services",        rev: 0.4e9, margin: 0.25, rpe: 600000, txn:  250, cos:  220, wage: 95000 },
   { name: "Education & training",      rev: 0.3e9, margin: 0.08, rpe: 120000, txn:  400, cos:  110, wage: 50000 },
 ];

@@ -230,7 +230,7 @@ function whoPaysCard() {
       <em>profitable per employee</em>. The top three —
       <strong>${top3.map(r => r.name.replace(/ —.*/, "")).join(", ")}</strong> —
       contribute ${money(top3Mac)} of the ${money(T.mac)} total
-      (${pct(top3Mac / T.mac)}). Digital and gambling, on only ${money(R[6].rev)} of revenue,
+      (${pct(top3Mac / T.mac)}). Digital and media, on only ${money(R[6].rev)} of revenue,
       pay the highest rate because their profit per employee is enormous; groceries, retail and
       education — labour-heavy and thin-margin — pay almost nothing despite large turnover.
     </div>
