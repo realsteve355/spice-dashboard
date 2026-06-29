@@ -86,8 +86,8 @@ function introCard() {
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       The Market Access Charge is paid by the companies that do business in the
       county — assume here that <strong>every one of them signs up</strong>. There is
-      a vast number, from corner shops to United Airlines, Tesla and an online
-      gambling company in Las Vegas, so the first job is to size them and group them.
+      a vast number, from corner shops to United Airlines, Tesla and a streaming
+      service in California, so the first job is to size them and group them.
       <br><br>
       <strong>Business done ≈ ${money(TOTAL)}/year</strong> — the revenue companies earn
       from county residents. It is anchored on consumer spending and ties to the
