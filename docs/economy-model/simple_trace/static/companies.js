@@ -8,7 +8,7 @@
 // assume every company that sells into the county signs up for the MAC. The
 // total is anchored on consumer spending and ties to the earlier pages:
 //   • basket (essentials, whole population) ≈ $10.8B   (basket page)
-//   • discretionary on top (travel, leisure, gambling, premium) ≈ $2.2B
+//   • discretionary on top (travel, leisure, dining out, premium) ≈ $2.2B
 //   → ~$13B/yr of consumer business done.
 // B2B and government spending are excluded for now (a later extension).
 //
@@ -93,7 +93,7 @@ function introCard() {
       from county residents. It is anchored on consumer spending and ties to the
       earlier pages: the <a href="/basket" style="color:var(--ok);">basket</a>
       (essentials, whole population) is ~$10.8B, plus ~$2.2B of discretionary
-      spending — travel, leisure, gambling, premium goods — beyond basic needs.
+      spending — travel, leisure, dining out, premium goods — beyond basic needs.
       Business-to-business and government spending are excluded for now.
       <br><br>
       <span style="color:var(--dim); font-size:12px;">
