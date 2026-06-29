@@ -74,10 +74,43 @@ of the **◑** transactions. Quantifying that in-area share is the next modellin
 (and it's why the colony model and the national model differ: nationally, every
 transaction is in *some* jurisdiction, so the ◑ exports are someone else's ✓).
 
+## RESULT — the whole-economy base fixes the scope fault (29 Jun)
+
+Applying the canonical MAC to the full NAICS market economy (all sectors except
+government), year 20:
+
+| | Consumer slice (9 sectors) | Whole economy (NAICS) |
+|---|---|---|
+| Transaction base | $11.3T | **$43.7T** |
+| Average MAC rate | 66% of every sale | **17%** |
+| Sectors charged > 100% of revenue | 3 of 9 | **0 of 19** |
+| Highest sector | Digital, 577% | Real estate, **55%** |
+
+The "impossible" charges were an artefact of the narrow base. On the whole economy
+the formula works: ~17% average, nothing over 100%, real estate (highest
+profit-per-worker) tops out at 55%. **The formula was right; the base was wrong.**
+
+## In-area share (single-colony capture, first-pass)
+National base uses ~100% of every market sector (every US transaction is in *some*
+jurisdiction). A single colony multiplies each sector by its in-area share:
+
+Agriculture 10% · Mining 10% · Utilities 100% · Construction 80% · Manufacturing
+15% · Wholesale 20% · Retail 95% · Transport 60% · Information 80% · Finance 70% ·
+Real estate 95% · Professional 30% · Mgmt 5% · Admin 40% · Education 95% ·
+Health 95% · Arts 90% · Accommodation/food 95% · Other services 95% · Government 0%.
+
+So one colony's base = Σ(sector revenue × in-area share) — far smaller than the
+national $43.7T (manufacturing/wholesale/professional mostly export), which is why
+a colony can't self-fund as cleanly as the nation.
+
 ## Next steps
-1. Replace the first-pass figures above with BEA gross-output + Census employment +
-   sector profit data.
-2. Estimate the **in-area share** of each ◑ sector (how much of its sales land on
-   buyers inside a colony).
-3. Recompute the MAC base, k, and the per-sector distribution on this whole-economy
-   footing — fixing the National page's scope fault.
+1. Firm the figures with the actual BEA gross-output + Census/BLS employment tables
+   (sources below) and a real per-sector profit measure.
+2. Rebuild mac-data.js on the NAICS 20 (market) sectors and recompute the National
+   page on this base — replacing the consumer-slice model that caused the scope fault.
+3. Quantify the single-colony base (Σ revenue × in-area share) for the colony view.
+
+## Sources
+- BEA — Gross Output by Industry: https://www.bea.gov/data/industries/gross-output-by-industry
+- BEA — GDP by Industry: https://www.bea.gov/itable/gdp-by-industry
+- BLS — Industries by Supersector and NAICS: https://www.bls.gov/iag/tgs/iag_index_naics.htm
