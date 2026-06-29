@@ -40,7 +40,46 @@ const T = v => (v < 0 ? "−$" : "$") + (Math.abs(v) / 1e12).toFixed(2) + "T";
 const M = v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : "$" + Math.round(v / 1e3) + "k";
 
 function render() {
-  document.getElementById("results").innerHTML = [introCard(), statRow(), distTable(), noteCard()].join("\n");
+  document.getElementById("results").innerHTML = [introCard(), kCard(), statRow(), distTable(), noteCard()].join("\n");
+}
+
+function kCard() {
+  const exp = v => { const e = Math.floor(Math.log10(v)); return (v / 10 ** e).toFixed(1) + " × 10" + sup(e); };
+  const sup = n => String(n).replace(/-/g, "⁻").replace(/[0-9]/g, d => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]);
+  const rows = SECTORS.slice().sort((a, b) => b.weight - a.weight).map(s => `<tr>
+    <td class="cat">${s.name}</td>
+    <td class="num">${T(s.revenue)}</td>
+    <td class="num">${M(s.ppe)}</td>
+    <td class="num">${(s.weight / totalWeight * 100).toFixed(0)}%</td>
+  </tr>`).join("");
+  return `
+  <div class="card" style="border-left:3px solid var(--ok);">
+    <h3>How k is calculated</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.6;">
+      k is the one number that makes the total charge equal the UBI. It is the UBI divided by the sum, over every
+      firm, of its <strong>revenue × profit‑per‑employee</strong>:
+    </div>
+    <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:12px 16px; margin-top:12px; font-size:13px; color:var(--txt);">
+      k = UBI ÷ Σ( revenue × profit ÷ employees )
+    </div>
+    <div style="overflow-x:auto; margin-top:12px;">
+    <table>
+      <thead><tr><th>Sector</th><th class="num">Revenue</th><th class="num">Profit / emp</th><th class="num">Share of the sum</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr style="border-top:2px solid var(--line-hot);">
+        <td class="cat"><strong>Σ (the denominator)</strong></td>
+        <td class="num">—</td><td class="num">—</td>
+        <td class="num"><strong>${exp(totalWeight)}</strong></td>
+      </tr></tfoot>
+    </table>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:12px;">
+      <strong>k = ${T(UBI)} ÷ ${exp(totalWeight)} = ${exp(k)}.</strong>
+      The automated firms (high profit‑per‑employee) dominate the sum, so they take the biggest share of the charge.
+      On each $1 of a firm's transactions the charge is <strong>k × its profit‑per‑employee</strong> — a tiny number
+      times the dial.
+    </div>
+  </div>`;
 }
 function statBox(label, value, sub, color) {
   return `<div class="stat"><div class="label">${label}</div>
