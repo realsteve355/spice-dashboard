@@ -31,6 +31,15 @@ const BASE_YEAR = 2026;
 // regardless of employment. The needs-based bill approaches this as unemployment → 100%.
 const CEILING = WORKING_AGE * ADULT_YR + CHILDREN * CHILD_YR;
 
+// Tax layer — the basket is bought at retail + sales tax, and the UBI is taxable
+// income (see /tax). So the Fisc must pay a GROSSED-UP amount to leave the citizen
+// enough net to buy the basket: gross = basket × (1 + sales tax) ÷ (1 − income tax).
+// Both are EFFECTIVE rates: rent + most groceries are exempt from sales tax, and the
+// standard deduction shelters much of a basket-level income.
+const SALES_TAX  = 0.04;   // effective, blended across the basket
+const INCOME_TAX = 0.08;   // effective on a basket-level income
+const GROSS_UP   = (1 + SALES_TAX) / (1 - INCOME_TAX);   // ≈ 1.13
+
 function rows() {
   const out = [];
   for (let t = 0; t <= HORIZON; t++) {
@@ -43,7 +52,8 @@ function rows() {
       u: MF.unempRateAt(t),
       unemployedAdults,
       supportedChildren,
-      ubi,
+      ubi,                          // net basket bill (what citizens spend)
+      grossUbi: ubi * GROSS_UP,     // what the Fisc pays, grossed up for tax
     });
   }
   return out;
@@ -56,6 +66,7 @@ function render() {
     introCard(),
     demographicsCard(),
     statRow(first, last),
+    taxCard(),
     chartCard(R),
     tableCard(R),
   ].join("\n");
@@ -130,7 +141,6 @@ function introCard() {
 }
 
 function statRow(first, last) {
-  const pctOfCeiling = last.ubi / CEILING * 100;
   const cell = (label, value, sub, color) => `
     <div class="stat">
       <div class="label">${label}</div>
@@ -140,17 +150,47 @@ function statRow(first, last) {
   return `
   <div class="card">
     <div class="stats">
-      ${cell("Required UBI · " + first.year, MF.fmtMoney(first.ubi), first.u.toFixed(1) + "% unemployed", "var(--ok)")}
-      ${cell("Required UBI · " + last.year, MF.fmtMoney(last.ubi), last.u.toFixed(0) + "% unemployed", "var(--warn)")}
-      ${cell("Universal ceiling", MF.fmtMoney(CEILING), "all adults + children", "var(--dim)")}
-      ${cell("Year-" + HORIZON + " vs ceiling", pctOfCeiling.toFixed(0) + "%", "of the universal cost", "var(--txt2)")}
+      ${cell("Net basket bill · " + last.year, MF.fmtMoney(last.ubi), "what citizens spend · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
+      ${cell("Gross UBI · " + last.year, MF.fmtMoney(last.grossUbi), "what the Fisc pays (+ tax)", "var(--warn)")}
+      ${cell("Tax gross-up", "+" + ((GROSS_UP - 1) * 100).toFixed(0) + "%", "sales + income tax", "var(--txt2)")}
+      ${cell("Universal ceiling", MF.fmtMoney(CEILING), "net · all adults + children", "var(--dim)")}
+    </div>
+  </div>`;
+}
+
+function taxCard() {
+  const usd = v => "$" + Math.round(v).toLocaleString();
+  const atTill = ADULT_YR * (1 + SALES_TAX);
+  const gross = atTill / (1 - INCOME_TAX);
+  return `
+  <div class="card" style="border-left:3px solid var(--warn);">
+    <h3>The tax layer — the Fisc pays more than the basket</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      The basket is bought at retail <strong>plus sales tax</strong>, and the UBI is
+      <strong>taxable income</strong> (<a href="/tax" style="color:var(--ok);">tax page</a>). So to leave a
+      citizen enough <em>net</em> to buy the basket, the Fisc must pay a grossed-up amount.
+    </div>
+    <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:12px 16px; margin-top:12px; font-size:13px; color:var(--txt);">
+      basket &nbsp;→&nbsp; × (1 + sales tax) &nbsp;→&nbsp; ÷ (1 − income tax) &nbsp;→&nbsp; <span style="color:var(--ok);">gross UBI</span>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.8; margin-top:12px;">
+      Per adult: <strong>${usd(ADULT_YR)}</strong> basket →
+      × ${(1 + SALES_TAX).toFixed(2)} (${(SALES_TAX * 100).toFixed(0)}% sales tax) = ${usd(atTill)} at the till →
+      ÷ ${(1 - INCOME_TAX).toFixed(2)} (${(INCOME_TAX * 100).toFixed(0)}% income tax) =
+      <strong style="color:var(--warn);">${usd(gross)} gross</strong>
+      — a <strong>+${((GROSS_UP - 1) * 100).toFixed(0)}%</strong> gross-up.
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.5;">
+      Effective rates: rent and most groceries are exempt from sales tax, and the standard deduction shelters much
+      of a basket-level income — so both sit below the headline rates. The gross-up flows to the IRS and the state,
+      not the citizen.
     </div>
   </div>`;
 }
 
 function chartCard(R) {
-  const needs = R.map(r => ({ x: r.year, y: r.ubi }));
-  const ceiling = [{ x: R[0].year, y: CEILING }, { x: R[R.length - 1].year, y: CEILING }];
+  const net = R.map(r => ({ x: r.year, y: r.ubi }));
+  const gross = R.map(r => ({ x: r.year, y: r.grossUbi }));
   const svg = MF.lineChart({
     xDomain: [BASE_YEAR, BASE_YEAR + HORIZON],
     xTicks: [2026, 2031, 2036, 2041, 2046],
@@ -158,8 +198,8 @@ function chartCard(R) {
     yTicks: [0, 3e9, 6e9, 9e9],
     yFmt: v => "$" + (v / 1e9).toFixed(0) + "B",
     series: [
-      { pts: ceiling, color: "var(--dim)", width: 1.5, dashed: true, label: "Universal ceiling (" + MF.fmtBn(CEILING) + ")" },
-      { pts: needs, color: "var(--warn)", width: 2.5, area: true, areaOpacity: 0.1, label: "Required UBI (" + MF.fmtBn(R[R.length - 1].ubi) + ")" },
+      { pts: gross, color: "var(--warn)", width: 2.5, label: "Gross UBI · Fisc pays (" + MF.fmtBn(R[R.length - 1].grossUbi) + ")" },
+      { pts: net, color: "var(--ok)", width: 2.5, area: true, areaOpacity: 0.1, label: "Net basket bill (" + MF.fmtBn(R[R.length - 1].ubi) + ")" },
     ],
   });
   return `
@@ -167,9 +207,9 @@ function chartCard(R) {
     <h3>Required UBI per year, ${R[0].year}–${R[R.length - 1].year}</h3>
     ${svg}
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      The shaded line is the needs-based bill — it rises as the employment ramp displaces more workers.
-      The dashed line is the universal ceiling. By ${R[R.length - 1].year} the two have nearly converged:
-      at ${R[R.length - 1].u.toFixed(0)}% unemployment, most of the labour force is already on the basic income.
+      The shaded line is the net basket the displaced need to spend; the line above is what the Fisc actually
+      pays once the basket is grossed up for sales and income tax (+${((GROSS_UP - 1) * 100).toFixed(0)}%). Both
+      climb as the employment ramp displaces more workers.
     </div>
   </div>`;
 }
@@ -183,6 +223,7 @@ function tableCard(R) {
       <td class="num">${n(r.unemployedAdults)}</td>
       <td class="num">${n(r.supportedChildren)}</td>
       <td class="num">${MF.fmtMoney(r.ubi)}</td>
+      <td class="num">${MF.fmtMoney(r.grossUbi)}</td>
     </tr>`).join("");
   return `
   <div class="card">
@@ -193,13 +234,15 @@ function tableCard(R) {
         <th class="num">Unemployment</th>
         <th class="num">Unemployed adults</th>
         <th class="num">Children supported</th>
-        <th class="num">Required UBI / yr</th>
+        <th class="num">Net basket / yr</th>
+        <th class="num">Gross UBI / yr</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Children are allocated to unemployed households in proportion to the working-age unemployment rate.
       Adult basket ${"$" + ADULT_YR.toLocaleString()}/yr · child basket ${"$" + CHILD_YR.toLocaleString()}/yr · held at today's prices.
+      Gross UBI = net basket grossed up +${((GROSS_UP - 1) * 100).toFixed(0)}% for sales + income tax.
     </div>
   </div>`;
 }
