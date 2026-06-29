@@ -12,6 +12,7 @@
     { path: '/mac-y20',      label: 'MAC Y20' },
     { path: '/mac-national', label: 'National' },
     { path: '/calibration',  label: 'Calibration' },
+    { path: '/tax',          label: 'Tax' },
     { path: '/trajectory',   label: 'Trajectory' },
     { path: '/forecasts',    label: 'Overview' },
     { path: '/references',   label: 'References' },

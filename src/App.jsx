@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: "MAC Y20",          to: "/mac-y20",       external: true },
   { label: "National",         to: "/mac-national",  external: true },
   { label: "Calibration",      to: "/calibration",   external: true },
+  { label: "Tax",              to: "/tax",           external: true },
   { label: "Trajectory",       to: "/trajectory",    external: true },
   { label: "Overview",         to: "/forecasts",     external: true },
   { label: "References",       to: "/references",    external: true },

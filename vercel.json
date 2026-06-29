@@ -18,6 +18,7 @@
     { "source": "/mac-y20", "destination": "/mac-y20.html" },
     { "source": "/mac-national", "destination": "/mac-national.html" },
     { "source": "/calibration", "destination": "/calibration.html" },
+    { "source": "/tax", "destination": "/tax.html" },
     { "source": "/trajectory", "destination": "/trajectory.html" },
     { "source": "/forecasts", "destination": "/forecasts.html" },
     { "source": "/fisc", "destination": "/fisc.html" },
