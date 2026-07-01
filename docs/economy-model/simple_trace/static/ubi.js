@@ -1,21 +1,28 @@
 // /ubi — "The required UBI" page.
 //
-// Brings together three things already on the site:
-//   • the basket (basket page)            — $2,600/adult/mo, child <18 = 50%
-//   • Midwestville County demographics     — 240k working-age, 90k children, 60k retired
-//   • the unemployment ramp (Employment)   — MF.unempRateAt(t), 4.2% → 85% over 20yr
+// The bill is (displaced adults + their children) × a PER-PERSON payment that
+// moves through three phases:
+//   • Welfare mode (2026 → inflection): a welfare-level floor (US SSI basis,
+//     ~$12k/adult), deliberately below wages so no one quits a job to claim it,
+//     and not yet MAC-sustainable. Government keeps the welfare it no longer pays
+//     — the incentive to adopt Axion.
+//   • Inflection (2036, default): the point where a firm gains more from Axion's
+//     UBI-funded demand than the MAC costs it — the charge turns self-sustaining.
+//   • UBI mode (inflection → 2046): the floor ramps up to the full basket as
+//     automation displaces most work and the MAC can fund it.
 //
-// and computes the annual UBI bill as automation displaces workers. UBI here
-// REPLACES LOST INCOME: it is paid to working-age adults who are unemployed, plus
-// 50% per child in those households. Employed adults earn wages; retired are on
-// pensions (excluded for now). The bill therefore climbs with unemployment toward
-// a universal ceiling (everyone in the labour-force cohort + their children).
-//
-// Constants are defined locally for now (mirroring the basket + employment pages);
-// they will be centralised when the shared model is re-anchored to $2,600/adult.
+// Headcount follows the unemployment ramp (Employment page). The basket is held
+// at today's price (nominal) to isolate the effect. Inflection year and ramp
+// shape are placeholders — both need a formula (see docs/MAC-market-access-model).
 
-const ADULT_YR = 2600 * 12;        // $31,200/yr per adult  (basket page)
-const CHILD_YR = ADULT_YR * 0.5;   // $15,600/yr per child <18 (50%, paid to parents)
+const ADULT_YR = 2600 * 12;        // $31,200/yr full basket  (UBI mode ceiling)
+const CHILD_YR = ADULT_YR * 0.5;   // $15,600/yr per child <18
+
+const WELFARE_ADULT = 12000;       // welfare-mode floor per adult (US SSI basis)
+const WELFARE_CHILD = WELFARE_ADULT * 0.5;   // $6,000
+
+const INFLECTION_YEAR = 2036;      // welfare mode ends; UBI mode begins ramping
+const BASKET_YEAR     = 2046;      // full basket reached
 
 // Midwestville County (Butler County, OH basis) — same cohorts as the Employment page.
 const WORKING_AGE = 240000;        // 18–64
@@ -27,33 +34,42 @@ const TOTAL_POP   = ADULTS + CHILDREN;       // 390,000
 const HORIZON = 20;                // years, 2026–2046
 const BASE_YEAR = 2026;
 
-// Universal ceiling: every working-age adult + every child receives the basket,
-// regardless of employment. The needs-based bill approaches this as unemployment → 100%.
+// Universal ceiling: every working-age adult + child on the full basket.
 const CEILING = WORKING_AGE * ADULT_YR + CHILDREN * CHILD_YR;
 
-// Tax layer — the basket is bought at retail + sales tax, and the UBI is taxable
-// income (see /tax). So the Fisc must pay a GROSSED-UP amount to leave the citizen
-// enough net to buy the basket: gross = basket × (1 + sales tax) ÷ (1 − income tax).
-// Both are EFFECTIVE rates: rent + most groceries are exempt from sales tax, and the
-// standard deduction shelters much of a basket-level income.
-const SALES_TAX  = 0.04;   // effective, blended across the basket
-const INCOME_TAX = 0.08;   // effective on a basket-level income
+// Tax layer — basket bought at retail + sales tax, UBI is taxable income (/tax).
+const SALES_TAX  = 0.04;
+const INCOME_TAX = 0.08;
 const GROSS_UP   = (1 + SALES_TAX) / (1 - INCOME_TAX);   // ≈ 1.13
+
+// Per-person payment by year: flat welfare floor to the inflection, then linear
+// ramp up to the full basket by BASKET_YEAR.
+function rampFrac(year) {
+  if (year <= INFLECTION_YEAR) return 0;
+  if (year >= BASKET_YEAR) return 1;
+  return (year - INFLECTION_YEAR) / (BASKET_YEAR - INFLECTION_YEAR);
+}
+function payAdult(year) { return WELFARE_ADULT + (ADULT_YR - WELFARE_ADULT) * rampFrac(year); }
+function payChild(year) { return WELFARE_CHILD + (CHILD_YR - WELFARE_CHILD) * rampFrac(year); }
+function phaseOf(year) {
+  if (year < INFLECTION_YEAR) return "Welfare";
+  if (year === INFLECTION_YEAR) return "Inflection";
+  return "UBI";
+}
 
 function rows() {
   const out = [];
   for (let t = 0; t <= HORIZON; t++) {
-    const u = MF.unempRateAt(t) / 100;             // fraction of working-age unemployed
+    const year = BASE_YEAR + t;
+    const u = MF.unempRateAt(t) / 100;
     const unemployedAdults = WORKING_AGE * u;
-    const supportedChildren = CHILDREN * u;         // children allocated to unemployed households pro-rata
-    const ubi = unemployedAdults * ADULT_YR + supportedChildren * CHILD_YR;
+    const supportedChildren = CHILDREN * u;
+    const pa = payAdult(year), pc = payChild(year);
+    const ubi = unemployedAdults * pa + supportedChildren * pc;
     out.push({
-      year: BASE_YEAR + t,
-      u: MF.unempRateAt(t),
-      unemployedAdults,
-      supportedChildren,
-      ubi,                          // net basket bill (what citizens spend)
-      grossUbi: ubi * GROSS_UP,     // what the Fisc pays, grossed up for tax
+      year, u: MF.unempRateAt(t), unemployedAdults, supportedChildren,
+      payAdult: pa, phase: phaseOf(year),
+      ubi, grossUbi: ubi * GROSS_UP,
     });
   }
   return out;
@@ -61,11 +77,13 @@ function rows() {
 
 function render() {
   const R = rows();
-  const first = R[0], last = R[R.length - 1];
+  const infl = R.find(r => r.year === INFLECTION_YEAR) || R[0];
+  const last = R[R.length - 1];
   document.getElementById("results").innerHTML = [
     introCard(),
+    phaseCard(infl, last),
     demographicsCard(),
-    statRow(first, last),
+    statRow(infl, last),
     taxCard(),
     chartCard(R),
     tableCard(R),
@@ -81,6 +99,47 @@ function statBox(label, value, sub, color) {
     </div>`;
 }
 
+function introCard() {
+  return `
+  <div class="card" style="border-left:3px solid var(--blue);">
+    <h3>How the bill is built</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      The basic income replaces income lost to automation. Each year the
+      <a href="/unemployment" style="color:var(--ok);">employment ramp</a> displaces more of the county's
+      ${WORKING_AGE.toLocaleString()} working-age adults, and each displaced adult (plus their children at half)
+      receives a payment. But the <strong>size</strong> of that payment is not fixed — it moves through three
+      phases, because paying the full basket from day one would simply pull people out of work before the economy
+      can carry it.
+      <br><br>
+      <strong>Required UBI = (displaced adults × adult payment) + (their children × half payment)</strong>,
+      where the payment ramps from a welfare floor to the full basket. Employed adults still earn wages; the
+      ${RETIRED.toLocaleString()} retired are on pensions and excluded here.
+    </div>
+  </div>`;
+}
+
+function phaseCard(infl, last) {
+  const box = (name, years, pay, note, color) => `
+    <div class="stat" style="border-left:3px solid ${color}; padding-left:12px;">
+      <div class="label" style="color:${color};">${name}</div>
+      <div class="value" style="font-size:15px;">${pay}</div>
+      <div class="sub">${years}</div>
+      <div style="font-size:11px; color:var(--faint); margin-top:6px; line-height:1.5;">${note}</div>
+    </div>`;
+  return `
+  <div class="card">
+    <h3>Three phases of the payment</h3>
+    <div class="stats">
+      ${box("Welfare mode", `${BASE_YEAR}–${INFLECTION_YEAR}`, "$" + WELFARE_ADULT.toLocaleString() + "/adult",
+        "A welfare-level floor (US SSI basis), kept below wages so no one quits to claim it. Not yet MAC-sustainable — government keeps the welfare it no longer pays, the incentive to adopt.", "var(--dim)")}
+      ${box("Inflection", `~${INFLECTION_YEAR}`, "turns self-funding",
+        "Where a firm gains more from Axion's UBI-funded demand than the MAC costs it. The charge becomes sustainable and the payment starts to climb. Year is a placeholder — needs a formula.", "var(--warn)")}
+      ${box("UBI mode", `${INFLECTION_YEAR}–${BASKET_YEAR}`, "→ $" + ADULT_YR.toLocaleString() + "/adult",
+        "The floor ramps up to the full basket as automation displaces most work and the MAC can fund it. Linear ramp for now — will be a formula.", "var(--ok)")}
+    </div>
+  </div>`;
+}
+
 function demographicsCard() {
   const n = v => v.toLocaleString();
   const population = [
@@ -90,7 +149,6 @@ function demographicsCard() {
     statBox("Retired (65+)", n(RETIRED), "on pensions"),
     statBox("Children (under 18)", n(CHILDREN), "basket at 50%"),
   ].join("");
-  // Household figures are approximate (US Census patterns for a county this size).
   const households = [
     statBox("Households", "~155,000", "avg 2.5 people"),
     statBox("Families with children", "~47,000", "incl. ~13,000 single-parent"),
@@ -112,35 +170,7 @@ function demographicsCard() {
   </div>`;
 }
 
-function introCard() {
-  return `
-  <div class="card" style="border-left:3px solid var(--blue);">
-    <h3>How the bill is built</h3>
-    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      The basic income replaces income lost to automation. Each year, the
-      <a href="/unemployment" style="color:var(--ok);">employment ramp</a> displaces
-      more of the county's ${(WORKING_AGE).toLocaleString()} working-age
-      adults; every displaced adult needs the
-      <a href="/basket" style="color:var(--ok);">basket</a>
-      (${"$" + ADULT_YR.toLocaleString()}/yr), and every child under 18 in their household needs
-      half (${"$" + CHILD_YR.toLocaleString()}/yr, paid to the parents).
-      <br><br>
-      <strong>Required UBI = (unemployed adults × adult basket) + (their children × half basket).</strong>
-      Employed adults still earn wages, so they need no payment; the
-      ${(RETIRED).toLocaleString()} retired residents are on pensions and are excluded here.
-      The bill climbs with unemployment toward a <strong>universal ceiling</strong> —
-      the cost if every working-age adult and child were paid regardless of employment.
-      <br><br>
-      <span style="color:var(--dim); font-size:12px;">
-        The basket is held at today's price (nominal) to isolate the effect of rising
-        unemployment. Basket deflation (the Trajectory page) would lower the nominal
-        bill over time — a separate effect, layered in later.
-      </span>
-    </div>
-  </div>`;
-}
-
-function statRow(first, last) {
+function statRow(infl, last) {
   const cell = (label, value, sub, color) => `
     <div class="stat">
       <div class="label">${label}</div>
@@ -150,9 +180,9 @@ function statRow(first, last) {
   return `
   <div class="card">
     <div class="stats">
-      ${cell("Net basket bill · " + last.year, MF.fmtMoney(last.ubi), "what citizens spend · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
-      ${cell("Gross UBI · " + last.year, MF.fmtMoney(last.grossUbi), "what the Fisc pays (+ tax)", "var(--warn)")}
-      ${cell("Tax gross-up", "+" + ((GROSS_UP - 1) * 100).toFixed(0) + "%", "sales + income tax", "var(--txt2)")}
+      ${cell("Welfare-mode bill · " + infl.year, MF.fmtMoney(infl.ubi), "$" + WELFARE_ADULT.toLocaleString() + "/adult · " + infl.u.toFixed(0) + "% unemployed", "var(--dim)")}
+      ${cell("Full-UBI bill · " + last.year, MF.fmtMoney(last.ubi), "$" + ADULT_YR.toLocaleString() + "/adult · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
+      ${cell("Gross · " + last.year, MF.fmtMoney(last.grossUbi), "what the Fisc pays (+ tax)", "var(--warn)")}
       ${cell("Universal ceiling", MF.fmtMoney(CEILING), "net · all adults + children", "var(--dim)")}
     </div>
   </div>`;
@@ -168,7 +198,8 @@ function taxCard() {
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
       The basket is bought at retail <strong>plus sales tax</strong>, and the UBI is
       <strong>taxable income</strong> (<a href="/tax" style="color:var(--ok);">tax page</a>). So to leave a
-      citizen enough <em>net</em> to buy the basket, the Fisc must pay a grossed-up amount.
+      citizen enough <em>net</em> to buy the basket, the Fisc must pay a grossed-up amount (shown at the full-basket
+      rate below).
     </div>
     <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:12px 16px; margin-top:12px; font-size:13px; color:var(--txt);">
       basket &nbsp;→&nbsp; × (1 + sales tax) &nbsp;→&nbsp; ÷ (1 − income tax) &nbsp;→&nbsp; <span style="color:var(--ok);">gross UBI</span>
@@ -207,21 +238,24 @@ function chartCard(R) {
     <h3>Required UBI per year, ${R[0].year}–${R[R.length - 1].year}</h3>
     ${svg}
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      The shaded line is the net basket the displaced need to spend; the line above is what the Fisc actually
-      pays once the basket is grossed up for sales and income tax (+${((GROSS_UP - 1) * 100).toFixed(0)}%). Both
-      climb as the employment ramp displaces more workers.
+      Flat-ish through <strong>welfare mode</strong> (the payment is fixed at the floor; the bill rises only as more
+      workers are displaced), then steepening after the <strong>${INFLECTION_YEAR} inflection</strong> as the
+      per-person payment ramps toward the full basket. The upper line is grossed up for sales + income tax
+      (+${((GROSS_UP - 1) * 100).toFixed(0)}%).
     </div>
   </div>`;
 }
 
 function tableCard(R) {
   const n = v => Math.round(v).toLocaleString();
+  const phaseColor = p => p === "Welfare" ? "var(--dim)" : p === "Inflection" ? "var(--warn)" : "var(--ok)";
   const body = R.map(r => `
     <tr>
       <td class="cat">${r.year}</td>
+      <td class="num" style="color:${phaseColor(r.phase)};">${r.phase}</td>
       <td class="num">${r.u.toFixed(1)}%</td>
+      <td class="num">$${n(r.payAdult)}</td>
       <td class="num">${n(r.unemployedAdults)}</td>
-      <td class="num">${n(r.supportedChildren)}</td>
       <td class="num">${MF.fmtMoney(r.ubi)}</td>
       <td class="num">${MF.fmtMoney(r.grossUbi)}</td>
     </tr>`).join("");
@@ -231,18 +265,20 @@ function tableCard(R) {
     <table style="width:100%;">
       <thead><tr>
         <th>Year</th>
+        <th class="num">Phase</th>
         <th class="num">Unemployment</th>
-        <th class="num">Unemployed adults</th>
-        <th class="num">Children supported</th>
-        <th class="num">Net basket / yr</th>
-        <th class="num">Gross UBI / yr</th>
+        <th class="num">Pay / adult</th>
+        <th class="num">Displaced adults</th>
+        <th class="num">Net bill / yr</th>
+        <th class="num">Gross / yr</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Children are allocated to unemployed households in proportion to the working-age unemployment rate.
-      Adult basket ${"$" + ADULT_YR.toLocaleString()}/yr · child basket ${"$" + CHILD_YR.toLocaleString()}/yr · held at today's prices.
-      Gross UBI = net basket grossed up +${((GROSS_UP - 1) * 100).toFixed(0)}% for sales + income tax.
+      Pay/adult ramps from the $${WELFARE_ADULT.toLocaleString()} welfare floor (to ${INFLECTION_YEAR}) up to the
+      $${ADULT_YR.toLocaleString()} basket (by ${BASKET_YEAR}); children at half. Displaced counts follow the
+      unemployment ramp; children allocated to displaced households pro-rata. Held at today's prices. Gross =
+      net +${((GROSS_UP - 1) * 100).toFixed(0)}% for sales + income tax.
     </div>
   </div>`;
 }
