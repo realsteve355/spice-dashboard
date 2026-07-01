@@ -11,6 +11,11 @@
 //
 // Unemployment (the recipient count) is the employment-page figure (MF.unempRateAt).
 // The basket is held at today's price (nominal) to isolate the effect.
+//
+// The basket defines the UBI (net). UBI is taxable income (the Fisc issues 1099s —
+// see /tax), so the Fisc grosses the payment up so that, after income tax, the net
+// still buys the basket. Real US treatment: the standard deduction shelters the
+// welfare floor (~0% tax), so the gross-up only appears as the payment climbs.
 
 const ADULT_YR = 2600 * 12;        // $31,200/yr full basket  (UBI mode ceiling)
 const CHILD_YR = ADULT_YR * 0.5;   // $15,600/yr per child <18
@@ -47,6 +52,33 @@ function phaseOf(year) {
   return year <= INFLECTION_YEAR ? "Welfare" : "UBI";
 }
 
+// Income tax on the UBI (single filer, 2025 basis). Federal standard deduction +
+// brackets; Ohio simplified (0% under $26,050, 2.75% above). Applied per payment.
+const STD_DEDUCTION = 15000;
+const FED_BRACKETS = [[0, 0.10], [11925, 0.12], [48475, 0.22], [103350, 0.24]];
+function fedTax(gross) {
+  const ti = Math.max(0, gross - STD_DEDUCTION);
+  let tax = 0;
+  for (let i = 0; i < FED_BRACKETS.length; i++) {
+    const lo = FED_BRACKETS[i][0], rate = FED_BRACKETS[i][1];
+    const hi = i + 1 < FED_BRACKETS.length ? FED_BRACKETS[i + 1][0] : Infinity;
+    if (ti > lo) tax += (Math.min(ti, hi) - lo) * rate;
+  }
+  return tax;
+}
+function ohioTax(gross) { return Math.max(0, gross - 26050) * 0.0275; }
+function incomeTax(gross) { return fedTax(gross) + ohioTax(gross); }
+// Gross-up: solve gross − incomeTax(gross) = net (net-of-tax is monotonic → bisect).
+function grossUp(net) {
+  if (net <= 0) return 0;
+  let lo = net, hi = net * 1.6;
+  for (let i = 0; i < 44; i++) {
+    const mid = (lo + hi) / 2;
+    if (mid - incomeTax(mid) < net) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
 function rows() {
   const out = [];
   for (let t = 0; t <= HORIZON; t++) {
@@ -55,10 +87,12 @@ function rows() {
     const unemployedAdults = WORKING_AGE * u;
     const supportedChildren = CHILDREN * u;
     const pa = payAdult(year), pc = payChild(year);
-    const ubi = unemployedAdults * pa + supportedChildren * pc;
+    const grossPa = grossUp(pa), grossPc = grossUp(pc);
+    const ubi = unemployedAdults * pa + supportedChildren * pc;            // net (basket)
+    const grossUbi = unemployedAdults * grossPa + supportedChildren * grossPc;  // Fisc pays
     out.push({
       year, u: MF.unempRateAt(t), unemployedAdults, supportedChildren,
-      payAdult: pa, phase: phaseOf(year), ubi,
+      payAdult: pa, grossPayAdult: grossPa, phase: phaseOf(year), ubi, grossUbi,
     });
   }
   return out;
@@ -73,6 +107,7 @@ function render() {
     phaseCard(infl, last),
     demographicsCard(),
     statRow(infl, last),
+    taxCard(),
     chartCard(R),
     tableCard(R),
   ].join("\n");
@@ -170,13 +205,44 @@ function statRow(infl, last) {
     <div class="stats">
       ${cell("Welfare-mode bill · " + infl.year, MF.fmtMoney(infl.ubi), "$" + WELFARE_ADULT.toLocaleString() + "/adult · " + infl.u.toFixed(0) + "% unemployed", "var(--dim)")}
       ${cell("Full-UBI bill · " + last.year, MF.fmtMoney(last.ubi), "$" + ADULT_YR.toLocaleString() + "/adult · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
+      ${cell("Gross · " + last.year, MF.fmtMoney(last.grossUbi), "what the Fisc pays (+ income tax)", "var(--warn)")}
       ${cell("Universal ceiling", MF.fmtMoney(CEILING), "all adults + children on full basket", "var(--dim)")}
+    </div>
+  </div>`;
+}
+
+function taxCard() {
+  const usd = v => "$" + Math.round(v).toLocaleString();
+  const gWelfare = grossUp(WELFARE_ADULT), gFull = grossUp(ADULT_YR);
+  const upWelfare = (gWelfare / WELFARE_ADULT - 1) * 100;
+  const upFull = (gFull / ADULT_YR - 1) * 100;
+  return `
+  <div class="card" style="border-left:3px solid var(--warn);">
+    <h3>Income tax — the Fisc grosses up the UBI</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      The basket defines the UBI, but the UBI is <strong>taxable income</strong>
+      (<a href="/tax" style="color:var(--ok);">tax page</a>). So the Fisc pays a grossed-up amount, and after the
+      citizen's income tax the <em>net</em> still buys the basket. Because the standard deduction shelters low
+      incomes, the welfare floor is effectively untaxed and the gross-up only appears as the payment climbs toward
+      the full basket.
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.8; margin-top:12px;">
+      Welfare floor: <strong>${usd(WELFARE_ADULT)}</strong> net → <strong>${usd(gWelfare)}</strong> gross
+      (<strong>+${upWelfare.toFixed(1)}%</strong>).<br>
+      Full basket: <strong>${usd(ADULT_YR)}</strong> net → <strong style="color:var(--warn);">${usd(gFull)}</strong>
+      gross (<strong>+${upFull.toFixed(1)}%</strong>).
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.5;">
+      Single-filer basis (federal standard deduction + brackets, Ohio state at 2.75% above $26,050). Computed per
+      payment — the adult and child streams are grossed up separately; household aggregation and child credits are
+      not modelled. The gross-up flows to the IRS and the state, not the citizen.
     </div>
   </div>`;
 }
 
 function chartCard(R) {
   const net = R.map(r => ({ x: r.year, y: r.ubi }));
+  const gross = R.map(r => ({ x: r.year, y: r.grossUbi }));
   const svg = MF.lineChart({
     xDomain: [BASE_YEAR, BASE_YEAR + HORIZON],
     xTicks: [2026, 2031, 2036, 2041, 2046],
@@ -184,7 +250,8 @@ function chartCard(R) {
     yTicks: [0, 3e9, 6e9, 9e9],
     yFmt: v => "$" + (v / 1e9).toFixed(0) + "B",
     series: [
-      { pts: net, color: "var(--ok)", width: 2.5, area: true, areaOpacity: 0.1, label: "Required UBI (" + MF.fmtBn(R[R.length - 1].ubi) + ")" },
+      { pts: gross, color: "var(--warn)", width: 2.5, label: "Gross · Fisc pays (" + MF.fmtBn(R[R.length - 1].grossUbi) + ")" },
+      { pts: net, color: "var(--ok)", width: 2.5, area: true, areaOpacity: 0.1, label: "Net basket bill (" + MF.fmtBn(R[R.length - 1].ubi) + ")" },
     ],
   });
   return `
@@ -194,7 +261,8 @@ function chartCard(R) {
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Flat-ish through <strong>welfare mode</strong> (the payment is fixed at the floor; the bill rises only as more
       workers become unemployed), then steepening after the <strong>${INFLECTION_YEAR} inflection</strong> as the
-      per-person payment climbs toward the full basket.
+      per-person payment climbs toward the full basket. The two lines diverge as the payment rises: the welfare floor
+      is untaxed, so the gross-up for income tax only opens up in UBI mode.
     </div>
   </div>`;
 }
@@ -210,6 +278,7 @@ function tableCard(R) {
       <td class="num">$${n(r.payAdult)}</td>
       <td class="num">${n(r.unemployedAdults)}</td>
       <td class="num">${MF.fmtMoney(r.ubi)}</td>
+      <td class="num" style="color:var(--warn);">${MF.fmtMoney(r.grossUbi)}</td>
     </tr>`).join("");
   return `
   <div class="card">
@@ -221,14 +290,16 @@ function tableCard(R) {
         <th class="num">Unemployment</th>
         <th class="num">Pay / adult</th>
         <th class="num">Unemployed adults</th>
-        <th class="num">Bill / yr</th>
+        <th class="num">Net bill / yr</th>
+        <th class="num">Gross / yr</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>
     <div style="font-size:11px; color:var(--faint); margin-top:8px;">
       Pay/adult holds at the $${WELFARE_ADULT.toLocaleString()} welfare floor (to ${INFLECTION_YEAR}), then climbs to
       the $${ADULT_YR.toLocaleString()} basket (by ${BASKET_YEAR}); children at half. Unemployed counts are the
-      employment-page figure; children allocated to unemployed households pro-rata. Held at today's prices.
+      employment-page figure; children allocated to unemployed households pro-rata. Held at today's prices. Gross =
+      net + income tax the Fisc must cover so the citizen's after-tax UBI still buys the basket.
     </div>
   </div>`;
 }
