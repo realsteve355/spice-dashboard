@@ -21,6 +21,19 @@ const ADULT = 2600;            // $/mo per adult
 const CHILD = ADULT * 0.5;     // $/mo per child under 18 (50%, paid to parents)
 const ANNUAL = ADULT * 12;     // $31,200/yr per adult
 
+// Sales tax — added on top of the goods basket to give the "at the till" figure.
+// Butler County, OH combined rate (5.75% state + 0.75% county). Ohio exempts
+// housing, food for home consumption, medical care and tuition — so tax lands
+// only on the taxable share of the basket.
+const SALES_TAX_RATE = 0.065;
+const TAX_EXEMPT = new Set([
+  "Rent / mortgage (basic housing)",
+  "Food (general groceries)",
+  "Food (proteins)",
+  "Healthcare",
+  "Education",
+]);
+
 // Each: name, weight (% of basket), what it covers, sources [strings], trend.
 const BASKET = [
   {
@@ -252,6 +265,10 @@ function fullTable() {
       <td class="num">${usd(monthly * 12)}</td>
     </tr>`;
   }).join("");
+  const taxableMonthly = BASKET.reduce((s, c) =>
+    s + (TAX_EXEMPT.has(c.name) ? 0 : ADULT * c.weight / 100), 0);
+  const salesTax = taxableMonthly * SALES_TAX_RATE;   // $/mo per adult
+  const atTill = ADULT + salesTax;
   return `
   <div class="card">
     <h3>Basket summary — per adult</h3>
@@ -263,13 +280,33 @@ function fullTable() {
         <th class="num">$/year</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr style="border-top:2px solid var(--line-hot);">
-        <td class="cat"><strong>Total</strong></td>
-        <td class="num"><strong>100%</strong></td>
-        <td class="num"><strong>${usd(ADULT)}</strong></td>
-        <td class="num"><strong>${usd(ANNUAL)}</strong></td>
-      </tr></tfoot>
+      <tfoot>
+        <tr style="border-top:2px solid var(--line-hot);">
+          <td class="cat"><strong>Goods total</strong></td>
+          <td class="num"><strong>100%</strong></td>
+          <td class="num"><strong>${usd(ADULT)}</strong></td>
+          <td class="num"><strong>${usd(ANNUAL)}</strong></td>
+        </tr>
+        <tr>
+          <td class="cat" style="color:var(--dim);">+ Sales tax (taxable items @ ${(SALES_TAX_RATE * 100).toFixed(2)}%)</td>
+          <td class="num" style="color:var(--dim);">—</td>
+          <td class="num" style="color:var(--dim);">${usd(salesTax)}</td>
+          <td class="num" style="color:var(--dim);">${usd(salesTax * 12)}</td>
+        </tr>
+        <tr style="border-top:1px solid var(--line-hot);">
+          <td class="cat"><strong>Basket at the till</strong></td>
+          <td class="num"></td>
+          <td class="num"><strong>${usd(atTill)}</strong></td>
+          <td class="num"><strong>${usd(atTill * 12)}</strong></td>
+        </tr>
+      </tfoot>
     </table>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5;">
+      The $${ADULT.toLocaleString()} anchor is the cost of the goods; sales tax is added on top to give the price
+      at the till. Ohio exempts housing, food for home consumption, medical care and tuition, so tax lands only on
+      the taxable share of the basket (about ${Math.round(taxableMonthly / ADULT * 100)}% of it) at the
+      ${(SALES_TAX_RATE * 100).toFixed(2)}% Butler County rate.
+    </div>
   </div>`;
 }
 
