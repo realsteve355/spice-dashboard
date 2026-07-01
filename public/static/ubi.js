@@ -36,9 +36,6 @@ const TOTAL_POP   = ADULTS + CHILDREN;       // 390,000
 const HORIZON = 20;                // years, 2026–2046
 const BASE_YEAR = 2026;
 
-// Universal ceiling: every working-age adult + child on the full basket.
-const CEILING = WORKING_AGE * ADULT_YR + CHILDREN * CHILD_YR;
-
 // Per-person payment by year: flat welfare floor to the inflection, then linear
 // ramp up to the full basket by BASKET_YEAR.
 function rampFrac(year) {
@@ -105,9 +102,9 @@ function render() {
   document.getElementById("results").innerHTML = [
     introCard(),
     phaseCard(infl, last),
+    taxCard(),
     demographicsCard(),
     statRow(infl, last),
-    taxCard(),
     chartCard(R),
     tableCard(R),
   ].join("\n");
@@ -200,13 +197,19 @@ function statRow(infl, last) {
       <div class="value" ${color ? `style="color:${color};"` : ""}>${value}</div>
       <div class="sub">${sub}</div>
     </div>`;
+  const grossFull = Math.round(grossUp(ADULT_YR));
+  const ceilingGross = WORKING_AGE * grossUp(ADULT_YR) + CHILDREN * grossUp(CHILD_YR);
   return `
   <div class="card">
     <div class="stats">
-      ${cell("Welfare-mode bill · " + infl.year, MF.fmtMoney(infl.ubi), "$" + WELFARE_ADULT.toLocaleString() + "/adult · " + infl.u.toFixed(0) + "% unemployed", "var(--dim)")}
-      ${cell("Full-UBI bill · " + last.year, MF.fmtMoney(last.ubi), "$" + ADULT_YR.toLocaleString() + "/adult · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
-      ${cell("Gross · " + last.year, MF.fmtMoney(last.grossUbi), "what the Fisc pays (+ income tax)", "var(--warn)")}
-      ${cell("Universal ceiling", MF.fmtMoney(CEILING), "all adults + children on full basket", "var(--dim)")}
+      ${cell("Welfare-mode bill · " + infl.year, MF.fmtMoney(infl.grossUbi), "gross · $" + WELFARE_ADULT.toLocaleString() + "/adult · " + infl.u.toFixed(0) + "% unemployed", "var(--dim)")}
+      ${cell("Full-UBI bill · " + last.year, MF.fmtMoney(last.grossUbi), "gross · $" + grossFull.toLocaleString() + "/adult · " + last.u.toFixed(0) + "% unemployed", "var(--ok)")}
+      ${cell("Universal ceiling", MF.fmtMoney(ceilingGross), "gross · all adults + children on full basket", "var(--dim)")}
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:10px; line-height:1.5;">
+      Bills are the <strong>gross</strong> figure — what the Fisc pays, income tax included (see card above). Welfare
+      mode is untaxed, so its bill equals the net; the full-UBI and ceiling bills carry the +${((grossUp(ADULT_YR) / ADULT_YR - 1) * 100).toFixed(1)}%
+      gross-up on the basket-level payment.
     </div>
   </div>`;
 }
