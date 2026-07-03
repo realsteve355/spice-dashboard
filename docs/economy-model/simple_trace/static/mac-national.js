@@ -1,86 +1,104 @@
-// /mac-national — "The MAC distribution — winners and losers".
+// /mac-national — "Midwestville — the whole-economy MAC base (with B2B)".
 //
-// Applies the actual MAC formula at national scale (year 20):
-//   MAC_sector = k × revenue × (profit ÷ employees),  k set so Σ MAC = UBI.
-// In aggregate it's affordable (total MAC < the wages automation removed, so firms
-// keep the difference). But it lands unevenly: the most automated firms (high
-// profit per employee) are NET LOSERS; labour-heavy firms are NET WINNERS.
+// The question this page answers: retail sales alone cannot fund the UBI. Once the
+// B2B layer (firms procuring inputs) is in scope, the base of chargeable
+// transactions multiplies and the MAC becomes affordable. How much MAC can
+// Midwestville raise if every transaction — B2C and B2B — is in scope?
 //
-// Loads maryfontaine.js (ramp) + mac-data.js. Scaled to the US by population.
+// Data: real BEA 2024 GDP-by-Industry (value added + gross output) for the 20 NAICS
+// sectors, scaled to Midwestville's 390,000 people (÷ the US population). Per-sector
+// labour share (→ automation index A) is a first-pass estimate to firm up against
+// BEA's compensation-by-industry table. Government is out of scope (tax-funded, no
+// skimmable sale).
+//
+// The charge:  MAC = S × A × K
+//   S = a firm's slice of a transaction (its value added / declared margin)
+//   A = automation index = 1 − (wages ÷ revenue);  0 = all human, 1 = all robot
+//   K = one county-wide number set so total MAC = the UBI bill
+//         K = UBI ÷ Σ( value added × A )
 
-const US_POP = 340e6, COUNTY_POP = 390000, SCALE = US_POP / COUNTY_POP;
-const u1 = MF.unempRateAt(0) / 100, u20 = MF.unempRateAt(20) / 100;   // 85% — year 20
-const RET = (1 - u20) / (1 - u1);
-const WA = 240000, CH = 90000, AY = 31200, CY = 15600, AVG_WAGE = 60000;
-const GROSS = 1.13;   // tax gross-up from the UBI page
+const US_POP = 335e6, COUNTY_POP = 390000, SCALE = COUNTY_POP / US_POP;
 
-const UBI = (WA * u20 * AY + CH * u20 * CY) * GROSS * SCALE;   // gross UBI = total MAC
-const wageBillOld   = WA * (1 - u1) * AVG_WAGE * SCALE;        // before automation
-const wagesLeft     = WA * (1 - u20) * AVG_WAGE * SCALE;       // still paid at year 20
-const wagesFreedTot = wageBillOld - wagesLeft;
-const firmsKeep     = wagesFreedTot - UBI;                     // aggregate, net of the charge
+// Demand-side aggregates (US $, 2024) — scaled to the county below.
+const RETAIL_US = 8.3e12;    // retail + food-services sales (Census)
+const PCE_US    = 19.8e12;   // personal consumption expenditure (BEA)
 
-// Per sector: apply the formula.
-const SECTORS = CATEGORIES.map(c => {
-  const revenue    = c.rev * SCALE;
-  const emp        = (c.rev / c.rpe) * RET * SCALE;          // year-20 (automation-reduced) headcount
-  const wagesFreed = (c.rev / c.rpe) * c.wage * (1 - RET) * SCALE;
-  const profit     = c.rev * c.margin * SCALE + wagesFreed;  // margin profit + the wages automation freed
-  const ppe        = profit / emp;                           // profit per employee — the dial
-  return { name: c.name, revenue, profit, ppe, wagesFreed, weight: revenue * ppe };
+// UBI at maturity — same basis as the /ubi page (unemployed × basket, income-tax
+// grossed up). Gross-up factors carried from /ubi: adult $31,200→$33,367,
+// child $15,600→$15,667.
+const WA = 240000, CH = 90000;
+const u20 = MF.unempRateAt(20) / 100;        // 0.85 — year-20 displacement
+const ADULT_GROSS = 33367, CHILD_GROSS = 15667;
+const UBI = WA * u20 * ADULT_GROSS + CH * u20 * CHILD_GROSS;   // county gross UBI bill
+
+// Real BEA 2024 GDP-by-Industry, US $ (value added + gross output), 20 NAICS sectors.
+// labour = compensation ÷ gross output (first-pass); A = 1 − labour.
+// scope: false = government (out of scope). All figures in absolute US dollars.
+const SECTORS = [
+  { naics: "11",    name: "Agriculture, forestry, fishing", va: 0.25e12, go: 0.65e12, labour: 0.10, scope: true },
+  { naics: "21",    name: "Mining, oil & gas",              va: 0.35e12, go: 0.85e12, labour: 0.15, scope: true },
+  { naics: "22",    name: "Utilities",                      va: 0.40e12, go: 0.70e12, labour: 0.15, scope: true },
+  { naics: "23",    name: "Construction",                   va: 1.25e12, go: 2.50e12, labour: 0.30, scope: true },
+  { naics: "31-33", name: "Manufacturing",                  va: 2.90e12, go: 7.50e12, labour: 0.18, scope: true },
+  { naics: "42",    name: "Wholesale trade",                va: 1.75e12, go: 2.40e12, labour: 0.25, scope: true },
+  { naics: "44-45", name: "Retail trade",                   va: 1.80e12, go: 2.60e12, labour: 0.30, scope: true },
+  { naics: "48-49", name: "Transportation & warehousing",   va: 1.05e12, go: 1.90e12, labour: 0.35, scope: true },
+  { naics: "51",    name: "Information",                    va: 1.70e12, go: 2.90e12, labour: 0.20, scope: true },
+  { naics: "52",    name: "Finance & insurance",            va: 2.20e12, go: 5.50e12, labour: 0.25, scope: true },
+  { naics: "53",    name: "Real estate & leasing",          va: 4.00e12, go: 5.50e12, labour: 0.05, scope: true },
+  { naics: "54",    name: "Professional & technical",       va: 2.30e12, go: 3.50e12, labour: 0.45, scope: true },
+  { naics: "55",    name: "Management of companies",        va: 0.55e12, go: 0.90e12, labour: 0.30, scope: true },
+  { naics: "56",    name: "Administrative & waste",         va: 0.95e12, go: 1.50e12, labour: 0.45, scope: true },
+  { naics: "61",    name: "Educational services",           va: 0.35e12, go: 0.50e12, labour: 0.50, scope: true },
+  { naics: "62",    name: "Health care & social assist.",   va: 2.15e12, go: 3.50e12, labour: 0.45, scope: true },
+  { naics: "71",    name: "Arts, entertainment & rec.",     va: 0.35e12, go: 0.60e12, labour: 0.35, scope: true },
+  { naics: "72",    name: "Accommodation & food",           va: 1.05e12, go: 1.90e12, labour: 0.35, scope: true },
+  { naics: "81",    name: "Other services",                 va: 0.65e12, go: 1.10e12, labour: 0.35, scope: true },
+  { naics: "92",    name: "Government",                     va: 3.50e12, go: 5.00e12, labour: 0.55, scope: false },
+];
+
+// Derive per sector (county scale), automation index, B2B (intermediate) and the
+// value-added × A weight that drives the charge.
+SECTORS.forEach(s => {
+  s.A = 1 - s.labour;
+  s.vaC = s.va * SCALE;                 // value added, county
+  s.goC = s.go * SCALE;                 // gross output (all transactions), county
+  s.b2b = (s.go - s.va) * SCALE;        // intermediate inputs = the B2B layer, county
+  s.wages = s.go * s.labour * SCALE;    // wage bill, county
+  s.weight = s.vaC * s.A;               // Σ of this = the MAC denominator
 });
-const totalWeight = SECTORS.reduce((s, x) => s + x.weight, 0);
-const k = UBI / totalWeight;
-SECTORS.forEach(s => { s.mac = k * s.weight; s.pctRev = s.mac / s.revenue; s.net = s.wagesFreed - s.mac; });
-SECTORS.sort((a, b) => a.net - b.net);   // biggest net losers first
-const losers  = SECTORS.filter(s => s.net < 0).length;
-const overRev = SECTORS.filter(s => s.pctRev > 1).length;
 
-const T = v => (v < 0 ? "−$" : "$") + (Math.abs(v) / 1e12).toFixed(2) + "T";
-const M = v => v >= 1e6 ? "$" + (v / 1e6).toFixed(1) + "M" : "$" + Math.round(v / 1e3) + "k";
+const mkt = SECTORS.filter(s => s.scope);   // market economy (ex government)
+const sum = (a, f) => a.reduce((t, x) => t + f(x), 0);
+
+const totalGO   = sum(mkt, s => s.goC);       // all transactions in scope
+const totalVA   = sum(mkt, s => s.vaC);       // value added (GDP ex-gov)
+const totalB2B  = sum(mkt, s => s.b2b);       // the B2B / intermediate layer
+const wageBill  = sum(mkt, s => s.wages);     // market wage bill
+const freed     = wageBill * u20;             // wages automation frees at maturity
+const weightSum = sum(mkt, s => s.weight);    // Σ( value added × A )
+const K         = UBI / weightSum;            // the county-wide scalar
+
+const retail = RETAIL_US * SCALE;             // narrow retail (shops + dining)
+const pce    = PCE_US * SCALE;                // all consumer spend
+
+// Retail-only counterfactual: if the MAC could reach only retail transactions.
+const retailOnlyRate = UBI / retail;
+const allTxnRate     = UBI / totalGO;
+
+SECTORS.forEach(s => { s.mac = s.scope ? K * s.weight : 0; });
+
+// Formatters — county scale is billions.
+const B = v => (v < 0 ? "−$" : "$") + (Math.abs(v) / 1e9).toFixed(1) + "B";
+const pct = v => (v * 100).toFixed(0) + "%";
+const pct1 = v => (v * 100).toFixed(1) + "%";
 
 function render() {
-  document.getElementById("results").innerHTML = [introCard(), kCard(), statRow(), distTable(), noteCard()].join("\n");
+  document.getElementById("results").innerHTML = [
+    introCard(), layersCard(), answerCard(), ceilingCard(), sectorTable(), noteCard(),
+  ].join("\n");
 }
 
-function kCard() {
-  const exp = v => { const e = Math.floor(Math.log10(v)); return (v / 10 ** e).toFixed(1) + " × 10" + sup(e); };
-  const sup = n => String(n).replace(/-/g, "⁻").replace(/[0-9]/g, d => "⁰¹²³⁴⁵⁶⁷⁸⁹"[d]);
-  const rows = SECTORS.slice().sort((a, b) => b.weight - a.weight).map(s => `<tr>
-    <td class="cat">${s.name}</td>
-    <td class="num">${T(s.revenue)}</td>
-    <td class="num">${M(s.ppe)}</td>
-    <td class="num">${(s.weight / totalWeight * 100).toFixed(0)}%</td>
-  </tr>`).join("");
-  return `
-  <div class="card" style="border-left:3px solid var(--ok);">
-    <h3>How k is calculated</h3>
-    <div style="font-size:13px; color:var(--txt); line-height:1.6;">
-      k is the one number that makes the total charge equal the UBI. It is the UBI divided by the sum, over every
-      firm, of its <strong>revenue × profit‑per‑employee</strong>:
-    </div>
-    <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:12px 16px; margin-top:12px; font-size:13px; color:var(--txt);">
-      k = UBI ÷ Σ( revenue × profit ÷ employees )
-    </div>
-    <div style="overflow-x:auto; margin-top:12px;">
-    <table>
-      <thead><tr><th>Sector</th><th class="num">Revenue</th><th class="num">Profit / emp</th><th class="num">Share of the sum</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr style="border-top:2px solid var(--line-hot);">
-        <td class="cat"><strong>Σ (the denominator)</strong></td>
-        <td class="num">—</td><td class="num">—</td>
-        <td class="num"><strong>${exp(totalWeight)}</strong></td>
-      </tr></tfoot>
-    </table>
-    </div>
-    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:12px;">
-      <strong>k = ${T(UBI)} ÷ ${exp(totalWeight)} = ${exp(k)}.</strong>
-      The automated firms (high profit‑per‑employee) dominate the sum, so they take the biggest share of the charge.
-      On each $1 of a firm's transactions the charge is <strong>k × its profit‑per‑employee</strong> — a tiny number
-      times the dial.
-    </div>
-  </div>`;
-}
 function statBox(label, value, sub, color) {
   return `<div class="stat"><div class="label">${label}</div>
     <div class="value" ${color ? `style="color:${color};"` : ""}>${value}</div>
@@ -90,69 +108,133 @@ function statBox(label, value, sub, color) {
 function introCard() {
   return `
   <div class="card" style="border-left:3px solid var(--blue);">
-    <h3>The charge applied, sector by sector</h3>
-    <div style="font-size:13px; color:var(--txt); line-height:1.6;">
-      Each sector's charge is <strong>MAC = k × revenue × (profit ÷ employees)</strong>, with k set so the total
-      equals the UBI. Profit at year 20 is the firm's margin <em>plus</em> the wages automation freed (revenue is
-      held, so saved wages drop to profit). Across the <em>whole</em> economy the charge is affordable. But the
-      formula lands hardest on the firms that gained most from automation — and here it's charged to only these
-      few consumer-facing sectors, which overloads them. (US = Midwestville × ${Math.round(SCALE)}, year 20.)
+    <h3>The question</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      Retail sales alone cannot fund the basic income. Midwestville's consumers spend about
+      <strong>${B(retail)}</strong> a year in shops — but the UBI bill at maturity is
+      <strong>${B(UBI)}</strong>, which would need a ${pct(retailOnlyRate)} charge on every retail sale. Impossible.
+      <br><br>
+      The improvement is the <strong>B2B layer</strong>: a firm with no consumers in the county — an external
+      battery maker supplying the solar grid, a software vendor licensing to the logistics hub — is still in scope,
+      because its sale into the county clears the MOND gateway. Once every transaction counts, the base multiplies.
+      The charge on each firm's slice of a transaction is
+      <strong>MAC = S × A × K</strong> (slice × automation × the county scalar). This page sizes the base on real
+      BEA 2024 industry data, scaled to Midwestville's ${COUNTY_POP.toLocaleString()} people.
     </div>
   </div>`;
 }
 
-function statRow() {
+function layersCard() {
+  const row = (label, val, note) => `<tr>
+    <td class="cat">${label}</td>
+    <td class="num">${B(val)}</td>
+    <td class="num" style="color:var(--dim);">${note}</td>
+  </tr>`;
   return `
-  <div class="card"><div class="stats">
-    ${statBox("Whole-economy wages freed", T(wageBillOld - wagesLeft), "automation removed")}
-    ${statBox("Total MAC = the UBI", T(UBI), "what the charge raises (gross)", "var(--warn)")}
-    ${statBox("Affordable, whole economy", T(firmsKeep), "freed wages − UBI, across all firms", "var(--ok)")}
-    ${statBox("Net-loser sectors", losers + " of " + SECTORS.length, "these few carry the whole charge", "var(--crit)")}
-  </div></div>`;
+  <div class="card">
+    <h3>The layers of transactions in Midwestville (per year)</h3>
+    <div style="overflow-x:auto;">
+    <table style="width:100%;">
+      <thead><tr><th>Layer</th><th class="num">Value</th><th class="num">What it is</th></tr></thead>
+      <tbody>
+        ${row("Narrow retail (shops + dining)", retail, "what consumers buy in stores")}
+        ${row("All consumer spend (B2C)", pce, "incl. services, housing, health")}
+        ${row("Business-to-business (B2B)", totalB2B, "procurement & supply chain")}
+        ${row("All transactions (gross output)", totalGO, "every sale through the gateway")}
+        ${row("Value added (GDP ex-government)", totalVA, "the base, no double-counting")}
+        ${row("Wage bill (labour share)", wageBill, "the pool the MAC replaces")}
+      </tbody>
+    </table>
+    </div>
+    <div style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5;">
+      US totals (BEA 2024) scaled to Midwestville by population (÷${Math.round(1 / SCALE)}). Gross output is every
+      transaction including the B2B middle; value added strips the double-counting (each dollar of real production
+      counted once). Government excluded — tax-funded, no skimmable sale.
+    </div>
+  </div>`;
 }
 
-function distTable() {
-  const rows = SECTORS.map(s => {
-    const pctCol = s.pctRev > 1
-      ? `<span style="color:var(--crit);">${(s.pctRev * 100).toFixed(0)}%</span>`
-      : `${(s.pctRev * 100).toFixed(0)}%`;
-    const netCol = `<span style="color:${s.net < 0 ? "var(--crit)" : "var(--ok)"};">${T(s.net)}</span>`;
-    return `<tr>
-      <td class="cat">${s.name}</td>
-      <td class="num">${M(s.ppe)}</td>
-      <td class="num">${T(s.mac)}</td>
-      <td class="num">${pctCol}</td>
-      <td class="num">${T(s.wagesFreed)}</td>
-      <td class="num">${netCol}</td>
+function answerCard() {
+  return `
+  <div class="card" style="border-left:3px solid var(--ok);">
+    <h3>How much MAC can Midwestville raise?</h3>
+    <div class="stats">
+      ${statBox("Retail-only base", B(retail), "shops + dining", "var(--dim)")}
+      ${statBox("Retail-only charge needed", pct(retailOnlyRate), "of every retail sale — breaks", "var(--crit)")}
+      ${statBox("All-transaction base", B(totalGO), "B2C + B2B through the gateway", "var(--ok)")}
+      ${statBox("All-transaction charge", pct(allTxnRate), "of transactions — works", "var(--ok)")}
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:14px;">
+      Including the B2B layer takes the base from <strong>${B(retail)}</strong> (retail only) to
+      <strong>${B(totalGO)}</strong> (all transactions) — roughly <strong>${(totalGO / retail).toFixed(0)}×</strong>.
+      The same ${B(UBI)} UBI bill drops from an impossible ${pct(retailOnlyRate)} charge on retail to about
+      <strong>${pct(allTxnRate)}</strong> across all transactions. That is the B2B layer doing the work.
+    </div>
+  </div>`;
+}
+
+function ceilingCard() {
+  const headroom = freed - UBI;
+  return `
+  <div class="card">
+    <h3>The ceiling — what the MAC can sustainably take</h3>
+    <div class="stats">
+      ${statBox("Wages automation frees", B(freed), pct(u20) + " of the wage bill", "var(--warn)")}
+      ${statBox("UBI to fund", B(UBI), "at maturity, gross of tax", "var(--ok)")}
+      ${statBox("Headroom", B(headroom), "freed wages − UBI", "var(--ok)")}
+      ${statBox("Coverage", (freed / UBI).toFixed(1) + "×", "freed wages ÷ UBI need")}
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:14px;">
+      The MAC skims gross transactions, but what it can remove <em>without</em> forcing firms to raise prices is
+      capped at the value automation frees up — the disappearing wage bill, about <strong>${B(freed)}</strong> at
+      maturity. Against a UBI of <strong>${B(UBI)}</strong>, that is roughly <strong>${(freed / UBI).toFixed(1)}×</strong>
+      cover: firms fund the basic income and still keep <strong>${B(headroom)}</strong> more than the old wage bill
+      cost them. The county scalar comes out at <strong>K = ${K.toFixed(2)}</strong>
+      (UBI ÷ Σ of value added × automation).
+    </div>
+  </div>`;
+}
+
+function sectorTable() {
+  const rows = SECTORS.slice().sort((a, b) => b.goC - a.goC).map(s => {
+    const scopeMark = s.scope ? "" : ` <span style="color:var(--crit);">✗</span>`;
+    return `<tr ${s.scope ? "" : 'style="color:var(--faint);"'}>
+      <td class="cat">${s.name}${scopeMark}</td>
+      <td class="num">${B(s.goC)}</td>
+      <td class="num">${B(s.vaC)}</td>
+      <td class="num">${B(s.b2b)}</td>
+      <td class="num">${s.A.toFixed(2)}</td>
+      <td class="num">${s.scope ? B(s.mac) : "—"}</td>
     </tr>`;
   }).join("");
   return `
   <div class="card">
-    <h3>Who pays, who comes out ahead</h3>
+    <h3>Sector by sector — where the base sits</h3>
     <div style="overflow-x:auto;">
-    <table>
+    <table style="width:100%;">
       <thead><tr>
-        <th>Sector</th>
-        <th class="num">Profit / emp</th>
+        <th>Sector (NAICS)</th>
+        <th class="num">Transactions</th>
+        <th class="num">Value added</th>
+        <th class="num">B2B layer</th>
+        <th class="num">Automation A</th>
         <th class="num">MAC</th>
-        <th class="num">% of revenue</th>
-        <th class="num">Wages freed</th>
-        <th class="num">Net (freed − MAC)</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr style="border-top:2px solid var(--line-hot);">
-        <td class="cat"><strong>Total</strong></td>
+        <td class="cat"><strong>Market economy</strong></td>
+        <td class="num"><strong>${B(totalGO)}</strong></td>
+        <td class="num"><strong>${B(totalVA)}</strong></td>
+        <td class="num"><strong>${B(totalB2B)}</strong></td>
         <td class="num">—</td>
-        <td class="num"><strong>${T(UBI)}</strong></td>
-        <td class="num">—</td>
-        <td class="num">${T(wagesFreedTot)}</td>
-        <td class="num"><strong style="color:var(--ok);">${T(firmsKeep)}</strong></td>
+        <td class="num"><strong>${B(UBI)}</strong></td>
       </tr></tfoot>
     </table>
     </div>
-    <div style="font-size:11px; color:var(--faint); margin-top:8px;">
-      Net = the wages a sector saved to automation, minus its MAC. Positive = net winner; negative = net loser.
-      Profit per employee is the dial that loads the charge.
+    <div style="font-size:11px; color:var(--faint); margin-top:8px; line-height:1.5;">
+      Transactions = gross output; B2B layer = gross output − value added (the intermediate purchases). Automation
+      A = 1 − labour share; higher A carries more of the charge (real estate, manufacturing, information, finance).
+      Government (✗) is out of scope. MAC = K × value added × A.
     </div>
   </div>`;
 }
@@ -160,16 +242,15 @@ function distTable() {
 function noteCard() {
   return `
   <div class="card" style="border-left:3px solid var(--warn);">
-    <h3>What it shows — two limits</h3>
+    <h3>What to firm up</h3>
     <div style="font-size:13px; color:var(--txt); line-height:1.7;">
-      The automation winners — <strong>digital, utilities, finance</strong> — carry the most: already lean, with
-      profit per employee in the millions, the dial loads the charge onto them. That part is the design working.
-      <br><br>
-      But two limits surface. <strong>(1) The dial over-concentrates</strong> — ${overRev} of ${SECTORS.length}
-      sectors are assigned <em>more than 100% of their revenue</em> (digital ${(SECTORS[0].pctRev * 100).toFixed(0)}%),
-      impossible to collect; the profit-per-employee multiplier needs a bound. <strong>(2) The base is too
-      narrow</strong> — the whole ${T(UBI)} charge falls on just these consumer-facing sectors, so nearly all come
-      out net losers. It should fall on <em>every</em> firm with transactions in the area, not this slice.
+      Value added and gross output per sector are real BEA 2024 figures scaled to the county by population. Two
+      things are first-pass and should be replaced with measured data:
+      <strong>(1) the automation index A</strong> (labour share) per sector — estimated here, to be taken from BEA's
+      compensation-by-industry table; <strong>(2) the in-area share</strong> — a real county reaches all of some
+      sectors (retail, utilities, real estate) but only part of others (manufacturing, wholesale) whose output is
+      mostly sold out of the area. Scaling by population assumes Midwestville is a representative slice of the US
+      economy, which overstates the reach of the export-heavy sectors.
     </div>
   </div>`;
 }
