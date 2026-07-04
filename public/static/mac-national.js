@@ -156,11 +156,11 @@ function calcCard() {
     <div style="font-size:13px; color:var(--txt); line-height:1.8; margin-top:14px;">
       <strong>Worked example — a $1,000 phone at Walmart, supplied by Apple:</strong>
       <br>
-      • <strong>Walmart</strong> adds ${usd(wVA)}, and is half-automated (${wA}). Charge = ${K.toFixed(2)} × ${usd(wVA)} × ${wA} =
+      • <strong>Walmart</strong> adds ${usd(wVA)}, and is half-automated (${wA}). Charge = ${usd(wVA)} × ${wA} × ${K.toFixed(2)} =
       <strong>${usd(wMac)}</strong>.
       <br>
       • <strong>Apple</strong> adds ${usd(aVA)} (its $900 wholesale minus ~$100 of materials), and is almost fully
-      automated (${aA}). Charge = ${K.toFixed(2)} × ${usd(aVA)} × ${aA} = <strong>${usd(aMac)}</strong>.
+      automated (${aA}). Charge = ${usd(aVA)} × ${aA} × ${K.toFixed(2)} = <strong>${usd(aMac)}</strong>.
       <br><br>
       The phone carries about <strong>${usd(wMac + aMac)}</strong> of MAC — nearly all of it on Apple, because
       Apple replaced the most workers. Walmart, still people-heavy, barely pays. The shelf price does not change;
