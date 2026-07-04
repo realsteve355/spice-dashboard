@@ -48,7 +48,7 @@ function introCard() {
     </div>
     <div style="font-size:12px; color:var(--dim); line-height:1.7; margin-top:12px;">
       It rises as the UBI grows (more people displaced) and as profit-per-employee climbs (fewer staff). The
-      per-sector charge it produces is on the <a href="/mac-national" style="color:var(--ok);">National</a> and
+      per-sector charge it produces is on the <a href="/mac" style="color:var(--ok);">MAC</a> and
       <a href="/mac-y20" style="color:var(--ok);">year-20</a> pages.
     </div>
   </div>`;

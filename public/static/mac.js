@@ -1,4 +1,4 @@
-// /mac-national — "Midwestville — the whole-economy MAC base (with B2B)".
+// /mac — "Midwestville — the whole-economy MAC base (with B2B)".
 //
 // The question this page answers: retail sales alone cannot fund the UBI. Once the
 // B2B layer (firms procuring inputs) is in scope, the base of chargeable

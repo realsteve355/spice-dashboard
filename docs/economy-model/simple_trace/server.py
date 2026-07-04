@@ -266,10 +266,6 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(self.templates_dir / "companies.html", "text/html; charset=utf-8")
         elif p == "/mac":
             self._send_file(self.templates_dir / "mac.html", "text/html; charset=utf-8")
-        elif p == "/mac-y20":
-            self._send_file(self.templates_dir / "mac-y20.html", "text/html; charset=utf-8")
-        elif p == "/mac-national":
-            self._send_file(self.templates_dir / "mac-national.html", "text/html; charset=utf-8")
         elif p == "/calibration":
             self._send_file(self.templates_dir / "calibration.html", "text/html; charset=utf-8")
         elif p == "/tax":

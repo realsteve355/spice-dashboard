@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { label: "Companies",        to: "/companies",     external: true },
   { label: "MAC",              to: "/mac",           external: true },
   { label: "MAC Y20",          to: "/mac-y20",       external: true },
-  { label: "National",         to: "/mac-national",  external: true },
+  { label: "MAC",              to: "/mac",           external: true },
   { label: "Calibration",      to: "/calibration",   external: true },
   { label: "Tax",              to: "/tax",           external: true },
   { label: "Trajectory",       to: "/trajectory",    external: true },

@@ -8,7 +8,7 @@
     { path: '/basket',       label: 'Basket' },
     { path: '/ubi',          label: 'UBI' },
     { path: '/companies',    label: 'Companies' },
-    { path: '/mac-national', label: 'MAC' },
+    { path: '/mac',          label: 'MAC' },
     { path: '/calibration',  label: 'Calibration' },
     { path: '/tax',          label: 'Tax' },
     { path: '/trajectory',   label: 'Trajectory' },

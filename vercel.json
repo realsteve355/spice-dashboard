@@ -14,7 +14,7 @@
     { "source": "/basket", "destination": "/basket.html" },
     { "source": "/ubi", "destination": "/ubi.html" },
     { "source": "/companies", "destination": "/companies.html" },
-    { "source": "/mac-national", "destination": "/mac-national.html" },
+    { "source": "/mac", "destination": "/mac.html" },
     { "source": "/calibration", "destination": "/calibration.html" },
     { "source": "/tax", "destination": "/tax.html" },
     { "source": "/trajectory", "destination": "/trajectory.html" },
