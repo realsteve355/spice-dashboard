@@ -8,8 +8,6 @@
     { path: '/basket',       label: 'Basket' },
     { path: '/ubi',          label: 'UBI' },
     { path: '/companies',    label: 'Companies' },
-    { path: '/mac',          label: 'MAC' },
-    { path: '/mac-y20',      label: 'MAC Y20' },
     { path: '/mac-national', label: 'National' },
     { path: '/calibration',  label: 'Calibration' },
     { path: '/tax',          label: 'Tax' },

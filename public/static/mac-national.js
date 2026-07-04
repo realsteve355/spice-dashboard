@@ -86,6 +86,9 @@ const u1     = MF.unempRateAt(0) / 100;                 // ~4.2% displaced at ye
 const UBI_Y1 = WA * u1 * 12000 + CH * u1 * 6000;        // welfare floor, untaxed
 const K_Y1   = UBI_Y1 / weightSum;                      // year-1 county rate
 
+const u10     = MF.unempRateAt(10) / 100;               // ~39% displaced at year 10
+const UBI_Y10 = WA * u10 * 12000 + CH * u10 * 6000;     // still welfare floor at the inflection
+
 const retail = RETAIL_US * SCALE;             // narrow retail (shops + dining)
 const pce    = PCE_US * SCALE;                // all consumer spend
 
@@ -99,6 +102,7 @@ SECTORS.forEach(s => { s.mac = s.scope ? K * s.weight : 0; });
 const B = v => (v < 0 ? "−$" : "$") + (Math.abs(v) / 1e9).toFixed(1) + "B";
 const pct = v => (v * 100).toFixed(0) + "%";
 const pct1 = v => (v * 100).toFixed(1) + "%";
+const rate = v => (v < 0.1 ? (v * 100).toFixed(1) : (v * 100).toFixed(0)) + "%";
 
 function render() {
   document.getElementById("results").innerHTML = [
@@ -226,20 +230,41 @@ function layersCard() {
 }
 
 function answerCard() {
+  const years = [
+    { label: "Year 1 (2026)",  u: u1,  ubi: UBI_Y1 },
+    { label: "Year 10 (2036)", u: u10, ubi: UBI_Y10 },
+    { label: "Year 20 (2046)", u: u20, ubi: UBI },
+  ];
+  const row = (label, fn, color) => `<tr>
+    <td class="cat">${label}</td>
+    ${years.map(y => `<td class="num" ${color ? `style="color:${color(y)};"` : ""}>${fn(y)}</td>`).join("")}
+  </tr>`;
+  const retailColor = y => (y.ubi / retail > 0.5 ? "var(--crit)" : "var(--txt)");
   return `
   <div class="card" style="border-left:3px solid var(--ok);">
-    <h3>How much MAC can Midwestville raise?</h3>
-    <div class="stats">
-      ${statBox("Retail-only base", B(retail), "shops + dining", "var(--dim)")}
-      ${statBox("Retail-only charge needed", pct(retailOnlyRate), "of every retail sale — breaks", "var(--crit)")}
-      ${statBox("All-transaction base", B(totalGO), "B2C + B2B through the gateway", "var(--ok)")}
-      ${statBox("All-transaction charge", pct(allTxnRate), "of transactions — works", "var(--ok)")}
+    <h3>How much MAC does Midwestville need to raise?</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      The base is the same every year — <strong>${B(retail)}</strong> of retail, <strong>${B(totalGO)}</strong> of
+      all transactions (held at today's prices). Only the UBI bill grows, as automation displaces more work. The
+      charge needed is that year's UBI divided by the base it can reach.
     </div>
-    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:14px;">
-      Including the B2B layer takes the base from <strong>${B(retail)}</strong> (retail only) to
-      <strong>${B(totalGO)}</strong> (all transactions) — roughly <strong>${(totalGO / retail).toFixed(0)}×</strong>.
-      The same ${B(UBI)} UBI bill drops from an impossible ${pct(retailOnlyRate)} charge on retail to about
-      <strong>${pct(allTxnRate)}</strong> across all transactions. That is the B2B layer doing the work.
+    <div style="overflow-x:auto; margin-top:12px;">
+    <table style="width:100%;">
+      <thead><tr><th></th>${years.map(y => `<th class="num">${y.label}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${row("People displaced", y => pct(y.u))}
+        ${row("UBI bill", y => B(y.ubi))}
+        ${row("Charge on retail only", y => rate(y.ubi / retail), retailColor)}
+        ${row("Charge on all transactions", y => rate(y.ubi / totalGO), () => "var(--ok)")}
+      </tbody>
+    </table>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:12px;">
+      Early on the bill is tiny and either base covers it easily. By year 20, funding the ${B(UBI)} UBI from
+      <strong>retail alone</strong> would need <strong>${rate(UBI / retail)}</strong> of every retail sale —
+      impossible. Spread across <strong>all transactions</strong>, including the B2B layer, the same bill is only
+      <strong>${rate(UBI / totalGO)}</strong>. That is what the B2B layer buys: it keeps the charge affordable right
+      through the transition.
     </div>
   </div>`;
 }
@@ -248,12 +273,12 @@ function ceilingCard() {
   const headroom = freed - UBI;
   return `
   <div class="card">
-    <h3>The ceiling — what the MAC can sustainably take</h3>
+    <h3>The maximum — the most the MAC could raise</h3>
     <div class="stats">
-      ${statBox("Wages automation frees", B(freed), pct(u20) + " of the wage bill", "var(--warn)")}
-      ${statBox("UBI to fund", B(UBI), "at maturity, gross of tax", "var(--ok)")}
-      ${statBox("Headroom", B(headroom), "freed wages − UBI", "var(--ok)")}
-      ${statBox("Coverage", (freed / UBI).toFixed(1) + "×", "freed wages ÷ UBI need")}
+      ${statBox("Maximum MAC", B(freed), "= the wages automation frees", "var(--warn)")}
+      ${statBox("UBI to fund (year 20)", B(UBI), "at maturity, gross of tax", "var(--ok)")}
+      ${statBox("Headroom", B(headroom), "maximum − UBI", "var(--ok)")}
+      ${statBox("Coverage", (freed / UBI).toFixed(1) + "×", "maximum ÷ UBI need")}
     </div>
     <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:14px;">
       The MAC skims gross transactions, but what it can remove <em>without</em> forcing firms to raise prices is
@@ -289,7 +314,7 @@ function sectorTable() {
         <th class="num">Value added</th>
         <th class="num">B2B layer</th>
         <th class="num">Automation A</th>
-        <th class="num">MAC</th>
+        <th class="num">MAC (yr 20)</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr style="border-top:2px solid var(--line-hot);">
