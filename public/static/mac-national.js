@@ -77,7 +77,14 @@ const totalB2B  = sum(mkt, s => s.b2b);       // the B2B / intermediate layer
 const wageBill  = sum(mkt, s => s.wages);     // market wage bill
 const freed     = wageBill * u20;             // wages automation frees at maturity
 const weightSum = sum(mkt, s => s.weight);    // Σ( value added × A )
-const K         = UBI / weightSum;            // the county-wide scalar
+const K         = UBI / weightSum;            // the county-wide scalar (mature, Y20)
+
+// Year-1 comparison: same base, but the UBI bill is tiny (few displaced yet), so
+// the county rate is near zero. Automation held at today's level to isolate the
+// effect of the growing UBI need.
+const u1     = MF.unempRateAt(0) / 100;                 // ~4.2% displaced at year 1
+const UBI_Y1 = WA * u1 * 12000 + CH * u1 * 6000;        // welfare floor, untaxed
+const K_Y1   = UBI_Y1 / weightSum;                      // year-1 county rate
 
 const retail = RETAIL_US * SCALE;             // narrow retail (shops + dining)
 const pce    = PCE_US * SCALE;                // all consumer spend
@@ -124,11 +131,17 @@ function introCard() {
 }
 
 function calcCard() {
-  // Worked example — a $1,000 phone at Walmart, supplied by Apple. Uses the page's
-  // own K so the numbers stay consistent with the rest of the page.
+  // Worked example — a $1,000 phone at Walmart, supplied by Apple, at year 1 and
+  // year 20. Uses the page's own rates (K_Y1, K) so the numbers stay consistent.
   const wVA = 100, wA = 0.5, aVA = 800, aA = 0.95;
-  const wMac = K * wVA * wA, aMac = K * aVA * aA;
-  const usd = v => "$" + Math.round(v).toLocaleString();
+  const usd = v => "$" + (Math.abs(v) < 10 ? v.toFixed(2) : Math.round(v).toLocaleString());
+  const wY1 = K_Y1 * wVA * wA, wY20 = K * wVA * wA;
+  const aY1 = K_Y1 * aVA * aA, aY20 = K * aVA * aA;
+  const twoCol = (label, y1, y20, bold) => `<tr>
+    <td class="cat">${bold ? `<strong>${label}</strong>` : label}</td>
+    <td class="num">${bold ? `<strong>${y1}</strong>` : y1}</td>
+    <td class="num">${bold ? `<strong>${y20}</strong>` : y20}</td>
+  </tr>`;
   return `
   <div class="card" style="border-left:3px solid var(--headline);">
     <h3>How the MAC is calculated</h3>
@@ -146,25 +159,38 @@ function calcCard() {
       MAC a charge on automation rather than a flat sales tax: it lands on the firms that replaced workers.
       <br><br>
       <strong>3. One county-wide rate.</strong> A single number, the same for every company, set each period so
-      that all the charges collected add up to exactly the UBI bill — no more, no less. For Midwestville it works
-      out at <strong>${K.toFixed(2)}</strong> (the ${B(UBI)} UBI divided by the automation-weighted total of every
+      that all the charges collected add up to exactly the UBI bill — no more, no less. It starts near zero, when
+      almost no one is displaced and the UBI bill is tiny, and rises as automation displaces work — reaching about
+      <strong>${K.toFixed(2)}</strong> at maturity (the ${B(UBI)} UBI ÷ the automation-weighted total of every
       firm's value added).
     </div>
     <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:14px 18px; margin-top:14px; font-size:14px; color:var(--txt); text-align:center;">
       MAC = (the value a company adds) × (how automated it is) × (the county rate)
     </div>
-    <div style="font-size:13px; color:var(--txt); line-height:1.8; margin-top:14px;">
-      <strong>Worked example — a $1,000 phone at Walmart, supplied by Apple:</strong>
-      <br>
-      • <strong>Walmart</strong> adds ${usd(wVA)}, and is half-automated (${wA}). Charge = ${usd(wVA)} × ${wA} × ${K.toFixed(2)} =
-      <strong>${usd(wMac)}</strong>.
-      <br>
-      • <strong>Apple</strong> adds ${usd(aVA)} (its $900 wholesale minus ~$100 of materials), and is almost fully
-      automated (${aA}). Charge = ${usd(aVA)} × ${aA} × ${K.toFixed(2)} = <strong>${usd(aMac)}</strong>.
-      <br><br>
-      The phone carries about <strong>${usd(wMac + aMac)}</strong> of MAC — nearly all of it on Apple, because
-      Apple replaced the most workers. Walmart, still people-heavy, barely pays. The shelf price does not change;
-      the charge comes out of the value automation created, not off the top of the customer's bill.
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:14px;">
+      <strong>The same phone at the beginning and the end</strong> — a $1,000 phone at Walmart, supplied by Apple.
+      What changes is the county rate: at the start barely anyone needs the UBI, so the charge is trivial; by year
+      20 most work is automated and the UBI bill is ${B(UBI)}.
+    </div>
+    <div style="overflow-x:auto; margin-top:12px;">
+    <table style="width:100%;">
+      <thead><tr><th></th><th class="num">Year 1 (2026)</th><th class="num">Year 20 (2046)</th></tr></thead>
+      <tbody>
+        ${twoCol("People displaced", pct(u1), pct(u20))}
+        ${twoCol("County UBI bill", B(UBI_Y1), B(UBI))}
+        ${twoCol("County rate", K_Y1.toFixed(3), K.toFixed(2))}
+        ${twoCol("Walmart's charge ($100 added × 0.5)", usd(wY1), usd(wY20))}
+        ${twoCol("Apple's charge ($800 added × 0.95)", usd(aY1), usd(aY20))}
+        ${twoCol("MAC on the phone", usd(wY1 + aY1), usd(wY20 + aY20), true)}
+      </tbody>
+    </table>
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:12px;">
+      The phone's MAC grows from about <strong>${usd(wY1 + aY1)}</strong> to <strong>${usd(wY20 + aY20)}</strong> —
+      nearly all of it on Apple, the most automated maker; Walmart, still people-heavy, barely pays. The shelf
+      price never changes; the charge comes out of the value automation created, not off the customer's bill.
+      (Automation is held at today's level here to isolate the growing UBI; in practice it rises too, shifting even
+      more of the charge onto the most-automated firms.)
     </div>
   </div>`;
 }
