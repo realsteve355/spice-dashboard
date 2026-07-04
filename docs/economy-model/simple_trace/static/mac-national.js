@@ -95,7 +95,7 @@ const pct1 = v => (v * 100).toFixed(1) + "%";
 
 function render() {
   document.getElementById("results").innerHTML = [
-    introCard(), layersCard(), answerCard(), ceilingCard(), sectorTable(), noteCard(),
+    introCard(), calcCard(), layersCard(), answerCard(), ceilingCard(), sectorTable(), noteCard(),
   ].join("\n");
 }
 
@@ -117,9 +117,54 @@ function introCard() {
       The improvement is the <strong>B2B layer</strong>: a firm with no consumers in the county — an external
       battery maker supplying the solar grid, a software vendor licensing to the logistics hub — is still in scope,
       because its sale into the county clears the MOND gateway. Once every transaction counts, the base multiplies.
-      The charge on each firm's slice of a transaction is
-      <strong>MAC = S × A × K</strong> (slice × automation × the county scalar). This page sizes the base on real
-      BEA 2024 industry data, scaled to Midwestville's ${COUNTY_POP.toLocaleString()} people.
+      How the charge on each transaction is worked out is set out in the next section; this page then sizes the
+      base on real BEA 2024 industry data, scaled to Midwestville's ${COUNTY_POP.toLocaleString()} people.
+    </div>
+  </div>`;
+}
+
+function calcCard() {
+  // Worked example — a $1,000 phone at Walmart, supplied by Apple. Uses the page's
+  // own K so the numbers stay consistent with the rest of the page.
+  const wVA = 100, wA = 0.5, aVA = 800, aA = 0.95;
+  const wMac = K * wVA * wA, aMac = K * aVA * aA;
+  const usd = v => "$" + Math.round(v).toLocaleString();
+  return `
+  <div class="card" style="border-left:3px solid var(--headline);">
+    <h3>How the MAC is calculated</h3>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7;">
+      Every company pays a charge on each sale, worked out from three things.
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.7; margin-top:12px;">
+      <strong>1. The value it adds.</strong> A company pays on the value <em>it</em> adds, not the whole shelf
+      price. When Walmart sells a $1,000 phone it adds ${usd(wVA)} (its mark-up); the $900 it paid for the phone is
+      the supplier's value, and the supplier pays on that. So the charge is never counted twice along the chain.
+      <br><br>
+      <strong>2. How automated it is.</strong> Measured as the share of the company's money that no longer goes to
+      wages — a number from 0 to 1. A company run on robots with almost no staff is near 1 and pays the most; a
+      company that is mostly people (a care home, a restaurant) is near 0 and pays little. This is what makes the
+      MAC a charge on automation rather than a flat sales tax: it lands on the firms that replaced workers.
+      <br><br>
+      <strong>3. One county-wide rate.</strong> A single number, the same for every company, set each period so
+      that all the charges collected add up to exactly the UBI bill — no more, no less. For Midwestville it works
+      out at <strong>${K.toFixed(2)}</strong> (the ${B(UBI)} UBI divided by the automation-weighted total of every
+      firm's value added).
+    </div>
+    <div style="background:var(--panel2); border:1px solid var(--line-hot); padding:14px 18px; margin-top:14px; font-size:14px; color:var(--txt); text-align:center;">
+      MAC = (the value a company adds) × (how automated it is) × (the county rate)
+    </div>
+    <div style="font-size:13px; color:var(--txt); line-height:1.8; margin-top:14px;">
+      <strong>Worked example — a $1,000 phone at Walmart, supplied by Apple:</strong>
+      <br>
+      • <strong>Walmart</strong> adds ${usd(wVA)}, and is half-automated (${wA}). Charge = ${K.toFixed(2)} × ${usd(wVA)} × ${wA} =
+      <strong>${usd(wMac)}</strong>.
+      <br>
+      • <strong>Apple</strong> adds ${usd(aVA)} (its $900 wholesale minus ~$100 of materials), and is almost fully
+      automated (${aA}). Charge = ${K.toFixed(2)} × ${usd(aVA)} × ${aA} = <strong>${usd(aMac)}</strong>.
+      <br><br>
+      The phone carries about <strong>${usd(wMac + aMac)}</strong> of MAC — nearly all of it on Apple, because
+      Apple replaced the most workers. Walmart, still people-heavy, barely pays. The shelf price does not change;
+      the charge comes out of the value automation created, not off the top of the customer's bill.
     </div>
   </div>`;
 }
