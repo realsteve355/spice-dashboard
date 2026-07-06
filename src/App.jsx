@@ -10,9 +10,11 @@ import CrisisScenarios from "./pages/CrisisScenarios";
 import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 import Invest from "./pages/Invest";
+import Technology from "./pages/Technology";
 
 const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
+  { label: "Technology",       to: "/technology" },
   { label: "Employment",       to: "/unemployment",  external: true },
   { label: "Basket",           to: "/basket",        external: true },
   { label: "UBI",              to: "/ubi",           external: true },
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="/portfolio"   element={<Navigate to="/collision/portfolio" replace />} />
 
           <Route path="/invest" element={<Invest />} />
+          <Route path="/technology" element={<Technology />} />
 
           {/* ── Archived pages (Mars/Earth/colony/etc.) → home ── */}
           <Route path="*" element={<Navigate to="/" replace />} />
