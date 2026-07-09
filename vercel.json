@@ -9,6 +9,8 @@
     { "source": "/sim/", "destination": "/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/mall", "destination": "https://axion-stores.vercel.app/mall" },
+    { "source": "/mall/:path*", "destination": "https://axion-stores.vercel.app/mall/:path*" },
     { "source": "/colony-v0", "destination": "/colony-v0/index.html" },
     { "source": "/colony-v0/", "destination": "/colony-v0/index.html" },
     { "source": "/basket", "destination": "/basket.html" },
@@ -25,7 +27,7 @@
     { "source": "/time-dividend", "destination": "/time-dividend.html" },
     { "source": "/sectors", "destination": "/sectors.html" },
     { "source": "/aggregate", "destination": "/aggregate.html" },
-    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|api\\/|static\\/|data\\/).*)", "destination": "/index.html" }
+    { "source": "/((?!spice-methodology\\.html|colony-v0\\/|api\\/|static\\/|data\\/|mall).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
