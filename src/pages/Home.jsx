@@ -214,6 +214,16 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Sign up or sign in →</div>
           </a>
+          <a href="https://directory.zpc.finance" target="_blank" rel="noreferrer" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>MOND Directory</span>
+            <h3 style={S.dTtl}>Who's in the MOND economy</h3>
+            <p style={S.dBody}>
+              The registry of MOND-in suppliers, retailers and industrial firms —
+              the businesses that pay the market-access charge.
+            </p>
+            <div style={S.dSep}>Open the Directory →</div>
+          </a>
           <div style={{ ...S.dispatch, opacity: 0.55, cursor: "default" }}>
             <CornerFrame />
             <span style={S.dTag}>iOS App</span>
