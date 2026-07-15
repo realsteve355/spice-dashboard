@@ -191,6 +191,40 @@ export default function Home() {
           </p>
         </div>
 
+        {/* TRY AXION — live entry points */}
+        <SectionHead tag="A-00" title="Try Axion · live demo" timestamp="ONLINE NOW" />
+        <div style={S.dispatches}>
+          <a href="https://axion-stores.zpc.finance/mall" target="_blank" rel="noreferrer" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>The Mall</span>
+            <h3 style={S.dTtl}>Shop the colony</h3>
+            <p style={S.dBody}>
+              Browse the county's stores and pay in MOND with the Mond card — the
+              shopper's side of the economy.
+            </p>
+            <div style={S.dSep}>Open the Mall →</div>
+          </a>
+          <a href="https://axion.zpc.finance" target="_blank" rel="noreferrer" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>Citizen Web App</span>
+            <h3 style={S.dTtl}>Sign up or sign in</h3>
+            <p style={S.dBody}>
+              Your Mond Pay wallet, UBI, dashboard and the Fisc — the full citizen
+              app, in the browser.
+            </p>
+            <div style={S.dSep}>Sign up or sign in →</div>
+          </a>
+          <div style={{ ...S.dispatch, opacity: 0.55, cursor: "default" }}>
+            <CornerFrame />
+            <span style={S.dTag}>iOS App</span>
+            <h3 style={S.dTtl}>Mond Pay for iPhone</h3>
+            <p style={S.dBody}>
+              Tap-to-pay with NFC and Face ID — the native wallet experience.
+            </p>
+            <div style={S.dSep}>Coming soon</div>
+          </div>
+        </div>
+
         {/* INTRO VIDEO */}
         <SectionHead tag="V-01" title="Introduction · the AXION pitch" timestamp="2-MIN OVERVIEW" />
         <div style={S.videoWrap}>
