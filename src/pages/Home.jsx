@@ -194,7 +194,7 @@ export default function Home() {
         {/* TRY AXION — live entry points */}
         <SectionHead tag="A-00" title="Try Axion · live demo" timestamp="ONLINE NOW" />
         <div style={S.dispatches}>
-          <a href="https://axion-stores.zpc.finance/mall" target="_blank" rel="noreferrer" style={S.dispatch}>
+          <a href="https://stores.axion-labs.xyz/mall" target="_blank" rel="noreferrer" style={S.dispatch}>
             <CornerFrame />
             <span style={S.dTag}>The Mall</span>
             <h3 style={S.dTtl}>Shop the colony</h3>
@@ -204,7 +204,7 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Open the Mall →</div>
           </a>
-          <a href="https://axion.zpc.finance" target="_blank" rel="noreferrer" style={S.dispatch}>
+          <a href="https://app.axion-labs.xyz" target="_blank" rel="noreferrer" style={S.dispatch}>
             <CornerFrame />
             <span style={S.dTag}>Citizen Web App</span>
             <h3 style={S.dTtl}>Sign up or sign in</h3>
@@ -214,7 +214,7 @@ export default function Home() {
             </p>
             <div style={S.dSep}>Sign up or sign in →</div>
           </a>
-          <a href="https://directory.zpc.finance" target="_blank" rel="noreferrer" style={S.dispatch}>
+          <a href="https://directory.axion-labs.xyz" target="_blank" rel="noreferrer" style={S.dispatch}>
             <CornerFrame />
             <span style={S.dTag}>MOND Directory</span>
             <h3 style={S.dTtl}>Who's in the MOND economy</h3>
