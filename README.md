@@ -1,17 +1,12 @@
-# React + Vite
+# spice-legacy-reference
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Pre-Axion legacy code, kept for reference only — not deployed, not actively developed.
 
-Currently, two official plugins are available:
+- `colony-app/` — predecessor of `axion-web` (the citizen wallet app)
+- `colony-app-native/` — predecessor of `axion-native` (the mobile app)
+- `spice-admin/` — predecessor of `axion-admin` (the operator console)
+- `docs/`, `research/` — old SPICE-era model notes, specs, and brand assets
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
- 
+The public homepage (formerly built from this repo's root `src/`/`api/`/`public/`) has
+moved to `axion-landing/` inside the main [`axion`](https://github.com/realsteve355/axion)
+repo, and now deploys from there.
