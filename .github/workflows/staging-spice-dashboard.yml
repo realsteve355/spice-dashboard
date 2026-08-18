@@ -1,0 +1,16 @@
+name: Staging deploy - spice-dashboard
+
+on:
+  push:
+    branches: [staging]
+    paths: ['src/**', 'public/**', 'api/**', 'index.html', 'vite.config.js', 'vercel.json']
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_staging-deploy.yml
+    with:
+      project_id: prj_HhuuWd4KFagkyVOy2cXUVktuDluz
+      domain: axion-tech.xyz
+    secrets:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

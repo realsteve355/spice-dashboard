@@ -7,4 +7,4 @@ export const COLONIES = [
 ];
 
 export const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
-export const COLONY_APP_HOST  = "https://app.zpc.finance";
+export const COLONY_APP_HOST  = "https://app.axion-labs.xyz";

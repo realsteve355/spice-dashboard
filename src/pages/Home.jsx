@@ -54,6 +54,9 @@ const S = {
   },
   ctas: { display: "flex", gap: 12, flexWrap: "wrap" },
 
+  webAppCta:  { display: "flex", justifyContent: "center", marginBottom: 24 },
+  webAppLink: { fontSize: 13, padding: "16px 40px", letterSpacing: "0.2em" },
+
   videoWrap: {
     background: C.panel, border: `1px solid ${C.lineHot}`,
     aspectRatio: "16 / 9", maxWidth: 720, margin: "0 auto",
@@ -172,67 +175,14 @@ export default function Home() {
         <div style={S.hero}>
           <StatusPill status="ok" label="Pre-launch · research" />
           <h1 style={S.h1}>UBI for a Capitalist Economy</h1>
-          <p style={{ ...S.lead, marginBottom: 18 }}>
-            Driven by advances in AI, robotics and automation, for the first
-            time in human history, the world's political and economic systems
-            must navigate the transition from an economic system that evolved to
-            manage scarcity, to a system that must manage abundance.
-          </p>
-          <p style={{ ...S.lead, marginBottom: 18 }}>
-            This website explores the features of the abundance economy, and the
-            infrastructure required to support it.
-          </p>
           <p style={S.lead}>
-            AXION is a blockchain-based product designed to implement a rollout
-            of a UBI system within a capitalist economy. The AXION product is
-            available for online demonstration and will shortly be seeking a
-            live pilot site. To view the Axion Inc investment proposition,{" "}
+            AXION/MOND is a blockchain-based product designed to implement a
+            citizen UBI system within an established capitalist economy. The
+            AXION product is available for online demonstration and will
+            shortly be seeking a live pilot site. To view the Axion Inc
+            investment proposition,{" "}
             <Link to="/invest" style={{ color: C.ok, textDecoration: "underline" }}>click here</Link>.
           </p>
-        </div>
-
-        {/* TRY AXION — live entry points */}
-        <SectionHead tag="A-00" title="Try Axion · live demo" timestamp="ONLINE NOW" />
-        <div style={S.dispatches}>
-          <a href="https://stores.axion-labs.xyz/mall" target="_blank" rel="noreferrer" style={S.dispatch}>
-            <CornerFrame />
-            <span style={S.dTag}>The Mall</span>
-            <h3 style={S.dTtl}>Shop the colony</h3>
-            <p style={S.dBody}>
-              Browse the county's stores and pay in MOND with the Mond card — the
-              shopper's side of the economy.
-            </p>
-            <div style={S.dSep}>Open the Mall →</div>
-          </a>
-          <a href="https://app.axion-labs.xyz" target="_blank" rel="noreferrer" style={S.dispatch}>
-            <CornerFrame />
-            <span style={S.dTag}>Citizen Web App</span>
-            <h3 style={S.dTtl}>Sign up or sign in</h3>
-            <p style={S.dBody}>
-              Your Mond Pay wallet, UBI, dashboard and the Fisc — the full citizen
-              app, in the browser.
-            </p>
-            <div style={S.dSep}>Sign up or sign in →</div>
-          </a>
-          <a href="https://directory.axion-labs.xyz" target="_blank" rel="noreferrer" style={S.dispatch}>
-            <CornerFrame />
-            <span style={S.dTag}>MOND Directory</span>
-            <h3 style={S.dTtl}>Who's in the MOND economy</h3>
-            <p style={S.dBody}>
-              The registry of MOND-in suppliers, retailers and industrial firms —
-              the businesses that pay the market-access charge.
-            </p>
-            <div style={S.dSep}>Open the Directory →</div>
-          </a>
-          <div style={{ ...S.dispatch, opacity: 0.55, cursor: "default" }}>
-            <CornerFrame />
-            <span style={S.dTag}>iOS App</span>
-            <h3 style={S.dTtl}>Mond Pay for iPhone</h3>
-            <p style={S.dBody}>
-              Tap-to-pay with NFC and Face ID — the native wallet experience.
-            </p>
-            <div style={S.dSep}>Coming soon</div>
-          </div>
         </div>
 
         {/* INTRO VIDEO */}
@@ -246,6 +196,46 @@ export default function Home() {
         </div>
         <div style={S.videoMeta}>
           Two-minute overview of the colony economy — citizens, companies, the Fisc, S/V tokens.
+        </div>
+
+        {/* TRY AXION — live entry points */}
+        <SectionHead tag="A-00" title="Try Axion · live demo" timestamp="ONLINE NOW" />
+        <div style={S.webAppCta}>
+          <Button variant="primary" href="https://app.axion-labs.xyz" style={S.webAppLink}>
+            Open the Web App →
+          </Button>
+        </div>
+        <div style={S.dispatches}>
+          <a href="https://stores.axion-labs.xyz/mall" target="_blank" rel="noreferrer" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>The Mall</span>
+            <h3 style={S.dTtl}>Shop the colony</h3>
+            <p style={S.dBody}>
+              Browse the county's stores and pay in MOND with the Mond card — the
+              shopper's side of the economy.
+            </p>
+            <div style={S.dSep}>Open the Mall →</div>
+          </a>
+          <a href="https://central.axion-labs.xyz" target="_blank" rel="noreferrer" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>Axion Central</span>
+            <h3 style={S.dTtl}>The clearing house</h3>
+            <p style={S.dBody}>
+              Where every colony's Market Access Charge nets out across vendors —
+              the cross-colony processing hub.
+            </p>
+            <div style={S.dSep}>Open Axion Central →</div>
+          </a>
+          <Link to="/ios-access" style={S.dispatch}>
+            <CornerFrame />
+            <span style={S.dTag}>iOS App · Closed Beta</span>
+            <h3 style={S.dTtl}>Mond Pay for iPhone</h3>
+            <p style={S.dBody}>
+              Tap-to-pay with NFC and Face ID — request access to the native
+              wallet beta (Android to follow).
+            </p>
+            <div style={S.dSep}>Request access →</div>
+          </Link>
         </div>
 
         {/* DISPATCHES */}

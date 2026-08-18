@@ -11,6 +11,7 @@ import ApocalypseIndicator from "./pages/ApocalypseIndicator";
 import Portfolio from "./pages/Portfolio";
 import Invest from "./pages/Invest";
 import Technology from "./pages/Technology";
+import RequestAccess from "./pages/RequestAccess";
 
 const NAV_ITEMS = [
   { label: "Home",             to: "/", end: true },
@@ -60,6 +61,7 @@ export default function App() {
 
           <Route path="/invest" element={<Invest />} />
           <Route path="/technology" element={<Technology />} />
+          <Route path="/ios-access" element={<RequestAccess />} />
 
           {/* ── Archived pages (Mars/Earth/colony/etc.) → home ── */}
           <Route path="*" element={<Navigate to="/" replace />} />
